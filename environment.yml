@@ -1,0 +1,20 @@
+name: local-ml-py311
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - fastapi>=0.100.0
+      - uvicorn>=0.22.0
+      - pydantic>=2.0
+      - torch>=2.1.0
+      - transformers>=4.36.0
+      - diffusers>=0.25.0
+      - accelerate>=0.25.0
+      - pillow
+      - huggingface_hub
+      - sentencepiece
+      - protobuf

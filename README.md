@@ -1,6 +1,35 @@
-# LTX-Video Local API Bridge & Vue Frontend Integration
+# Pluto: LTX-Video Local API Bridge
 
-This repository hosts the lightweight FastAPI server (`server.py`) that bridges the frontend Vue application with a locally hosted **LTX-Video** generation pipeline, utilizing an optimized MPS (Metal) offloader for macOS and a Tailscale-networked **Ollama** prompt enhancer.
+This repository hosts a lightweight FastAPI server that bridges frontend applications (like the Vue-based Katana VideoGen UI) with a locally hosted **LTX-Video** generation pipeline. It is optimized for macOS Apple Silicon (MPS backend) and integrates with a remote/local Ollama instance for prompt enhancement.
+
+---
+
+## Project Structure
+
+This project follows clean organization standards and best practices:
+
+```
+pluto/
+├── .env.example            # Template for environment variables
+├── .gitignore              # Git ignore rules for cached, virtualenv, and video output files
+├── environment.yml         # Conda environment definition file
+├── requirements.txt        # Python pip dependencies
+├── README.md               # Project documentation
+├── agents.md               # Antigravity developer agent workflows and setup notes
+│
+├── src/                    # Source code directory
+│   ├── server.py           # FastAPI entry point, endpoint routing, and mock handlers
+│   ├── generate_video.py   # LTX-Video pipeline initialization and execution details
+│   └── enhance_prompt.py   # LTX CINEMATIC prompt enhancement scripts
+│
+├── tests/                  # Integration and unit tests
+│   └── test_server.py      # Self-executable API test suite (mock mode)
+│
+├── docs/                   # Documentation resources
+│   ├── assets/             # PNG screenshots and visual assets
+│   └── ANTIGRAVITY-HANDOFF-backend.md  # Historical task description for backend handoff
+└── outputs/                # Directory for generated local MP4 videos (Git ignored)
+```
 
 ---
 
@@ -21,74 +50,59 @@ graph TD
 
 ---
 
-## 1. Backend Server Setup (`server.py`)
+## 1. Setup & Installation
 
-The local ML API server runs on FastAPI. It manages memory and execution serialization to fit within Apple Silicon (M-series Mac) unified memory constraints.
+### Option A: Conda Environment (Recommended)
+Initialize and activate the `local-ml-py311` conda environment:
+```bash
+conda env create -f environment.yml
+conda activate local-ml-py311
+```
 
-### Prerequisites
+### Option B: Python Virtualenv
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-1. **Conda Environment**:
-   Initialize and activate the `local-ml-py311` conda environment:
-   ```bash
-   conda activate local-ml-py311
-   ```
+### Environment Configuration
+Copy the template `.env.example` to `.env` and fill in your HuggingFace token and other parameters:
+```bash
+cp .env.example .env
+```
 
-2. **HuggingFace Authenticated Cache**:
-   The distilled LTX-Video model (~39 GB) is cached at `~/.cache/huggingface/hub/models--Lightricks--LTX-Video-0.9.8-13B-distilled`. To bypass anonymous rate limits during snapshot validation, supply your HuggingFace token:
-   ```bash
-   export HF_TOKEN="your_huggingface_token"
-   ```
+---
 
-### Execution Features
+## 2. Running the API Server
 
-- **MPS CPU Offloading**:
-  Uses Diffusers `enable_model_cpu_offload(device="mps")` which dynamically maps pipeline components (Transformer, VAE, Text Encoder) to the Mac GPU only when active, keeping total system VRAM under **10 GB** (safely avoiding unified memory swaps).
-- **GPU Serialization Queue**:
-  Implements an async FIFO queue (`asyncio.Lock()`) wrapped in FastAPI's `run_in_threadpool`. This serializes model calls, guaranteeing only one generation runs at a time and preventing concurrent Out of Memory (OOM) crashes.
-- **Fast Startup / Mock Toggle**:
-  To support instant frontend UI/UX testing without compiled model initialization, launch with the `MOCK_VIDEO=true` toggle. In this mode, the server starts in **0.1 seconds** and returns high-quality synthetic panning shots from HuggingFace datasets after a simulated 4-second delay.
-
-### Launching the Server
+Run the server using Python from the project root:
 
 **Standard (Real ML) Mode**:
 ```bash
-HF_TOKEN=hf_... MOCK_VIDEO=false /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -u server.py
+# Set MOCK_VIDEO=false to run actual model inference
+MOCK_VIDEO=false python src/server.py
 ```
 
-**Mock Demo Mode**:
+**Mock Demo Mode** (Instant startup, perfect for frontend development):
 ```bash
-MOCK_VIDEO=true /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -u server.py
+# Runs immediately (0.1s startup) using pre-packaged or online mock video samples
+MOCK_VIDEO=true python src/server.py
 ```
 
 ---
 
-## 2. Remote Ollama Integration via Tailscale
+## 3. Running Tests
 
-To leverage an intelligent LLM for prompt expansion without overloading the local Mac CPU/GPU, the server routes prompt enhancement requests to a Tailscale-networked Lenovo server running Ollama.
-
-### SSH Tunnel Mapping
-Because the remote Ollama daemon listens only on localhost (`127.0.0.1:11434`) inside the Lenovo box, establish an SSH local port-forwarding tunnel on your Mac:
-
+Run the self-contained integration tests to verify the API endpoints (runs immediately using mock mode and does not download large model weights):
 ```bash
-ssh -N -L 11434:127.0.0.1:11434 lenovo
+python tests/test_server.py
 ```
-
-This maps your local `localhost:11434` directly to the remote server.
-
-### Robust Failover Enhancement
-In `server.py`, the `/enhance` API acts as a client:
-1. Queries the tunneled Ollama daemon requesting the `gemma3:4b` model.
-2. If the tunnel is disrupted or Ollama times out (e.g. during a cold-start load of 60 seconds), it automatically prints a warning and falls back to a local, rule-based mock enhancer.
-3. This guarantees that user interactions on the UI are never blocked.
 
 ---
 
-## 3. Frontend Route Integration (`VideoGenV2.vue`)
+## 4. Key Implementation Details
 
-The updated high-fidelity video generator interface is exposed at the `/v2/video-gen` route.
-
-### Design Elements
-- **Aesthetic Brand Identity**: Uses Katana's design system tokens (`text-ink`, `bg-surface`, and the signature soft purple buttons `bg-brand`), preventing generic layouts.
-- **Dynamic Settings Pills**: Features interactive modal dialogs allowing the user to configure variables (e.g. Watermark, Subtitles, Story flow) and remove/ replenishes them instantly via active pills.
-- **Backdrop Blurs**: Backdrop filters are integrated on all dialogs, giving a sleek glassmorphic focus overlay.
-- **Interactive Music Selector**: Contains a stylized audio style grid to pick background music categories (e.g. Upbeat, Corporate, Synthwave).
+*   **MPS CPU Offloading**: Uses Diffusers `enable_model_cpu_offload(device="mps")` which dynamically maps pipeline components (Transformer, VAE, Text Encoder) to the Mac GPU only when active, keeping total system VRAM under **10 GB** (safely avoiding unified memory swaps).
+*   **GPU Serialization Queue**: Implements an async FIFO queue (`asyncio.Lock()`) wrapped in FastAPI's `run_in_threadpool`. This serializes model calls, guaranteeing only one generation runs at a time and preventing concurrent Out of Memory (OOM) crashes.
+*   **Robust Prompt Enhancement Fallback**: The `/enhance` API queries the tunneled Ollama daemon requesting the `gemma3:4b` model. If the tunnel is disrupted or Ollama times out (e.g. during a cold-start load of 60 seconds), it automatically prints a warning and falls back to a local, rule-based mock enhancer.

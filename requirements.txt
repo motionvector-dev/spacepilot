@@ -1,0 +1,17 @@
+# Core Web API
+fastapi>=0.100.0
+uvicorn>=0.22.0
+pydantic>=2.0
+
+# ML and Deep Learning Frameworks
+# Note: For Apple Silicon (MPS) or CUDA, install the appropriate torch binaries.
+torch>=2.1.0
+transformers>=4.36.0
+diffusers>=0.25.0
+accelerate>=0.25.0
+
+# Utilities
+pillow
+huggingface_hub
+sentencepiece
+protobuf

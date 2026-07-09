@@ -4,6 +4,11 @@ import time
 # Enable MPS fallback to CPU for unsupported ops (must be set before torch import)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+import sys
+# Add current directory to path to ensure relative/local imports work
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
 import uuid
 import base64
 import re
