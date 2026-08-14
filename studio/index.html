@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pluto Studio — Prompt Video Studio & 4K Chain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="studio-header">
+      <div class="brand-section">
+        <div class="logo-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <span class="title-main">PLUTO</span>
+          <span class="title-sub">STUDIO</span>
+          <span class="version-tag">2.5 PRO</span>
+        </div>
+      </div>
+
+      <!-- GPU Telemetry Pill -->
+      <div class="telemetry-bar" id="telemetryBar">
+        <div class="telemetry-item gpu-status">
+          <span class="status-dot offline" id="gpuStatusDot"></span>
+          <span class="status-text" id="gpuStatusText">GPU Offline (Mock Mode)</span>
+        </div>
+        <div class="telemetry-divider"></div>
+        <div class="telemetry-item">
+          <span class="meta-label">VRAM</span>
+          <span class="meta-val" id="vramText">-- / 44 GiB</span>
+        </div>
+        <div class="telemetry-divider"></div>
+        <div class="telemetry-item">
+          <span class="meta-label">Cost</span>
+          <span class="meta-val cost-val" id="costText">$0.00</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="header-actions">
+        <button class="btn-secondary btn-sm" id="btnLaunchGpu">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          <span id="gpuActionLabel">Launch Spot GPU</span>
+        </button>
+        <button class="btn-icon" id="btnRefresh" title="Refresh State">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (3-Column Layout) -->
+    <main class="studio-workspace">
+      
+      <!-- Left Column: Asset Bin -->
+      <aside class="panel-sidebar asset-bin">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Assets</span>
+            <span class="asset-count" id="assetCount">0</span>
+          </div>
+          <button class="btn-ghost-sm" id="btnSyncAssets" title="Sync All">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          </button>
+        </div>
+
+        <div class="asset-filter-bar">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="4k">4K UHD</button>
+          <button class="filter-tab" data-filter="takes">Takes</button>
+        </div>
+
+        <div class="asset-grid" id="assetGrid">
+          <!-- Populated dynamically -->
+          <div class="empty-state">
+            <div class="empty-icon">🎬</div>
+            <p>No video clips yet.<br>Type a prompt below to generate your first clip!</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Column: Viewport & Hero Prompt Bar -->
+      <section class="panel-center">
+        
+        <!-- Player Canvas Viewport -->
+        <div class="viewport-container">
+          <div class="canvas-wrapper" id="canvasWrapper">
+            <div class="canvas-bounds" id="canvasBounds">
+              <video id="mainVideoPlayer" playsinline loop crossorigin="anonymous"></video>
+              <div class="video-overlay-bounds">
+                <div class="bound-tag" id="resolutionTag">1024 × 576 (16:9)</div>
+              </div>
+              <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="spinner"></div>
+                <div class="loading-text" id="loadingText">Generating video on L40S GPU...</div>
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Floating Controls -->
+          <div class="floating-transport">
+            <button class="transport-btn" id="btnPlayPause" title="Play / Pause (Space)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
+            <div class="timecode-display" id="timecodeDisplay">00:00.0 / 00:04.0</div>
+            <div class="transport-divider"></div>
+            <button class="action-pill" id="btnQuickUpscale" title="Local Mac CoreML 4K Upscale">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              <span>Upscale 4K</span>
+            </button>
+            <button class="action-pill" id="btnDownloadCurrent" title="Download MP4">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              <span>Export</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hero Prompt Bar -->
+        <div class="hero-prompt-container">
+          <div class="prompt-box-card">
+            
+            <!-- Prompt Input -->
+            <div class="prompt-input-row">
+              <textarea 
+                id="promptInput" 
+                class="prompt-textarea" 
+                placeholder="Describe what you want to see in motion (e.g. An astronaut riding a horse on the moon, cinematic lighting, 4k)..." 
+                rows="2"
+              ></textarea>
+              <button class="btn-enhance" id="btnEnhance" title="AI Prompt Enhancer">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                <span>Enhance</span>
+              </button>
+            </div>
+
+            <!-- Preset Tokens -->
+            <div class="preset-chips-row">
+              <span class="chips-label">Presets:</span>
+              <button class="chip" data-token="cinematic lighting, 35mm lens, photorealistic">🎬 Cinematic</button>
+              <button class="chip" data-token="Brownian particle diffusion, vector field motion, 4k">✨ Diffusion Physics</button>
+              <button class="chip" data-token="smooth drone orbit, golden hour, ultra-detailed">🌅 Golden Orbit</button>
+              <button class="chip" data-token="slow motion fluid dynamics, hyper-realistic">💧 Slow Mo</button>
+            </div>
+
+            <!-- Bottom Controls & Generate Button -->
+            <div class="prompt-footer-row">
+              <div class="generation-params">
+                
+                <!-- Duration -->
+                <div class="param-group">
+                  <span class="param-label">Duration</span>
+                  <div class="pill-selector" id="durationSelector">
+                    <button class="pill-btn active" data-val="4.0">4s</button>
+                    <button class="pill-btn" data-val="5.0">5s</button>
+                    <button class="pill-btn" data-val="10.0">10s</button>
+                  </div>
+                </div>
+
+                <!-- Aspect Ratio / Resolution -->
+                <div class="param-group">
+                  <span class="param-label">Aspect</span>
+                  <div class="pill-selector" id="aspectSelector">
+                    <button class="pill-btn active" data-w="1024" data-h="576">16:9 (1024×576)</button>
+                    <button class="pill-btn" data-w="1280" data-h="704">1.82:1 Scope</button>
+                  </div>
+                </div>
+
+                <!-- Seed -->
+                <div class="param-group seed-group">
+                  <span class="param-label">Seed</span>
+                  <input type="number" id="seedInput" class="seed-input" placeholder="Random" min="0">
+                </div>
+              </div>
+
+              <button class="btn-generate" id="btnGenerate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>Generate</span>
+                <span class="shortcut-tag">⌘↵</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Inspector & 4K Super Resolution -->
+      <aside class="panel-sidebar inspector-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Clip Inspector</span>
+          </div>
+        </div>
+
+        <div class="inspector-content" id="inspectorContent">
+          <div class="meta-section">
+            <h4 class="section-title">Properties</h4>
+            <div class="prop-row">
+              <span class="prop-label">Resolution</span>
+              <span class="prop-val" id="inspResolution">1024 × 576</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Frame Rate</span>
+              <span class="prop-val">24 fps (Progressive)</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Duration</span>
+              <span class="prop-val" id="inspDuration">4.0s (97 frames)</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Seed</span>
+              <span class="prop-val" id="inspSeed">--</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">File Size</span>
+              <span class="prop-val" id="inspSize">--</span>
+            </div>
+          </div>
+
+          <!-- 4K Super Resolution Section -->
+          <div class="upscale-card">
+            <div class="upscale-header">
+              <div class="upscale-badge">⚡ 4K CHAIN</div>
+              <span class="upscale-title">Super-Resolution</span>
+            </div>
+            <p class="upscale-desc">Uses local Apple Silicon CoreML & VideoToolbox to upscale 1024×576 to 3840×2160 UHD.</p>
+
+            <div class="upscale-meta-box">
+              <div class="scale-stat">
+                <span class="scale-lbl">Input</span>
+                <span class="scale-val">1024×576</span>
+              </div>
+              <div class="scale-arrow">──▶</div>
+              <div class="scale-stat">
+                <span class="scale-lbl">Output</span>
+                <span class="scale-val highlight">3840×2160 UHD</span>
+              </div>
+            </div>
+
+            <button class="btn-upscale-4k" id="btnRun4kUpscale">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Export 4K Master (Local CoreML)</span>
+            </button>
+            <div class="upscale-status" id="upscaleStatus"></div>
+          </div>
+
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Bottom Scrubber & Multi-Track Timeline -->
+    <footer class="studio-timeline-bar">
+      <div class="timeline-header">
+        <div class="timeline-tools">
+          <span class="track-name">🎬 Video Track (A-Roll)</span>
+        </div>
+        <div class="timeline-timecode" id="timelineScrubTime">00:00:00 / 00:00:04</div>
+      </div>
+      
+      <div class="timeline-track-container" id="timelineTrackContainer">
+        <div class="timeline-ruler" id="timelineRuler"></div>
+        <div class="timeline-clips-track" id="timelineClipsTrack">
+          <div class="timeline-clip-item active" id="timelineActiveClip">
+            <div class="clip-thumb-preview"></div>
+            <div class="clip-info">
+              <span class="clip-name" id="timelineClipName">Select a clip</span>
+              <span class="clip-dur" id="timelineClipDur">4.0s</span>
+            </div>
+            <div class="audio-waveform-bars"></div>
+          </div>
+        </div>
+        <div class="timeline-playhead" id="timelinePlayhead" style="left: 0%;"></div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="studio.js"></script>
+</body>
+</html>

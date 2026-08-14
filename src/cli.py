@@ -309,6 +309,19 @@ def cmd_sync(args, cfg):
     print("Sync complete!")
 
 
+def cmd_studio(args, cfg):
+    port = args.port or 8088
+    print("──────────────────────────────────────────────────────────────────────────")
+    print(f"  🎬 LAUNCHING PLUTO STUDIO ON http://localhost:{port}")
+    print("──────────────────────────────────────────────────────────────────────────")
+    studio_script = PLUTO_ROOT / "src" / "studio_api.py"
+    if args.open:
+        import webbrowser
+        time.sleep(1.0)
+        webbrowser.open(f"http://localhost:{port}")
+    os.system(f"PLUTO_STUDIO_PORT={port} /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python {studio_script}")
+
+
 def cmd_terminate(args, cfg):
     inst = get_instance_info(cfg)
     if not inst:
@@ -337,6 +350,11 @@ def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(description="Pluto Remote GPU Box & Video Generation Tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # studio
+    studio_p = subparsers.add_parser("studio", help="Launch interactive Pluto Studio Web UI")
+    studio_p.add_argument("--port", type=int, default=8088, help="Port to bind (default: 8088)")
+    studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
     # status
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
@@ -372,6 +390,7 @@ def main():
     args = parser.parse_args()
 
     dispatch = {
+        "studio": cmd_studio,
         "status": cmd_status,
         "launch": cmd_launch,
         "deploy": cmd_deploy,
