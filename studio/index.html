@@ -1,166 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pluto Studio — Prompt Video Studio & 4K Chain</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="studio.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pluto Studio · AI Director & MotionVector 4K Suite</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- KaTeX for live mathematical typesetting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+  <link rel="stylesheet" href="studio.css" />
 </head>
-<body class="dark-theme">
-  <div class="app-container">
-    
-    <!-- Top Header -->
+<body class="obsidian-theme">
+  <div class="app-root">
+
+    <!-- ── Top Navigation Bar (Cardboard / Premiere Header) ─────── -->
     <header class="studio-header">
-      <div class="brand-section">
-        <div class="logo-badge">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
+      <div class="header-left">
+        <div class="brand-logo">
+          <div class="logo-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="url(#logoGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+              <defs>
+                <linearGradient id="logoGrad" x1="4.5" y1="3.5" x2="19.5" y2="20.5" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#38bdf8"/>
+                  <stop offset="1" stop-color="#6366f1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="brand-title">PLUTO <span class="brand-sub">STUDIO</span></span>
+          <span class="version-pill">2.5 PRO</span>
         </div>
-        <div class="brand-title">
-          <span class="title-main">PLUTO</span>
-          <span class="title-sub">STUDIO</span>
-          <span class="version-tag">2.5 PRO</span>
+
+        <div class="project-title-container">
+          <span class="project-divider">/</span>
+          <input type="text" id="projectTitleInput" class="project-title-input" value="Diffusion Physics Documentary · Ep 01" spellcheck="false" />
         </div>
       </div>
 
-      <!-- GPU Telemetry Pill -->
-      <div class="telemetry-bar" id="telemetryBar">
-        <div class="telemetry-item gpu-status">
-          <span class="status-dot offline" id="gpuStatusDot"></span>
-          <span class="status-text" id="gpuStatusText">GPU Offline (Mock Mode)</span>
-        </div>
-        <div class="telemetry-divider"></div>
-        <div class="telemetry-item">
+      <!-- Center View Switcher -->
+      <div class="mode-tabs-container" role="tablist" aria-label="Workspace mode">
+        <button id="tabDirector" class="mode-tab active" title="AI Director Storyboard Mode" role="tab" aria-selected="true" aria-controls="directorView">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>AI Director</span>
+          <span class="tab-badge">5 Scenes</span>
+        </button>
+        <button id="tabVibeEditor" class="mode-tab" title="Vibe Editor & MotionVector Canvas" role="tab" aria-selected="false" aria-controls="vibeView">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Vibe Canvas</span>
+        </button>
+      </div>
+
+      <!-- Right HUD & Actions -->
+      <div class="header-right">
+        <!-- Command Palette Trigger (⌘K) -->
+        <button id="btnOpenCommandPalette" class="cmd-palette-btn" title="Open Command Palette (⌘K)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span class="cmd-text">Quick Actions</span>
+          <kbd class="cmd-kbd">⌘K</kbd>
+        </button>
+
+        <!-- Live Spot GPU Telemetry Capsule -->
+        <div id="gpuTelemetryCapsule" class="telemetry-capsule" title="Click for GPU Hardware Diagnostics">
+          <span id="gpuStatusDot" class="status-dot offline"></span>
+          <span id="gpuStatusText" class="meta-val">GPU Offline (Mock Mode)</span>
+          <span class="telemetry-sep">·</span>
           <span class="meta-label">VRAM</span>
-          <span class="meta-val" id="vramText">-- / 44 GiB</span>
+          <span id="vramText" class="meta-val">-- / 44 GiB</span>
+          <span class="telemetry-sep">·</span>
+          <span id="costText" class="cost-val">$0.00</span>
         </div>
-        <div class="telemetry-divider"></div>
-        <div class="telemetry-item">
-          <span class="meta-label">Cost</span>
-          <span class="meta-val cost-val" id="costText">$0.00</span>
-        </div>
-      </div>
 
-      <!-- Quick Actions -->
-      <div class="header-actions">
-        <button class="btn-secondary btn-sm" id="btnLaunchGpu">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+        <button id="btnLaunchGpu" class="btn-gpu-action" title="Start AWS L40S Spot GPU Instance">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span id="gpuActionLabel">Launch Spot GPU</span>
         </button>
-        <button class="btn-icon" id="btnRefresh" title="Refresh State">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+
+        <button id="btnHeaderExport" class="btn-master-export" title="Export 4K ProRes 422 Master Documentary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Export Master</span>
         </button>
       </div>
     </header>
 
-    <!-- Main Workspace (3-Column Layout) -->
-    <main class="studio-workspace">
-      
-      <!-- Left Column: Asset Bin -->
-      <aside class="panel-sidebar asset-bin">
-        <div class="panel-header">
-          <div class="panel-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            <span>Assets</span>
-            <span class="asset-count" id="assetCount">0</span>
-          </div>
-          <button class="btn-ghost-sm" id="btnSyncAssets" title="Sync All">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
-          </button>
-        </div>
+    <!-- ── Main Workspace Area ─────────────────────────────────── -->
+    <main class="studio-main" aria-label="Studio workspace">
 
-        <div class="asset-filter-bar">
-          <button class="filter-tab active" data-filter="all">All</button>
-          <button class="filter-tab" data-filter="4k">4K UHD</button>
-          <button class="filter-tab" data-filter="takes">Takes</button>
-        </div>
-
-        <div class="asset-grid" id="assetGrid">
-          <!-- Populated dynamically -->
-          <div class="empty-state">
-            <div class="empty-icon">🎬</div>
-            <p>No video clips yet.<br>Type a prompt below to generate your first clip!</p>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Center Column: Viewport & Hero Prompt Bar -->
-      <section class="panel-center">
+      <!-- ======================================================= -->
+      <!-- VIEW A: AI DIRECTOR STORYBOARD MODE                     -->
+      <!-- ======================================================= -->
+      <section id="directorView" class="director-storyboard-view" role="tabpanel" aria-labelledby="tabDirector">
         
-        <!-- Player Canvas Viewport -->
-        <div class="viewport-container">
-          <div class="canvas-wrapper" id="canvasWrapper">
-            <div class="canvas-bounds" id="canvasBounds">
-              <video id="mainVideoPlayer" playsinline loop crossorigin="anonymous"></video>
-              <div class="video-overlay-bounds">
-                <div class="bound-tag" id="resolutionTag">1024 × 576 (16:9)</div>
+        <!-- Storyboard Concept Hero Bar -->
+        <div class="storyboard-hero-bar">
+          <div class="storyboard-input-box">
+            <div class="director-avatar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </div>
+            <input 
+              type="text" 
+              id="directorTopicInput" 
+              class="director-topic-input" 
+              placeholder="What topic do you want to explain? (e.g. But how do AI diffusion models actually work?)"
+              value="But how do AI diffusion models actually work? (Welch Labs / 3Blue1Brown style)"
+            />
+            <button id="btnGenerateStoryboard" class="btn-generate-storyboard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Generate Storyboard Reel</span>
+            </button>
+          </div>
+
+          <!-- Creative Inspiration Chips -->
+          <div class="topic-chips-shelf">
+            <span class="shelf-label">Inspirations:</span>
+            <button class="topic-chip active" data-topic="But how do AI diffusion models actually work? (Welch Labs / 3Blue1Brown style)">
+              <span>📈 AI Diffusion Physics</span>
+            </button>
+            <button class="topic-chip" data-topic="The Mathematics of Quantum Superposition & Entanglement">
+              <span>⚛️ Quantum Physics</span>
+            </button>
+            <button class="topic-chip" data-topic="Visualizing Transformer Attention Matrices & Residual Streams">
+              <span>🧠 Transformer Attention</span>
+            </button>
+            <button class="topic-chip" data-topic="General Relativity & Black Hole Photon Spheres">
+              <span>🕳️ Black Hole Physics</span>
+            </button>
+            <button class="topic-chip" data-topic="Fourier Transform: Transforming Time into Frequency">
+              <span>🌊 Fourier Transform</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Storyboard Reel Header -->
+        <div class="storyboard-reel-header">
+          <div class="reel-title-group">
+            <h2 class="reel-heading">Documentary Storyboard</h2>
+            <span id="reelSceneCount" class="reel-count-tag">5 Scenes · 23s Total</span>
+            <span class="p0-tag">P0 Composite Order Enforced</span>
+          </div>
+
+          <div class="reel-actions">
+            <button id="btnRenderAllTakes" class="btn-secondary-action">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Render All Scenes (L40S)</span>
+            </button>
+            <button id="btnExportFullDoc" class="btn-primary-action">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Export 4K Master Documentary</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Storyboard Scene Cards Horizontal Reel -->
+        <div id="storyboardCardsGrid" class="storyboard-cards-grid">
+          <!-- Populated dynamically with KaTeX math and take auditions -->
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW B: VIBE EDITOR & 4K MOTIONVECTOR CANVAS           -->
+      <!-- ======================================================= -->
+      <section id="vibeView" class="vibe-editor-workspace" style="display: none;" role="tabpanel" aria-labelledby="tabVibeEditor">
+
+        <!-- Left Column: Asset Bin & Take Library (Premiere Project Bin) -->
+        <aside class="panel-sidebar asset-bin-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              <span>Project Bin</span>
+              <span id="assetCount" class="asset-count">0</span>
+            </div>
+            <button id="btnSyncAssets" class="btn-icon-tiny" title="Refresh local asset files">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            </button>
+          </div>
+
+          <div class="asset-filter-bar" role="tablist" aria-label="Asset filter">
+            <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button class="filter-tab" data-filter="masters" role="tab" aria-selected="false">4K Masters</button>
+            <button class="filter-tab" data-filter="takes" role="tab" aria-selected="false">Takes</button>
+          </div>
+
+          <div id="assetGrid" class="asset-grid custom-scrollbar">
+            <!-- Dynamic clips list -->
+          </div>
+        </aside>
+
+        <!-- Center Column: Cinema Viewport & Prompt Bar (DaVinci Player) -->
+        <div class="panel-main-viewport">
+          <div class="viewport-canvas-container">
+            
+            <div class="player-wrapper">
+              <!-- Video Layer -->
+              <video id="mainVideoPlayer" class="main-video-player" playsinline preload="auto" aria-label="Video preview player"></video>
+
+              <!-- Live KaTeX Mathematical Overlay Card (Draggable / Modifiable) -->
+              <div id="canvasMathOverlay" class="canvas-math-overlay pos-bottom-left">
+                <div id="overlayGlassCard" class="overlay-glass-card">
+                  <div class="card-top-bar">
+                    <div id="cardAccentBar" class="card-accent-bar"></div>
+                    <span id="cardTitleText" class="card-title-text">Diffusion Velocity Field</span>
+                    <span class="card-engine-tag">4K VELLO</span>
+                  </div>
+                  <div class="card-divider-line"></div>
+                  <!-- KaTeX rendered container -->
+                  <div id="cardFormulaKaTeX" class="card-formula-katex"></div>
+                  <div class="card-footer-sub">
+                    <span>MotionVector · Native Vector Overlay</span>
+                  </div>
+                </div>
               </div>
-              <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-                <div class="spinner"></div>
-                <div class="loading-text" id="loadingText">Generating video on L40S GPU...</div>
+
+              <!-- Top Left Resolution Badge -->
+              <div class="resolution-badge-container">
+                <span id="resolutionTag" class="bound-tag preview-tag">PREVIEW · SD (1024×576)</span>
+              </div>
+
+              <!-- Safe Margins / Grid Overlay (Toggleable) -->
+              <div id="safeMarginsOverlay" class="safe-margins-overlay" style="display: none;">
+                <div class="safe-margin-box action-safe"></div>
+                <div class="safe-margin-box title-safe"></div>
+                <div class="center-crosshair"></div>
+              </div>
+
+              <!-- Loading & Generating Overlay -->
+              <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                <div class="spinner-core"></div>
+                <div id="loadingText" class="loading-label">Generating on Spot GPU...</div>
                 <div class="progress-bar-track">
-                  <div class="progress-bar-fill" id="progressBarFill"></div>
+                  <div id="progressBarFill" class="progress-bar-fill"></div>
                 </div>
               </div>
             </div>
+
+            <!-- Interactive Viewport Scrubber Bar -->
+            <div class="viewport-scrubber-container">
+              <div id="viewportScrubberTrack" class="viewport-scrubber-track" title="Click or Drag to Scrub Video">
+                <div id="viewportProgressBuffered" class="viewport-scrubber-buffered"></div>
+                <div id="viewportProgressFill" class="viewport-scrubber-fill"></div>
+                <div id="viewportProgressHandle" class="viewport-scrubber-handle"></div>
+              </div>
+            </div>
+
+            <!-- Floating Viewport Transport Controls (DaVinci Floating Bar) -->
+            <div class="viewport-floating-transport">
+              <div class="transport-shuttle">
+                <button id="btnSkipBack" class="btn-transport" title="Step Back 1s (J)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M11 19V5l-8 7 8 7zm2-14v14l8-7-8-7z"/></svg>
+                </button>
+                <button id="btnPlayPause" class="btn-transport play-btn" title="Play / Pause (Space / K)">
+                  <span id="playIcon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
+                </button>
+                <button id="btnSkipFwd" class="btn-transport" title="Step Forward 1s (L)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l8-7-8-7zm10 0v14l8-7-8-7z"/></svg>
+                </button>
+              </div>
+
+              <div class="timecode-pill">
+                <span id="timecodeSMPTE" class="timecode-mono">00:00:00:00</span>
+                <span class="timecode-sep">/</span>
+                <span id="timecodeDuration" class="timecode-mono-dim">00:00:04:00</span>
+              </div>
+
+              <div class="transport-divider"></div>
+
+              <!-- Volume Control & Mute -->
+              <div class="volume-control-group" style="display: flex; align-items: center; gap: 6px;">
+                <button id="btnMuteToggle" class="btn-transport" title="Mute / Unmute (M)">
+                  <span id="volumeIcon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                  </span>
+                </button>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="volume-slider" style="width: 65px; accent-color: var(--accent-emerald, #10b981); cursor: pointer;" title="Volume">
+              </div>
+
+              <!-- Playback Speed -->
+              <div class="speed-control-group">
+                <button id="btnSpeedToggle" class="btn-transport-tool" title="Playback Speed">
+                  <span id="speedLabel">1.0×</span>
+                </button>
+              </div>
+
+              <div class="transport-divider"></div>
+
+              <button id="btnToggleOverlay" class="btn-transport-tool active" title="Toggle LaTeX Overlay Visibility">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                <span>Math Card</span>
+              </button>
+
+              <button id="btnToggleGrid" class="btn-transport-tool" title="Toggle Safe Margins Grid">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+                <span>Grid</span>
+              </button>
+
+              <button id="btnQuickUpscale" class="btn-transport-accent" title="Composite 4K Master (P0 Order)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                <span>✦ Composite 4K Master</span>
+              </button>
+
+              <button id="btnDownloadCurrent" class="btn-transport-tool" title="Download Active Video File">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+
+              <!-- Fullscreen Button -->
+              <button id="btnFullscreen" class="btn-transport-tool" title="Toggle Fullscreen (F)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Quick Floating Controls -->
-          <div class="floating-transport">
-            <button class="transport-btn" id="btnPlayPause" title="Play / Pause (Space)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            </button>
-            <div class="timecode-display" id="timecodeDisplay">00:00.0 / 00:04.0</div>
-            <div class="transport-divider"></div>
-            <button class="action-pill" id="btnQuickUpscale" title="Local Mac CoreML 4K Upscale">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-              <span>Upscale 4K</span>
-            </button>
-            <button class="action-pill" id="btnDownloadCurrent" title="Download MP4">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              <span>Export</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Hero Prompt Bar -->
-        <div class="hero-prompt-container">
-          <div class="prompt-box-card">
-            
-            <!-- Prompt Input -->
+          <!-- Hero Prompt Input Bar (Vibe Generation Engine) -->
+          <div class="prompt-bar-container">
             <div class="prompt-input-row">
               <textarea 
                 id="promptInput" 
-                class="prompt-textarea" 
-                placeholder="Describe what you want to see in motion (e.g. An astronaut riding a horse on the moon, cinematic lighting, 4k)..." 
+                class="hero-prompt-input" 
                 rows="2"
+                placeholder="Describe the motion and scene plate you want to generate (e.g. Microscopic Brownian motion of particles diffusing through dark viscous fluid, illuminated sparks, 4k)..."
               ></textarea>
-              <button class="btn-enhance" id="btnEnhance" title="AI Prompt Enhancer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <button id="btnEnhance" class="btn-enhance-prompt" title="Enhance prompt with cinematic camera tokens">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
                 <span>Enhance</span>
               </button>
             </div>
 
-            <!-- Preset Tokens -->
-            <div class="preset-chips-row">
-              <span class="chips-label">Presets:</span>
-              <button class="chip" data-token="cinematic lighting, 35mm lens, photorealistic">🎬 Cinematic</button>
-              <button class="chip" data-token="Brownian particle diffusion, vector field motion, 4k">✨ Diffusion Physics</button>
-              <button class="chip" data-token="smooth drone orbit, golden hour, ultra-detailed">🌅 Golden Orbit</button>
-              <button class="chip" data-token="slow motion fluid dynamics, hyper-realistic">💧 Slow Mo</button>
-            </div>
+            <div class="prompt-controls-row">
+              <!-- Preset Chips -->
+              <div class="prompt-chips-shelf">
+                <button class="chip" data-token="cinematic 35mm lighting, photorealistic, 4k">🎬 Cinematic</button>
+                <button class="chip" data-token="Brownian motion particles, dark viscous fluid, glowing sparks">✨ Diffusion Physics</button>
+                <button class="chip" data-token="3D density probability manifold surface, vector field trajectories">📈 Density Manifold</button>
+                <button class="chip" data-token="cinematic slow motion, high speed shutter">💧 Slow Mo</button>
+              </div>
 
-            <!-- Bottom Controls & Generate Button -->
-            <div class="prompt-footer-row">
-              <div class="generation-params">
-                
+              <div class="controls-right-group">
                 <!-- Duration -->
-                <div class="param-group">
-                  <span class="param-label">Duration</span>
+                <div class="control-group">
+                  <span class="group-label">Duration</span>
                   <div class="pill-selector" id="durationSelector">
                     <button class="pill-btn active" data-val="4.0">4s</button>
                     <button class="pill-btn" data-val="5.0">5s</button>
@@ -168,124 +350,297 @@
                   </div>
                 </div>
 
-                <!-- Aspect Ratio / Resolution -->
-                <div class="param-group">
-                  <span class="param-label">Aspect</span>
+                <!-- Aspect -->
+                <div class="control-group">
+                  <span class="group-label">Aspect</span>
                   <div class="pill-selector" id="aspectSelector">
-                    <button class="pill-btn active" data-w="1024" data-h="576">16:9 (1024×576)</button>
-                    <button class="pill-btn" data-w="1280" data-h="704">1.82:1 Scope</button>
+                    <button class="pill-btn active" data-w="1024" data-h="576">16:9</button>
+                    <button class="pill-btn" data-w="1024" data-h="560">1.82:1 Scope</button>
                   </div>
                 </div>
 
-                <!-- Seed -->
-                <div class="param-group seed-group">
-                  <span class="param-label">Seed</span>
-                  <input type="number" id="seedInput" class="seed-input" placeholder="Random" min="0">
+                <!-- Takes Count -->
+                <div class="control-group">
+                  <span class="group-label">Takes</span>
+                  <div class="pill-selector" id="takesSelector">
+                    <button class="pill-btn active" data-takes="1">1</button>
+                    <button class="pill-btn" data-takes="3">3 Takes</button>
+                  </div>
+                </div>
+
+                <!-- Generate Button -->
+                <button id="btnGenerate" class="btn-generate-plate">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span>Generate Plate</span>
+                  <kbd class="kbd-hint">⌘↵</kbd>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: MotionVector & LaTeX Inspector (Premiere Effect Controls) -->
+        <aside class="panel-sidebar inspector-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>MotionVector Inspector</span>
+            </div>
+          </div>
+
+          <div class="inspector-content custom-scrollbar">
+            
+            <!-- Section 1: LaTeX Math Overlay -->
+            <div class="inspector-section">
+              <div class="section-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                <span>VECTOR OVERLAY (LATEX / TEXT)</span>
+              </div>
+
+              <div class="control-field">
+                <label class="field-label">Card Title</label>
+                <input type="text" id="inpCardTitle" class="studio-input" value="Diffusion Velocity Field" />
+              </div>
+
+              <div class="control-field">
+                <label class="field-label">LaTeX / Math Formula</label>
+                <textarea id="inpCardFormula" class="studio-textarea math-font" rows="2">dx_t = f(x_t)dt + g(t)dw_t</textarea>
+              </div>
+
+              <!-- Live KaTeX Inspector Preview -->
+              <div class="katex-live-preview-box">
+                <span class="preview-mini-label">KaTeX Live Render:</span>
+                <div id="inspectorKaTeXPreview" class="inspector-katex-render"></div>
+              </div>
+
+              <div class="control-field">
+                <label class="field-label">Card Accent Color</label>
+                <div class="color-palette-dots">
+                  <span class="color-dot active" data-color="#38bdf8" style="background:#38bdf8"></span>
+                  <span class="color-dot" data-color="#10b981" style="background:#10b981"></span>
+                  <span class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+                  <span class="color-dot" data-color="#f59e0b" style="background:#f59e0b"></span>
+                  <span class="color-dot" data-color="#f43f5e" style="background:#f43f5e"></span>
                 </div>
               </div>
 
-              <button class="btn-generate" id="btnGenerate">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span>Generate</span>
-                <span class="shortcut-tag">⌘↵</span>
+              <div class="control-field">
+                <label class="field-label">Position Anchor</label>
+                <div class="pill-selector full-width" id="posSelector">
+                  <button class="pill-btn active" data-pos="bottom_left">Bottom Left</button>
+                  <button class="pill-btn" data-pos="center">Center</button>
+                  <button class="pill-btn" data-pos="bottom_third">Lower Third</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: P0 Composite Order Export -->
+            <div class="inspector-section">
+              <div class="section-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <span>4K COMPOSITOR (P0 ORDER)</span>
+              </div>
+
+              <div class="p0-invariant-card">
+                <div class="p0-card-header">
+                  <span class="p0-badge">⚡ P0 COMPOSITE ORDER</span>
+                  <span class="p0-title">MotionVector 4K Master</span>
+                </div>
+                <p class="p0-desc">
+                  Upscales raw LTX video plate on Apple Neural Engine FIRST, then renders razor-sharp Vello LaTeX vectors at native 3840×2160 UHD.
+                </p>
+                <div class="p0-diagram">
+                  <div class="dia-step">Plate <strong>1024×576</strong></div>
+                  <div class="dia-arrow">──▶</div>
+                  <div class="dia-step master">Master <strong>3840×2160</strong></div>
+                </div>
+              </div>
+
+              <button id="btnRun4kUpscale" class="btn-render-master-4k">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Export 4K Master (Vello Composite)</span>
               </button>
+
+              <div id="upscaleStatus" class="upscale-status-text"></div>
             </div>
 
           </div>
-        </div>
+        </aside>
 
       </section>
 
-      <!-- Right Column: Inspector & 4K Super Resolution -->
-      <aside class="panel-sidebar inspector-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Clip Inspector</span>
-          </div>
-        </div>
-
-        <div class="inspector-content" id="inspectorContent">
-          <div class="meta-section">
-            <h4 class="section-title">Properties</h4>
-            <div class="prop-row">
-              <span class="prop-label">Resolution</span>
-              <span class="prop-val" id="inspResolution">1024 × 576</span>
-            </div>
-            <div class="prop-row">
-              <span class="prop-label">Frame Rate</span>
-              <span class="prop-val">24 fps (Progressive)</span>
-            </div>
-            <div class="prop-row">
-              <span class="prop-label">Duration</span>
-              <span class="prop-val" id="inspDuration">4.0s (97 frames)</span>
-            </div>
-            <div class="prop-row">
-              <span class="prop-label">Seed</span>
-              <span class="prop-val" id="inspSeed">--</span>
-            </div>
-            <div class="prop-row">
-              <span class="prop-label">File Size</span>
-              <span class="prop-val" id="inspSize">--</span>
-            </div>
-          </div>
-
-          <!-- 4K Super Resolution Section -->
-          <div class="upscale-card">
-            <div class="upscale-header">
-              <div class="upscale-badge">⚡ 4K CHAIN</div>
-              <span class="upscale-title">Super-Resolution</span>
-            </div>
-            <p class="upscale-desc">Uses local Apple Silicon CoreML & VideoToolbox to upscale 1024×576 to 3840×2160 UHD.</p>
-
-            <div class="upscale-meta-box">
-              <div class="scale-stat">
-                <span class="scale-lbl">Input</span>
-                <span class="scale-val">1024×576</span>
-              </div>
-              <div class="scale-arrow">──▶</div>
-              <div class="scale-stat">
-                <span class="scale-lbl">Output</span>
-                <span class="scale-val highlight">3840×2160 UHD</span>
-              </div>
-            </div>
-
-            <button class="btn-upscale-4k" id="btnRun4kUpscale">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              <span>Export 4K Master (Local CoreML)</span>
-            </button>
-            <div class="upscale-status" id="upscaleStatus"></div>
-          </div>
-
-        </div>
-      </aside>
-
     </main>
 
-    <!-- Bottom Scrubber & Multi-Track Timeline -->
-    <footer class="studio-timeline-bar">
-      <div class="timeline-header">
-        <div class="timeline-tools">
-          <span class="track-name">🎬 Video Track (A-Roll)</span>
-        </div>
-        <div class="timeline-timecode" id="timelineScrubTime">00:00:00 / 00:00:04</div>
-      </div>
+    <!-- ── Bottom Multi-Track Timeline (DaVinci / Premiere Style) ── -->
+    <footer class="studio-timeline-footer" aria-label="Multi-track timeline">
       
-      <div class="timeline-track-container" id="timelineTrackContainer">
-        <div class="timeline-ruler" id="timelineRuler"></div>
-        <div class="timeline-clips-track" id="timelineClipsTrack">
-          <div class="timeline-clip-item active" id="timelineActiveClip">
-            <div class="clip-thumb-preview"></div>
-            <div class="clip-info">
-              <span class="clip-name" id="timelineClipName">Select a clip</span>
-              <span class="clip-dur" id="timelineClipDur">4.0s</span>
+      <!-- Timeline Control Header -->
+      <div class="timeline-toolbar">
+        <div class="timeline-tools-left">
+          <button class="tool-btn active" title="Selection Tool (V)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7 18 3-7 7-3L3 3z"/></svg>
+          </button>
+          <button class="tool-btn" title="Razor Blade Split (C)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+          </button>
+          <button class="tool-btn active" title="Magnetic Snapping (N)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15-4-4 4-4"/><path d="M2 11h14a4 4 0 0 1 0 8H10"/></svg>
+          </button>
+          <span class="toolbar-sep">|</span>
+          <span class="active-clip-label" id="timelineClipName">Diffusion Velocity Field</span>
+        </div>
+
+        <div class="timeline-tools-right">
+          <div class="zoom-slider-group">
+            <span class="zoom-icon">−</span>
+            <input type="range" id="timelineZoomRange" min="50" max="200" value="100" class="zoom-range" />
+            <span class="zoom-icon">+</span>
+          </div>
+          <span id="timelineClipDur" class="clip-duration-tag">4.0s</span>
+        </div>
+      </div>
+
+      <!-- Multi-Track Timeline Body -->
+      <div class="timeline-tracks-body">
+        
+        <!-- Track Headers (Left Column) -->
+        <div class="track-headers-column">
+          <!-- Ruler Space -->
+          <div class="track-header-ruler-space">TRACKS</div>
+          <!-- V2 Track Header -->
+          <div class="track-header-item v2-header">
+            <span class="track-id">V2</span>
+            <span class="track-name">MotionVector</span>
+            <div class="track-toggles">
+              <button class="toggle-btn" title="Solo" aria-pressed="false">S</button>
+              <button class="toggle-btn" title="Mute" aria-pressed="false">M</button>
             </div>
-            <div class="audio-waveform-bars"></div>
+          </div>
+          <!-- V1 Track Header -->
+          <div class="track-header-item v1-header">
+            <span class="track-id">V1</span>
+            <span class="track-name">Video Plate (LTX)</span>
+            <div class="track-toggles">
+              <button class="toggle-btn" title="Solo" aria-pressed="false">S</button>
+              <button class="toggle-btn" title="Mute" aria-pressed="false">M</button>
+            </div>
+          </div>
+          <!-- A1 Track Header -->
+          <div class="track-header-item a1-header">
+            <span class="track-id">A1</span>
+            <span class="track-name">Kokoro Audio (48k)</span>
+            <div class="track-toggles">
+              <button class="toggle-btn" title="Solo" aria-pressed="false">S</button>
+              <button class="toggle-btn" title="Mute" aria-pressed="false">M</button>
+            </div>
           </div>
         </div>
-        <div class="timeline-playhead" id="timelinePlayhead" style="left: 0%;"></div>
+
+        <!-- Track Lanes & Ruler (Scrollable Canvas Area) -->
+        <div id="timelineScrollArea" class="timeline-scroll-area">
+          
+          <!-- SMPTE Time Ruler -->
+          <div class="timeline-time-ruler" id="timelineRuler">
+            <!-- Ruler Ticks generated in JS -->
+          </div>
+
+          <!-- Track Lanes Container -->
+          <div class="track-lanes-container" id="trackLanesContainer">
+            
+            <!-- V2 Track Lane: MotionVector Keyframe Blocks -->
+            <div class="track-lane v2-lane">
+              <div class="timeline-clip-block vector-clip" style="left: 0%; width: 100%;">
+                <div class="clip-inner">
+                  <span class="clip-icon">📐</span>
+                  <span class="clip-title-text">LaTeX: dx_t = f(x_t)dt + g(t)dw_t</span>
+                  <span class="keyframe-diamond" style="left: 10%;" title="Intro Keyframe (0.4s)">◆</span>
+                  <span class="keyframe-diamond" style="left: 88%;" title="Outro Keyframe (3.5s)">◆</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- V1 Track Lane: LTX Video Plate Thumbnails Strip -->
+            <div class="track-lane v1-lane">
+              <div class="timeline-clip-block video-clip" style="left: 0%; width: 100%;">
+                <div class="clip-inner">
+                  <span class="clip-icon">🎬</span>
+                  <span class="clip-title-text">LTX-2.5 Plate · 1024×576 @ 24fps</span>
+                  <div class="video-filmstrip-thumbs">
+                    <div class="thumb-frame"></div>
+                    <div class="thumb-frame"></div>
+                    <div class="thumb-frame"></div>
+                    <div class="thumb-frame"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- A1 Track Lane: Audio Waveform Canvas -->
+            <div class="track-lane a1-lane">
+              <div class="timeline-clip-block audio-clip" style="left: 0%; width: 100%;">
+                <div class="clip-inner">
+                  <span class="clip-icon">🎙️</span>
+                  <span class="clip-title-text">Voiceover Narration (Kokoro TTS 48kHz)</span>
+                  <canvas id="audioWaveformCanvas" class="audio-waveform-canvas" width="800" height="28"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Red SMPTE Playhead Guide Across All Tracks -->
+            <div id="timelinePlayhead" class="timeline-playhead-line" style="left: 0%;">
+              <div class="playhead-head-diamond"></div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </footer>
+
+    <!-- ── Floating Command Palette (⌘K) ────────────────────────── -->
+    <div id="commandPaletteModal" class="command-palette-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-label="Command Palette">
+      <div class="command-palette-card">
+        <div class="cmd-search-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="cmdSearchInput" class="cmd-search-input" placeholder="Type a command or search action..." autofocus aria-label="Search commands" />
+          <span class="cmd-esc-tag">ESC</span>
+        </div>
+        <div class="cmd-results-list" id="cmdResultsList" role="listbox" aria-label="Available commands">
+          <div class="cmd-item" data-action="render-all" role="option">
+            <span class="cmd-item-icon">⚡</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Render All Storyboard Scenes</span>
+              <span class="cmd-item-sub">Batch render 5 takes on remote Spot GPU (L40S)</span>
+            </div>
+            <kbd>↵</kbd>
+          </div>
+          <div class="cmd-item" data-action="composite-4k" role="option">
+            <span class="cmd-item-icon">✦</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Export 4K Master (P0 Composite Order)</span>
+              <span class="cmd-item-sub">Upscale plate to UHD first, then render Vello vectors</span>
+            </div>
+            <kbd>↵</kbd>
+          </div>
+          <div class="cmd-item" data-action="enhance-prompt" role="option">
+            <span class="cmd-item-icon">✨</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Enhance Current Prompt</span>
+              <span class="cmd-item-sub">Add cinematic 35mm camera, lens, and lighting tokens</span>
+            </div>
+            <kbd>↵</kbd>
+          </div>
+          <div class="cmd-item" data-action="toggle-grid" role="option">
+            <span class="cmd-item-icon">⊞</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Toggle Safe Margins Grid</span>
+              <span class="cmd-item-sub">Show 90% action-safe and 80% title-safe guide boxes</span>
+            </div>
+            <kbd>↵</kbd>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
