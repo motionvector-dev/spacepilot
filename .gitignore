@@ -9,3 +9,11 @@ outputs/
 scratch/
 .studio_token
 .pluto_config.json
+
+# tooling / os
+.DS_Store
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.idea/
+.vscode/

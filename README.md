@@ -1,108 +1,151 @@
-# Pluto: LTX-Video Local API Bridge
+# Pluto
 
-This repository hosts a lightweight FastAPI server that bridges frontend applications (like the Vue-based Katana VideoGen UI) with a locally hosted **LTX-Video** generation pipeline. It is optimized for macOS Apple Silicon (MPS backend) and integrates with a remote/local Ollama instance for prompt enhancement.
+Local-first video and audio generation for macOS Apple Silicon. A studio web UI
+and CLI on the Mac, backed by a resident LTX-2.5 worker on an AWS spot GPU box
+that is launched only when needed and terminated when it isn't.
 
----
+Four things run here:
 
-## Project Structure
-
-This project follows clean organization standards and best practices:
-
-```
-pluto/
-├── .env.example            # Template for environment variables
-├── .gitignore              # Git ignore rules for cached, virtualenv, and video output files
-├── environment.yml         # Conda environment definition file
-├── requirements.txt        # Python pip dependencies
-├── README.md               # Project documentation
-├── agents.md               # Antigravity developer agent workflows and setup notes
-│
-├── src/                    # Source code directory
-│   ├── server.py           # FastAPI entry point, endpoint routing, and mock handlers
-│   ├── generate_video.py   # LTX-Video pipeline initialization and execution details
-│   └── enhance_prompt.py   # LTX CINEMATIC prompt enhancement scripts
-│
-├── tests/                  # Integration and unit tests
-│   └── test_server.py      # Self-executable API test suite (mock mode)
-│
-├── docs/                   # Documentation resources
-│   ├── assets/             # PNG screenshots and visual assets
-│   └── ANTIGRAVITY-HANDOFF-backend.md  # Historical task description for backend handoff
-└── outputs/                # Directory for generated local MP4 videos (Git ignored)
-```
+| Component | What it is |
+| --- | --- |
+| `src/studio_api.py` | The studio backend and web UI. FastAPI on `127.0.0.1:8088`. |
+| `src/cli.py` (`bin/pluto`) | GPU lifecycle, deploys, generation, log streaming. |
+| `src/ltx_worker.py` | Flask worker holding LTX-2.5 resident in VRAM. Runs on the EC2 box, not here. |
+| `src/server.py` | Older LTX-Video API bridge, superseded by the studio. |
 
 ---
 
-## System Architecture
+## Setup
 
-```mermaid
-graph TD
-    Vue[Vue Frontend V2 Route<br>/v2/video-gen] -->|HTTP POST| FastAPI[FastAPI Local Server<br>localhost:8000]
-    
-    FastAPI -->|1. Enhance Prompt| OllamaTunnel[SSH Tunnel<br>localhost:11434]
-    OllamaTunnel -->|Tailscale| Lenovo[Lenovo Server Ollama<br>gemma3:4b / gemma4]
-    
-    FastAPI -->|2. Generate Video| LTX[LTX-Video Pipeline<br>M1/M2/M3 MPS GPU]
-    LTX -->|enable_model_cpu_offload| MPS[MPS VRAM / System RAM]
-    
-    FastAPI -->|Fallback| Mock[Mock Video Generator<br>Downloaded LTX Demo]
-```
-
----
-
-## 1. Setup & Installation
-
-### Option A: Conda Environment (Recommended)
-Initialize and activate the `local-ml-py311` conda environment:
 ```bash
-conda env create -f environment.yml
-conda activate local-ml-py311
-```
-
-### Option B: Python Virtualenv
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda env create -f environment.yml     # or: python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Environment Configuration
-Copy the template `.env.example` to `.env` and fill in your HuggingFace token and other parameters:
+Secrets come from Doppler, project `unfoundbox`, config `dev_personal`. The
+scope is set at `~/code`, so it resolves here with no per-repo setup — verify
+with `doppler configure`, then prefix commands with `doppler run --`.
+
+**`LOCAL_WORKER_TOKEN` is required.** The GPU worker exits rather than start
+without it, and `pluto launch` refuses to start a billing instance it could not
+then deploy to. If it isn't in Doppler yet:
+
 ```bash
-cp .env.example .env
+doppler secrets set LOCAL_WORKER_TOKEN="$(openssl rand -hex 32)"
 ```
+
+See `.env.example` for every variable the code reads.
 
 ---
 
-## 2. Running the API Server
+## Running the studio
 
-Run the server using Python from the project root:
-
-**Standard (Real ML) Mode**:
 ```bash
-# Set MOCK_VIDEO=false to run actual model inference
-MOCK_VIDEO=false python src/server.py
+doppler run -- ./bin/pluto studio        # or: python src/studio_api.py
 ```
 
-**Mock Demo Mode** (Instant startup, perfect for frontend development):
-```bash
-# Runs immediately (0.1s startup) using pre-packaged or online mock video samples
-MOCK_VIDEO=true python src/server.py
-```
+Serves the UI and API on <http://localhost:8088>, bound to loopback only. LAN
+access would need both the bind address and the CORS allowlist changed.
+
+`bin/pluto` runs the CLI under bare `python3`, which usually lacks fastapi, so
+the studio subprocess resolves its own interpreter: `PLUTO_PYTHON`, then
+`python_bin` in `.pluto_config.json` (gitignored, machine-local), then
+`sys.executable`. If none can import fastapi it says so instead of dying quietly.
 
 ---
 
-## 3. Running Tests
+## API
 
-Run the self-contained integration tests to verify the API endpoints (runs immediately using mock mode and does not download large model weights):
+Everything that spends compute or money requires the session token in an
+`X-Pluto-Token` header. Read-only routes are open. The UI fetches the token
+itself; from a shell, `GET /api/token` or read `.studio_token`.
+
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `POST /api/generate` | yes | Queue a video. Remote GPU if running, else a local mock. |
+| `POST /api/upscale-4k` | yes | 4K upscale via videotoolbox. |
+| `POST /api/composite-motionvector` | yes | 4K plate + vector overlay master. |
+| `POST /api/generate/music` | yes | Music cue, normalized to -16 LUFS. |
+| `POST /api/generate/voice` | yes | Voiceover, peak-normalized to -1 dBFS. |
+| `POST /api/gpu/launch` · `/terminate` | yes | Spot GPU lifecycle. |
+| `GET /api/jobs/{job_id}` | no | Job status. A failed job has no media, so it is invisible in `/api/assets`. |
+| `GET /api/assets` · `/api/media/{file}` | no | Asset library and file serving. |
+| `GET /api/status` | no | GPU and worker telemetry. |
+
+Jobs are asynchronous: the POST returns a `job_id`, then poll `/api/jobs/{id}`
+until `status` is `completed` or `failed`. Failed jobs record the real error and
+leave no partial file behind — with one deliberate exception, below.
+
+### Audio
+
+**Music** proxies to a local MLX server, so start one first:
+
 ```bash
-python tests/test_server.py
+mlx-serve serve --host 127.0.0.1 --port 11234 --skip-mem-preflight
 ```
+
+Roughly 25× realtime — a 10s cue takes about 4 minutes. `lyrics` is required
+even for instrumentals; pass section tags only, e.g.
+`"[Intro]\n[Instrumental]\n[Break]\n[Outro]"`, and use four or more or the piece
+ends early. Normalization is two-pass: single-pass `loudnorm` is an estimator
+and lands 1–2 LU off the target. If normalization fails the raw take is kept
+under a `_raw` suffix, because it cost minutes of compute and the cheap half is
+what failed.
+
+**Voice** needs no server. Kokoro runs in-process through `onnxruntime` against
+`kokoro-v1.0.onnx` and `voices-v1.0.bin`, found via `PLUTO_KOKORO_MODEL` /
+`PLUTO_KOKORO_VOICES` or a couple of known cache paths. 54 voices, 24 kHz, about
+1.5× realtime. Output is peak-normalized rather than limited — a limiter only
+caps peaks above the threshold and leaves quiet VO quiet.
+
+`backend=cloud` returns 501 on both: MLX does not run on CUDA and the spot box
+has no equivalent model provisioned.
 
 ---
 
-## 4. Key Implementation Details
+## GPU box
 
-*   **MPS CPU Offloading**: Uses Diffusers `enable_model_cpu_offload(device="mps")` which dynamically maps pipeline components (Transformer, VAE, Text Encoder) to the Mac GPU only when active, keeping total system VRAM under **10 GB** (safely avoiding unified memory swaps).
-*   **GPU Serialization Queue**: Implements an async FIFO queue (`asyncio.Lock()`) wrapped in FastAPI's `run_in_threadpool`. This serializes model calls, guaranteeing only one generation runs at a time and preventing concurrent Out of Memory (OOM) crashes.
-*   **Robust Prompt Enhancement Fallback**: The `/enhance` API queries the tunneled Ollama daemon requesting the `gemma3:4b` model. If the tunnel is disrupted or Ollama times out (e.g. during a cold-start load of 60 seconds), it automatically prints a warning and falls back to a local, rule-based mock enhancer.
+```bash
+doppler run -- ./bin/pluto launch      # spot instance + deploy + warm VRAM
+doppler run -- ./bin/pluto status      # instance, cost, VRAM, worker health
+doppler run -- ./bin/pluto generate "a prompt"
+doppler run -- ./bin/pluto sync        # pull /scratch/out back to outputs/
+doppler run -- ./bin/pluto terminate   # stop billing
+```
+
+`launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour and bills
+until terminated. Deploy sends the worker the token over stdin so it never
+appears in the remote process list. The worker binds `0.0.0.0` because the Mac
+has to reach it; its protection is the token plus the AWS security group, which
+this repo does not define.
+
+---
+
+## Tests
+
+```bash
+python -m pytest tests/ -q
+```
+
+42 tests covering the API, the audio endpoints, worker auth, and frontend
+escaping. `tests/conftest.py` points `PLUTO_OUTPUTS_DIR` at a temp directory, so
+runs never write into the real asset library. Tests need `ffmpeg` on PATH and
+the environment where `requirements.txt` was installed. The live voice test
+skips if the Kokoro weights are absent.
+
+---
+
+## Layout
+
+```
+bin/pluto              CLI launcher
+src/studio_api.py      studio backend + API
+src/cli.py             CLI implementation
+src/ltx_worker.py      GPU worker (runs on EC2)
+src/server.py          legacy LTX bridge
+studio/                web UI (index.html, studio.js, studio.css)
+infra/                 gpu-box.sh, worker bootstrap, IAM policy
+tests/                 pytest suite
+docs/                  handoff notes and assets
+outputs/               generated media (gitignored)
+```
