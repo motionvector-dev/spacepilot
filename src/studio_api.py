@@ -217,7 +217,7 @@ def launch_gpu(background_tasks: BackgroundTasks, _: None = Depends(require_toke
 
     def _run_launch():
         try:
-            run_cmd(f"bash {infra_script} launch")
+            run_cmd(["bash", str(infra_script), "launch"])
         except Exception as e:
             print(f"[Studio] Launch failed: {e}", file=sys.stderr)
 
@@ -232,7 +232,7 @@ def terminate_gpu(_: None = Depends(require_token)):
     if not infra_script.exists():
         raise HTTPException(status_code=500, detail="gpu-box.sh not found")
     try:
-        run_cmd(f"bash {infra_script} terminate")
+        run_cmd(["bash", str(infra_script), "terminate"])
         return {"status": "terminated", "message": "GPU box terminated cleanly. Billing stopped."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

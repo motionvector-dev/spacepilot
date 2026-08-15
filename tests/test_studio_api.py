@@ -175,6 +175,19 @@ def test_failed_ffmpeg_is_recorded_as_failed():
     assert "ffmpeg exited" in ffmpeg_error(res)
 
 
+def test_run_cmd_rejects_shell_strings():
+    """Verify run_cmd only takes argv lists, leaving shell metacharacters inert."""
+    from src.cli import run_cmd
+
+    try:
+        run_cmd("echo shell string")
+        assert False, "run_cmd should reject a shell string"
+    except TypeError:
+        pass
+
+    assert run_cmd(["echo", "$(id); rm -rf /"], capture=True) == "$(id); rm -rf /"
+
+
 def test_worker_headers_require_token():
     """Verify the studio refuses to call the GPU worker without a token."""
     import src.studio_api as studio_api
