@@ -44,9 +44,14 @@ from cli import get_instance_info, load_config, fetch_worker_health, run_cmd
 
 app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
 
-# Session token for endpoints that cost money (GPU lifecycle). Persisted so
-# restarts don't invalidate open studio tabs; unreadable cross-origin because
-# CORS below only admits the studio's own origin.
+# Session token for every endpoint that spends compute or money: GPU lifecycle,
+# and the three render routes. Read-only routes (status, assets, jobs, media)
+# stay open. Half-gating is worse than either extreme — it teaches contributors
+# that auth is optional.
+#
+# /api/token hands this to any local caller. Accepted, not overlooked: the server
+# binds loopback, so a local process could spend the same compute directly. It
+# stops a drive-by page, which is the threat that applies here.
 TOKEN_FILE = PLUTO_ROOT / ".studio_token"
 if not TOKEN_FILE.exists():
     TOKEN_FILE.write_text(secrets.token_hex(32))
@@ -346,7 +351,7 @@ def enhance_prompt_api(body: dict):
 
 
 @app.post("/api/generate")
-def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
+def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
     """Queue video generation job to remote resident GPU or local mock."""
     cfg = load_config()
     inst = get_instance_info(cfg)
@@ -485,7 +490,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/upscale-4k")
-def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks):
+def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
     """Run local Mac Apple Silicon CoreML / Lanczos 4K Super-Resolution export."""
     meta_file = OUTPUTS_DIR / f"{req.asset_id}.json"
     source_mp4 = OUTPUTS_DIR / f"{req.asset_id}.mp4"
@@ -623,7 +628,7 @@ def auto_script_api(req: AutoScriptRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/composite-motionvector")
-def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tasks: BackgroundTasks):
+def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
     """Enforce P0 Composite Order: 4K Plate Upscale FIRST -> Native 4K Vector Render ON TOP."""
     source_mp4 = OUTPUTS_DIR / f"{req.asset_id}.mp4"
     if not source_mp4.exists():
