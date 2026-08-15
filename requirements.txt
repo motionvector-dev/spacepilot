@@ -16,6 +16,10 @@ huggingface_hub
 sentencepiece
 protobuf
 
+# Voice generation. Runs in-process on the Mac; needs kokoro-v1.0.onnx and
+# voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
+kokoro-onnx
+
 # GPU worker (ltx_worker.py). torch/torchao come from the DLAMI on the box.
 flask
 
