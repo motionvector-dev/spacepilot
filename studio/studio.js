@@ -11,6 +11,16 @@ function esc(value) {
   ));
 }
 
+// Every endpoint that spends compute or money needs the session token.
+let plutoToken = null;
+async function authHeaders(extra) {
+  if (!plutoToken) {
+    const r = await fetch('/api/token');
+    plutoToken = (await r.json()).token;
+  }
+  return { 'X-Pluto-Token': plutoToken, ...(extra || {}) };
+}
+
 let state = {
   activeAsset: null,
   assets: [],
@@ -449,14 +459,6 @@ function setupEventListeners() {
   });
 
   // GPU Action (Launch / Terminate)
-  let plutoToken = null;
-  async function authHeaders() {
-    if (!plutoToken) {
-      const r = await fetch('/api/token');
-      plutoToken = (await r.json()).token;
-    }
-    return { 'X-Pluto-Token': plutoToken };
-  }
   elements.btnLaunchGpu.addEventListener('click', async () => {
     if (!state.gpuStatus || !state.gpuStatus.instance || state.gpuStatus.instance.state === 'stopped') {
       try {
@@ -699,7 +701,7 @@ function loadSceneIntoVibeCanvas(scene) {
 async function generateSingleSceneTake(scene) {
   const res = await fetch('/api/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       prompt: scene.prompt,
       seconds: scene.duration_sec,
@@ -746,7 +748,7 @@ async function triggerGenerate() {
   try {
     const res = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         prompt: prompt,
         seconds: state.duration,
@@ -806,7 +808,7 @@ async function triggerMotionVectorComposite() {
   try {
     const res = await fetch('/api/composite-motionvector', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         asset_id: state.activeAsset.id,
         title: state.overlayConfig.title,

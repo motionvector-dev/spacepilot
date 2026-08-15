@@ -13,9 +13,31 @@ sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
 from fastapi.testclient import TestClient
-from src.studio_api import app, OUTPUTS_DIR
+from src.studio_api import app, OUTPUTS_DIR, STUDIO_TOKEN
 
 client = TestClient(app)
+
+# Every compute endpoint is gated; read-only routes are not.
+AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
+GATED_POSTS = [
+    ("/api/generate", {"prompt": "x"}),
+    ("/api/upscale-4k", {"asset_id": "x"}),
+    ("/api/composite-motionvector", {"asset_id": "x"}),
+    ("/api/gpu/launch", {}),
+    ("/api/gpu/terminate", {}),
+]
+
+
+def test_compute_endpoints_all_require_the_token():
+    """Verify the gating is uniform: no compute endpoint is reachable unauthenticated."""
+    for path, body in GATED_POSTS:
+        assert client.post(path, json=body).status_code == 401, f"{path} is ungated"
+        assert client.post(path, json=body, headers={"X-Pluto-Token": "wrong"}).status_code == 401
+
+
+def test_read_only_endpoints_stay_open():
+    for path in ["/api/status", "/api/assets"]:
+        assert client.get(path).status_code == 200
 
 
 def test_studio_status_endpoint():
@@ -42,14 +64,15 @@ def test_studio_generate_mock_pipeline():
     """Verify /api/generate successfully creates and records a video."""
     response = client.post(
         "/api/generate",
+        headers=AUTH,
         json={
             "prompt": "Test synthetic diffusion manifold",
             "seconds": 2.0,
             "width": 1024,
             "height": 576,
             "seed": 42,
-            "steps": 10
-        }
+            "steps": 10,
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -76,12 +99,8 @@ def test_studio_4k_upscale_chain():
     # First create a mock asset if none exists
     gen_res = client.post(
         "/api/generate",
-        json={
-            "prompt": "4K test clip",
-            "seconds": 1.0,
-            "width": 1024,
-            "height": 576,
-        }
+        headers=AUTH,
+        json={"prompt": "4K test clip", "seconds": 1.0, "width": 1024, "height": 576},
     )
     asset_id = gen_res.json()["job_id"]
     
@@ -94,8 +113,7 @@ def test_studio_4k_upscale_chain():
         time.sleep(0.2)
 
     upscale_res = client.post(
-        "/api/upscale-4k",
-        json={"asset_id": asset_id, "scale": 4}
+        "/api/upscale-4k", json={"asset_id": asset_id, "scale": 4}, headers=AUTH
     )
     assert upscale_res.status_code == 200, f"Upscale failed with status {upscale_res.status_code}: {upscale_res.text}"
     data = upscale_res.json()
@@ -114,14 +132,14 @@ def test_studio_full_pipeline():
     print(f"  ✓ Auto-script generated {script_data['scene_count']} scenes ({script_data['total_duration_sec']}s)")
 
     # 7. Generate a mock asset for compositing
-    gen_res = client.post("/api/generate", json={"prompt": "Director scene plate", "seconds": 1.0})
+    gen_res = client.post("/api/generate", json={"prompt": "Director scene plate", "seconds": 1.0}, headers=AUTH)
     assert gen_res.status_code == 200
     asset_id = gen_res.json()["job_id"]
     time.sleep(0.5)
 
     # 8. Test MotionVector Compositor (P0 Composite Order Enforced)
     print("Testing MotionVector Compositor (/api/composite-motionvector)...")
-    res_comp = client.post("/api/composite-motionvector", json={
+    res_comp = client.post("/api/composite-motionvector", headers=AUTH, json={
         "asset_id": asset_id,
         "title": "Diffusion Velocity Field",
         "latex_formula": "dx_t = f(x_t)dt + g(t)dw_t",
@@ -142,8 +160,8 @@ def test_studio_full_pipeline():
 def test_asset_id_rejects_shell_metacharacters():
     """Verify asset_id fields only accept [A-Za-z0-9_-]."""
     for bad_id in ["a b; rm -rf /", "../../etc/passwd", "clip'$(id)'"]:
-        assert client.post("/api/upscale-4k", json={"asset_id": bad_id}).status_code == 422
-        assert client.post("/api/composite-motionvector", json={"asset_id": bad_id}).status_code == 422
+        assert client.post("/api/upscale-4k", json={"asset_id": bad_id}, headers=AUTH).status_code == 422
+        assert client.post("/api/composite-motionvector", json={"asset_id": bad_id}, headers=AUTH).status_code == 422
 
 
 def test_resolve_output_blocks_escapes_from_outputs_dir():
@@ -208,7 +226,7 @@ def test_dotted_traversal_is_refused():
 
 def test_asset_file_route_requires_exact_name():
     """Verify a partial asset id no longer fuzzy-matches some other clip."""
-    gen_res = client.post("/api/generate", json={"prompt": "Exact name plate", "seconds": 1.0})
+    gen_res = client.post("/api/generate", json={"prompt": "Exact name plate", "seconds": 1.0}, headers=AUTH)
     asset_id = gen_res.json()["job_id"]
     source_mp4 = OUTPUTS_DIR / f"{asset_id}.mp4"
     for _ in range(30):
@@ -238,13 +256,14 @@ def test_generate_rejects_unbounded_parameters():
         {"prompt": "x", "width": 999999},
         {"prompt": "x", "steps": 100000},
     ]:
-        response = client.post("/api/generate", json=payload)
+        response = client.post("/api/generate", json=payload, headers=AUTH)
         assert response.status_code == 422, f"accepted {payload}"
 
     # json.loads accepts these non-standard literals, so send them raw.
     for raw in ['{"prompt":"x","seconds":Infinity}', '{"prompt":"x","seconds":NaN}']:
         response = client.post(
-            "/api/generate", content=raw, headers={"Content-Type": "application/json"}
+            "/api/generate", content=raw,
+            headers={**AUTH, "Content-Type": "application/json"},
         )
         assert response.status_code == 422, f"accepted {raw}"
 
@@ -264,7 +283,7 @@ def test_failed_render_leaves_no_partial_video():
 
     corrupt = OUTPUTS_DIR / "pytest_corrupt.mp4"
     corrupt.write_bytes(b"not a video")
-    response = client.post("/api/upscale-4k", json={"asset_id": "pytest_corrupt"})
+    response = client.post("/api/upscale-4k", json={"asset_id": "pytest_corrupt"}, headers=AUTH)
     assert response.status_code == 200
 
     meta_path = OUTPUTS_DIR / "pytest_corrupt_4k.json"
