@@ -76,6 +76,25 @@ def test_empty_token_denies_everything(worker):
         worker.TOKEN = original
 
 
+def test_job_id_cannot_escape_the_output_dir(client, worker):
+    """job_id becomes a filename, so a traversing id must be refused outright."""
+    worker._model_ready = True
+    for bad_id in ["../../../../tmp/pwned", "/tmp/pwned", "a/b", "..", "x" * 200, "a;b"]:
+        response = client.post(
+            "/generate",
+            json={"job_id": bad_id, "prompt": "x"},
+            headers={"Authorization": "Bearer test-token"},
+        )
+        assert response.status_code == 400, f"accepted job_id {bad_id!r}"
+        assert response.get_json()["error"] == "invalid_job_id"
+
+
+def test_non_ascii_auth_header_is_rejected_not_crashed(client):
+    """compare_digest raises TypeError on non-ASCII; that must fail closed."""
+    response = client.get("/status/x", headers={"Authorization": "Bearer \xff\xfe"})
+    assert response.status_code == 401
+
+
 def test_download_does_not_escape_output_dir(client, worker):
     """A job id must not walk out of OUTPUT_DIR."""
     secret = PLUTO_ROOT / "pytest_worker_marker.txt"

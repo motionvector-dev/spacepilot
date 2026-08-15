@@ -19,7 +19,7 @@ from pathlib import Path
 
 # Paths
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
-OUTPUTS_DIR = PLUTO_ROOT / "outputs"
+OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
 CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"
 
@@ -186,6 +186,12 @@ def cmd_launch(args, cfg):
         print(f"  Error: {infra_script} not found.")
         return
 
+    # Checked before launch: a box we cannot deploy to still bills by the hour.
+    if not WORKER_TOKEN:
+        print("  Error: LOCAL_WORKER_TOKEN is not set; the worker would start unauthenticated.")
+        print("  Export it before launching so the GPU box is not left billing idle.")
+        return
+
     run_cmd(["bash", str(infra_script), "launch"])
     time.sleep(2)
     inst = get_instance_info(cfg)
@@ -342,17 +348,43 @@ def cmd_sync(args, cfg):
     print("Sync complete!")
 
 
+def studio_python(cfg):
+    """Interpreter that can serve the studio.
+
+    bin/pluto runs this CLI under bare `python3`, which needs only the stdlib
+    but usually lacks fastapi, so sys.executable alone is not enough.
+    """
+    for candidate in (os.environ.get("PLUTO_PYTHON"), cfg.get("python_bin"), sys.executable):
+        if not candidate:
+            continue
+        probe = subprocess.run(
+            [candidate, "-c", "import fastapi, uvicorn"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        if probe.returncode == 0:
+            return candidate
+    return None
+
+
 def cmd_studio(args, cfg):
     port = args.port or 8088
+    studio_script = PLUTO_ROOT / "src" / "studio_api.py"
+
+    python_bin = studio_python(cfg)
+    if not python_bin:
+        print("  Error: no interpreter found with fastapi + uvicorn installed.")
+        print("  Set PLUTO_PYTHON, or add \"python_bin\" to .pluto_config.json,")
+        print("  pointing at the environment where you ran: pip install -r requirements.txt")
+        return
+
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  🎬 LAUNCHING PLUTO STUDIO ON http://localhost:{port}")
     print("──────────────────────────────────────────────────────────────────────────")
-    studio_script = PLUTO_ROOT / "src" / "studio_api.py"
     if args.open:
         import webbrowser
         time.sleep(1.0)
         webbrowser.open(f"http://localhost:{port}")
-    subprocess.run([sys.executable, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
+    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
 
 
 def cmd_terminate(args, cfg):

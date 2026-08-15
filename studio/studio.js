@@ -767,19 +767,34 @@ async function triggerGenerate() {
   }
 }
 
+function showRenderError(message) {
+  console.error('Render failed:', message);
+  if (elements.upscaleStatus) elements.upscaleStatus.textContent = `Failed: ${message}`;
+}
+
+async function fetchJob(jobId) {
+  const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+  return res.ok ? res.json() : null;
+}
+
 async function pollJob(jobId) {
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 1000));
     try {
-      const res = await fetch(`/api/assets`);
-      const data = await res.json();
-      const match = data.assets.find(a => a.id === jobId);
-      if (match && match.status === 'completed') {
-        selectAsset(match);
+      const job = await fetchJob(jobId);
+      if (job && job.status === 'failed') {
+        showRenderError(job.error || 'render failed');
+        return;
+      }
+      if (job && job.status === 'completed') {
+        const data = await (await fetch('/api/assets')).json();
+        const match = data.assets.find(a => a.id === jobId);
+        if (match) selectAsset(match);
         return;
       }
     } catch (e) {}
   }
+  showRenderError('timed out waiting for the render');
 }
 
 // ── P0 Composite Order 4K Master Export ────────────────────────
@@ -805,11 +820,15 @@ async function triggerMotionVectorComposite() {
 
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 1000));
-      const ares = await fetch('/api/assets');
-      const adata = await ares.json();
-      const match = adata.assets.find(a => a.id === data.master_id);
-      if (match && match.status === 'completed') {
-        selectAsset(match);
+      const job = await fetchJob(data.master_id);
+      if (job && job.status === 'failed') {
+        showRenderError(job.error || 'composite failed');
+        break;
+      }
+      if (job && job.status === 'completed') {
+        const adata = await (await fetch('/api/assets')).json();
+        const match = adata.assets.find(a => a.id === data.master_id);
+        if (match) selectAsset(match);
         elements.upscaleStatus.textContent = '✓ 4K UHD Master Ready!';
         break;
       }

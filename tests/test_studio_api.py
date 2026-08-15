@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Integration tests for Pluto Studio Backend API."""
 
+import json
 import os
 import sys
 import time
@@ -226,6 +227,63 @@ def test_failed_ffmpeg_is_recorded_as_failed():
     res = run_ffmpeg(["-i", str(OUTPUTS_DIR / "definitely_missing_source.mp4"), "-f", "null", "-"])
     assert res.returncode != 0
     assert "ffmpeg exited" in ffmpeg_error(res)
+
+
+def test_generate_rejects_unbounded_parameters():
+    """Verify render cost is bounded: an unbounded duration encodes forever."""
+    for payload in [
+        {"prompt": "x", "seconds": 1e9},
+        {"prompt": "x", "seconds": 0},
+        {"prompt": "x", "seconds": -5},
+        {"prompt": "x", "width": 999999},
+        {"prompt": "x", "steps": 100000},
+    ]:
+        response = client.post("/api/generate", json=payload)
+        assert response.status_code == 422, f"accepted {payload}"
+
+    # json.loads accepts these non-standard literals, so send them raw.
+    for raw in ['{"prompt":"x","seconds":Infinity}', '{"prompt":"x","seconds":NaN}']:
+        response = client.post(
+            "/api/generate", content=raw, headers={"Content-Type": "application/json"}
+        )
+        assert response.status_code == 422, f"accepted {raw}"
+
+
+def test_malformed_headers_and_names_do_not_500():
+    """Verify hostile input fails closed with a 4xx, never an unhandled exception."""
+    # compare_digest raises TypeError on non-ASCII; headers decode as latin-1.
+    assert client.post("/api/gpu/terminate", headers={"X-Pluto-Token": b"\xff\xfe"}).status_code == 401
+    # Path.resolve() raises ValueError on an embedded null byte.
+    assert client.get("/api/media/a%00b").status_code == 404
+    assert client.get("/api/assets/a%00b/thumbnail").status_code in (404, 200)
+
+
+def test_failed_render_leaves_no_partial_video():
+    """A failed render must not leave a 0-byte mp4 that the library then lists."""
+    from src.studio_api import OUTPUTS_DIR, discard_partial
+
+    corrupt = OUTPUTS_DIR / "pytest_corrupt.mp4"
+    corrupt.write_bytes(b"not a video")
+    response = client.post("/api/upscale-4k", json={"asset_id": "pytest_corrupt"})
+    assert response.status_code == 200
+
+    meta_path = OUTPUTS_DIR / "pytest_corrupt_4k.json"
+    for _ in range(60):
+        if meta_path.exists():
+            break
+        time.sleep(0.2)
+    meta = json.loads(meta_path.read_text())
+    assert meta["status"] == "failed"
+    assert not (OUTPUTS_DIR / "pytest_corrupt_4k.mp4").exists(), "partial render left behind"
+    assert meta["is_upscaled"] is False
+
+    # The failure is visible to the UI even though it has no video.
+    job = client.get("/api/jobs/pytest_corrupt_4k")
+    assert job.status_code == 200
+    assert job.json()["status"] == "failed"
+
+    discard_partial(corrupt)
+    meta_path.unlink()
 
 
 def test_run_cmd_rejects_shell_strings():

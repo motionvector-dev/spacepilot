@@ -13,6 +13,7 @@ Endpoints:
 """
 
 import os
+import re
 import secrets
 import sys
 import time
@@ -49,10 +50,18 @@ _jobs = {}
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
+JOB_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+
+
 def _authed():
     if not TOKEN:
         return False
-    return secrets.compare_digest(request.headers.get("Authorization", ""), f"Bearer {TOKEN}")
+    header = request.headers.get("Authorization", "")
+    try:
+        return secrets.compare_digest(header, f"Bearer {TOKEN}")
+    except TypeError:
+        # Headers decode as latin-1, and compare_digest rejects non-ASCII str.
+        return False
 
 
 def load_model():
@@ -192,6 +201,9 @@ def generate():
 
     body = request.get_json(silent=True) or {}
     job_id = body.get("job_id") or f"ltx_{uuid.uuid4().hex[:12]}"
+    # job_id becomes a filename below; without this it can escape OUTPUT_DIR.
+    if not JOB_ID_RE.match(str(job_id)):
+        return jsonify(error="invalid_job_id", message="job_id must match [A-Za-z0-9_-]{1,128}"), 400
     params = body.get("params") or body
 
     global _active, _jobs
