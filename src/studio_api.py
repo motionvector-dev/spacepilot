@@ -17,6 +17,7 @@ import logging
 import math
 import secrets
 import subprocess
+import threading
 import time
 import uuid
 import shutil
@@ -188,7 +189,8 @@ class VoiceRequest(BaseModel):
     voice: str = Field("af_heart", pattern=r"^[A-Za-z0-9_+.-]{1,64}$")
     speed: float = Field(1.0, ge=0.5, le=2.0, allow_inf_nan=False)
     seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
-    backend: str = Field("local", pattern=r"^(local|cloud)$")
+    # local = Kokoro in-process; mlx = mlx-serve over HTTP, kept as an alternative.
+    backend: str = Field("local", pattern=r"^(local|mlx|cloud)$")
 
 
 ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
@@ -848,6 +850,63 @@ VOICE_MODEL = os.environ.get("PLUTO_VOICE_MODEL", "kokoro")
 MUSIC_TARGET_LUFS = -16
 VOICE_PEAK_DBFS = -1.0
 
+# Kokoro runs in-process through onnxruntime. The engine shells out to Python
+# because it is Rust; pluto is already Python, so there is no interpreter bridge
+# to cross and no generated script for user text to be injected into.
+KOKORO_SEARCH_PATHS = [
+    (os.environ.get("PLUTO_KOKORO_MODEL"), os.environ.get("PLUTO_KOKORO_VOICES")),
+    (
+        str(PLUTO_ROOT.parent / "sr-lessons" / "tools" / "kokoro" / "kokoro-v1.0.onnx"),
+        str(PLUTO_ROOT.parent / "sr-lessons" / "tools" / "kokoro" / "voices-v1.0.bin"),
+    ),
+    (
+        str(Path.home() / ".cache" / "hyperframes" / "tts" / "models" / "kokoro-v1.0.onnx"),
+        str(Path.home() / ".cache" / "hyperframes" / "tts" / "voices" / "voices-v1.0.bin"),
+    ),
+]
+_kokoro = None
+_kokoro_lock = threading.Lock()
+
+
+def kokoro_assets():
+    """First (model, voices) pair that exists on disk, or (None, None)."""
+    for model, voices in KOKORO_SEARCH_PATHS:
+        if model and voices and Path(model).is_file() and Path(voices).is_file():
+            return model, voices
+    return None, None
+
+
+def load_kokoro():
+    """Lazily build the shared Kokoro session; ~0.7s once, then cached."""
+    global _kokoro
+    with _kokoro_lock:
+        if _kokoro is None:
+            from kokoro_onnx import Kokoro
+
+            model, voices = kokoro_assets()
+            if not model:
+                raise RuntimeError(
+                    "kokoro-v1.0.onnx / voices-v1.0.bin not found; set PLUTO_KOKORO_MODEL "
+                    "and PLUTO_KOKORO_VOICES"
+                )
+            _kokoro = Kokoro(model, voices)
+        return _kokoro
+
+
+def synthesize_voice(text: str, voice: str, speed: float, out_path: Path) -> None:
+    """Render speech to a 16-bit mono WAV with Kokoro."""
+    import wave
+
+    import numpy as np
+
+    samples, sample_rate = load_kokoro().create(text, voice=voice, speed=speed, lang="en-us")
+    pcm = (np.clip(samples, -1.0, 1.0) * 32767).astype("<i2")
+    with wave.open(str(out_path), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(pcm.tobytes())
+
 CLOUD_NOT_READY = (
     "backend='cloud' is not implemented. MLX does not run on CUDA, so the spot box "
     "needs MiniMaxAI/MiniMax-Music3 (music) or a Qwen3-TTS build (voice) served via "
@@ -900,6 +959,34 @@ def loudnorm_two_pass(src: Path, dst: Path, target_lufs: int) -> subprocess.Comp
         applied = single_pass
 
     return run_ffmpeg(["-v", "error", "-i", str(src), "-af", applied, "-ar", "44100", str(dst)])
+
+
+def peak_normalize(src: Path, dst: Path, target_dbfs: float) -> subprocess.CompletedProcess:
+    """Bring the true peak to target_dbfs.
+
+    A limiter only caps peaks above the threshold, so on quiet VO it leaves the
+    level wherever it was. Measure the peak, then apply the difference as gain.
+    """
+    measure = run_ffmpeg(["-i", str(src), "-af", "volumedetect", "-f", "null", "-"])
+    if measure.returncode != 0:
+        return measure
+
+    gain_db = 0.0
+    for line in (measure.stderr or "").splitlines():
+        if "max_volume:" in line:
+            try:
+                peak = float(line.split("max_volume:")[1].strip().split()[0])
+                if math.isfinite(peak):
+                    gain_db = target_dbfs - peak
+            except (ValueError, IndexError):
+                pass
+            break
+
+    # Gain alone is exact. alimiter is not a safety net here: its `level` option
+    # auto-levels to the ceiling by default, which overrides the gain we just computed.
+    return run_ffmpeg([
+        "-v", "error", "-i", str(src), "-af", f"volume={gain_db:.2f}dB", str(dst),
+    ])
 
 
 def queued_audio_job(meta: dict) -> dict:
@@ -1007,31 +1094,31 @@ def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: 
         meta["status"] = "running"
         write_meta(meta_file, meta)
         start_t = time.time()
-        payload = {
-            "model": VOICE_MODEL,
-            "input": req.text,
-            "voice": req.voice,
-            "speed": req.speed,
-            "response_format": "wav",
-        }
-        if req.seed is not None:
-            payload["seed"] = req.seed
         try:
-            audio = mlx_generate_audio("/v1/audio/speech", payload, timeout=FFMPEG_TIMEOUT_SEC)
-            raw_wav.write_bytes(audio)
+            if req.backend == "mlx":
+                payload = {
+                    "model": VOICE_MODEL,
+                    "input": req.text,
+                    "voice": req.voice,
+                    "speed": req.speed,
+                    "response_format": "wav",
+                }
+                if req.seed is not None:
+                    payload["seed"] = req.seed
+                raw_wav.write_bytes(
+                    mlx_generate_audio("/v1/audio/speech", payload, timeout=FFMPEG_TIMEOUT_SEC)
+                )
+            else:
+                synthesize_voice(req.text, req.voice, req.speed, raw_wav)
         except Exception as e:
             meta["status"] = "failed"
-            meta["error"] = f"mlx-serve: {e}"
+            meta["error"] = f"{req.backend} backend: {e}"
             discard_partial(raw_wav)
             write_meta(meta_file, meta)
             return
 
         meta["generate_sec"] = round(time.time() - start_t, 1)
-        limit = run_ffmpeg([
-            "-v", "error", "-i", str(raw_wav),
-            "-af", f"alimiter=limit={VOICE_PEAK_DBFS}dB",
-            str(out_wav),
-        ])
+        limit = peak_normalize(raw_wav, out_wav, VOICE_PEAK_DBFS)
         if limit.returncode != 0:
             # Voice is cheap to regenerate, so no _raw exception here.
             meta["status"] = "failed"
