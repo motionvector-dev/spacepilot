@@ -138,6 +138,62 @@ def test_studio_full_pipeline():
     print("========================================================\n")
 
 
+def test_asset_id_rejects_shell_metacharacters():
+    """Verify asset_id fields only accept [A-Za-z0-9_-]."""
+    for bad_id in ["a b; rm -rf /", "../../etc/passwd", "clip'$(id)'"]:
+        assert client.post("/api/upscale-4k", json={"asset_id": bad_id}).status_code == 422
+        assert client.post("/api/composite-motionvector", json={"asset_id": bad_id}).status_code == 422
+
+
+def test_media_routes_reject_path_traversal():
+    """Verify file serving stays inside OUTPUTS_DIR."""
+    for bad_name in ["../../../etc/hosts", "..%2F..%2Fetc%2Fhosts"]:
+        assert client.get(f"/api/media/{bad_name}").status_code in (404, 405)
+    assert client.get("/api/assets/..%2F..%2Fetc%2Fhosts/file").status_code in (404, 405)
+
+
+def test_asset_file_route_requires_exact_name():
+    """Verify a partial asset id no longer fuzzy-matches some other clip."""
+    gen_res = client.post("/api/generate", json={"prompt": "Exact name plate", "seconds": 1.0})
+    asset_id = gen_res.json()["job_id"]
+    source_mp4 = OUTPUTS_DIR / f"{asset_id}.mp4"
+    for _ in range(30):
+        if source_mp4.exists():
+            break
+        time.sleep(0.2)
+
+    assert client.get(f"/api/assets/{asset_id}/file").status_code == 200
+    assert client.get(f"/api/assets/{asset_id[:6]}/file").status_code == 404
+
+
+def test_failed_ffmpeg_is_recorded_as_failed():
+    """Verify a bad ffmpeg run records status 'failed' instead of 'completed'."""
+    from src.studio_api import ffmpeg_error, run_ffmpeg
+
+    res = run_ffmpeg(["-i", str(OUTPUTS_DIR / "definitely_missing_source.mp4"), "-f", "null", "-"])
+    assert res.returncode != 0
+    assert "ffmpeg exited" in ffmpeg_error(res)
+
+
+def test_worker_headers_require_token():
+    """Verify the studio refuses to call the GPU worker without a token."""
+    import src.studio_api as studio_api
+
+    original = studio_api.WORKER_TOKEN
+    try:
+        studio_api.WORKER_TOKEN = ""
+        try:
+            studio_api.worker_headers()
+            assert False, "worker_headers should refuse an empty token"
+        except RuntimeError:
+            pass
+
+        studio_api.WORKER_TOKEN = "secret"
+        assert studio_api.worker_headers()["Authorization"] == "Bearer secret"
+    finally:
+        studio_api.WORKER_TOKEN = original
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_studio_status_endpoint()

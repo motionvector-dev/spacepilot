@@ -13,6 +13,7 @@ Endpoints:
 """
 
 import os
+import secrets
 import sys
 import time
 import uuid
@@ -34,7 +35,7 @@ from diffusers.utils import export_to_video
 # Configuration
 PORT = int(os.environ.get("LTX_WORKER_PORT", "5000"))
 HOST = os.environ.get("LTX_WORKER_HOST", "0.0.0.0")
-TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "local-dev-token")
+TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
 OUTPUT_DIR = Path(os.environ.get("LTX_OUTPUT_DIR", "/scratch/out"))
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
@@ -49,10 +50,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _authed():
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header and TOKEN == "local-dev-token":
-        return True
-    return auth_header == f"Bearer {TOKEN}"
+    if not TOKEN:
+        return False
+    return secrets.compare_digest(request.headers.get("Authorization", ""), f"Bearer {TOKEN}")
 
 
 def load_model():
@@ -220,6 +220,8 @@ def generate():
 
 @app.get("/status/<job_id>")
 def status(job_id):
+    if not _authed():
+        return jsonify(error="unauthorized"), 401
     if job_id not in _jobs:
         disk_file = OUTPUT_DIR / f"{job_id}.mp4"
         if disk_file.exists():
@@ -230,6 +232,8 @@ def status(job_id):
 
 @app.get("/download/<job_id>")
 def download(job_id):
+    if not _authed():
+        return jsonify(error="unauthorized"), 401
     disk_file = OUTPUT_DIR / f"{job_id}.mp4"
     if not disk_file.exists():
         return jsonify(error="file_not_found"), 404
@@ -237,6 +241,8 @@ def download(job_id):
 
 
 if __name__ == "__main__":
+    if not TOKEN:
+        sys.exit("[ltx_worker] LOCAL_WORKER_TOKEN is not set; refusing to start an unauthenticated worker.")
     threading.Thread(target=load_model, daemon=True).start()
     print(f"[ltx_worker] Starting Flask server on {HOST}:{PORT}...", flush=True)
     app.run(host=HOST, port=PORT, threaded=True)

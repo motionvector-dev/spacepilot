@@ -14,6 +14,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import secrets
 import subprocess
 import time
 import uuid
@@ -22,9 +23,9 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from typing import Optional, List, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,17 +39,71 @@ STUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import CLI helpers
 sys.path.append(str(PLUTO_ROOT / "src"))
-try:
-    from cli import get_instance_info, load_config, fetch_worker_health, run_cmd
-except ImportError:
-    pass
+from cli import get_instance_info, load_config, fetch_worker_health, run_cmd
 
 app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
 
+# Session token for endpoints that cost money (GPU lifecycle). Persisted so
+# restarts don't invalidate open studio tabs; unreadable cross-origin because
+# CORS below only admits the studio's own origin.
+TOKEN_FILE = PLUTO_ROOT / ".studio_token"
+if not TOKEN_FILE.exists():
+    TOKEN_FILE.write_text(secrets.token_hex(32))
+    TOKEN_FILE.chmod(0o600)
+STUDIO_TOKEN = TOKEN_FILE.read_text().strip()
+
+
+def require_token(x_pluto_token: Optional[str] = Header(None)) -> None:
+    if not (x_pluto_token and secrets.compare_digest(x_pluto_token, STUDIO_TOKEN)):
+        raise HTTPException(status_code=401, detail="Missing or invalid X-Pluto-Token")
+
+
+WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
+
+
+def worker_headers(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    """Auth headers for the remote LTX worker; refuses to call it unauthenticated."""
+    if not WORKER_TOKEN:
+        raise RuntimeError("LOCAL_WORKER_TOKEN is not set; cannot talk to the GPU worker")
+    headers = {"Authorization": f"Bearer {WORKER_TOKEN}"}
+    if extra:
+        headers.update(extra)
+    return headers
+
+
+def run_ffmpeg(args: List[str]) -> subprocess.CompletedProcess:
+    """Run ffmpeg from an argv list (never a shell string) and keep stderr for errors."""
+    return subprocess.run(
+        ["ffmpeg", "-y", *args],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def ffmpeg_error(res: subprocess.CompletedProcess) -> str:
+    """Last few stderr lines of a failed ffmpeg run."""
+    tail = (res.stderr or "").strip().splitlines()[-3:]
+    return f"ffmpeg exited {res.returncode}: " + " | ".join(tail)
+
+
+def write_meta(path: Path, meta: dict) -> None:
+    with open(path, "w") as f:
+        json.dump(meta, f, indent=2)
+
+
+def resolve_output(name: str) -> Path:
+    """Resolve a name to an existing file inside OUTPUTS_DIR, or raise 404."""
+    path = (OUTPUTS_DIR / name).resolve()
+    if not path.is_relative_to(OUTPUTS_DIR.resolve()) or not path.is_file():
+        raise HTTPException(status_code=404, detail=f"'{name}' not found")
+    return path
+
+
+_PORT = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[f"http://localhost:{_PORT}", f"http://127.0.0.1:{_PORT}"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -70,8 +125,11 @@ class GenerateRequest(BaseModel):
     takes: int = 1
 
 
+ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
+
+
 class UpscaleRequest(BaseModel):
-    asset_id: str
+    asset_id: str = Field(pattern=ASSET_ID_PATTERN)
     scale: int = 4
     engine: str = "coreml"  # coreml | span | bicubic
 
@@ -83,7 +141,7 @@ class AutoScriptRequest(BaseModel):
 
 
 class CompositeMotionVectorRequest(BaseModel):
-    asset_id: str
+    asset_id: str = Field(pattern=ASSET_ID_PATTERN)
     overlay_type: str = "math_card"  # math_card | kinetic_title | callout | split_screen
     title: Optional[str] = None
     subtitle: Optional[str] = None
@@ -139,8 +197,14 @@ def get_status():
     }
 
 
+@app.get("/api/token")
+def get_token():
+    """Hand the UI its session token; cross-origin pages can't read this (CORS)."""
+    return {"token": STUDIO_TOKEN}
+
+
 @app.post("/api/gpu/launch")
-def launch_gpu(background_tasks: BackgroundTasks):
+def launch_gpu(background_tasks: BackgroundTasks, _: None = Depends(require_token)):
     """Trigger 1-click Spot GPU launch and resident model warmup."""
     cfg = load_config()
     inst = get_instance_info(cfg)
@@ -162,7 +226,7 @@ def launch_gpu(background_tasks: BackgroundTasks):
 
 
 @app.post("/api/gpu/terminate")
-def terminate_gpu():
+def terminate_gpu(_: None = Depends(require_token)):
     """Safely terminate GPU box to stop billing immediately."""
     infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
     if not infra_script.exists():
@@ -299,7 +363,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
                 remote_req = urllib.request.Request(
                     f"http://{ip}:5000/generate",
                     data=data,
-                    headers={"Content-Type": "application/json", "Authorization": "Bearer local-dev-token"},
+                    headers=worker_headers({"Content-Type": "application/json"}),
                     method="POST"
                 )
                 with urllib.request.urlopen(remote_req) as resp:
@@ -308,36 +372,37 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
                 # Poll remote until complete
                 while True:
                     time.sleep(1.5)
-                    st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers={"Authorization": "Bearer local-dev-token"})
+                    st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
                     with urllib.request.urlopen(st_req) as st_resp:
                         st_data = json.loads(st_resp.read().decode())
                         if st_data.get("status") == "completed":
                             # Download MP4
-                            dl_url = f"http://{ip}:5000/download/{job_id}"
+                            dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
                             out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4"
-                            urllib.request.urlretrieve(dl_url, out_mp4)
-                            
+                            with urllib.request.urlopen(dl_req) as dl_resp, open(out_mp4, "wb") as out_f:
+                                shutil.copyfileobj(dl_resp, out_f)
+
                             # Extract thumbnail
                             thumb_png = OUTPUTS_DIR / f"{job_id}.png"
-                            subprocess.run(f"ffmpeg -y -ss 00:00:01 -i '{out_mp4}' -frames:v 1 '{thumb_png}' 2>/dev/null", shell=True)
+                            thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
 
                             meta["status"] = "completed"
                             meta["file_path"] = str(out_mp4)
-                            meta["thumbnail_path"] = str(thumb_png)
-                            with open(meta_file, "w") as f:
-                                json.dump(meta, f, indent=2)
+                            if thumb_res.returncode == 0:
+                                meta["thumbnail_path"] = str(thumb_png)
+                            else:
+                                meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+                            write_meta(meta_file, meta)
                             break
                         elif st_data.get("status") == "failed":
                             meta["status"] = "failed"
                             meta["error"] = st_data.get("error")
-                            with open(meta_file, "w") as f:
-                                json.dump(meta, f, indent=2)
+                            write_meta(meta_file, meta)
                             break
             except Exception as e:
                 meta["status"] = "failed"
                 meta["error"] = str(e)
-                with open(meta_file, "w") as f:
-                    json.dump(meta, f, indent=2)
+                write_meta(meta_file, meta)
 
         background_tasks.add_task(_dispatch_remote)
     else:
@@ -347,18 +412,26 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
             thumb_png = OUTPUTS_DIR / f"{job_id}.png"
             
             # Generate test video pattern with ffmpeg
-            cmd = (
-                f"ffmpeg -y -f lavfi -i testsrc=duration={req.seconds}:size={width}x{height}:rate=24 "
-                f"-c:v libx264 -pix_fmt yuv420p '{out_mp4}' 2>/dev/null && "
-                f"ffmpeg -y -ss 00:00:00.5 -i '{out_mp4}' -frames:v 1 '{thumb_png}' 2>/dev/null"
-            )
-            subprocess.run(cmd, shell=True)
+            meta["is_mock"] = True
+            gen_res = run_ffmpeg([
+                "-f", "lavfi",
+                "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+            ])
+            if gen_res.returncode != 0:
+                meta["status"] = "failed"
+                meta["error"] = ffmpeg_error(gen_res)
+                write_meta(meta_file, meta)
+                return
+
+            thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
             meta["status"] = "completed"
             meta["file_path"] = str(out_mp4)
-            meta["thumbnail_path"] = str(thumb_png)
-            meta["is_mock"] = True
-            with open(meta_file, "w") as f:
-                json.dump(meta, f, indent=2)
+            if thumb_res.returncode == 0:
+                meta["thumbnail_path"] = str(thumb_png)
+            else:
+                meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+            write_meta(meta_file, meta)
 
         background_tasks.add_task(_mock_gen)
 
@@ -385,16 +458,12 @@ def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks):
     def _run_upscale():
         start_t = time.time()
         # Fast 4K chain: 1024x576 -> 4096x2304 (Lanczos/CoreML) -> 3840x2160 UHD
-        cmd = (
-            f"ffmpeg -y -i '{source_mp4}' "
-            f"-vf 'scale=3840:2160:flags=lanczos' "
-            f"-c:v h264_videotoolbox -b:v 40M -pix_fmt yuv420p '{out_4k_mp4}' 2>/dev/null"
-        )
-        subprocess.run(cmd, shell=True)
+        scale_res = run_ffmpeg([
+            "-i", str(source_mp4),
+            "-vf", "scale=3840:2160:flags=lanczos",
+            "-c:v", "h264_videotoolbox", "-b:v", "40M", "-pix_fmt", "yuv420p", str(out_4k_mp4),
+        ])
         dur = round(time.time() - start_t, 2)
-
-        thumb_4k = OUTPUTS_DIR / f"{out_4k_id}.png"
-        subprocess.run(f"ffmpeg -y -ss 00:00:01 -i '{out_4k_mp4}' -frames:v 1 '{thumb_4k}' 2>/dev/null", shell=True)
 
         meta_4k = {
             "id": out_4k_id,
@@ -406,11 +475,21 @@ def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks):
             "upscale_factor": "4x UHD",
             "upscale_latency_sec": dur,
             "file_path": str(out_4k_mp4),
-            "thumbnail_path": str(thumb_4k),
             "created_at": time.time(),
         }
-        with open(out_4k_meta, "w") as f:
-            json.dump(meta_4k, f, indent=2)
+        if scale_res.returncode != 0:
+            meta_4k["status"] = "failed"
+            meta_4k["error"] = ffmpeg_error(scale_res)
+            write_meta(out_4k_meta, meta_4k)
+            return
+
+        thumb_4k = OUTPUTS_DIR / f"{out_4k_id}.png"
+        thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_4k_mp4), "-frames:v", "1", str(thumb_4k)])
+        if thumb_res.returncode == 0:
+            meta_4k["thumbnail_path"] = str(thumb_4k)
+        else:
+            meta_4k["thumbnail_error"] = ffmpeg_error(thumb_res)
+        write_meta(out_4k_meta, meta_4k)
 
     background_tasks.add_task(_run_upscale)
     return {"status": "upscaling", "output_id": out_4k_id, "target_resolution": "3840x2160 UHD"}
@@ -516,11 +595,20 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
         # 1. Ensure 4K plate exists (Upscale plate first)
         plate_4k = OUTPUTS_DIR / f"{req.asset_id}_4k.mp4"
         if not plate_4k.exists():
-            subprocess.run(
-                f"ffmpeg -y -i '{source_mp4}' -vf 'scale=3840:2160:flags=lanczos' "
-                f"-c:v h264_videotoolbox -b:v 40M -pix_fmt yuv420p '{plate_4k}' 2>/dev/null",
-                shell=True
-            )
+            plate_res = run_ffmpeg([
+                "-i", str(source_mp4),
+                "-vf", "scale=3840:2160:flags=lanczos",
+                "-c:v", "h264_videotoolbox", "-b:v", "40M", "-pix_fmt", "yuv420p", str(plate_4k),
+            ])
+            if plate_res.returncode != 0:
+                write_meta(master_meta, {
+                    "id": master_id,
+                    "source_id": req.asset_id,
+                    "status": "failed",
+                    "error": ffmpeg_error(plate_res),
+                    "created_at": time.time(),
+                })
+                return
 
         # 2. Build 4K Glass Math Card Overlay with PIL
         overlay_png = OUTPUTS_DIR / f"{master_id}_overlay.png"
@@ -559,19 +647,15 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
         img.save(overlay_png)
 
         # 3. Composite 4K PNG over 4K plate with strict Rec.709 NCLC 1-1-1 tagging
-        codec_flag = "-c:v prores_ks -profile:v 3" if req.export_prores else "-c:v h264_videotoolbox -b:v 45M"
-        cmd = (
-            f"ffmpeg -y -i '{plate_4k}' -i '{overlay_png}' "
-            f"-filter_complex '[0:v][1:v]overlay=0:0' "
-            f"{codec_flag} -pix_fmt yuv420p "
-            f"-color_primaries bt709 -color_trc bt709 -colorspace bt709 "
-            f"'{master_mp4}' 2>/dev/null"
-        )
-        subprocess.run(cmd, shell=True)
+        codec_args = ["-c:v", "prores_ks", "-profile:v", "3"] if req.export_prores else ["-c:v", "h264_videotoolbox", "-b:v", "45M"]
+        composite_res = run_ffmpeg([
+            "-i", str(plate_4k), "-i", str(overlay_png),
+            "-filter_complex", "[0:v][1:v]overlay=0:0",
+            *codec_args, "-pix_fmt", "yuv420p",
+            "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
+            str(master_mp4),
+        ])
         dur = round(time.time() - start_t, 2)
-
-        thumb_master = OUTPUTS_DIR / f"{master_id}.png"
-        subprocess.run(f"ffmpeg -y -ss 00:00:00.5 -i '{master_mp4}' -frames:v 1 '{thumb_master}' 2>/dev/null", shell=True)
 
         meta_master = {
             "id": master_id,
@@ -585,11 +669,21 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
             "overlay_formula": math_text,
             "latency_sec": dur,
             "file_path": str(master_mp4),
-            "thumbnail_path": str(thumb_master),
             "created_at": time.time(),
         }
-        with open(master_meta, "w") as f:
-            json.dump(meta_master, f, indent=2)
+        if composite_res.returncode != 0:
+            meta_master["status"] = "failed"
+            meta_master["error"] = ffmpeg_error(composite_res)
+            write_meta(master_meta, meta_master)
+            return
+
+        thumb_master = OUTPUTS_DIR / f"{master_id}.png"
+        thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(master_mp4), "-frames:v", "1", str(thumb_master)])
+        if thumb_res.returncode == 0:
+            meta_master["thumbnail_path"] = str(thumb_master)
+        else:
+            meta_master["thumbnail_error"] = ffmpeg_error(thumb_res)
+        write_meta(master_meta, meta_master)
 
     background_tasks.add_task(_run_composite)
     return {"status": "compositing", "master_id": master_id, "resolution": "3840x2160 UHD (Native 4K Vector)"}
@@ -674,9 +768,7 @@ def list_assets():
 @app.api_route("/api/media/{filename}", methods=["GET", "HEAD"])
 def get_media_file(filename: str):
     """Stream video or thumbnail file from outputs directory."""
-    file_path = OUTPUTS_DIR / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path = resolve_output(filename)
     if filename.endswith(".mp4"):
         return FileResponse(file_path, media_type="video/mp4")
     elif filename.endswith(".png"):
@@ -688,30 +780,20 @@ def get_media_file(filename: str):
 def get_asset_video_file(asset_id: str):
     """Stream MP4 video file for a specific asset ID."""
     clean_id = asset_id.replace(".mp4", "")
-    file_path = OUTPUTS_DIR / f"{clean_id}.mp4"
-    if not file_path.exists():
-        matches = list(OUTPUTS_DIR.glob(f"*{clean_id}*.mp4"))
-        if matches:
-            file_path = matches[0]
-        else:
-            raise HTTPException(status_code=404, detail=f"Asset video '{asset_id}' not found")
-    return FileResponse(file_path, media_type="video/mp4")
+    return FileResponse(resolve_output(f"{clean_id}.mp4"), media_type="video/mp4")
 
 
 @app.api_route("/api/assets/{asset_id}/thumbnail", methods=["GET", "HEAD"])
 def get_asset_thumbnail_file(asset_id: str):
     """Stream thumbnail PNG image for a specific asset ID."""
     clean_id = asset_id.replace(".png", "").replace(".mp4", "")
-    file_path = OUTPUTS_DIR / f"{clean_id}.png"
-    if not file_path.exists():
-        matches = list(OUTPUTS_DIR.glob(f"*{clean_id}*.png"))
-        if matches:
-            file_path = matches[0]
-        else:
-            fallback = PLUTO_ROOT / "studio" / "assets" / "placeholder.png"
-            if fallback.exists():
-                return FileResponse(fallback, media_type="image/png")
-            raise HTTPException(status_code=404, detail=f"Asset thumbnail '{asset_id}' not found")
+    try:
+        file_path = resolve_output(f"{clean_id}.png")
+    except HTTPException:
+        fallback = PLUTO_ROOT / "studio" / "assets" / "placeholder.png"
+        if fallback.exists():
+            return FileResponse(fallback, media_type="image/png")
+        raise HTTPException(status_code=404, detail=f"Asset thumbnail '{asset_id}' not found")
     return FileResponse(file_path, media_type="image/png")
 
 
@@ -728,4 +810,4 @@ if __name__ == "__main__":
     print(f"\n──────────────────────────────────────────────────────────────────────────")
     print(f"  🎬 PLUTO STUDIO LIVE ON: http://localhost:{port}")
     print(f"──────────────────────────────────────────────────────────────────────────\n")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="127.0.0.1", port=port)
