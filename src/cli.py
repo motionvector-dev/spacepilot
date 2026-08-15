@@ -11,6 +11,7 @@ import sys
 import time
 import json
 import argparse
+import shutil
 import subprocess
 import urllib.request
 import urllib.error
@@ -35,6 +36,19 @@ DEFAULT_CONFIG = {
     "default_seconds": 4.0,
     "default_steps": 30,
 }
+
+
+WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
+
+
+def worker_headers(extra=None):
+    """Auth headers for the remote LTX worker; refuses to call it unauthenticated."""
+    if not WORKER_TOKEN:
+        raise RuntimeError("LOCAL_WORKER_TOKEN is not set; export the GPU worker token first")
+    headers = {"Authorization": f"Bearer {WORKER_TOKEN}"}
+    if extra:
+        headers.update(extra)
+    return headers
 
 
 def load_config():
@@ -248,10 +262,15 @@ def cmd_generate(args, cfg):
         payload["seed"] = seed
 
     data = json.dumps(payload).encode()
+    try:
+        headers = worker_headers({"Content-Type": "application/json"})
+    except RuntimeError as e:
+        print(f"  Error: {e}")
+        return
     req = urllib.request.Request(
         f"http://{ip}:5000/generate",
         data=data,
-        headers={"Content-Type": "application/json", "Authorization": "Bearer local-dev-token"},
+        headers=headers,
         method="POST"
     )
 
@@ -273,17 +292,18 @@ def cmd_generate(args, cfg):
         time.sleep(1.5)
         print("█", end="", flush=True)
         try:
-            st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers={"Authorization": "Bearer local-dev-token"})
+            st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
             with urllib.request.urlopen(st_req) as st_resp:
                 st_data = json.loads(st_resp.read().decode())
                 if st_data.get("status") == "completed":
                     dur = time.time() - start_t
                     print(f"] Done in {dur:.1f}s!")
-                    
+
                     # Download MP4
-                    dl_url = f"http://{ip}:5000/download/{job_id}"
+                    dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
                     out_path = OUTPUTS_DIR / f"{job_id}.mp4"
-                    urllib.request.urlretrieve(dl_url, out_path)
+                    with urllib.request.urlopen(dl_req) as dl_resp, open(out_path, "wb") as out_f:
+                        shutil.copyfileobj(dl_resp, out_f)
                     print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
                     
                     if args.open:

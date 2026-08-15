@@ -3,6 +3,14 @@
  * Integrated AI Director, DaVinci Multi-Track Timeline & MotionVector Compositor
  */
 
+// Server-supplied strings (prompts, titles, narration, filenames) are untrusted:
+// run them through this before they reach an innerHTML template.
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 let state = {
   activeAsset: null,
   assets: [],
@@ -436,17 +444,25 @@ function setupEventListeners() {
   // Download File
   elements.btnDownloadCurrent.addEventListener('click', () => {
     if (state.activeAsset) {
-      window.open(`/api/assets/${state.activeAsset.id}/file`, '_blank');
+      window.open(`/api/assets/${encodeURIComponent(state.activeAsset.id)}/file`, '_blank');
     }
   });
 
   // GPU Action (Launch / Terminate)
+  let plutoToken = null;
+  async function authHeaders() {
+    if (!plutoToken) {
+      const r = await fetch('/api/token');
+      plutoToken = (await r.json()).token;
+    }
+    return { 'X-Pluto-Token': plutoToken };
+  }
   elements.btnLaunchGpu.addEventListener('click', async () => {
     if (!state.gpuStatus || !state.gpuStatus.instance || state.gpuStatus.instance.state === 'stopped') {
       try {
         elements.gpuActionLabel.textContent = 'Launching Spot GPU...';
         elements.btnLaunchGpu.disabled = true;
-        await fetch('/api/gpu/launch', { method: 'POST' });
+        await fetch('/api/gpu/launch', { method: 'POST', headers: await authHeaders() });
         await refreshStatus();
       } catch (e) {
         console.error('Launch failed', e);
@@ -458,7 +474,7 @@ function setupEventListeners() {
         try {
           elements.gpuActionLabel.textContent = 'Terminating...';
           elements.btnLaunchGpu.disabled = true;
-          await fetch('/api/gpu/terminate', { method: 'POST' });
+          await fetch('/api/gpu/terminate', { method: 'POST', headers: await authHeaders() });
           await refreshStatus();
         } catch (e) {
           console.error('Terminate failed', e);
@@ -613,14 +629,14 @@ function renderStoryboardScenes(scenes) {
     card.className = 'storyboard-card';
     card.innerHTML = `
       <div class="scene-card-header">
-        <span class="scene-idx-tag">SCENE ${scene.scene_idx} · ${scene.title.split(':')[0]}</span>
-        <span class="scene-dur-tag">${scene.duration_sec}s</span>
+        <span class="scene-idx-tag">SCENE ${esc(scene.scene_idx)} · ${esc(String(scene.title || '').split(':')[0])}</span>
+        <span class="scene-dur-tag">${esc(scene.duration_sec)}s</span>
       </div>
       <div class="scene-card-body">
-        <h4 class="scene-card-title">${scene.title}</h4>
-        <div class="scene-prompt-box">🎬 <strong>Prompt:</strong> ${scene.prompt}</div>
+        <h4 class="scene-card-title">${esc(scene.title)}</h4>
+        <div class="scene-prompt-box">🎬 <strong>Prompt:</strong> ${esc(scene.prompt)}</div>
         <div class="scene-math-preview katex-scene-slot" id="katexScene_${i}"></div>
-        <div class="scene-narration-box">🎙️ "${scene.narration}"</div>
+        <div class="scene-narration-box">🎙️ "${esc(scene.narration)}"</div>
       </div>
       <div class="scene-card-footer">
         <div class="scene-take-auditions">
@@ -878,12 +894,12 @@ function renderAssetGrid(assets) {
     
     card.innerHTML = `
       <div class="asset-thumb-wrapper">
-        <img class="asset-thumb" src="/api/assets/${asset.id}/thumbnail" alt="" loading="lazy" onerror="this.style.opacity='0'" />
+        <img class="asset-thumb" src="/api/assets/${encodeURIComponent(asset.id)}/thumbnail" alt="" loading="lazy" onerror="this.style.opacity='0'" />
         <span class="asset-badge ${isMaster ? 'master' : is4k ? 'uhd' : ''}">${isMaster ? '4K MASTER' : is4k ? '4K UHD' : 'SD'}</span>
       </div>
       <div class="asset-card-meta">
-        <div class="asset-prompt-text">${asset.overlay_title || asset.prompt || asset.id}</div>
-        <div class="asset-dims">${asset.width}×${asset.height} · ${asset.seconds || 4}s</div>
+        <div class="asset-prompt-text">${esc(asset.overlay_title || asset.prompt || asset.id)}</div>
+        <div class="asset-dims">${esc(asset.width)}×${esc(asset.height)} · ${esc(asset.seconds || 4)}s</div>
       </div>
     `;
     card.addEventListener('click', () => selectAsset(asset));
@@ -895,7 +911,7 @@ function selectAsset(asset) {
   state.activeAsset = asset;
   document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
   
-  elements.mainVideoPlayer.src = `/api/assets/${asset.id}/file`;
+  elements.mainVideoPlayer.src = `/api/assets/${encodeURIComponent(asset.id)}/file`;
   elements.mainVideoPlayer.load();
   elements.mainVideoPlayer.play().catch(() => {});
   setPlaying(true);

@@ -30,8 +30,12 @@ print("Download complete!")
 PY
 
 echo "==> [4/4] Starting LTX-2.5 resident Flask worker on port 5000..."
+if [ -z "${LOCAL_WORKER_TOKEN:-}" ]; then
+  echo "ERROR: LOCAL_WORKER_TOKEN must be set; the worker refuses to run unauthenticated." >&2
+  exit 1
+fi
 cd /scratch/worker
-nohup /opt/pytorch/bin/python ltx_worker.py > /scratch/worker/worker.log 2>&1 &
+LOCAL_WORKER_TOKEN="$LOCAL_WORKER_TOKEN" nohup /opt/pytorch/bin/python ltx_worker.py > /scratch/worker/worker.log 2>&1 &
 
 echo "==> LTX Worker launched! Monitor logs with: tail -f /scratch/worker/worker.log"
 echo "==> Waiting for /health check..."
