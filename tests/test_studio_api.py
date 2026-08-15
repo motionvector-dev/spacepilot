@@ -3,6 +3,7 @@
 
 import os
 import sys
+import time
 from pathlib import Path
 
 # Add project root to sys.path
@@ -101,6 +102,42 @@ def test_studio_4k_upscale_chain():
     assert data["output_id"] == f"{asset_id}_4k"
 
 
+def test_studio_full_pipeline():
+    """Verify combined pipeline including AI Director and Compositor."""
+    # 6. Test AI Director Auto-Scripting
+    print("Testing AI Director Auto-Script (/api/director/auto-script)...")
+    res_script = client.post("/api/director/auto-script", json={"topic": "How diffusion models work", "style": "3blue1brown"})
+    assert res_script.status_code == 200, f"Auto-script failed: {res_script.text}"
+    script_data = res_script.json()
+    assert script_data["scene_count"] == 5, f"Expected 5 scenes, got {script_data['scene_count']}"
+    print(f"  ✓ Auto-script generated {script_data['scene_count']} scenes ({script_data['total_duration_sec']}s)")
+
+    # 7. Generate a mock asset for compositing
+    gen_res = client.post("/api/generate", json={"prompt": "Director scene plate", "seconds": 1.0})
+    assert gen_res.status_code == 200
+    asset_id = gen_res.json()["job_id"]
+    time.sleep(0.5)
+
+    # 8. Test MotionVector Compositor (P0 Composite Order Enforced)
+    print("Testing MotionVector Compositor (/api/composite-motionvector)...")
+    res_comp = client.post("/api/composite-motionvector", json={
+        "asset_id": asset_id,
+        "title": "Diffusion Velocity Field",
+        "latex_formula": "dx_t = f(x_t)dt + g(t)dw_t",
+        "accent_color": "#3b82f6",
+        "card_position": "bottom_left",
+        "export_4k": True
+    })
+    assert res_comp.status_code == 200, f"Composite failed: {res_comp.text}"
+    comp_data = res_comp.json()
+    assert "master_id" in comp_data, "No master_id returned"
+    print(f"  ✓ MotionVector Composite initiated: {comp_data['master_id']} ({comp_data['resolution']})")
+
+    print("\n========================================================")
+    print("✨ ALL PLUTO STUDIO + MOTIONVECTOR TESTS PASSED (100%)")
+    print("========================================================\n")
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_studio_status_endpoint()
@@ -113,4 +150,5 @@ if __name__ == "__main__":
     print("✓ Assets listing test passed")
     test_studio_4k_upscale_chain()
     print("✓ 4K Super-Resolution chain test passed")
-    print("\n🎉 ALL PLUTO STUDIO TESTS PASSED (100% SUCCESS)!")
+    test_studio_full_pipeline()
+    print("🎉 ALL PLUTO STUDIO + MOTIONVECTOR TESTS PASSED (100% SUCCESS)!")
