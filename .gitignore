@@ -8,3 +8,4 @@ venv/
 outputs/
 scratch/
 .studio_token
+.pluto_config.json
