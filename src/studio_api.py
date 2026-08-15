@@ -26,6 +26,7 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -54,8 +55,24 @@ STUDIO_TOKEN = TOKEN_FILE.read_text().strip()
 
 
 def require_token(x_pluto_token: Optional[str] = Header(None)) -> None:
-    if not (x_pluto_token and secrets.compare_digest(x_pluto_token, STUDIO_TOKEN)):
+    try:
+        ok = bool(x_pluto_token) and secrets.compare_digest(x_pluto_token, STUDIO_TOKEN)
+    except TypeError:
+        # Headers decode as latin-1, and compare_digest rejects non-ASCII str.
+        ok = False
+    if not ok:
         raise HTTPException(status_code=401, detail="Missing or invalid X-Pluto-Token")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request, exc: RequestValidationError):
+    """422 without echoing the offending value.
+
+    The default handler puts the raw input in the body, and a rejected inf/nan
+    then fails to serialise, turning the 422 into a 500.
+    """
+    detail = [{"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
 
 
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
@@ -71,14 +88,31 @@ def worker_headers(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     return headers
 
 
+FFMPEG_TIMEOUT_SEC = int(os.environ.get("PLUTO_FFMPEG_TIMEOUT", 3600))
+
+
 def run_ffmpeg(args: List[str]) -> subprocess.CompletedProcess:
     """Run ffmpeg from an argv list (never a shell string) and keep stderr for errors."""
-    return subprocess.run(
-        ["ffmpeg", "-y", *args],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    try:
+        return subprocess.run(
+            ["ffmpeg", "-y", *args],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=FFMPEG_TIMEOUT_SEC,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            args, returncode=-1, stdout="", stderr=f"timed out after {FFMPEG_TIMEOUT_SEC}s",
+        )
+
+
+def discard_partial(path: Path) -> None:
+    """Drop a half-written render so the asset library does not list it."""
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def ffmpeg_error(res: subprocess.CompletedProcess) -> str:
@@ -94,8 +128,13 @@ def write_meta(path: Path, meta: dict) -> None:
 
 def resolve_output(name: str) -> Path:
     """Resolve a name to an existing file inside OUTPUTS_DIR, or raise 404."""
-    path = (OUTPUTS_DIR / name).resolve()
-    if not path.is_relative_to(OUTPUTS_DIR.resolve()) or not path.is_file():
+    try:
+        path = (OUTPUTS_DIR / name).resolve()
+        contained = path.is_relative_to(OUTPUTS_DIR.resolve()) and path.is_file()
+    except ValueError:
+        # Embedded null byte and friends: not a filename, not a 500.
+        contained = False
+    if not contained:
         raise HTTPException(status_code=404, detail=f"'{name}' not found")
     return path
 
@@ -114,15 +153,17 @@ app.add_middleware(
 # ─────────────────────────────────────────────────────────────────────────────
 
 class GenerateRequest(BaseModel):
-    prompt: str
-    negative_prompt: Optional[str] = "worst quality, blurry, distorted, jittery"
-    seconds: float = 4.0
-    width: int = 1024
-    height: int = 576
-    seed: Optional[int] = None
-    steps: int = 30
+    # Bounded because these drive ffmpeg and GPU render time; an unbounded
+    # duration encodes forever and never returns.
+    prompt: str = Field(max_length=4000)
+    negative_prompt: Optional[str] = Field("worst quality, blurry, distorted, jittery", max_length=4000)
+    seconds: float = Field(4.0, gt=0, le=600, allow_inf_nan=False)
+    width: int = Field(1024, ge=64, le=4096)
+    height: int = Field(576, ge=64, le=4096)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+    steps: int = Field(30, ge=1, le=200)
     enhance: bool = False
-    takes: int = 1
+    takes: int = Field(1, ge=1, le=16)
 
 
 ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
@@ -421,6 +462,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks):
             if gen_res.returncode != 0:
                 meta["status"] = "failed"
                 meta["error"] = ffmpeg_error(gen_res)
+                discard_partial(out_mp4)
                 write_meta(meta_file, meta)
                 return
 
@@ -480,6 +522,8 @@ def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks):
         if scale_res.returncode != 0:
             meta_4k["status"] = "failed"
             meta_4k["error"] = ffmpeg_error(scale_res)
+            meta_4k["is_upscaled"] = False
+            discard_partial(out_4k_mp4)
             write_meta(out_4k_meta, meta_4k)
             return
 
@@ -601,6 +645,7 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
                 "-c:v", "h264_videotoolbox", "-b:v", "40M", "-pix_fmt", "yuv420p", str(plate_4k),
             ])
             if plate_res.returncode != 0:
+                discard_partial(plate_4k)
                 write_meta(master_meta, {
                     "id": master_id,
                     "source_id": req.asset_id,
@@ -674,6 +719,9 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
         if composite_res.returncode != 0:
             meta_master["status"] = "failed"
             meta_master["error"] = ffmpeg_error(composite_res)
+            meta_master["is_upscaled"] = False
+            meta_master["is_motionvector_master"] = False
+            discard_partial(master_mp4)
             write_meta(master_meta, meta_master)
             return
 
@@ -763,6 +811,13 @@ def list_assets():
 
     assets.sort(key=lambda x: x.get("created_at", 0), reverse=True)
     return {"assets": assets, "count": len(assets)}
+
+
+@app.get("/api/jobs/{job_id}")
+def get_job(job_id: str):
+    """Job metadata. A failed render has no video, so it is invisible in /api/assets."""
+    with open(resolve_output(f"{job_id}.json")) as f:
+        return json.load(f)
 
 
 @app.api_route("/api/media/{filename}", methods=["GET", "HEAD"])
