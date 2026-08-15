@@ -7,7 +7,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Force mock video mode for testing to prevent model downloads
 os.environ["MOCK_VIDEO"] = "true"
 
+import pytest
 from fastapi.testclient import TestClient
+
+# The legacy bridge pulls in the full torch stack at import. CI installs only
+# what the studio needs, so skip rather than drag 2 GB of wheels in for 3 tests.
+pytest.importorskip("torch", reason="legacy LTX bridge requires torch")
+
 from src.server import app
 
 client = TestClient(app)
