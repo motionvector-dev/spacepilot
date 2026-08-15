@@ -67,24 +67,28 @@ def save_config(cfg):
         json.dump(cfg, f, indent=2)
 
 
-def run_cmd(cmd, check=True, capture=False):
+def run_cmd(cmd, check=True, capture=False, stdin_text=None):
+    """Run an argv list. Strings are rejected so no caller can reintroduce a shell."""
+    if isinstance(cmd, str):
+        raise TypeError("run_cmd takes an argv list, not a shell string")
     if capture:
-        res = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res = subprocess.run(cmd, text=True, input=stdin_text, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if check and res.returncode != 0:
-            raise RuntimeError(f"Command failed ({res.returncode}): {cmd}\n{res.stderr}")
+            raise RuntimeError(f"Command failed ({res.returncode}): {' '.join(cmd)}\n{res.stderr}")
         return res.stdout.strip()
-    else:
-        return subprocess.run(cmd, shell=True, check=check)
+    return subprocess.run(cmd, check=check, text=True, input=stdin_text)
 
 
 def get_instance_info(cfg):
-    cmd = (
-        f"aws --profile {cfg['aws_profile']} --region {cfg['aws_region']} ec2 describe-instances "
-        f"--filters \"Name=tag:Name,Values=pluto-gpu-research,ltx-spot-ec2,ltx-ec2\" "
-        f"\"Name=instance-state-name,Values=pending,running,stopping,stopped\" "
-        f"--query 'Reservations[].Instances[][InstanceId,State.Name,PublicIpAddress,InstanceType,LaunchTime]' "
-        f"--output json"
-    )
+    cmd = [
+        "aws", "--profile", cfg["aws_profile"], "--region", cfg["aws_region"],
+        "ec2", "describe-instances",
+        "--filters",
+        "Name=tag:Name,Values=pluto-gpu-research,ltx-spot-ec2,ltx-ec2",
+        "Name=instance-state-name,Values=pending,running,stopping,stopped",
+        "--query", "Reservations[].Instances[][InstanceId,State.Name,PublicIpAddress,InstanceType,LaunchTime]",
+        "--output", "json",
+    ]
     try:
         raw = run_cmd(cmd, capture=True)
         items = json.loads(raw) if raw else []
@@ -182,7 +186,7 @@ def cmd_launch(args, cfg):
         print(f"  Error: {infra_script} not found.")
         return
 
-    run_cmd(f"bash {infra_script} launch")
+    run_cmd(["bash", str(infra_script), "launch"])
     time.sleep(2)
     inst = get_instance_info(cfg)
     if inst and inst["ip"]:
@@ -199,12 +203,20 @@ def cmd_deploy(args, cfg):
 
     ip = inst["ip"]
     key = cfg["key_file"]
+    if not WORKER_TOKEN:
+        print("  Error: LOCAL_WORKER_TOKEN is not set; the worker would start unauthenticated.")
+        return
+
     print(f"  Syncing worker files to {ip}...")
-    run_cmd(f"ssh -o StrictHostKeyChecking=accept-new -i {key} ubuntu@{ip} 'sudo mkdir -p /scratch/worker && sudo chown -R ubuntu:ubuntu /scratch'")
-    run_cmd(f"scp -i {key} {PLUTO_ROOT}/src/ltx_worker.py ubuntu@{ip}:/scratch/worker/ltx_worker.py")
-    run_cmd(f"scp -i {key} {PLUTO_ROOT}/infra/setup_ltx_ec2.sh ubuntu@{ip}:/scratch/worker/setup.sh")
+    run_cmd(["ssh", "-o", "StrictHostKeyChecking=accept-new", "-i", key, f"ubuntu@{ip}",
+             "sudo mkdir -p /scratch/worker && sudo chown -R ubuntu:ubuntu /scratch"])
+    run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/src/ltx_worker.py", f"ubuntu@{ip}:/scratch/worker/ltx_worker.py"])
+    run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/infra/setup_ltx_ec2.sh", f"ubuntu@{ip}:/scratch/worker/setup.sh"])
     print("  Starting setup & warmup in background...")
-    run_cmd(f"ssh -i {key} ubuntu@{ip} 'cd /scratch/worker && bash setup.sh'")
+    # Token arrives on stdin so it never lands in the remote process list.
+    run_cmd(["ssh", "-i", key, f"ubuntu@{ip}",
+             "cd /scratch/worker && export LOCAL_WORKER_TOKEN=$(cat) && bash setup.sh"],
+            stdin_text=WORKER_TOKEN)
     print("\n  Deployment complete! Check status with: pluto status")
 
 
@@ -216,7 +228,7 @@ def cmd_ssh(args, cfg):
     key = cfg["key_file"]
     ip = inst["ip"]
     print(f"Connecting to ubuntu@{ip}...")
-    os.system(f"ssh -i {key} ubuntu@{ip}")
+    subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}"])
 
 
 def cmd_logs(args, cfg):
@@ -227,7 +239,8 @@ def cmd_logs(args, cfg):
     key = cfg["key_file"]
     ip = inst["ip"]
     print(f"Streaming worker logs from {ip} (Ctrl+C to stop)...")
-    os.system(f"ssh -i {key} ubuntu@{ip} 'tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log'")
+    subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}",
+                    "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"])
 
 
 def cmd_generate(args, cfg):
@@ -307,7 +320,7 @@ def cmd_generate(args, cfg):
                     print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
                     
                     if args.open:
-                        os.system(f"open {out_path}")
+                        subprocess.run(["open", str(out_path)])
                     break
                 elif st_data.get("status") == "failed":
                     print(f"\n  Error: Job failed: {st_data.get('error')}")
@@ -325,7 +338,7 @@ def cmd_sync(args, cfg):
     ip = inst["ip"]
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     print(f"Syncing /scratch/out/ from {ip} to {OUTPUTS_DIR}...")
-    os.system(f"rsync -avz -e 'ssh -i {key}' ubuntu@{ip}:/scratch/out/ {OUTPUTS_DIR}/")
+    subprocess.run(["rsync", "-avz", "-e", f"ssh -i {key}", f"ubuntu@{ip}:/scratch/out/", f"{OUTPUTS_DIR}/"])
     print("Sync complete!")
 
 
@@ -339,7 +352,7 @@ def cmd_studio(args, cfg):
         import webbrowser
         time.sleep(1.0)
         webbrowser.open(f"http://localhost:{port}")
-    os.system(f"PLUTO_STUDIO_PORT={port} /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python {studio_script}")
+    subprocess.run([sys.executable, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
 
 
 def cmd_terminate(args, cfg):
@@ -358,7 +371,7 @@ def cmd_terminate(args, cfg):
             return
 
     infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
-    run_cmd(f"bash {infra_script} terminate")
+    run_cmd(["bash", str(infra_script), "terminate"])
     print("  Instance terminated cleanly. Zero ongoing billing.")
 
 
