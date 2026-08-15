@@ -183,6 +183,14 @@ class MusicRequest(BaseModel):
     backend: str = Field("local", pattern=r"^(local|cloud)$")
 
 
+class VoiceRequest(BaseModel):
+    text: str = Field(max_length=8000)
+    voice: str = Field("af_heart", pattern=r"^[A-Za-z0-9_+.-]{1,64}$")
+    speed: float = Field(1.0, ge=0.5, le=2.0, allow_inf_nan=False)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+    backend: str = Field("local", pattern=r"^(local|cloud)$")
+
+
 ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
 
 
@@ -836,7 +844,9 @@ def list_assets():
 
 MLX_SERVE_URL = os.environ.get("MLX_SERVE_URL", "http://127.0.0.1:11234")
 MUSIC_MODEL = os.environ.get("PLUTO_MUSIC_MODEL", "ddalcu/MiniMax-Music3-MLX-Serve-8bit")
+VOICE_MODEL = os.environ.get("PLUTO_VOICE_MODEL", "kokoro")
 MUSIC_TARGET_LUFS = -16
+VOICE_PEAK_DBFS = -1.0
 
 CLOUD_NOT_READY = (
     "backend='cloud' is not implemented. MLX does not run on CUDA, so the spot box "
@@ -967,6 +977,79 @@ def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: 
     background_tasks.add_task(_run_music)
     return queued_audio_job(meta)
 
+
+@app.post("/api/generate/voice")
+def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    """Queue a voiceover on the local MLX server, peak-limited to -1 dBFS.
+
+    No loudnorm: VO gets mixed later, so program loudness is the mixer's call.
+    """
+    if req.backend == "cloud":
+        raise HTTPException(status_code=501, detail=CLOUD_NOT_READY)
+
+    job_id = f"voice_{uuid.uuid4().hex[:10]}"
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    raw_wav = OUTPUTS_DIR / f"{job_id}_raw.wav"
+    out_wav = OUTPUTS_DIR / f"{job_id}.wav"
+    meta = {
+        "id": job_id,
+        "kind": "voice",
+        "text": req.text,
+        "voice": req.voice,
+        "speed": req.speed,
+        "seed": req.seed,
+        "backend": req.backend,
+        "status": "queued",
+        "created_at": time.time(),
+    }
+
+    def _run_voice():
+        meta["status"] = "running"
+        write_meta(meta_file, meta)
+        start_t = time.time()
+        payload = {
+            "model": VOICE_MODEL,
+            "input": req.text,
+            "voice": req.voice,
+            "speed": req.speed,
+            "response_format": "wav",
+        }
+        if req.seed is not None:
+            payload["seed"] = req.seed
+        try:
+            audio = mlx_generate_audio("/v1/audio/speech", payload, timeout=FFMPEG_TIMEOUT_SEC)
+            raw_wav.write_bytes(audio)
+        except Exception as e:
+            meta["status"] = "failed"
+            meta["error"] = f"mlx-serve: {e}"
+            discard_partial(raw_wav)
+            write_meta(meta_file, meta)
+            return
+
+        meta["generate_sec"] = round(time.time() - start_t, 1)
+        limit = run_ffmpeg([
+            "-v", "error", "-i", str(raw_wav),
+            "-af", f"alimiter=limit={VOICE_PEAK_DBFS}dB",
+            str(out_wav),
+        ])
+        if limit.returncode != 0:
+            # Voice is cheap to regenerate, so no _raw exception here.
+            meta["status"] = "failed"
+            meta["error"] = ffmpeg_error(limit)
+            discard_partial(out_wav)
+            discard_partial(raw_wav)
+            write_meta(meta_file, meta)
+            return
+
+        discard_partial(raw_wav)
+        meta["status"] = "completed"
+        meta["file_path"] = str(out_wav)
+        meta["audio_url"] = f"/api/media/{job_id}.wav"
+        meta["peak_dbfs"] = VOICE_PEAK_DBFS
+        write_meta(meta_file, meta)
+
+    background_tasks.add_task(_run_voice)
+    return queued_audio_job(meta)
 
 
 @app.get("/api/jobs/{job_id}")

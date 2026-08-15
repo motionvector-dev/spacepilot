@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the music generation endpoint.
+"""Tests for the music and voice generation endpoints.
 
 The MLX backend is stubbed here. Live generation is verified separately against
 a running mlx-serve; these cover the dispatcher, validation and job semantics.
@@ -23,6 +23,7 @@ client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
 
 MUSIC_BODY = {"prompt": "warm ambient pad", "lyrics": "[Intro]\n[Instrumental]\n[Outro]"}
+VOICE_BODY = {"text": "Diffusion models start from noise."}
 
 
 def wait_for_job(job_id, timeout=60):
@@ -47,13 +48,14 @@ def silent_wav(seconds=1):
     return data
 
 
-def test_music_requires_the_token():
+def test_music_and_voice_require_the_token():
     assert client.post("/api/generate/music", json=MUSIC_BODY).status_code == 401
+    assert client.post("/api/generate/voice", json=VOICE_BODY).status_code == 401
 
 
 def test_cloud_backend_is_an_honest_501():
     """Scaffold only: say what is missing rather than pretending to dispatch."""
-    for path, body in [("/api/generate/music", MUSIC_BODY)]:
+    for path, body in [("/api/generate/music", MUSIC_BODY), ("/api/generate/voice", VOICE_BODY)]:
         response = client.post(path, json={**body, "backend": "cloud"}, headers=AUTH)
         assert response.status_code == 501
         detail = response.json()["detail"].lower()
@@ -76,6 +78,13 @@ def test_bounds_are_enforced():
     )
     assert response.status_code == 422
 
+    for body in [
+        {**VOICE_BODY, "speed": 0.1},
+        {**VOICE_BODY, "speed": 5},
+        {**VOICE_BODY, "voice": "../../etc/passwd"},
+        {**VOICE_BODY, "voice": "a b"},
+    ]:
+        assert client.post("/api/generate/voice", json=body, headers=AUTH).status_code == 422
 
 
 def test_music_job_completes_and_normalizes(monkeypatch):
@@ -97,6 +106,19 @@ def test_music_job_completes_and_normalizes(monkeypatch):
     assert client.get(f"/api/media/{job_id}.wav").headers["content-type"] == "audio/wav"
     assert client.get(f"/api/jobs/{job_id}").json()["status"] == "completed"
 
+
+def test_voice_job_completes_and_drops_its_raw(monkeypatch):
+    audio = silent_wav(1)
+    monkeypatch.setattr(studio_api, "mlx_generate_audio", lambda path, payload, timeout: audio)
+
+    response = client.post("/api/generate/voice", json=VOICE_BODY, headers=AUTH)
+    assert response.status_code == 200
+    job_id = response.json()["job_id"]
+
+    meta = wait_for_job(job_id)
+    assert meta["status"] == "completed", meta.get("error")
+    assert (OUTPUTS_DIR / f"{job_id}.wav").exists()
+    assert not (OUTPUTS_DIR / f"{job_id}_raw.wav").exists(), "voice keeps no raw; it is cheap to redo"
 
 
 def test_backend_failure_is_recorded_and_leaves_nothing_behind(monkeypatch):
@@ -151,3 +173,19 @@ def test_music_payload_matches_the_backend_contract(monkeypatch):
     assert seen["payload"]["lyrics"] == MUSIC_BODY["lyrics"]
 
 
+def test_voice_payload_matches_the_backend_contract(monkeypatch):
+    seen = {}
+
+    def capture(path, payload, timeout):
+        seen.update(path=path, payload=payload)
+        raise OSError("stop here")
+
+    monkeypatch.setattr(studio_api, "mlx_generate_audio", capture)
+    response = client.post("/api/generate/voice", json={**VOICE_BODY, "voice": "af_heart"}, headers=AUTH)
+    wait_for_job(response.json()["job_id"])
+
+    assert seen["path"] == "/v1/audio/speech"
+    # OpenAI-compatible speech shape: the text field is "input", not "text".
+    assert seen["payload"]["input"] == VOICE_BODY["text"]
+    assert seen["payload"]["voice"] == "af_heart"
+    assert seen["payload"]["response_format"] == "wav"
