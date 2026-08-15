@@ -14,6 +14,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import math
 import secrets
 import subprocess
 import time
@@ -169,6 +170,17 @@ class GenerateRequest(BaseModel):
     steps: int = Field(30, ge=1, le=200)
     enhance: bool = False
     takes: int = Field(1, ge=1, le=16)
+
+
+class MusicRequest(BaseModel):
+    # lyrics is required by the backend even for instrumentals: pass section tags
+    # only, e.g. "[Intro]\n[Instrumental]\n[Outro]". A sparse tag list ends the
+    # piece early, so use 4+ sections to fill the duration.
+    prompt: str = Field(max_length=4000)
+    lyrics: str = Field(max_length=8000)
+    duration_seconds: float = Field(30.0, ge=1, le=360, allow_inf_nan=False)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+    backend: str = Field("local", pattern=r"^(local|cloud)$")
 
 
 ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
@@ -818,6 +830,145 @@ def list_assets():
     return {"assets": assets, "count": len(assets)}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# AUDIO GENERATION ROUTES (MUSIC / VOICE)
+# ─────────────────────────────────────────────────────────────────────────────
+
+MLX_SERVE_URL = os.environ.get("MLX_SERVE_URL", "http://127.0.0.1:11234")
+MUSIC_MODEL = os.environ.get("PLUTO_MUSIC_MODEL", "ddalcu/MiniMax-Music3-MLX-Serve-8bit")
+MUSIC_TARGET_LUFS = -16
+
+CLOUD_NOT_READY = (
+    "backend='cloud' is not implemented. MLX does not run on CUDA, so the spot box "
+    "needs MiniMaxAI/MiniMax-Music3 (music) or a Qwen3-TTS build (voice) served via "
+    "SGLang-Omni or the diffusers ModularPipeline. Neither is provisioned."
+)
+
+
+def mlx_generate_audio(path: str, payload: dict, timeout: int) -> bytes:
+    """POST to mlx-serve and return the WAV bytes it responds with."""
+    req = urllib.request.Request(
+        f"{MLX_SERVE_URL}{path}",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read()
+
+
+def loudnorm_two_pass(src: Path, dst: Path, target_lufs: int) -> subprocess.CompletedProcess:
+    """Normalize to target_lufs.
+
+    Single-pass loudnorm is a live estimator and lands 1-2 LU off, which misses
+    the studio's -14..-18 gate. Measure first, then apply the measurement.
+    """
+    measure = run_ffmpeg([
+        "-i", str(src),
+        "-af", f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11:print_format=json",
+        "-f", "null", "-",
+    ])
+    if measure.returncode != 0:
+        return measure
+
+    single_pass = f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11"
+    try:
+        blob = measure.stderr[measure.stderr.rindex("{"):measure.stderr.rindex("}") + 1]
+        m = json.loads(blob)
+        fields = {k: float(m[f"input_{k}"]) for k in ("i", "tp", "lra", "thresh")}
+        offset = float(m["target_offset"])
+        # Silence measures as -inf, and feeding that back errors "Result too large".
+        if not all(math.isfinite(v) for v in (*fields.values(), offset)) or fields["i"] < -70:
+            applied = single_pass
+        else:
+            applied = (
+                f"{single_pass}:measured_I={fields['i']}:measured_TP={fields['tp']}"
+                f":measured_LRA={fields['lra']}:measured_thresh={fields['thresh']}"
+                f":offset={offset}:linear=true"
+            )
+    except (ValueError, KeyError):
+        applied = single_pass
+
+    return run_ffmpeg(["-v", "error", "-i", str(src), "-af", applied, "-ar", "44100", str(dst)])
+
+
+def queued_audio_job(meta: dict) -> dict:
+    """Write the queued metadata for an audio job and hand back the response body."""
+    write_meta(OUTPUTS_DIR / f"{meta['id']}.json", meta)
+    return {"status": "queued", "job_id": meta["id"], "kind": meta["kind"], "meta": meta}
+
+
+@app.post("/api/generate/music")
+def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    """Queue a music cue on the local MLX server, normalized to -16 LUFS."""
+    if req.backend == "cloud":
+        raise HTTPException(status_code=501, detail=CLOUD_NOT_READY)
+
+    job_id = f"music_{uuid.uuid4().hex[:10]}"
+    seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    raw_wav = OUTPUTS_DIR / f"{job_id}_raw.wav"
+    out_wav = OUTPUTS_DIR / f"{job_id}.wav"
+    meta = {
+        "id": job_id,
+        "kind": "music",
+        "prompt": req.prompt,
+        "lyrics": req.lyrics,
+        "duration_seconds": req.duration_seconds,
+        "seed": seed,
+        "backend": req.backend,
+        "status": "queued",
+        "created_at": time.time(),
+    }
+
+    def _run_music():
+        meta["status"] = "running"
+        write_meta(meta_file, meta)
+        start_t = time.time()
+        try:
+            audio = mlx_generate_audio(
+                "/v1/audio/music-generations",
+                {
+                    "model": MUSIC_MODEL,
+                    "prompt": req.prompt,
+                    "lyrics": req.lyrics,
+                    "duration_seconds": req.duration_seconds,
+                    "seed": seed,
+                },
+                timeout=FFMPEG_TIMEOUT_SEC,
+            )
+            raw_wav.write_bytes(audio)
+        except Exception as e:
+            meta["status"] = "failed"
+            meta["error"] = f"mlx-serve: {e}"
+            discard_partial(raw_wav)
+            write_meta(meta_file, meta)
+            return
+
+        meta["generate_sec"] = round(time.time() - start_t, 1)
+        norm = loudnorm_two_pass(raw_wav, out_wav, MUSIC_TARGET_LUFS)
+        if norm.returncode != 0:
+            # Deliberate exception to the discard-partials rule: the raw take cost
+            # ~25 minutes of GPU time, so it is kept for a retry of normalization only.
+            meta["status"] = "failed"
+            meta["error"] = ffmpeg_error(norm)
+            meta["raw_path"] = str(raw_wav)
+            discard_partial(out_wav)
+            write_meta(meta_file, meta)
+            return
+
+        meta["status"] = "completed"
+        meta["file_path"] = str(out_wav)
+        meta["raw_path"] = str(raw_wav)
+        meta["audio_url"] = f"/api/media/{job_id}.wav"
+        meta["target_lufs"] = MUSIC_TARGET_LUFS
+        write_meta(meta_file, meta)
+
+    background_tasks.add_task(_run_music)
+    return queued_audio_job(meta)
+
+
+
 @app.get("/api/jobs/{job_id}")
 def get_job(job_id: str):
     """Job metadata. A failed render has no video, so it is invisible in /api/assets."""
@@ -833,6 +984,8 @@ def get_media_file(filename: str):
         return FileResponse(file_path, media_type="video/mp4")
     elif filename.endswith(".png"):
         return FileResponse(file_path, media_type="image/png")
+    elif filename.endswith(".wav"):
+        return FileResponse(file_path, media_type="audio/wav")
     return FileResponse(file_path)
 
 
