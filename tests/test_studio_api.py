@@ -145,11 +145,64 @@ def test_asset_id_rejects_shell_metacharacters():
         assert client.post("/api/composite-motionvector", json={"asset_id": bad_id}).status_code == 422
 
 
-def test_media_routes_reject_path_traversal():
-    """Verify file serving stays inside OUTPUTS_DIR."""
-    for bad_name in ["../../../etc/hosts", "..%2F..%2Fetc%2Fhosts"]:
-        assert client.get(f"/api/media/{bad_name}").status_code in (404, 405)
-    assert client.get("/api/assets/..%2F..%2Fetc%2Fhosts/file").status_code in (404, 405)
+def test_resolve_output_blocks_escapes_from_outputs_dir():
+    """Verify the containment check itself rejects anything outside OUTPUTS_DIR."""
+    from fastapi import HTTPException
+
+    from src.studio_api import OUTPUTS_DIR, resolve_output
+
+    outside = PLUTO_ROOT / "pytest_outside_marker.txt"
+    outside.write_text("should never be served")
+    try:
+        escapes = [
+            "../pytest_outside_marker.txt",
+            "sub/../../pytest_outside_marker.txt",
+            "..",
+            "/etc/hosts",
+        ]
+        for name in escapes:
+            try:
+                served = resolve_output(name)
+                assert False, f"resolve_output served {name!r} -> {served}"
+            except HTTPException as e:
+                assert e.status_code == 404
+
+        # A real file inside the directory still resolves.
+        inside = OUTPUTS_DIR / "pytest_inside_marker.txt"
+        inside.write_text("ok")
+        assert resolve_output("pytest_inside_marker.txt") == inside.resolve()
+        inside.unlink()
+    finally:
+        outside.unlink()
+
+
+def test_media_route_refuses_symlink_out_of_outputs_dir():
+    """Verify the containment check blocks the escape the router cannot see.
+
+    Dotted traversal never reaches the handler: the ASGI router normalises the
+    path and answers 404 itself. A symlink inside OUTPUTS_DIR has an ordinary
+    name, so it routes fine and only the resolved-path check stops it.
+    """
+    from src.studio_api import OUTPUTS_DIR
+
+    secret = OUTPUTS_DIR.parent / "pytest_symlink_target.txt"
+    secret.write_text("should never be served")
+    link = OUTPUTS_DIR / "pytest_leak.mp4"
+    link.symlink_to(secret)
+    try:
+        response = client.get("/api/media/pytest_leak.mp4")
+        assert response.status_code == 404, "symlink escaped OUTPUTS_DIR"
+        assert client.get("/api/assets/pytest_leak/file").status_code == 404
+    finally:
+        link.unlink()
+        secret.unlink()
+
+
+def test_dotted_traversal_is_refused():
+    """Whoever answers, a dotted traversal must never return a file."""
+    for bad_name in ["../../../etc/hosts", "..%2F..%2Fetc%2Fhosts", ".."]:
+        assert client.get(f"/api/media/{bad_name}").status_code == 404
+    assert client.get("/api/assets/..%2F..%2Fetc%2Fhosts/file").status_code == 404
 
 
 def test_asset_file_route_requires_exact_name():

@@ -32,7 +32,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Add Pluto root to sys.path
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
-OUTPUTS_DIR = PLUTO_ROOT / "outputs"
+OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
 STUDIO_DIR = PLUTO_ROOT / "studio"
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 STUDIO_DIR.mkdir(parents=True, exist_ok=True)

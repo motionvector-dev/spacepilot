@@ -15,3 +15,10 @@ pillow
 huggingface_hub
 sentencepiece
 protobuf
+
+# GPU worker (ltx_worker.py). torch/torchao come from the DLAMI on the box.
+flask
+
+# Tests
+pytest
+httpx
