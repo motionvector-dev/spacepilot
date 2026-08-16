@@ -12,8 +12,9 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
-from src.studio_api import app, OUTPUTS_DIR, STUDIO_TOKEN
+from src.studio_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
 
 client = TestClient(app)
 
@@ -25,7 +26,47 @@ GATED_POSTS = [
     ("/api/composite-motionvector", {"asset_id": "x"}),
     ("/api/gpu/launch", {}),
     ("/api/gpu/terminate", {}),
+    ("/api/generate/music", {"prompt": "x", "lyrics": "[Intro]"}),
+    ("/api/generate/voice", {"text": "x"}),
 ]
+
+# POST routes that spend nothing and so need no token. Both are pure local
+# computation: /api/enhance appends adjectives to a string, and
+# /api/director/auto-script returns a hardcoded storyboard. A route belongs
+# here only if it cannot cost money or GPU time.
+UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script"}
+
+
+def _requires_token(route: APIRoute) -> bool:
+    """True if require_token appears anywhere in the route's dependency tree."""
+    stack = list(route.dependant.dependencies)
+    while stack:
+        dep = stack.pop()
+        if dep.call is require_token:
+            return True
+        stack.extend(dep.dependencies)
+    return False
+
+
+def test_every_post_route_is_gated_or_explicitly_exempt():
+    """The structural guard: walk the app, not a list someone has to remember.
+
+    GATED_POSTS below proves the gate returns 401. This proves nobody added a
+    route it forgot to cover — the failure the hand-maintained list could not
+    catch, since a new ungated route simply would not appear in it.
+    """
+    missing = sorted(
+        route.path
+        for route in app.routes
+        if isinstance(route, APIRoute)
+        and "POST" in route.methods
+        and route.path not in UNGATED_BY_DESIGN
+        and not _requires_token(route)
+    )
+    assert not missing, (
+        f"POST routes with neither require_token nor an UNGATED_BY_DESIGN entry: {missing}. "
+        "Gate it, or add it to UNGATED_BY_DESIGN with a reason."
+    )
 
 
 def test_compute_endpoints_all_require_the_token():
