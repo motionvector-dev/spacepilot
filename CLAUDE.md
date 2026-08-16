@@ -47,10 +47,21 @@ Name the profile on every command; never let it fall through to whatever
 one box, with no headroom — the pipeline is serialized by quota, not by design.
 Anything that assumes two concurrent workers is wrong until that quota moves.
 
-`docs/AWS.md` has the full account picture: live quota values and codes, the
-EC2 Mac instance table, Activate credit status, and the cost arithmetic. Read
-it before planning anything that spends money, and update it when the numbers
-move. It exists so no session has to re-derive this from the console.
+## Read these before asking
+
+Three docs exist so that no session re-derives what an earlier one already found.
+Read the relevant one before asking Saurabh, and update it when a fact moves.
+
+- **`docs/AWS.md`** — account and profile boundary, live quota values and codes, the
+  EC2 Mac table with its 24-hour minimum, Activate credit status, and how AWS Mac
+  pricing compares to OakHost / MacStadium / Scaleway. Read before spending money.
+- **`docs/INFERENCE.md`** — every model endpoint reachable from `doppler run`. Twelve
+  providers, each verified by a live API call. **Do not ask which LLM to use and do
+  not hunt for keys; this is the list.** Also records that `agy` is a CLI rather than
+  an API, and that Cloudflare 403s Python clients on Groq and Cerebras.
+- **`docs/PIPELINE-STATE.md`** — what has actually been exercised. Everything in
+  `outputs/` is `is_mock: True`; the real LTX renders and their measured per-clip
+  cost live in `~/Downloads/ltx-out`. Read before assuming any path works.
 
 Music generation runs about 25× realtime and spins the fans. A 10s cue is
 ~4 minutes of full-tilt GPU. Ask before starting long runs.
