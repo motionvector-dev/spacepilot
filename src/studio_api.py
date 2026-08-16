@@ -56,8 +56,17 @@ app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
 # stops a drive-by page, which is the threat that applies here.
 TOKEN_FILE = PLUTO_ROOT / ".studio_token"
 if not TOKEN_FILE.exists():
-    TOKEN_FILE.write_text(secrets.token_hex(32))
-    TOKEN_FILE.chmod(0o600)
+    # Mode goes in the open(), not a chmod after it. write_text() creates at
+    # 0644 under the usual umask and the narrowing lands a line later, leaving
+    # the session token world-readable in between. O_EXCL closes the other end:
+    # if a second process created it first, read theirs rather than clobber it.
+    try:
+        _fd = os.open(TOKEN_FILE, os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o600)
+    except FileExistsError:
+        pass
+    else:
+        with os.fdopen(_fd, "w") as _f:
+            _f.write(secrets.token_hex(32))
 STUDIO_TOKEN = TOKEN_FILE.read_text().strip()
 
 
@@ -572,7 +581,16 @@ def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks, _: No
 
 @app.post("/api/director/auto-script")
 def auto_script_api(req: AutoScriptRequest):
-    """Generate a complete multi-scene documentary storyboard from a topic prompt."""
+    """Return the fixed five-scene diffusion storyboard. UNFINISHED.
+
+    `topic` is validated and echoed back in the response, but it does not reach
+    the output: every scene below is hardcoded for the Welch diffusion
+    explainer. Ask for "history of coffee" and you still get Brownian motion.
+
+    Kept because it is the scaffolding that drives produce_welch_master.py, not
+    because it generalises. Anything wiring this to the UI as a topic-driven
+    generator has to build the generation first.
+    """
     topic = req.topic.strip()
     if not topic:
         raise HTTPException(status_code=400, detail="Topic prompt is required")
