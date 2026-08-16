@@ -581,15 +581,17 @@ def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks, _: No
 
 @app.post("/api/director/auto-script")
 def auto_script_api(req: AutoScriptRequest):
-    """Return the fixed five-scene diffusion storyboard. UNFINISHED.
+    """Generate a complete multi-scene documentary storyboard from a topic prompt.
 
-    `topic` is validated and echoed back in the response, but it does not reach
-    the output: every scene below is hardcoded for the Welch diffusion
-    explainer. Ask for "history of coffee" and you still get Brownian motion.
+    TODO: not implemented yet. `topic` is validated and echoed back, but the
+    five scenes below are hardcoded for the Welch diffusion explainer — ask for
+    "history of coffee" and you still get Brownian motion. This is scaffolding
+    for produce_welch_master.py until the generation exists.
 
-    Kept because it is the scaffolding that drives produce_welch_master.py, not
-    because it generalises. Anything wiring this to the UI as a topic-driven
-    generator has to build the generation first.
+    When it does: this route starts spending compute, so it needs
+    Depends(require_token) and removal from UNGATED_BY_DESIGN in
+    tests/test_studio_api.py. The route guard exempts it today, so nothing will
+    fail to remind you.
     """
     topic = req.topic.strip()
     if not topic:
