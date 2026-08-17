@@ -11,7 +11,7 @@ on:
 # starts depending on those encoders needs a macos-latest job instead.
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
 
     steps:
