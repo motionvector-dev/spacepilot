@@ -1,0 +1,48 @@
+{
+  "generated_from": "MiniMax-AI/MiniMax-Music3 music-caption-rewriter refs",
+  "date": "2026-08-15",
+  "cues": [
+    {
+      "id": "contemplative-ambient",
+      "caption": "Global Metadata\nBasic Attributes: slow, breathing tempo around 66-72 BPM. F major. Ambient / Contemplative Documentary Score. Instrumental cue, about 60 seconds.\nGlobal Emotional Progression: The cue opens in near-stillness, gathers gentle warmth through the middle, then exhales back into quiet, ending open and unresolved.\nApplication Scenarios & Imagery: Science and educational documentary narration; slow pans over diagrams and landscapes.\nSonics & Production Profile: Warm, analog-leaning and softly saturated, with a gentle high roll-off. The cue is built to sit under narration: the midrange stays uncluttered, the piano is sparse and low in the mix, and pads carry the weight in the low-mids. No dominant lead melody; texture over statement.\nVocal Details\nEntirely instrumental with no vocals of any kind. The lead voice is a minimal felted piano, playing single notes and open intervals over warm analog synthesizer pads.\nArrangement\nIntro (0-10s): solo felted piano, a few unhurried notes; a warm pad fades in beneath. Build (10-30s): the pad thickens and a soft sub-bass pulse breathes at half-time; faint tape hiss adds air. Peak (30-48s): fullest point, still restrained; a second pad layer moves slowly while the piano answers with sparse upper-register touches. Outro (48-60s): all recedes to one pad and a final piano note with a long reverb tail. No percussion anywhere.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Bridge]\n[Instrumental]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 41207
+    },
+    {
+      "id": "cinematic-build",
+      "caption": "Global Metadata\nBasic Attributes: moderate ceremonial tempo around 75-85 BPM. A-flat major. Hybrid Cinematic Orchestral / Modern Score. Instrumental cue, about 60 seconds.\nGlobal Emotional Progression: The cue opens with hushed awe, accumulates wonder through layered swells into a single restrained peak of arrival, then releases into serene stillness.\nApplication Scenarios & Imagery: Epic reveals and discovery moments in documentary storytelling.\nSonics & Production Profile: Wide, deep concert-hall space fused with modern synthetic low end. Dynamics travel from pianissimo to a controlled forte, never a trailer-style slam. Designed to sit under narration: strings and pads dominate outer registers, the midrange stays open, and no soloistic melody competes with a speaking voice.\nVocal Details\nEntirely instrumental with no vocals or choir. The lead texture is a lush string ensemble supported by hybrid synthesizer pads and low brass color.\nArrangement\nIntro (0-12s): a deep synth drone and soft sustained cellos; a solo violin harmonic shimmers far back. Build (12-35s): violins swell in slow overlapping waves, a heartbeat-like soft taiko pulse enters, horns add long pedal tones. Peak (35-48s): full strings and horns crest over a timpani roll and cymbal swell, held back from fortissimo. Outro (48-60s): brass and percussion fall away; high strings and the drone decay into silence.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Bridge]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 88011
+    },
+    {
+      "id": "upbeat-tech",
+      "caption": "Global Metadata\nBasic Attributes: bright mid-tempo energy around 100-112 BPM. F-sharp major. Modern Electronic / Synth-Pop Promo Cue. Instrumental, about 60 seconds.\nGlobal Emotional Progression: The cue opens crisp and optimistic, locks quickly into a confident forward groove, lifts once into a brighter full section, and closes with a clean, upward-feeling button ending.\nApplication Scenarios & Imagery: Product promos, feature walkthroughs, UI animations.\nSonics & Production Profile: Polished, high-fidelity, punchy but never abrasive: rounded sub-bass, soft-clipped drums, airy highs. Built for voiceover: the plucked motif sits high and quiet, side-chained pads duck under speech frequencies, and nothing sustains in the vocal midrange. Momentum comes from rhythm, not melody.\nVocal Details\nEntirely instrumental with no vocals. The lead texture is a bright, plucked synthesizer arpeggio riding above a warm analog pad bed.\nArrangement\nIntro (0-8s): plucked arpeggio alone with light clicks and a filtered pad rising. Build (8-25s): a tight four-on-the-floor kick and crisp snare enter with rounded side-chained bass; shakers add sixteenth-note drive. Peak (25-48s): open hi-hats, claps and a second pad widen the picture; the arpeggio gains subtle octave doubling. Outro (48-60s): drums drop; arpeggio and pad resolve into one bright sustained chord with a short release tail.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 51624
+    },
+    {
+      "id": "lofi-focus",
+      "caption": "Global Metadata\nBasic Attributes: relaxed head-nod tempo around 72-84 BPM. D minor. Lo-fi Hip-Hop / Chillhop Study Cue. Instrumental, about 60 seconds.\nGlobal Emotional Progression: The cue settles immediately into dusty, unhurried calm; a mild warm lift mid-way adds interest before the beat winds down like tape running out.\nApplication Scenarios & Imagery: Casual explainers, tutorials, coding streams.\nSonics & Production Profile: Deliberately degraded and warm: tape saturation, vinyl crackle, wow-and-flutter pitch drift, muffled high end. Mixed to disappear under speech: the drums are soft-knuckled, chords are filtered dark, and no element carries a foreground melody. Steady groove, zero drama.\nVocal Details\nEntirely instrumental with no vocals. The lead texture is a dusty electric piano playing lazy extended jazz chords, seventh and ninth voicings with a behind-the-beat feel.\nArrangement\nIntro (0-8s): vinyl crackle fades up; the electric piano plays a two-chord phrase alone. Groove (8-30s): a boom-bap kit enters \u2014 soft kick, low-passed backbeat snare, lightly swung hats \u2014 with a round upright-style bassline. Lift (30-48s): a faint melodica-like counter-line and warmer extensions thicken the loop; a filtered sweep marks the turn. Outro (48-60s): drums thin to kick and crackle; the piano phrase slows as the tape drags to a stop.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 73310
+    },
+    {
+      "id": "minimal-strings",
+      "caption": "Global Metadata\nBasic Attributes: slow, expressive tempo around 60-70 BPM with gentle rubato. B-flat major. Neoclassical / Intimate Chamber Score. Instrumental cue, about 60 seconds.\nGlobal Emotional Progression: The cue opens in fragile solitude, deepens into longing as the strings gather, peaks in one poignant swell, then dissolves into a tender hush.\nApplication Scenarios & Imagery: Emotional narrative passages, personal stories, remembrance.\nSonics & Production Profile: Intimate and close-miked: felt piano centered with audible mechanism noise, string quartet spread naturally around it, warm mid-focused tone with softened highs. Written to support narration: long note values, no busy solo lines, and dynamic swells timed wide apart so speech always has room.\nVocal Details\nEntirely instrumental with no vocals. The lead voice is a felted grand piano in dialogue with a string quartet, cello counter-melody foremost.\nArrangement\nIntro (0-12s): felt piano alone, a sparse arpeggiated figure with generous silence. Build (12-32s): a solo cello enters with a low counter-melody; violins and viola fade in with sustained close-harmony pads. Peak (32-46s): the quartet swells once, expressive but restrained, as the piano broadens to fuller chords. Outro (46-60s): strings withdraw one by one, leaving the opening figure and a final soft chord ringing into room tone. No percussion throughout.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 29457
+    },
+    {
+      "id": "driving-synthwave",
+      "caption": "Global Metadata\nBasic Attributes: driving tempo around 110-120 BPM. A minor. Synthwave / Darkwave Montage Cue. Instrumental, about 60 seconds.\nGlobal Emotional Progression: The cue opens with dark nocturnal tension, locks into a relentless pulse, tightens through a filtered lift, and cuts out on a cold echoing final hit.\nApplication Scenarios & Imagery: Code and tech montages, timelapse builds, neon night drives.\nSonics & Production Profile: Retro-analog palette on a modern mix: detuned oscillators, tape-style warble, gated reverb, deep centered low end with shimmering panned highs. Energy lives in the bassline and drums, not a lead: narration slots into a deliberately clear midrange, with dark pads kept low and hooks short and percussive.\nVocal Details\nEntirely instrumental with no vocals. The lead texture is a pulsating, arpeggiated analog synth bassline; any melodic fragments are brief stabs, never a sustained lead.\nArrangement\nIntro (0-8s): the sixteenth-note arpeggiated bassline fades in under a low-pass filter with a distant pad. Build (8-28s): a punchy drum machine enters \u2014 kick on every beat, gated snare on 2 and 4, driving closed hats \u2014 as the filter opens. Peak (28-48s): full brightness; syncopated synth stabs and a rising noise layer add intensity while the bassline jumps octaves. Outro (48-60s): drums drop; the bassline runs two bars alone and stops dead into a gated-reverb tail.",
+      "lyrics": "[Intro]\n[Instrumental]\n[Outro]",
+      "duration_seconds": 60,
+      "seed": 64188
+    }
+  ]
+}
