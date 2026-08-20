@@ -11,6 +11,7 @@ Powers the Pluto Studio Web UI:
 import os
 import sys
 import asyncio
+import copy
 import hashlib
 import json
 import logging
@@ -244,10 +245,15 @@ class CompositeMotionVectorRequest(BaseModel):
 # GPU & SYSTEM TELEMETRY ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
 
-@app.get("/api/status")
-def get_status():
-    """Retrieve live status of AWS Spot GPU box and resident LTX worker."""
-    cfg = load_config()
+_STATUS_CACHE_TTL_SEC = 2.0
+_status_cache_lock = threading.Lock()
+_status_refresh_lock = threading.Lock()
+_status_cache = None
+_status_cache_at = 0.0
+
+
+def _build_status(cfg):
+    """Build one status snapshot; callers must enforce refresh single-flight."""
     inst = get_instance_info(cfg)
     if not inst:
         return {
@@ -282,6 +288,33 @@ def get_status():
         "worker": worker_health,
         "worker_ready": worker_health.get("ok", False) if worker_health else False,
     }
+
+@app.get("/api/status")
+def get_status():
+    """Retrieve bounded, single-flight status of the GPU box and worker.
+
+    UI polls are intentionally coalesced: while a refresh is running, other
+    callers wait for that same snapshot rather than spawning more AWS CLIs.
+    """
+    cfg = load_config()
+    global _status_cache, _status_cache_at
+    now = time.monotonic()
+    with _status_cache_lock:
+        if _status_cache is not None and now - _status_cache_at < _STATUS_CACHE_TTL_SEC:
+            return copy.deepcopy(_status_cache)
+
+    # A blocking lock is deliberate: once the first request is refreshing,
+    # concurrent callers wait and then receive its cached result.
+    with _status_refresh_lock:
+        now = time.monotonic()
+        with _status_cache_lock:
+            if _status_cache is not None and now - _status_cache_at < _STATUS_CACHE_TTL_SEC:
+                return copy.deepcopy(_status_cache)
+        snapshot = _build_status(cfg)
+        with _status_cache_lock:
+            _status_cache = snapshot
+            _status_cache_at = time.monotonic()
+        return copy.deepcopy(snapshot)
 
 
 @app.get("/api/token")
