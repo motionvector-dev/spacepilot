@@ -81,6 +81,13 @@ def test_read_only_endpoints_stay_open():
         assert client.get(path).status_code == 200
 
 
+def test_healthz_is_dependency_free_liveness():
+    """The supervisor probe must not invoke AWS or worker telemetry."""
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_studio_status_endpoint():
     """Verify /api/status returns telemetry and instance state."""
     response = client.get("/api/status")

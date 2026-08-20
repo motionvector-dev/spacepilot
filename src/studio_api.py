@@ -46,6 +46,16 @@ from cli import get_instance_info, load_config, fetch_worker_health, run_cmd
 
 app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
 
+
+@app.get("/healthz")
+async def healthz():
+    """Dependency-free process liveness for local supervisors.
+
+    Keep this separate from ``/api/status``: status collects AWS and worker
+    telemetry and may block while those dependencies are unavailable.
+    """
+    return {"status": "ok"}
+
 # Session token for every endpoint that spends compute or money: GPU lifecycle,
 # and the three render routes. Read-only routes (status, assets, jobs, media)
 # stay open. Half-gating is worse than either extreme — it teaches contributors

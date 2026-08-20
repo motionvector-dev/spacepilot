@@ -70,6 +70,7 @@ itself; from a shell, `GET /api/token` or read `.studio_token`.
 | `POST /api/gpu/launch` · `/terminate` | yes | Spot GPU lifecycle. |
 | `GET /api/jobs/{job_id}` | no | Job status. A failed job has no media, so it is invisible in `/api/assets`. |
 | `GET /api/assets` · `/api/media/{file}` | no | Asset library and file serving. |
+| `GET /healthz` | no | Dependency-free process liveness for local supervisors. |
 | `GET /api/status` | no | GPU and worker telemetry. |
 
 Jobs are asynchronous: the POST returns a `job_id`, then poll `/api/jobs/{id}`
