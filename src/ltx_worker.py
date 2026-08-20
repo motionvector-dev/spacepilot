@@ -33,6 +33,7 @@ from diffusers import TorchAoConfig as DTAO
 from transformers import TorchAoConfig as TTAO
 from torchao.quantization import Float8DynamicActivationFloat8WeightConfig as F8
 from diffusers.utils import export_to_video, load_image
+from diffusers.utils.export_utils import encode_video
 
 # Configuration
 PORT = int(os.environ.get("LTX_WORKER_PORT", "5000"))
@@ -166,7 +167,7 @@ def _generate_thread(job_id, params):
         # Distilled recipe invariants: zero guidance scales to prevent blended pass slowdowns
         with torch.inference_mode():
             if use_i2v:
-                output = _pipe_i2v(
+                video, audio = _pipe_i2v(
                     image=source_image,
                     prompt=prompt,
                     negative_prompt=negative_prompt,
@@ -184,9 +185,10 @@ def _generate_thread(job_id, params):
                     audio_guidance_rescale=0.0,
                     generator=generator,
                     output_type="np",
+                    return_dict=False,
                 )
             else:
-                output = _pipe(
+                video, audio = _pipe(
                     prompt=prompt,
                     negative_prompt=negative_prompt,
                     width=width,
@@ -203,10 +205,19 @@ def _generate_thread(job_id, params):
                     audio_guidance_rescale=0.0,
                     generator=generator,
                     output_type="np",
+                    return_dict=False,
                 )
 
-            frames = output.frames[0]
-            export_to_video(frames, str(out_file), fps=24)
+            frames = video[0]
+            audio_tensor = audio[0].float().cpu()
+            audio_sr = _pipe.vocoder.config.output_sampling_rate if _pipe_i2v is None else _pipe_i2v.vocoder.config.output_sampling_rate
+            encode_video(
+                frames,
+                str(out_file),
+                fps=24,
+                audio=audio_tensor,
+                audio_sample_rate=audio_sr,
+            )
 
         _jobs[job_id]["status"] = "completed"
         _jobs[job_id]["output_path"] = str(out_file)
