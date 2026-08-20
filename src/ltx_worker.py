@@ -20,6 +20,7 @@ import time
 import uuid
 import threading
 import gc
+import tempfile
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file
 
@@ -27,11 +28,11 @@ from flask import Flask, request, jsonify, send_file
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 import torch
-from diffusers import LTX2Pipeline, PipelineQuantizationConfig
+from diffusers import LTX2Pipeline, LTX2ImageToVideoPipeline, PipelineQuantizationConfig
 from diffusers import TorchAoConfig as DTAO
 from transformers import TorchAoConfig as TTAO
 from torchao.quantization import Float8DynamicActivationFloat8WeightConfig as F8
-from diffusers.utils import export_to_video
+from diffusers.utils import export_to_video, load_image
 
 # Configuration
 PORT = int(os.environ.get("LTX_WORKER_PORT", "5000"))
@@ -44,7 +45,8 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _active = 0
 _model_ready = False
-_pipe = None
+_pipe = None               # t2v pipeline (always loaded)
+_pipe_i2v = None           # i2v pipeline (loaded lazily on first i2v request)
 _jobs = {}
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -87,7 +89,34 @@ def load_model():
     _pipe.vae.enable_tiling()
     _model_ready = True
     load_dur = time.time() - start_t
-    print(f"[ltx_worker] LTX-2.5 model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
+    print(f"[ltx_worker] LTX-2.5 t2v model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
+
+
+def load_i2v_model():
+    """Lazily load the LTX-2.5 image-to-video pipeline. Called on first i2v request."""
+    global _pipe_i2v
+    if _pipe_i2v is not None:
+        return
+    print("[ltx_worker] Loading LTX-2.5 image-to-video pipeline...", flush=True)
+    start_t = time.time()
+
+    quant_config = PipelineQuantizationConfig(
+        quant_mapping={
+            "transformer": DTAO(F8()),
+            "text_encoder": TTAO(F8()),
+        }
+    )
+
+    _pipe_i2v = LTX2ImageToVideoPipeline.from_pretrained(
+        "Lightricks/LTX-2.5-Diffusers",
+        token=HF_TOKEN or True,
+        torch_dtype=torch.bfloat16,
+        quantization_config=quant_config,
+    ).to("cuda")
+
+    _pipe_i2v.vae.enable_tiling()
+    load_dur = time.time() - start_t
+    print(f"[ltx_worker] LTX-2.5 i2v model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
 
 
 def _generate_thread(job_id, params):
@@ -101,6 +130,10 @@ def _generate_thread(job_id, params):
         seconds = float(params.get("seconds", 4.0))
         seed = int(params.get("seed", int(time.time() * 1000) % 2147483647))
         steps = int(params.get("steps", 30))
+
+        # Image-to-video: if an image path is provided, load it and use the i2v pipeline
+        image_path = params.get("image_path", "")
+        use_i2v = bool(image_path)
 
         # Enforce mechanical constraints
         # 1. num_frames % 8 == 1
@@ -123,26 +156,54 @@ def _generate_thread(job_id, params):
 
         generator = torch.Generator("cuda").manual_seed(seed)
 
+        # Load the image if doing i2v
+        source_image = None
+        if use_i2v:
+            load_i2v_model()
+            print(f"[ltx_worker] Loading source image from: {image_path}", flush=True)
+            source_image = load_image(image_path)
+
         # Distilled recipe invariants: zero guidance scales to prevent blended pass slowdowns
         with torch.inference_mode():
-            output = _pipe(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                width=width,
-                height=height,
-                num_frames=num_frames,
-                num_inference_steps=steps,
-                guidance_scale=1.0,
-                audio_guidance_scale=1.0,
-                stg_scale=0.0,
-                audio_stg_scale=0.0,
-                modality_scale=1.0,
-                audio_modality_scale=1.0,
-                guidance_rescale=0.0,
-                audio_guidance_rescale=0.0,
-                generator=generator,
-                output_type="np",
-            )
+            if use_i2v:
+                output = _pipe_i2v(
+                    image=source_image,
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    width=width,
+                    height=height,
+                    num_frames=num_frames,
+                    num_inference_steps=steps,
+                    guidance_scale=1.0,
+                    audio_guidance_scale=1.0,
+                    stg_scale=0.0,
+                    audio_stg_scale=0.0,
+                    modality_scale=1.0,
+                    audio_modality_scale=1.0,
+                    guidance_rescale=0.0,
+                    audio_guidance_rescale=0.0,
+                    generator=generator,
+                    output_type="np",
+                )
+            else:
+                output = _pipe(
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    width=width,
+                    height=height,
+                    num_frames=num_frames,
+                    num_inference_steps=steps,
+                    guidance_scale=1.0,
+                    audio_guidance_scale=1.0,
+                    stg_scale=0.0,
+                    audio_stg_scale=0.0,
+                    modality_scale=1.0,
+                    audio_modality_scale=1.0,
+                    guidance_rescale=0.0,
+                    audio_guidance_rescale=0.0,
+                    generator=generator,
+                    output_type="np",
+                )
 
             frames = output.frames[0]
             export_to_video(frames, str(out_file), fps=24)
@@ -228,6 +289,39 @@ def generate():
         message="Generation started in resident VRAM",
         eta_seconds=12,
     ), 202
+
+
+@app.post("/upload")
+def upload_image():
+    """Upload an image to the worker for use in image-to-video generation.
+
+    Accepts multipart/form-data with a 'file' field. Saves to /scratch/images/
+    and returns the path. The path should then be passed as 'image_path' in the
+    /generate request params.
+    """
+    if not _authed():
+        return jsonify(error="unauthorized"), 401
+
+    if "file" not in request.files:
+        return jsonify(error="no_file", message="POST multipart with a 'file' field"), 400
+
+    upload_dir = Path("/scratch/images")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    file = request.files["file"]
+    # Sanitize the filename — alphanumeric + dot +dash only
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "", file.filename or "upload.png")
+    if not safe_name:
+        safe_name = f"upload_{uuid.uuid4().hex[:8]}.png"
+    dest = upload_dir / safe_name
+    file.save(str(dest))
+
+    return jsonify(
+        status="uploaded",
+        path=str(dest),
+        filename=safe_name,
+        size_bytes=dest.stat().st_size,
+    )
 
 
 @app.get("/status/<job_id>")

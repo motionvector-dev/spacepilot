@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import json
+import uuid
 import argparse
 import shutil
 import subprocess
@@ -261,14 +262,64 @@ def cmd_generate(args, cfg):
     width, height = args.resolution or cfg["default_resolution"]
     seed = args.seed
     steps = args.steps or cfg["default_steps"]
+    image_path = getattr(args, "image", None)
 
     print("──────────────────────────────────────────────────────────────────────────")
     print("  PLUTO VIDEO GENERATION")
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  Prompt     : \"{prompt}\"")
     print(f"  Resolution : {width}x{height} | Duration: {seconds}s | Steps: {steps}")
+    if image_path:
+        print(f"  Image      : {image_path} (image-to-video mode)")
     print(f"  Target Box : http://{ip}:5000")
     print("──────────────────────────────────────────────────────────────────────────")
+
+    remote_image_path = None
+    if image_path:
+        if not os.path.exists(image_path):
+            print(f"  Error: Image not found: {image_path}")
+            return
+        try:
+            headers = worker_headers({})
+        except RuntimeError as e:
+            print(f"  Error: {e}")
+            return
+        # Upload the image to the worker
+        import mimetypes
+        mime = mimetypes.guess_type(image_path)[0] or "image/png"
+        filename = os.path.basename(image_path)
+        print(f"  Uploading image to worker...")
+        with open(image_path, "rb") as f:
+            files = {"file": (filename, f, mime)}
+            req = urllib.request.Request(
+                f"http://{ip}:5000/upload",
+                method="POST",
+            )
+            # urllib doesn't handle multipart easily; use http.client
+            import http.client
+            import io
+            boundary = f"----pluto{uuid.uuid4().hex}"
+            body = io.BytesIO()
+            for name, (fname, fobj, ftype) in files.items():
+                body.write(f"--{boundary}\r\n".encode())
+                body.write(f'Content-Disposition: form-data; name="{name}"; filename="{fname}"\r\n'.encode())
+                body.write(f"Content-Type: {ftype}\r\n\r\n".encode())
+                body.write(fobj.read())
+                body.write(b"\r\n")
+            body.write(f"--{boundary}--\r\n".encode())
+            body_bytes = body.getvalue()
+            headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
+            conn = http.client.HTTPConnection(ip, 5000, timeout=30)
+            conn.request("POST", "/upload", body=body_bytes, headers=headers)
+            resp = conn.getresponse()
+            data = resp.read().decode()
+            conn.close()
+            if resp.status != 200:
+                print(f"  Error uploading image: {resp.status} {data}")
+                return
+            upload_resp = json.loads(data)
+            remote_image_path = upload_resp["path"]
+            print(f"  Image uploaded: {remote_image_path}")
 
     payload = {
         "prompt": prompt,
@@ -279,6 +330,8 @@ def cmd_generate(args, cfg):
     }
     if seed is not None:
         payload["seed"] = seed
+    if remote_image_path:
+        payload["image_path"] = remote_image_path
 
     data = json.dumps(payload).encode()
     try:
@@ -443,6 +496,7 @@ def main():
     gen_p.add_argument("--resolution", type=int, nargs=2, default=[1024, 576], help="Width Height (e.g. 1024 576)")
     gen_p.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     gen_p.add_argument("--steps", type=int, default=30, help="Inference steps (default: 30)")
+    gen_p.add_argument("--image", type=str, default=None, help="Path to local image for image-to-video generation")
     gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
 
     # sync
