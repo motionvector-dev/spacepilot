@@ -1,8 +1,8 @@
-# SpacePilot Local GPU Inference Architecture & Engineering Plan
+# SpacePilot Local GPU Inference & Device Capability Recommender
 
 > **Author**: MotionVector Engineering  
-> **Status**: APPROVED ARCHITECTURAL BLUEPRINT  
-> **Target Scope**: Pluto / SpacePilot Hybrid Orchestrator  
+> **Status**: APPROVED ARCHITECTURAL BLUEPRINT & SPECIFICATION  
+> **Target Scope**: Pluto / SpacePilot Hybrid Orchestrator, CLI, FastMCP Server, Studio Cockpit  
 > **Reference Systems**: Magnitude (`magnitude.dev`), Exo (`exo-explore/exo`), Apple MLX, vLLM, llama.cpp
 
 ---
@@ -54,67 +54,110 @@ By enabling **Local GPU Inference** inside SpacePilot, MotionVector unlocks **\$
 
 ---
 
-## 2. Competitive & Architectural Audit
+## 2. Zero-Dependency Hardware Capability Probe
 
-### 2.1 Magnitude (`magnitude.dev`)
-* **What it is**: An open-source, AI-native terminal agent with an embedded `llama.cpp` C++ inference engine.
-* **Key Architecture**:
-  1. *Hardware Profiling*: Auto-detects OS architecture, available RAM, GPU type (Apple Metal MPS vs NVIDIA CUDA vs CPU).
-  2. *Embedded Runtime*: Bundles precompiled C++ binaries directly inside the package without requiring the user to run Ollama, vLLM, or LM Studio.
-  3. *Dynamic Model Recommender*: Recommends specific GGUF quantizations (Q4_K_M vs Q8_0) based on actual free system memory.
-* **Takeaway for SpacePilot**: Adopt zero-friction hardware discovery and embedded model loading. Never require the creator to configure external ports or daemons.
-
-### 2.2 Exo (`exo-explore/exo`)
-* **What it is**: Distributed P2P local AI cluster engine running across heterogenous devices (e.g. MacBook Pro + Mac Mini + Linux PC).
-* **Key Architecture**: Decentralized ring-topology tensor parallelism over local Wi-Fi/LAN.
-* **Takeaway for SpacePilot**: Future Phase 4 LAN Discovery — aggregate multiple home/office studio machines into a pooled render farm.
-
-### 2.3 Apple MLX (`ml-explore/mlx`)
-* **What it is**: Apple Silicon framework designed for unified zero-copy memory arrays on macOS.
-* **Key Architecture**: Outperforms PyTorch MPS for quantized LLM generation and Audio processing on M-series chips (40–60+ tok/s).
-* **Takeaway for SpacePilot**: Use MLX / ONNX runtime for native macOS audio synthesis (Kokoro TTS) and script parsing.
-
----
-
-## 3. The 3-Tier Compute Matrix
-
-| Compute Tier | Task Examples | Target Hardware | Engine / Runtime | Cost & Latency |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1: Lightweight Edge** | • Kokoro-82M Voiceover<br>• Prompt Expansion<br>• EBU R128 Sidechain Mux | Any Mac (M1+)<br>GTX 1660+ / CPU<br>8 GB Sys RAM | PyTorch / ONNX / FFmpeg<br>Qwen2.5-3B GGUF | **\$0.00 / 0.3s** (Instant) |
-| **Tier 2: Mid-Range Diffusion** | • Storyboard Decomposer<br>• 1-Take LTX-2.5 Draft (512p)<br>• SPAN 4K Video Upscale | M2/M3/M4 Pro/Max (16GB+)<br>RTX 3080/4070 (12GB+)<br>16–32 GB VRAM | Diffusers MPS / CUDA<br>NF4 / GGUF Quantized<br>DeepSeek-R1-7B | **\$0.00 / 4–8s** (Local Free) |
-| **Tier 3: Extreme Batch Cluster** | • 4-Take Director Grid<br>• 4K 60fps Pro Cinema Render<br>• Full FLF2V Morphing | Cloud High-Density Node<br>RunPod / Lambda A100/H100<br>80 GB VRAM | SkyPilot Spot Mesh<br>TensorRT-LLM / vLLM<br>Multi-Worker Docker | **~\$0.04 / 12s** (Spot Mesh) |
-
----
-
-## 4. Architectural Specification
+To match Magnitude’s zero-friction user experience, SpacePilot will probe host hardware without requiring third-party model daemons or elevated permissions.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│               SpacePilot Local Hardware Profiler Engine                     │
+│                   Zero-Dependency Device Profiler                           │
+├─────────────────┬──────────────────────────────────┬────────────────────────┤
+│ Operating Sys   │ Primary Detection Vector         │ Telemetry Harvested    │
+├─────────────────┼──────────────────────────────────┼────────────────────────┤
+│ macOS           │ • `sysctl hw.memsize`            │ • Apple Silicon Model  │
+│ (Apple Silicon) │ • `sysctl machdep.cpu.brand_str` │   (M1/M2/M3/M4 Pro/Max)│
+│                 │ • `ioreg -r -d 1 -k IOGPU`       │ • Unified Memory (GB)  │
+│                 │ • `torch.backends.mps.is_avail`  │ • Metal compute units  │
+├─────────────────┼──────────────────────────────────┼────────────────────────┤
+│ Linux / Windows │ • `pynvml` / `/proc/driver/nv`   │ • GPU Name (RTX 4090)  │
+│ (NVIDIA CUDA)   │ • `torch.cuda.get_device_prop`   │ • Total & Free VRAM    │
+│                 │ • CUDA Compute Capability        │ • Tensor Core gen (FP8)│
+├─────────────────┼──────────────────────────────────┼────────────────────────┤
+│ CPU Fallback    │ • `psutil.virtual_memory()`      │ • System RAM headroom  │
+│                 │ • CPU instruction set flags      │ • AVX-512 / ARM Neon   │
+└─────────────────┴──────────────────────────────────┴────────────────────────┘
+```
+
+### Usable VRAM Safety Calculation:
+$$\text{Usable VRAM} = (\text{Total Physical VRAM}) \times 0.80 - \text{Display Buffer (1.5GB)}$$
+This preserves desktop UI responsiveness, window compositing, and browser performance while running local inference.
+
+---
+
+## 3. Multimodal Model Recommendation Matrix
+
+Pluto evaluates probed hardware against the task taxonomy to recommend optimized weights:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 Multimodal Model Recommendation Engine                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. Hardware Probe Layer (platform_probe.py)                                │
-│     ├── macOS: sysctl hw.memsize, ioreg (Apple Silicon M-Series Model)      │
-│     ├── Linux: nvidia-smi / pynvml (CUDA Core count, VRAM, Driver)          │
-│     └── Memory: psutil (Free RAM, Swap headroom, Thermal throttling state)  │
+│  [ Category 1: Voiceover & TTS ] (0.3 GB VRAM requirement)                  │
+│  ├── Model: Kokoro-82M (ONNX / PyTorch MPS / CUDA)                          │
+│  ├── Recommendation Rule: ALWAYS RECOMMENDED (Fits on 100% of devices)      │
+│  └── Storage Footprint: ~320 MB                                             │
 │                                                                             │
-│  2. Local Inference Worker (local_worker.py)                                │
-│     ├── Kokoro TTS Worker: Fast in-memory torch/onnx voice synthesis         │
-│     ├── GGUF LLM Worker: llama-cpp-python / MLX-LM context runner           │
-│     └── Video Worker: Local LTX-2.5 diffusion plate renderer                │
+│  [ Category 2: Storyboard & Script Decomposer ] (2.5 GB – 6.0 GB VRAM)      │
+│  ├── Low VRAM (8GB–16GB): Qwen 2.5 3B-Instruct (Q4_K_M GGUF · 2.1 GB)       │
+│  ├── Mid VRAM (16GB–32GB): DeepSeek-R1-Distill-Qwen-7B (Q4_K_M · 4.8 GB)    │
+│  ├── High VRAM (32GB+): Qwen 2.5 14B-Instruct (Q4_K_M · 9.2 GB)            │
+│  └── Storage Footprint: 2.1 GB – 9.2 GB                                     │
 │                                                                             │
-│  3. SpacePilot Arbitrage Policy (arbitrage.py)                              │
-│     IF Task == "audio_voiceover" -> ROUTE_LOCAL                             │
-│     IF Task == "enhance_prompt"   -> ROUTE_LOCAL                             │
-│     IF Task == "storyboard" AND Local_VRAM >= 8GB -> ROUTE_LOCAL            │
-│     IF Task == "video_4take" OR Local_VRAM < 16GB -> ROUTE_SKYPILOT_SPOT   │
+│  [ Category 3: Video Diffusion Engine ] (12 GB – 32 GB VRAM)                │
+│  ├── Low VRAM (<16GB): Cloud Spot Fallback Recommended (or 512p NF4)        │
+│  ├── Mid VRAM (16GB–24GB): LTX-Video 2.5 (NF4 Quantized GGUF · 11.2 GB)     │
+│  ├── High VRAM (32GB–64GB+): LTX-Video 2.5 (FP8 Cinema Draft · 22.4 GB)     │
+│  └── Storage Footprint: 11.2 GB – 24 GB                                     │
+│                                                                             │
+│  [ Category 4: Super-Resolution Upscaling ] (0.8 GB VRAM)                   │
+│  ├── Model: SPAN / Real-ESRGAN 4x (TorchScript / ONNX)                      │
+│  ├── Recommendation Rule: Fits on all GPUs (Apple MPS / CUDA / CPU)        │
+│  └── Storage Footprint: ~64 MB                                              │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Engineering Roadmap & Milestones
+## 4. FastMCP Tools & CLI Interface Specifications
+
+### 4.1 FastMCP Tool Specifications (`src/pluto_mcp_server.py`)
+
+1. **`pluto_probe_hardware()`**:
+   - Returns: `{ "os": "darwin", "device": "Apple M3 Max", "vram_total_gb": 64.0, "vram_usable_gb": 49.7, "backend": "metal_mps", "cuda_cores": null, "status": "optimal" }`
+2. **`pluto_recommend_models()`**:
+   - Returns list of task recommendations with fit scores, memory footprints, and local cache status.
+3. **`pluto_download_model(model_id: str, background: bool = True)`**:
+   - Manages non-blocking chunked downloads into `~/.cache/pluto/models/` with SHA-256 validation.
+4. **`pluto_get_local_status()`**:
+   - Returns loaded in-memory weights, current VRAM utilization, active workers, and dispatch metrics.
+
+### 4.2 CLI Command Topology
+```bash
+# Probe and inspect local device compute
+$ pluto hardware
+
+# Inspect recommendations based on current available headroom
+$ pluto models recommend
+
+# Download recommended model suites
+$ pluto models pull kokoro-82m
+$ pluto models pull qwen-2.5-7b-gguf
+$ pluto models pull ltx-2.5-nf4
+```
+
+---
+
+## 5. Studio Cockpit Integration (`studio/cockpit.html`)
+
+1. **Hardware Telemetry HUD**: Real-time VRAM gauge, unified memory ceiling, GPU temperature, and active backend badge (`[ Local: Apple Metal (48GB Free) ]`).
+2. **Model Registry Card**: Single-click "Download Recommended Suite" action with visual progress bar and local disk quota tracker.
+3. **Studio Create Hybrid Selector**: UI switch between `[ Compute: Auto (Local-First) ]`, `[ Compute: Local Only ($0) ]`, and `[ Compute: SkyPilot Spot Only ]`.
+
+---
+
+## 6. Implementation Milestones
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -122,19 +165,19 @@ By enabling **Local GPU Inference** inside SpacePilot, MotionVector unlocks **\$
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  Phase 1: Hardware Telemetry & Capability Probe                             │
-│  ├── Implement GET /api/compute/local-profile endpoint                     │
-│  ├── Expose Metal MPS, CUDA VRAM, and RAM telemetry in Cockpit UI           │
-│  └── Deliver zero-dependency platform detection module                      │
+│  ├── Deliver src/device_probe.py & src/model_recommender.py                 │
+│  ├── Expose GET /api/compute/profile & GET /api/compute/models/recommended  │
+│  └── Register FastMCP tools: pluto_probe_hardware & pluto_recommend_models  │
 │                                                                             │
-│  Phase 2: Local Audio & NLP In-Process Workers                              │
-│  ├── Mount in-process Kokoro TTS audio generator ($0 cloud spend)           │
-│  ├── Add local llama.cpp / MLX fallback for Storyboard Decomposer           │
-│  └── Unit tests verifying offline execution without network connectivity    │
+│  Phase 2: Local Model Catalog & Background Downloader                       │
+│  ├── Implement resumable downloader to ~/.cache/pluto/models/ with SHA256   │
+│  ├── Add FastMCP tool: pluto_download_model & progress streamer             │
+│  └── Cockpit UI Model Registry card with 1-click download actions           │
 │                                                                             │
-│  Phase 3: Hybrid Arbitrage Router in Studio Create                          │
-│  ├── Add [Compute: Auto (Local-First) ▾] selector in create.html            │
-│  ├── Real-time cost estimator updating PatchCard ($0.00 Local vs Spot)      │
-│  └── Automatic failover from Local VRAM OOM to SkyPilot Spot                │
+│  Phase 3: Studio Workflow Binding & Auto-Arbitrage Integration              │
+│  ├── Connect local Kokoro TTS + local GGUF Decomposer to Studio routes      │
+│  ├── Add [Compute: Auto (Local-First)] switch to Create Studio              │
+│  └── 100% SLA Pytest suite verifying mock/live probe across platforms      │
 │                                                                             │
 │  Phase 4: Local LAN Peer Mesh (Exo-Inspired)                                │
 │  ├── mDNS zero-config discovery of local network Pluto nodes                │
@@ -142,11 +185,3 @@ By enabling **Local GPU Inference** inside SpacePilot, MotionVector unlocks **\$
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## 6. Verification & SLA Standards
-
-1. **Security & Isolation**: Local model files are stored strictly under `~/.cache/pluto/models/` and verified with SHA-256 hashes.
-2. **Graceful Fallback**: Any local VRAM allocation error (CUDA OOM / Metal OOM) immediately logs warning and auto-delegates to SkyPilot spot compute without failing the user's render job.
-3. **100% Test SLA**: All hardware probe and router modules covered by pytest integration tests in `tests/test_local_inference.py`.

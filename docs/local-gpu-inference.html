@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SpacePilot · Local GPU Inference Architecture & Engineering Plan</title>
+  <title>SpacePilot · Local GPU Inference & Device Capability Recommender</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -176,7 +176,7 @@
     .hero-desc {
       font-size: 15px;
       color: var(--text-muted);
-      max-width: 840px;
+      max-width: 860px;
       line-height: 1.6;
     }
 
@@ -323,6 +323,34 @@
       color: var(--text-main);
     }
 
+    /* FastMCP Tool Cards */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .tool-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .tool-name {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      margin-bottom: 4px;
+    }
+
+    .tool-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
     /* ASCII / Code block */
     pre.ascii-diagram {
       background: var(--bg-root);
@@ -398,10 +426,10 @@
 
     <!-- 1. Hero Summary -->
     <section class="hero">
-      <div class="hero-kicker">Local-First Compute Arbitrage</div>
+      <div class="hero-kicker">Local-First Compute Arbitrage &amp; Model Recommender</div>
       <h1 class="hero-title">SpacePilot Local GPU Inference Architecture</h1>
       <p class="hero-desc">
-        Eliminating the cloud spot tax for studio creators. By integrating auto-hardware profiling (inspired by Magnitude) and embedded local inference engines (Kokoro TTS, quantized LTX-2.5, and GGUF LLMs), SpacePilot achieves $0.00 marginal generation costs and zero-latency local execution.
+        Eliminating the cloud spot tax for studio creators. By integrating auto-hardware capability probing (inspired by Magnitude) and embedded local inference engines (Kokoro TTS, quantized LTX-2.5, and GGUF LLMs), SpacePilot achieves $0.00 marginal generation costs and zero-latency local execution across CLI, FastMCP, and Web interfaces.
       </p>
 
       <div class="metrics-grid">
@@ -423,8 +451,8 @@
     <!-- 2. Interactive Hardware Profiler Simulator -->
     <section class="section-card">
       <div class="section-header">
-        <h2 class="section-title">Interactive SpacePilot Arbitrage Simulator</h2>
-        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Live Dispatch Engine</span>
+        <h2 class="section-title">Interactive Hardware Profiler &amp; Model Recommender</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Live Arbitrage Engine</span>
       </div>
 
       <div class="sim-panel">
@@ -456,7 +484,34 @@
       </div>
     </section>
 
-    <!-- 3. Magnitude & Competitive Audit -->
+    <!-- 3. FastMCP & CLI Capabilities -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">FastMCP &amp; CLI Tool Suite</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Pluto FastMCP Integration</span>
+      </div>
+
+      <div class="tools-grid">
+        <div class="tool-item">
+          <div class="tool-name">pluto_probe_hardware()</div>
+          <div class="tool-desc">Returns active OS, GPU model, total unified VRAM, usable compute headroom, and active backend (Metal/CUDA).</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">pluto_recommend_models()</div>
+          <div class="tool-desc">Evaluates hardware headroom against catalogue and returns optimal GGUF quantizations and task fit scores.</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">pluto_download_model()</div>
+          <div class="tool-desc">Non-blocking chunked model weight downloader targeting ~/.cache/pluto/models/ with SHA-256 validation.</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">pluto_get_local_status()</div>
+          <div class="tool-desc">Live telemetry stream reporting loaded in-memory weights, active VRAM footprint, and worker thread state.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Magnitude & Competitive Audit -->
     <section class="section-card">
       <div class="section-header">
         <h2 class="section-title">Local Engine Benchmark Audit</h2>
@@ -503,45 +558,6 @@
       </div>
     </section>
 
-    <!-- 4. Architecture Diagram -->
-    <section class="section-card">
-      <div class="section-header">
-        <h2 class="section-title">SpacePilot Hybrid Orchestrator Flow</h2>
-        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Achromatic Specification</span>
-      </div>
-
-      <pre class="ascii-diagram">
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                 SpacePilot Hybrid Compute Architecture                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   Create Studio / API Request                                               │
-│   │                                                                         │
-│   ▼                                                                         │
-│   ┌──────────────────────────────────────────────────────────────────────┐  │
-│   │ SpacePilot Arbitrage Decision Engine                                 │  │
-│   │                                                                      │  │
-│   │ Check Task Complexity + Local Hardware Telemetry                     │  │
-│   │   ├── Local GPU VRAM: 32 GB (MPS / Metal)                            │  │
-│   │   ├── Task: Audio VO Mix + Script Decompose + 1-Take Draft Video     │  │
-│   │   └── Decision: ROUTE LOCAL ($0.00 Cost, 0s Cold Start)              │  │
-│   └───────────────────┬──────────────────────────────┬───────────────────┘  │
-│                       │                              │                      │
-│        [Local Path]   ▼               [Cloud Path]   ▼                      │
-│   ┌──────────────────────────────┐    ┌──────────────────────────────────┐  │
-│   │ SpacePilot Local Node Runner │    │ SkyPilot Spot Cloud Worker       │  │
-│   │ ├── llama.cpp / MLX runtime  │    │ ├── RunPod L40S ($0.22/hr)       │  │
-│   │ ├── ONNX Kokoro TTS Engine   │    │ ├── Lambda A10G ($0.24/hr)       │  │
-│   │ └── Diffusers MPS/CUDA loop  │    │ └── Preemption Failover Mesh     │  │
-│   └──────────────┬───────────────┘    └──────────────┬───────────────────┘  │
-│                  │                                   │                      │
-│                  └─────────────────┬─────────────────┘                      │
-│                                    ▼                                        │
-│                      Studio Preview &amp; PatchCard                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-      </pre>
-    </section>
-
     <!-- 5. Phased Roadmap -->
     <section class="section-card">
       <div class="section-header">
@@ -552,28 +568,28 @@
       <div class="roadmap-list">
         <div class="phase-card active">
           <div class="phase-header">
-            <span class="phase-title">Phase 1: Hardware Telemetry &amp; Capability Probe</span>
-            <span class="phase-badge">COMPLETED / READY</span>
+            <span class="phase-title">Phase 1: Hardware Telemetry &amp; Model Recommender Probe</span>
+            <span class="phase-badge">READY TO IMPLEMENT</span>
           </div>
           <p style="font-size: 12.5px; color: var(--text-muted);">
-            Non-blocking probe module for macOS Metal (sysctl/ioreg) and Linux NVIDIA CUDA (pynvml), exposing local VRAM and ISA flags to SpacePilot Cockpit.
+            Zero-dependency probe module for macOS Metal (sysctl/ioreg) and Linux NVIDIA CUDA (pynvml), exposing local VRAM and ISA flags to FastMCP tools and Cockpit UI.
           </p>
         </div>
 
         <div class="phase-card">
           <div class="phase-header">
-            <span class="phase-title">Phase 2: In-Process Audio &amp; NLP Workers</span>
-            <span class="phase-badge">NEXT MILESTONE</span>
+            <span class="phase-title">Phase 2: Local Model Registry &amp; Background Downloader</span>
+            <span class="phase-badge">MILESTONE 2</span>
           </div>
           <p style="font-size: 12.5px; color: var(--text-muted);">
-            Mount in-process Kokoro-82M TTS and local GGUF fallback for Storyboard script decomposition directly into Pluto backend.
+            Chunked background downloader to ~/.cache/pluto/models/ with SHA-256 verification and 1-click Cockpit UI download action.
           </p>
         </div>
 
         <div class="phase-card">
           <div class="phase-header">
             <span class="phase-title">Phase 3: Studio Create Hybrid Router &amp; Failover</span>
-            <span class="phase-badge">PLANNED</span>
+            <span class="phase-badge">MILESTONE 3</span>
           </div>
           <p style="font-size: 12.5px; color: var(--text-muted);">
             Add [Compute: Auto (Local-First) ▾] UI selector in Create Studio with automated spot failover upon local VRAM saturation.
@@ -629,48 +645,56 @@
       const task = simTask.value;
 
       let decision = "";
+      let model = "";
       let cost = "$0.00";
       let latency = "0.2s - 0.5s";
       let note = "";
 
       if (task === "audio_tts") {
-        decision = "[ROUTE LOCAL] -> In-Process Kokoro-82M TTS (PyTorch/MPS/ONNX)";
+        decision = "[ROUTE LOCAL] -> In-Process Kokoro-82M TTS";
+        model = "Kokoro-82M (ONNX / PyTorch MPS · 320 MB)";
         cost = "$0.00";
         latency = "180ms";
-        note = "Zero cloud roundtrip. Audio synthesizes locally in memory.";
+        note = "Zero cloud roundtrip. Audio synthesizes locally in memory on all hardware.";
       } else if (task === "storyboard") {
         if (hw === "cpu_only_32") {
-          decision = "[ROUTE HYBRID] -> Gemini 2.5 Flash API or Cloud";
+          decision = "[ROUTE HYBRID] -> Gemini 2.5 Flash API Fallback";
+          model = "Gemini 2.5 Flash / Frontier Cloud";
           cost = "< $0.001";
           latency = "850ms";
-          note = "CPU execution would exceed 3s SLA. Routed to fast frontier API.";
+          note = "CPU generation would exceed 3s SLA. Routed to fast cloud API.";
         } else {
-          decision = "[ROUTE LOCAL] -> Local Qwen2.5 / DeepSeek GGUF";
+          decision = "[ROUTE LOCAL] -> Local Qwen2.5-7B-Instruct GGUF";
+          model = "Qwen2.5-7B (Q4_K_M · 4.8 GB)";
           cost = "$0.00";
           latency = "450ms";
-          note = "Hardware has sufficient VRAM/RAM for fast local token generation.";
+          note = "Hardware has sufficient VRAM headroom for fast local token generation.";
         }
       } else if (task === "video_draft") {
         if (hw === "m4_max_64" || hw === "rtx_4090_24") {
           decision = "[ROUTE LOCAL] -> Local LTX-2.5 NF4 Quantized Diffusion";
+          model = "LTX-Video 2.5 (NF4 GGUF · 11.2 GB)";
           cost = "$0.00";
           latency = "4.2s";
           note = "VRAM >= 24GB. Local diffusion plate generated without cloud cost.";
         } else {
           decision = "[ROUTE SKYPILOT SPOT] -> RunPod L40S Spot ($0.22/hr)";
+          model = "LTX-Video 2.5 (FP8 Cinema Draft · Cloud Worker)";
           cost = "~$0.01";
           latency = "5.5s";
           note = "Local VRAM tight (<20GB). Delegated to spot compute to prevent desktop stutter.";
         }
       } else if (task === "video_4take") {
         decision = "[ROUTE SKYPILOT SPOT] -> SkyPilot Multi-Worker Spot Mesh";
+        model = "LTX-Video 2.5 (4x Parallel Workers)";
         cost = "~$0.04 (4 takes)";
         latency = "9.8s";
         note = "4 simultaneous parallel seeds demand high-density cloud cluster.";
       }
 
       simResult.innerHTML = `
-        <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 6px;">${decision}</div>
+        <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 4px;">${decision}</div>
+        <div style="color: var(--accent-blue); font-size: 12px; margin-bottom: 6px;">Recommended Model: <strong>${model}</strong></div>
         <div>Estimated Cost: <span style="color: var(--text-main); font-weight: 700;">${cost}</span> · Latency: <span style="color: var(--text-main); font-weight: 700;">${latency}</span></div>
         <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 6px;">Rationale: ${note}</div>
       `;
