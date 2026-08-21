@@ -729,6 +729,35 @@ def test_generate_with_image_path():
     assert disk_meta["image_path"] == sample_image
 
 
+def test_generate_dual_keyframe():
+    """Verify dual keyframe paths are preserved in metadata."""
+    start_image = str(OUTPUTS_DIR / "uploads" / "start.png")
+    end_image = str(OUTPUTS_DIR / "uploads" / "end.png")
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Morph from start to end",
+            "image_path": start_image,
+            "last_image_path": end_image,
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code == 200, f"Generate with dual keyframes failed: {res.text}"
+    data = res.json()
+    job_id = data["job_id"]
+
+    assert data["meta"]["image_path"] == start_image
+    assert data["meta"]["last_image_path"] == end_image
+
+    # Verify metadata persisted on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["image_path"] == start_image
+    assert disk_meta["last_image_path"] == end_image
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()

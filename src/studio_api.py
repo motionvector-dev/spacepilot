@@ -265,6 +265,7 @@ class GenerateRequest(BaseModel):
     modality_scale: float = Field(1.0, ge=0.0, le=5.0)
     fps: int = Field(24, ge=1, le=60)
     image_path: Optional[str] = None
+    last_image_path: Optional[str] = None
     draft_mode: bool = False
     camera_pan: Optional[Literal["left", "right"]] = None
     camera_tilt: Optional[Literal["up", "down"]] = None
@@ -1133,6 +1134,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         "stg_scale": stg_scale,
         "draft_mode": req.draft_mode,
         "image_path": req.image_path,
+        "last_image_path": req.last_image_path,
         "status": "queued",
         "created_at": time.time(),
         "is_upscaled": False,
@@ -1165,6 +1167,8 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                 }
                 if req.image_path:
                     payload["image_path"] = req.image_path
+                if req.last_image_path:
+                    payload["last_image_path"] = req.last_image_path
                 data = json.dumps(payload).encode()
                 remote_req = urllib.request.Request(
                     f"http://{ip}:5000/generate",
@@ -1219,7 +1223,20 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 
             # Generate test video pattern with ffmpeg
             meta["is_mock"] = True
-            if req.image_path and Path(req.image_path).exists():
+            if req.image_path and Path(req.image_path).exists() and req.last_image_path and Path(req.last_image_path).exists():
+                gen_res = run_ffmpeg([
+                    "-loop", "1", "-i", str(req.image_path),
+                    "-loop", "1", "-i", str(req.last_image_path),
+                    "-filter_complex",
+                    f"[0:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=N/24/TB[v0];"
+                    f"[1:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=N/24/TB[v1];"
+                    f"[v1]format=yuva420p,fade=t=in:st=0:d={req.seconds}:alpha=1[v1a];"
+                    f"[v0][v1a]overlay[v]",
+                    "-map", "[v]",
+                    "-t", f"{req.seconds}",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+                ])
+            elif req.image_path and Path(req.image_path).exists():
                 gen_res = run_ffmpeg([
                     "-loop", "1", "-i", str(req.image_path),
                     "-t", f"{req.seconds}",
