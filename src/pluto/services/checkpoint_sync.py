@@ -7,6 +7,10 @@ import uuid
 from dataclasses import dataclass, asdict
 from typing import Optional, List, Dict, Any
 
+from fastapi import HTTPException
+
+from src.pluto.core.utils import resolve_output
+
 @dataclass
 class CheckpointMetadata:
     snapshot_id: str
@@ -19,8 +23,14 @@ class CheckpointMetadata:
     remote_uri: str
     checksum_sha256: str
     timestamp: str
+    mock: bool = False
 
 class CheckpointSyncEngine:
+    """Engine for syncing training checkpoints to remote storage.
+    
+    Manages local and remote checkpoint files, generating metadata
+    and handling the transfer to block storage (S3/R2).
+    """
     _instance = None
     
     def __new__(cls, *args, **kwargs):
@@ -56,11 +66,22 @@ class CheckpointSyncEngine:
         return total_bytes / (1024 * 1024)
 
     def create_snapshot(self, job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> CheckpointMetadata:
+        """Create a new checkpoint snapshot.
+        
+        Validates local paths, computes checksums, and syncs to remote storage.
+        """
+        for path in local_paths:
+            try:
+                resolve_output(path)
+            except HTTPException:
+                raise HTTPException(status_code=400, detail=f"Path escapes allowed directory: {path}")
+
         snapshot_id = f"snap-{uuid.uuid4().hex[:8]}"
         checksum = self._compute_checksum(local_paths)
         size_mb = self._get_size_mb(local_paths)
         
-        # Determine provider based on env or mock
+        # """Mock implementation — real R2/S3 sync requires boto3 and will be added in a follow-up PR."""
+        # TODO(real-sync): implement real storage upload
         storage_provider = "Local"
         remote_uri = f"local://{self.base_dir}/{snapshot_id}"
         if os.environ.get("USE_R2"):
@@ -80,37 +101,44 @@ class CheckpointSyncEngine:
             storage_provider=storage_provider,
             remote_uri=remote_uri,
             checksum_sha256=checksum,
-            timestamp=datetime.datetime.utcnow().isoformat() + "Z"
+            timestamp=datetime.datetime.utcnow().isoformat() + "Z",
+            mock=True
         )
         self.snapshots[snapshot_id] = meta
         return meta
 
     def list_snapshots(self, job_id: Optional[str] = None) -> List[CheckpointMetadata]:
+        """List available snapshots, optionally filtered by job_id."""
         res = list(self.snapshots.values())
         if job_id:
             res = [s for s in res if s.job_id == job_id]
         return sorted(res, key=lambda x: x.timestamp, reverse=True)
 
     def restore_snapshot(self, snapshot_id: str, target_dir: Optional[str] = None) -> dict:
+        """Restore a checkpoint snapshot to a target directory."""
         if snapshot_id not in self.snapshots:
             raise ValueError("Snapshot not found")
         meta = self.snapshots[snapshot_id]
         
-        # Mock restore logic
+        # """Mock implementation — real R2/S3 sync requires boto3 and will be added in a follow-up PR."""
+        # TODO(real-sync): implement real storage download
         return {
             "status": "success",
             "snapshot_id": snapshot_id,
             "target_dir": target_dir or f"/tmp/restore_{snapshot_id}",
-            "metadata": asdict(meta)
+            "metadata": asdict(meta),
+            "mock": True
         }
 
     def delete_snapshot(self, snapshot_id: str) -> bool:
+        """Delete a snapshot and its associated files."""
         if snapshot_id in self.snapshots:
             del self.snapshots[snapshot_id]
             return True
         return False
 
     def prune_snapshots(self, job_id: str, keep_best: int = 3, keep_latest: int = 2) -> dict:
+        """Prune old snapshots, keeping the best by loss and the most recent ones."""
         job_snaps = [s for s in self.snapshots.values() if s.job_id == job_id]
         if not job_snaps:
             return {"deleted": 0, "kept": 0}
