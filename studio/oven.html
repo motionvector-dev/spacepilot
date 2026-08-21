@@ -314,41 +314,49 @@
 
   <!-- Top Bar -->
   <header class="oven-header">
+    <!-- Brand -->
     <div class="oven-brand">
-      <span class="oven-logo">🛸</span>
-      <div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <h1 class="oven-title">SpacePilot Oven</h1>
-          <span class="oven-tag">Autonomous ADLC Mesh</span>
-        </div>
-      </div>
+      <a href="/" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="#FAFAFA" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+        </svg>
+        <span class="oven-title">SpacePilot</span>
+        <span class="oven-tag">Oven · ADLC Swarm</span>
+      </a>
     </div>
 
-    <!-- Live Telemetry -->
-    <div class="oven-stats-bar">
+    <!-- Nav Tabs -->
+    <nav style="display: flex; align-items: center; gap: 20px;">
+      <a href="/" style="font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none;">Home</a>
+      <a href="/create" style="font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none;">Create</a>
+      <a href="/studio" style="font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none;">Editor</a>
+      <a href="/oven.html" style="font-size: 13px; font-weight: 600; color: var(--text-main); text-decoration: none;">Oven</a>
+      <a href="/cockpit" style="font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none;">Cockpit</a>
+    </nav>
+
+    <!-- Right Controls -->
+    <div class="oven-actions">
+      <!-- Theme Switcher Capsule (SVG Icons) -->
+      <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border-oven); border-radius: 20px; padding: 2px 4px; gap: 2px;">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode" style="background: transparent; border: none; color: var(--text-dim, #71717a); padding: 4px 8px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode" style="background: transparent; border: none; color: var(--text-dim, #71717a); padding: 4px 8px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match" style="background: transparent; border: none; color: var(--text-dim, #71717a); padding: 4px 8px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        </button>
+      </div>
+      <!-- Live Telemetry stat chips -->
       <div class="stat-chip">
         <span class="dot"></span>
-        <span>Swarms Active: <strong>3 Lanes</strong></span>
-      </div>
-      <div class="stat-chip">
-        <span class="dot blue"></span>
-        <span>Council: <strong>Sonnet 4.6 + Opus 4.6 + Gemini 3.7</strong></span>
+        <span>Swarms: <strong>3 Active</strong></span>
       </div>
       <div class="stat-chip">
         <span class="dot amber"></span>
-        <span>Test SLA: <strong>89/89 Passing (100%)</strong></span>
+        <span>Tests: <strong>89/89 (100%)</strong></span>
       </div>
-    </div>
-
-    <!-- Action Shortcuts -->
-    <div class="oven-actions">
-      <button id="btn-oven-theme" class="btn-oven" type="button" title="Toggle Theme (Dark / Light / System)">
-        <span id="oven-theme-icon">☀️</span>
-        <span id="oven-theme-text">Theme</span>
-      </button>
-      <a href="/create" class="btn-oven">🎬 Create Studio</a>
-      <a href="/cockpit" class="btn-oven">🎛️ Cockpit</a>
-      <a href="/blueprint.html" class="btn-oven primary">📑 Blueprint Memo</a>
     </div>
   </header>
 

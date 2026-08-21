@@ -4,144 +4,331 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SpacePilot · Generative Cinema</title>
+  
+  <!-- Fonts: Geist & Geist Mono (MotionVector OpenDesign Standard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="studio.css">
   <style>
-    /* Additional inline styles specifically for the Landing Page layout */
-    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap');
-
     :root {
-      --font-sans: 'Geist', sans-serif;
-      --font-mono: 'Geist Mono', monospace;
+      --mv-bg: #000000;
+      --mv-ground: #09090b;
+      --mv-surface: #111114;
+      --mv-card: #18181b;
+      --mv-border: rgba(255, 255, 255, 0.08);
+      --mv-border-medium: rgba(255, 255, 255, 0.14);
+      --mv-border-highlight: rgba(255, 255, 255, 0.24);
+
+      --mv-text: #fafafa;
+      --mv-text-muted: #a1a1aa;
+      --mv-text-dim: #71717a;
+
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43535;
+
+      --btn-primary-bg: #fafafa;
+      --btn-primary-text: #09090b;
+      --btn-primary-hover-bg: #ffffff;
     }
 
+    [data-theme="light"] {
+      --mv-bg: #f8fafc;
+      --mv-ground: #ffffff;
+      --mv-surface: #f1f5f9;
+      --mv-card: #ffffff;
+      --mv-border: rgba(0, 0, 0, 0.08);
+      --mv-border-medium: rgba(0, 0, 0, 0.14);
+      --mv-border-highlight: rgba(0, 0, 0, 0.24);
+
+      --mv-text: #09090b;
+      --mv-text-muted: #52525b;
+      --mv-text-dim: #71717a;
+
+      --btn-primary-bg: #09090b;
+      --btn-primary-text: #fafafa;
+      --btn-primary-hover-bg: #18181b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: var(--font-sans);
-      background-color: var(--bg-root);
-      color: var(--text-main);
-      margin: 0;
-      padding: 0;
+      font-family: 'Geist', -apple-system, sans-serif;
+      background-color: var(--mv-bg);
+      color: var(--mv-text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Strict Spacing & Layout */
+    /* Top Navigation Bar */
+    .top-nav {
+      height: 64px;
+      background: var(--mv-bg);
+      border-bottom: 1px solid var(--mv-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--mv-text);
+    }
+
+    .brand-mark-svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-pill {
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .nav-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--mv-text-dim);
+      font-family: 'Geist Mono', monospace;
+    }
+
+    .nav-breadcrumb-link {
+      color: var(--mv-text-muted);
+      text-decoration: none;
+    }
+
+    .nav-breadcrumb-link:hover { color: var(--mv-text); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-tab {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--mv-text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-tab:hover { color: var(--mv-text); }
+    .nav-tab.active { color: var(--mv-text); font-weight: 600; }
+
+    .theme-switch-capsule {
+      display: flex;
+      align-items: center;
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: 20px;
+      padding: 2px 4px;
+      gap: 2px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--mv-text-dim);
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .theme-toggle-btn:hover { color: var(--mv-text); }
+    .theme-toggle-btn.active {
+      background: var(--mv-card);
+      color: var(--mv-text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .gpu-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      color: var(--mv-text-muted);
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .gpu-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mv-text-dim);
+    }
+
+    .gpu-dot.online {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 6px var(--accent-emerald);
+    }
+
+    /* Section Layouts */
     .section-container {
-      padding: 64px;
+      padding: 64px 40px;
       display: flex;
       flex-direction: column;
       gap: 40px;
-      max-width: 1200px;
+      max-width: 1120px;
       margin: 0 auto;
       width: 100%;
     }
 
-    /* Typographic Constraints */
     .title {
-      font-size: 64px;
-      font-weight: 600;
+      font-size: 56px;
+      font-weight: 700;
       line-height: 1.1;
-      max-width: 32ch; /* Title max 32 chars visually */
+      letter-spacing: -0.03em;
+      max-width: 32ch;
       margin: 0;
-      text-align: left;
+      color: var(--mv-text);
     }
 
     .subtitle {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 400;
-      color: var(--text-muted);
-      max-width: 64ch; /* Subtitle max 64 chars visually */
+      color: var(--mv-text-muted);
+      max-width: 64ch;
       margin: 0;
-      text-align: left;
     }
 
-    /* Framed Panels */
+    /* Framed Panels (24px Radius) */
     .panel {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      padding: 40px;
-      box-shadow: var(--shadow-md);
-    }
-
-    /* Code Terminal / Hero Demo */
-    .terminal-window {
-      background-color: var(--bg-ground);
-      border: 1px solid var(--border-medium);
+      background-color: var(--mv-card);
+      border: 1px solid var(--mv-border);
       border-radius: 24px;
       overflow: hidden;
-      font-family: var(--font-mono);
-      font-size: 14px;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.8);
+    }
+
+    /* Terminal Simulation */
+    .terminal-window {
+      background-color: var(--mv-ground);
+      border: 1px solid var(--mv-border-medium);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
 
     .terminal-header {
-      background-color: var(--bg-panel);
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border-subtle);
+      background-color: var(--mv-surface);
+      padding: 12px 20px;
       display: flex;
-      align-items: center;
       gap: 8px;
+      border-bottom: 1px solid var(--mv-border);
     }
 
     .terminal-dot {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background-color: var(--border-focus);
+      background-color: var(--mv-border-highlight);
     }
 
     .terminal-body {
       padding: 24px;
-      color: var(--text-muted);
-      line-height: 1.6;
+      font-family: 'Geist Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--mv-text-muted);
     }
 
     .term-success { color: var(--accent-emerald); }
     .term-warn { color: var(--accent-amber); }
     .term-error { color: var(--accent-rose); }
-    .term-white { color: var(--text-main); }
+    .term-white { color: var(--mv-text); }
 
     /* Buttons */
     .btn-inverted {
-      background-color: #fafafa;
-      color: #09090b;
+      background-color: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
       border: none;
-      padding: 16px 32px;
-      border-radius: 9999px;
+      padding: 14px 28px;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      transition: opacity 0.2s;
+      gap: 10px;
+      transition: all 0.15s ease;
+      text-decoration: none;
     }
+
     .btn-inverted:hover {
-      opacity: 0.9;
+      background-color: var(--btn-primary-hover-bg);
+      transform: translateY(-1px);
     }
 
     /* Stack Breakdown */
     .stack-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 40px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
     }
 
     .stack-layer {
-      background-color: var(--bg-panel);
-      border: 1px solid var(--border-subtle);
+      background-color: var(--mv-card);
+      border: 1px solid var(--mv-border);
       border-radius: 24px;
-      padding: 32px;
+      padding: 28px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
+      transition: border-color 0.15s ease;
+    }
+
+    .stack-layer:hover {
+      border-color: var(--mv-border-highlight);
     }
     
     .stack-layer h3 {
-      margin: 0;
-      font-size: 20px;
-      color: var(--text-main);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--mv-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     /* Matrix Table */
@@ -149,77 +336,80 @@
       width: 100%;
       border-collapse: collapse;
       text-align: left;
+      font-size: 13px;
     }
+
     .price-matrix th, .price-matrix td {
       padding: 16px 24px;
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--mv-border);
     }
+
     .price-matrix th {
-      color: var(--text-dim);
-      font-weight: 500;
+      color: var(--mv-text-dim);
+      font-weight: 600;
+      font-family: 'Geist Mono', monospace;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
     }
+
     .price-matrix td {
-      font-family: var(--font-mono);
-      color: var(--text-main);
+      font-family: 'Geist Mono', monospace;
+      color: var(--mv-text);
     }
+
     .price-matrix .highlight {
       color: var(--accent-emerald);
-      font-weight: 600;
-    }
-
-    /* Nav */
-    .nav-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 24px 64px;
-      border-bottom: 1px solid var(--border-subtle);
-      background-color: var(--bg-ground);
-    }
-
-    .brand {
       font-weight: 700;
-      font-size: 20px;
-      letter-spacing: -0.5px;
     }
-
-    /* Theme Switcher */
-    .theme-switcher {
-      display: flex;
-      gap: 4px;
-      background: var(--bg-panel);
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid var(--border-subtle);
-    }
-    .theme-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-dim);
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    .theme-btn.active {
-      background: var(--bg-card);
-      color: var(--text-main);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="nav-header">
-    <div class="brand">MotionVector // SpacePilot</div>
-    
-    <div class="theme-switcher" id="themeSwitcher">
-      <button class="theme-btn" data-theme-val="light">Light</button>
-      <button class="theme-btn" data-theme-val="dark">Dark</button>
-      <button class="theme-btn" data-theme-val="system">System</button>
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <div class="brand-group">
+      <a href="/" class="brand-link">
+        <svg class="brand-mark-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="#FAFAFA" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+        </svg>
+        <span class="brand-title">SpacePilot</span>
+        <span class="brand-pill">Generative Cinema</span>
+      </a>
+
+      <div class="nav-breadcrumbs">
+        <span>/</span>
+        <a href="/" class="nav-breadcrumb-link">Studio</a>
+        <span>/</span>
+        <span style="color: var(--mv-text); font-weight: 600;">Overview</span>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <a href="/" class="nav-tab active">Home</a>
+      <a href="/create" class="nav-tab">Create</a>
+      <a href="/studio" class="nav-tab">Editor</a>
+      <a href="/oven.html" class="nav-tab">Oven</a>
+      <a href="/cockpit" class="nav-tab">Cockpit</a>
+
+      <!-- Theme Switcher Capsule (Standard SVG Icons) -->
+      <div class="theme-switch-capsule">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        </button>
+      </div>
+
+      <!-- GPU Pill -->
+      <div class="gpu-pill">
+        <span id="nav-gpu-dot" class="gpu-dot"></span>
+        <span id="nav-gpu-text">Checking GPU...</span>
+      </div>
     </div>
   </nav>
 
@@ -238,48 +428,64 @@
         <div class="terminal-dot"></div>
       </div>
       <div class="terminal-body" id="live-terminal">
-        > spacepilot deploy --model hunyuan-video --gpu L40S<br>
-        <span class="term-white">Finding optimal spot instance...</span><br>
-        <span class="term-warn">Bid placed: $0.75/hr (L40S x1)</span><br>
+        &gt; spacepilot deploy --model hunyuan-video --gpu L40S<br>
+        <span class="term-white">Finding optimal spot instance across 12+ cloud brokers...</span><br>
+        <span class="term-warn">Bid placed: $0.75/hr (L40S x1 · us-east-1)</span><br>
         <span class="term-success">Instance secured in 0.0s.</span><br>
-        > generating sequence [00:00:01 - 00:00:05]...<br>
-        <span class="term-success">Done in 0.8s.</span>
+        &gt; generating sequence [00:00:01 - 00:00:05]...<br>
+        <span class="term-success">Done in 0.8s. Zero preemption data loss.</span>
       </div>
     </div>
     
-    <div>
-      <button class="btn-inverted" onclick="window.location.href='/oven.html'">
-        Open Telemetry Widget →
-      </button>
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <a href="/create" class="btn-inverted">
+        <span>Launch Generation Studio</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+      <a href="/cockpit" class="btn-action" style="font-size: 14px; padding: 14px 24px; border-radius: 6px; text-decoration: none;">
+        <span>Open Fleet Cockpit</span>
+      </a>
     </div>
   </main>
 
   <!-- Stack Breakdown -->
   <section class="section-container">
-    <h2 class="title" style="font-size: 40px;">The 4-Layer Stack.</h2>
+    <h2 class="title" style="font-size: 36px;">The 4-Layer Stack.</h2>
     <div class="stack-grid">
-      <div class="stack-layer panel">
-        <h3>Layer 1: Silicon & Spot Broker</h3>
-        <p class="subtitle" style="font-size: 16px;">Intelligent spot bidding securing L40S instances at fractions of on-demand cost.</p>
+      <div class="stack-layer">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+          <span>Layer 1: Silicon & Spot Broker</span>
+        </h3>
+        <p class="subtitle" style="font-size: 14px;">Intelligent multi-cloud spot bidding securing L40S/A10G instances at wholesale pricing.</p>
       </div>
-      <div class="stack-layer panel">
-        <h3>Layer 2: Resident Float8 VRAM</h3>
-        <p class="subtitle" style="font-size: 16px;">Models kept hot in VRAM using 8-bit precision, enabling 0.0s cold starts.</p>
+      <div class="stack-layer">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+          <span>Layer 2: Resident Float8 VRAM</span>
+        </h3>
+        <p class="subtitle" style="font-size: 14px;">Diffusion weights pinned hot in resident VRAM via 8-bit precision, enabling 0.0s cold starts.</p>
       </div>
-      <div class="stack-layer panel">
-        <h3>Layer 3: 3D Camera & Directing</h3>
-        <p class="subtitle" style="font-size: 16px;">Advanced trajectory control and director-level precision suite.</p>
+      <div class="stack-layer">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          <span>Layer 3: 3D Camera & Directing</span>
+        </h3>
+        <p class="subtitle" style="font-size: 14px;">6-DOF visual camera trajectory compass, STG guidance scale tuning, and FLF2V morphing.</p>
       </div>
-      <div class="stack-layer panel">
-        <h3>Layer 4: Autonomous Swarms</h3>
-        <p class="subtitle" style="font-size: 16px;">FastMCP agents parallelize rendering across distributed spot fleets.</p>
+      <div class="stack-layer">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          <span>Layer 4: Autonomous Swarms</span>
+        </h3>
+        <p class="subtitle" style="font-size: 14px;">Native FastMCP server orchestrating parallel autonomous take generation across distributed spot fleets.</p>
       </div>
     </div>
   </section>
 
   <!-- Economics -->
   <section class="section-container">
-    <h2 class="title" style="font-size: 40px;">Forensic Economics.</h2>
+    <h2 class="title" style="font-size: 36px;">Forensic Economics.</h2>
     <div class="panel">
       <table class="price-matrix">
         <thead>
@@ -287,6 +493,7 @@
             <th>Platform</th>
             <th>Cost per Take (5s)</th>
             <th>Cold Start</th>
+            <th>VRAM Model Residency</th>
           </tr>
         </thead>
         <tbody>
@@ -294,64 +501,32 @@
             <td>Runway Gen-3</td>
             <td>$0.25</td>
             <td>Queue-dependent</td>
+            <td>Multi-tenant Cloud</td>
           </tr>
           <tr>
             <td>Luma Dream Machine</td>
             <td>$0.20</td>
             <td>Queue-dependent</td>
+            <td>Multi-tenant Cloud</td>
           </tr>
           <tr>
-            <td>fal.ai</td>
+            <td>fal.ai Serverless</td>
             <td>$0.08</td>
-            <td>1-3s</td>
+            <td>1.2s – 3.0s</td>
+            <td>Cold Scale-up</td>
           </tr>
           <tr>
-            <td><strong>SpacePilot (Raw Wholesale)</strong></td>
+            <td><strong>SpacePilot (Raw Wholesale Spot)</strong></td>
             <td class="highlight">$0.012</td>
-            <td class="highlight">0.0s</td>
+            <td class="highlight">0.0s (Resident)</td>
+            <td class="highlight">Dedicated 48GB L40S</td>
           </tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <script>
-    // Theme Switcher Logic with LocalStorage
-    const buttons = document.querySelectorAll('.theme-btn');
-    const html = document.documentElement;
-
-    function setTheme(theme) {
-      localStorage.setItem('spacepilot-theme', theme);
-      
-      buttons.forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.querySelector(`[data-theme-val="${theme}"]`);
-      if (activeBtn) activeBtn.classList.add('active');
-
-      if (theme === 'system') {
-        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        html.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        document.body.className = isDark ? 'dark-theme' : 'light-theme';
-      } else {
-        html.setAttribute('data-theme', theme);
-        document.body.className = theme + '-theme';
-      }
-    }
-
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => setTheme(btn.dataset.themeVal));
-    });
-
-    // Init theme
-    const savedTheme = localStorage.getItem('spacepilot-theme') || 'system';
-    setTheme(savedTheme);
-
-    // Watch system changes if on system
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (localStorage.getItem('spacepilot-theme') === 'system') {
-        html.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-        document.body.className = e.matches ? 'dark-theme' : 'light-theme';
-      }
-    });
-  </script>
+  <script src="/theme.js"></script>
+  <script src="/sidebar.js"></script>
 </body>
 </html>

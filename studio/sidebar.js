@@ -194,11 +194,11 @@
   function sidebarHTML() {
     const page = currentPage();
     const navLinks = [
-      { href: '/',        icon: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`, label: 'Home' },
-      { href: '/create',  icon: `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`, label: 'Create' },
-      { href: '/studio',  icon: `<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>`, label: 'Pro Studio' },
-      { href: '/cockpit', icon: `<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>`, label: 'Cockpit' },
-      { href: '/oven.html', icon: `<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>`, label: '🛸 Oven (Kanban)' },
+      { href: '/',          icon: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`, label: 'Home' },
+      { href: '/create',    icon: `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`, label: 'Create' },
+      { href: '/studio',    icon: `<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>`, label: 'Pro Editor' },
+      { href: '/oven.html', icon: `<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>`, label: 'Oven' },
+      { href: '/cockpit',   icon: `<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>`, label: 'Cockpit' },
     ];
     const navHTML = navLinks.map(n => {
       const activePage = page === (n.href === '/' ? 'home' : n.href.slice(1));
@@ -212,7 +212,12 @@
 <div class="pluto-sidebar-backdrop" id="plutoSidebarBackdrop"></div>
 <aside class="pluto-sidebar" id="plutoSidebar" aria-label="Config sidebar">
   <div class="sidebar-header">
-    <span class="sidebar-brand">Pluto Studio</span>
+    <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="#FAFAFA" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+      </svg>
+      <span class="sidebar-brand">SpacePilot</span>
+    </a>
   </div>
 
   <!-- GPU Status Pill -->

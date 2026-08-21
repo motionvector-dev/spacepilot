@@ -1219,15 +1219,17 @@
             <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
           </g>
         </svg>
-        <span class="brand-text">PLUTO <span class="brand-sub">STUDIO</span></span>
+        <span class="brand-text">SPACEPILOT <span class="brand-sub">STUDIO</span></span>
       </a>
 
-      <div class="nav-breadcrumbs">
-        <span class="nav-breadcrumb-sep">/</span>
-        <a href="/" class="nav-breadcrumb-link">Hub</a>
-        <span class="nav-breadcrumb-sep">/</span>
-        <span class="nav-breadcrumb-active">Create</span>
-      </div>
+      <!-- Nav Tabs -->
+      <nav style="display: flex; align-items: center; gap: 20px; margin-left: 16px;">
+        <a href="/" style="font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-dim)'">Home</a>
+        <a href="/create" style="font-size: 13px; font-weight: 600; color: var(--text-main); text-decoration: none;">Create</a>
+        <a href="/studio" style="font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-dim)'">Editor</a>
+        <a href="/oven.html" style="font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-dim)'">Oven</a>
+        <a href="/cockpit" style="font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-dim)'">Cockpit</a>
+      </nav>
     </div>
 
     <div class="nav-actions">
@@ -1247,12 +1249,12 @@
         <span id="nav-gpu-text">Checking GPU...</span>
       </div>
       <a href="/cockpit" class="btn-studio-header">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         <span>Cockpit</span>
       </a>
       <a href="/studio" class="btn-studio-header">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        <span>Open Studio</span>
+        <span>Pro Editor</span>
       </a>
     </div>
   </nav>
