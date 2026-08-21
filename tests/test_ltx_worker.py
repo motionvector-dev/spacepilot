@@ -18,10 +18,27 @@ sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
 
+from unittest.mock import MagicMock
+
+
 def _stub_gpu_stack():
-    for name in ["torch", "diffusers", "diffusers.utils", "transformers", "torchao", "torchao.quantization"]:
-        module = sys.modules.setdefault(name, types.ModuleType(name))
-        module.__getattr__ = lambda _attr: object  # any symbol resolves
+    for name in [
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "torch._C",
+        "diffusers",
+        "diffusers.utils",
+        "diffusers.utils.export_utils",
+        "transformers",
+        "torchao",
+        "torchao.quantization",
+    ]:
+        if name not in sys.modules:
+            mock_mod = MagicMock()
+            mock_mod.__name__ = name
+            mock_mod.__path__ = []
+            sys.modules[name] = mock_mod
 
 
 @pytest.fixture(scope="module")

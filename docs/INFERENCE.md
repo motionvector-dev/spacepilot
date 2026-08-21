@@ -28,14 +28,56 @@ quotas, not three catalogues.
 ## Two things that are not API keys
 
 **Antigravity (`agy`) is the Gemini Pro subscription path**, and it is a CLI, not an
-HTTP API. Two Pro accounts, model `gemini-3.7-flash-high`. It carries ~18–27s of
-process overhead per invocation and can return an empty response with exit 0, so
-never put it behind a route a UI waits on. Use it for agent work and batch, assert
-the response is non-empty, and retry once.
+HTTP API. Two Pro accounts. It carries heavy process overhead — measured 46.3s for a
+trivial prompt on 2026-08-18, up from the earlier 18–27s band — and can return an
+empty response with exit 0. So: never behind a route a UI waits on, never a timeout
+under 90s, assert non-empty, retry once. Batch and background only.
+
+The roster is bigger than Gemini (`agy models`, verified 2026-08-18): Flash
+3.5/3.6/3.7 at three thinking levels, `gemini-3.1-pro-{high,low}`,
+**`claude-opus-4-6-thinking`**, `claude-sonnet-4-6`, and `gpt-oss-120b-medium`.
+The Claude credits make agy a second frontier pool: use `claude-opus-4-6-thinking`
+for background second opinions and heavy offline analysis, or as overflow when the
+`claude` CLI subscription runs tight. The 46s overhead applies to every model on
+the roster — model choice changes quality, not latency.
 
 **Bedrock** lives in the `vibelaunch-worker` Doppler project
 (`AWS_BEARER_TOKEN_BEDROCK`, `CLAUDE_CODE_USE_BEDROCK`), not here. It is paid, and
 covered by the AWS Activate credits — see `AWS.md`.
+
+## Gemini media models — measured serving state (probed 2026-08-18, $0 spent)
+
+The fleet audit's "video/image/music already in the fleet" needs this
+correction: **catalogued ≠ servable.** Live probes against all three keys:
+
+- **Serve today, free tier**: gemini-embedding-001/-2 (~1s),
+  gemini-2.5-flash-preview-tts (12.3s/sentence),
+  gemini-3.1-flash-tts-preview (6.0s/sentence).
+- **Billing-gated, not broken**: lyria-3 (music), gemini-omni-flash-preview,
+  nano-banana-pro / gemini-3-pro-image — 429 `limit:0` free-tier on every
+  key and both GCP projects. Paid-only models; our account has no billing
+  enabled. Unlocking is a billing-account change, not integration work.
+- **DEAD**: Imagen 4, all three tiers — retired 2026-08-17, measured 404 the
+  day after; Google's error names the replacement: `gemini-3.1-flash-image`.
+  /models still lists the corpses — the catalogue lies.
+- **Veo 3.1: not probed** — no free tier ($0.05–0.60/s by tier), async
+  billing, 5s minimum unconfirmed. Needs a deliberate human-approved
+  single-clip test, never an unattended one.
+
+Raw log + scripts: session scratchpad `media-probe/` (2026-08-18).
+
+## Speech: TTS live, diarization funded
+
+**ElevenLabs** — `ELEVENLABS_API_KEY`, in Doppler since 2026-08-18 (moved from
+`.zshrc`; verified live, /v1/user 200). The studio bridge's media-provider
+registry picks it up: `capabilities: tts`. Rotation recommended at leisure — a
+truncated fragment of the key landed in one local agent transcript during the
+move.
+
+**Deepgram** — `DEEPGRAM_API_KEY` in Doppler since 2026-08-18 (verified live,
+/v1/projects 200). $200 credits on the account. nova-3 `diarize=true` is the
+diarization provider for the podcast pack: per-word speaker labels. This
+closed the fleet's one diarization gap.
 
 ## Picking one
 

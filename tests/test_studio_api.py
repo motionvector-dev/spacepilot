@@ -28,6 +28,9 @@ GATED_POSTS = [
     ("/api/composite-motionvector", {"asset_id": "x"}),
     ("/api/gpu/launch", {}),
     ("/api/gpu/terminate", {}),
+    ("/api/gpu/deploy", {}),
+    ("/api/gpu/sync", {}),
+    ("/api/cockpit/config", {"config": {}}),
     ("/api/generate/music", {"prompt": "x", "lyrics": "[Intro]"}),
     ("/api/generate/voice", {"text": "x"}),
 ]
@@ -36,7 +39,7 @@ GATED_POSTS = [
 # computation: /api/enhance appends adjectives to a string, and
 # /api/director/auto-script returns a hardcoded storyboard. A route belongs
 # here only if it cannot cost money or GPU time.
-UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script"}
+UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script", "/api/upload-image"}
 
 
 def _requires_token(route: APIRoute) -> bool:
@@ -166,11 +169,67 @@ def test_studio_generate_mock_pipeline():
     data = response.json()
     assert data["status"] == "queued"
     assert "job_id" in data
+    assert "meta" in data
+    assert "patch" in data
     job_id = data["job_id"]
 
     # Verify metadata on disk
     meta_path = OUTPUTS_DIR / f"{job_id}.json"
     assert meta_path.exists()
+    disk_meta = json.loads(meta_path.read_text())
+    assert disk_meta["id"] == job_id
+    assert "patch" in disk_meta
+
+
+def test_generate_patch_card_metadata():
+    """Verify /api/generate returns MotionVector PatchCard fact block and diff specs."""
+    response = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Cinematic wide tracking shot of cybernetic vehicle",
+            "seconds": 4.0,
+            "width": 1024,
+            "height": 576,
+            "stg_scale": 0.8,
+            "steps": 25,
+            "fps": 24,
+            "seed": 1337,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "patch" in data
+    patch = data["patch"]
+
+    # a. Upfront Fact Block
+    assert patch["target"] == "LTX-2.5 Video Generation"
+    assert "specs" in patch
+    assert patch["specs"]["resolution"] == "1024x576"
+    assert patch["specs"]["fps"] == "24fps"
+    assert patch["specs"]["duration"] == "4.0s"
+    assert patch["specs"]["steps"] == 25
+    assert patch["specs"]["stg_scale"] == 0.8
+    assert patch["specs"]["seed"] == 1337
+    assert "Estimated Spot compute: ~$0.04 (No charge on failure)" in patch["compute_quote"]
+
+    # b. Parameter Diff Inspector
+    assert "diff" in patch
+    diff = patch["diff"]
+    assert diff["prompt"]["after"] == "Cinematic wide tracking shot of cybernetic vehicle"
+    assert diff["stg_scale"]["after"] == 0.8
+    assert diff["aspect"]["after"] == "1024x576"
+    assert diff["seed"]["after"] == 1337
+    assert diff["duration"]["after"] == "4.0s"
+
+    # c. Ops list
+    assert "ops" in patch
+    assert len(patch["ops"]) >= 1
+    op = patch["ops"][0]
+    assert op["subject"] == "LTX-2.5 Video Generation"
+    assert op["generate"]["kind"] == "video"
+    assert op["generate"]["tier"] == "LTX-2.5"
+    assert op["quote"]["cost_usd"] == 0.04
 
 
 def test_studio_assets_list():
@@ -425,14 +484,256 @@ def test_worker_headers_require_token():
         studio_api.WORKER_TOKEN = original
 
 
+def test_multi_view_routes():
+    """Verify onboarding, creator, and studio editor routes return 200 and HTML."""
+    for path in ["/", "/onboarding", "/create", "/studio", "/editor"]:
+        res = client.get(path)
+        assert res.status_code == 200, f"Route {path} failed with status {res.status_code}"
+        assert "text/html" in res.headers.get("content-type", ""), f"Route {path} did not return HTML"
+
+
+def test_generate_request_supports_ltx25_fields():
+    """Verify /api/generate accepts stg_scale, modality_scale, fps, image_path."""
+    payload = {
+        "prompt": "Cybernetic tiger in neon jungle",
+        "seconds": 4.0,
+        "fps": 24,
+        "stg_scale": 1.2,
+        "modality_scale": 1.5,
+        "image_path": None,
+    }
+    res = client.post("/api/generate", json=payload, headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert "job_id" in data
+    assert data["status"] in ["queued", "processing", "completed"]
+
+
+def test_static_asset_routing():
+    """Verify static JS and CSS files are properly served."""
+    for asset in ["/studio.css", "/studio.js"]:
+        res = client.get(asset)
+        assert res.status_code == 200
+        assert len(res.text) > 0
+
+
+def test_cockpit_view_routes():
+    """Verify /cockpit and /settings return 200 and HTML."""
+    for path in ["/cockpit", "/settings"]:
+        res = client.get(path)
+        assert res.status_code == 200, f"Route {path} failed with {res.status_code}"
+        assert "text/html" in res.headers.get("content-type", "")
+
+
+def test_cockpit_status_endpoint():
+    """Verify /api/cockpit/status returns unified instance, worker, and cost telemetry."""
+    res = client.get("/api/cockpit/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "instance" in data
+    assert "worker" in data
+    assert "config" in data
+    assert "estimated_cost_usd" in data
+
+
+def test_cockpit_config_endpoints():
+    """Verify reading and updating config via cockpit API."""
+    # GET config
+    res = client.get("/api/cockpit/config")
+    assert res.status_code == 200
+    data = res.json()
+    assert "config" in data
+
+    # POST config with auth
+    res_update = client.post(
+        "/api/cockpit/config",
+        json={"config": {"default_duration": 4.0}},
+        headers=AUTH
+    )
+    assert res_update.status_code == 200
+    assert res_update.json().get("ok") is True
+
+
+def test_upload_image_valid():
+    """Verify successful image upload returns dimensions, aspect ratio, and safe path."""
+    import base64
+    import io
+    from PIL import Image
+
+    # 1. Create a 16:9 test image (1024x576)
+    img_16_9 = Image.new("RGB", (1024, 576), color=(40, 60, 120))
+    buf_16_9 = io.BytesIO()
+    img_16_9.save(buf_16_9, format="PNG")
+    png_bytes = buf_16_9.getvalue()
+
+    # Upload via multipart/form-data
+    files = {"file": ("cinematic_plate.png", png_bytes, "image/png")}
+    res = client.post("/api/upload-image", files=files)
+    assert res.status_code == 200, f"Upload failed: {res.text}"
+    data = res.json()
+
+    assert data["width"] == 1024
+    assert data["height"] == 576
+    assert data["aspect_ratio"] == "16:9"
+    assert data["filename"] == "cinematic_plate.png"
+    assert data["url"].startswith("/api/media/uploads/")
+    assert "image_path" in data
+    uploaded_path = Path(data["image_path"])
+    assert uploaded_path.exists()
+
+    # Verify serving uploaded image from media route
+    media_res = client.get(data["url"])
+    assert media_res.status_code == 200
+    assert media_res.headers.get("content-type") == "image/png"
+    assert len(media_res.content) == len(png_bytes)
+
+    # 2. Create a 9:16 portrait image (576x1024) and upload via base64 JSON
+    img_9_16 = Image.new("RGB", (576, 1024), color=(120, 40, 60))
+    buf_9_16 = io.BytesIO()
+    img_9_16.save(buf_9_16, format="JPEG")
+    jpeg_bytes = buf_9_16.getvalue()
+    b64_str = base64.b64encode(jpeg_bytes).decode("utf-8")
+
+    res_b64 = client.post(
+        "/api/upload-image",
+        json={"image_base64": b64_str, "filename": "portrait_frame.jpg", "content_type": "image/jpeg"},
+    )
+    assert res_b64.status_code == 200, f"Base64 upload failed: {res_b64.text}"
+    data_b64 = res_b64.json()
+    assert data_b64["width"] == 576
+    assert data_b64["height"] == 1024
+    assert data_b64["aspect_ratio"] == "9:16"
+    assert data_b64["filename"] == "portrait_frame.jpg"
+    assert Path(data_b64["image_path"]).exists()
+
+    # Clean up test files
+    uploaded_path.unlink(missing_ok=True)
+    Path(data_b64["image_path"]).unlink(missing_ok=True)
+
+
+def test_upload_image_traversal_blocked():
+    """Verify path traversal filenames are sanitized and blocked."""
+    import io
+    from PIL import Image
+
+    img = Image.new("RGB", (256, 256), color=(10, 10, 10))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    for bad_name in ["../../../../etc/passwd.png", "../../../evil.png", "..\\..\\evil.png"]:
+        files = {"file": (bad_name, png_bytes, "image/png")}
+        res = client.post("/api/upload-image", files=files)
+        assert res.status_code == 200
+        data = res.json()
+        assert ".." not in data["filename"]
+        assert "/" not in data["filename"]
+        assert "\\" not in data["filename"]
+        dest = Path(data["image_path"])
+        assert dest.is_relative_to((OUTPUTS_DIR / "uploads").resolve())
+        assert dest.exists()
+        dest.unlink(missing_ok=True)
+
+    # Verify media route blocks traversal
+    assert client.get("/api/media/uploads/..%2F..%2Fetc%2Fhosts").status_code == 404
+    assert client.get("/api/media/uploads/../secrets.txt").status_code == 404
+
+
+def test_generate_draft_mode():
+    """Verify draft_mode=True sets default steps=15, 768x432, and ~$0.01 compute quote."""
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={"prompt": "Draft mode fast motion test", "draft_mode": True},
+    )
+    assert res.status_code == 200, f"Draft generation failed: {res.text}"
+    data = res.json()
+    assert data["status"] == "queued"
+    job_id = data["job_id"]
+
+    # Verify response meta and patch specs
+    meta = data["meta"]
+    patch = data["patch"]
+    assert meta["steps"] == 15
+    assert meta["width"] == 768
+    assert meta["height"] == 432
+    assert meta["stg_scale"] == 0.5
+    assert meta["draft_mode"] is True
+
+    assert patch["specs"]["steps"] == 15
+    assert patch["specs"]["resolution"] == "768x432"
+    assert patch["specs"]["stg_scale"] == 0.5
+    assert patch["specs"]["draft_mode"] is True
+    assert "~$0.01" in patch["compute_quote"]
+    assert "Draft" in patch["compute_quote"]
+    assert patch["ops"][0]["quote"]["cost_usd"] == 0.01
+
+    # Verify metadata saved on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["steps"] == 15
+    assert disk_meta["width"] == 768
+    assert disk_meta["height"] == 432
+    assert disk_meta["stg_scale"] == 0.5
+    assert disk_meta["draft_mode"] is True
+
+
+def test_generate_with_image_path():
+    """Verify image_path is preserved and persisted in job metadata."""
+    sample_image = str(OUTPUTS_DIR / "uploads" / "sample_keyframe.png")
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Animate camera moving past statue",
+            "image_path": sample_image,
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code == 200, f"Generate with image_path failed: {res.text}"
+    data = res.json()
+    job_id = data["job_id"]
+
+    assert data["meta"]["image_path"] == sample_image
+
+    # Verify metadata persisted on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["image_path"] == sample_image
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
+    test_multi_view_routes()
+    print("✓ Multi-view routes test passed")
+    test_cockpit_view_routes()
+    print("✓ Cockpit view routes test passed")
+    test_cockpit_status_endpoint()
+    print("✓ Cockpit status telemetry test passed")
+    test_cockpit_config_endpoints()
+    print("✓ Cockpit config test passed")
+    test_upload_image_valid()
+    print("✓ Upload image valid test passed")
+    test_upload_image_traversal_blocked()
+    print("✓ Upload image traversal blocked test passed")
+    test_generate_draft_mode()
+    print("✓ Generate draft mode test passed")
+    test_generate_with_image_path()
+    print("✓ Generate with image path test passed")
+    test_generate_request_supports_ltx25_fields()
+    print("✓ LTX-2.5 generate parameters test passed")
+    test_static_asset_routing()
+    print("✓ Static asset routing test passed")
     test_studio_status_endpoint()
     print("✓ Status telemetry test passed")
     test_studio_enhance_prompt()
     print("✓ Prompt enhancement test passed")
     test_studio_generate_mock_pipeline()
     print("✓ Generate mock pipeline test passed")
+    test_generate_patch_card_metadata()
+    print("✓ MotionVector PatchCard metadata test passed")
     test_studio_assets_list()
     print("✓ Assets listing test passed")
     test_studio_4k_upscale_chain()

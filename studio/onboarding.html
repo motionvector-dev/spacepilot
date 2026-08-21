@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pluto Studio · Minimal AI Video Workstation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+  <style>
+    body {
+      overflow-y: auto; /* Allow scrolling on onboarding */
+    }
+    
+    .onboarding-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      padding-top: var(--space-10);
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--height-header);
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      z-index: 100;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .brand-logo {
+      width: 24px;
+      height: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: 4px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-6);
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .gpu-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-raised);
+      padding: 4px var(--space-3);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      box-shadow: 0 0 0 rgba(0,0,0,0);
+      transition: all 0.3s;
+    }
+
+    .status-dot.active {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .hero-section {
+      text-align: center;
+      padding: var(--space-12) 0 var(--space-10);
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-4);
+      color: var(--text-main);
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .action-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-12);
+    }
+
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .action-card:hover {
+      background: var(--bg-raised);
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .action-card.highlight {
+      border-color: var(--border-highlight);
+      background: var(--bg-raised);
+    }
+    
+    .action-card.highlight:hover {
+      border-color: var(--border-focus);
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      margin-bottom: var(--space-2);
+    }
+
+    .action-card.highlight .card-icon {
+      background: var(--bg-ground);
+      border-color: var(--border-medium);
+      color: var(--text-main);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-6);
+    }
+
+    .gallery-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+    }
+
+    .item-thumbnail {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: var(--bg-panel);
+      position: relative;
+    }
+
+    .item-thumbnail img, .item-thumbnail video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .item-thumbnail video {
+      display: none;
+    }
+    
+    .gallery-item:hover video {
+      display: block;
+    }
+    
+    .gallery-item:hover img {
+      display: none;
+    }
+
+    .item-meta {
+      padding: var(--space-3);
+    }
+
+    .item-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-date {
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+    
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: var(--space-10);
+      text-align: center;
+      color: var(--text-dim);
+      background: var(--bg-card);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-md);
+    }
+  </style>
+</head>
+<body class="obsidian-theme">
+
+  <nav class="top-nav">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- MotionVector Brand Mark -->
+      <svg style="height: 20px; width: auto;" viewBox="0 0 52 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g fill="#a1a1aa">
+          <rect x="0" y="0" width="4.11" height="44"></rect>
+          <rect x="4.73" y="0" width="4.11" height="44"></rect>
+          <rect x="9.45" y="0" width="4.11" height="44"></rect>
+          <rect x="37.82" y="0" width="4.11" height="44"></rect>
+          <rect x="42.55" y="0" width="4.11" height="44"></rect>
+          <rect x="47.27" y="0" width="4.11" height="44"></rect>
+        </g>
+        <g fill="#fafafa">
+          <rect x="14.18" y="7.84" width="4.11" height="22.21"></rect>
+          <rect x="18.91" y="16.7" width="4.11" height="23.98"></rect>
+          <rect x="23.64" y="25.57" width="4.11" height="20.43"></rect>
+          <rect x="28.36" y="16.7" width="4.11" height="23.98"></rect>
+          <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
+        </g>
+      </svg>
+      <div class="brand">
+        PLUTO <span style="color: var(--text-dim); font-weight: 500;">STUDIO 2.5</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/create" class="nav-link">Create Video</a>
+      <a href="/studio" class="nav-link">Pro Studio</a>
+      <a href="/cockpit" class="nav-link">Cockpit</a>
+      <div class="theme-switch-capsule" title="Theme Mode">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+      </div>
+      <div class="gpu-status">
+        <div class="status-dot" id="gpu-dot"></div>
+        <span id="gpu-text">Checking GPU...</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="onboarding-container">
+    <section class="hero-section">
+      <h1 class="hero-title">Welcome to Pluto Studio</h1>
+      <p class="hero-subtitle">
+        ComfyUI power without the node graph. Direct LTX-2.5 prompt-to-video with instant timeline export.
+      </p>
+    </section>
+
+    <div class="action-cards">
+      <a href="/create" class="action-card highlight">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="card-title">Quick Prompt-to-Video</div>
+        <div class="card-desc">Create cinematic video from text in seconds. Powered by resident LTX-2.5.</div>
+      </a>
+      <a href="/create?mode=i2v" class="action-card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="card-title">Character Animator (I2V)</div>
+        <div class="card-desc">Animate reference keyframes from shelf with robust motion controls.</div>
+      </a>
+      <a href="/studio" class="action-card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <div class="card-title">Pro Multi-Track Studio</div>
+        <div class="card-desc">Open full DaVinci-style timeline with 4K upscaling and audio sync.</div>
+      </a>
+      <a href="/cockpit" class="action-card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        </div>
+        <div class="card-title">GPU Cloud Cockpit</div>
+        <div class="card-desc">Manage Spot box lifecycle, rsync transfers, worker logs & cost odometer.</div>
+      </a>
+    </div>
+
+    <section>
+      <h2 class="section-title">
+        Recent Projects & Generations
+      </h2>
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- Fetched dynamically -->
+        <div class="empty-state" id="loading-state">Loading recent assets...</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // GPU Polling
+    async function pollGPUStatus() {
+      const dot = document.getElementById('gpu-dot');
+      const text = document.getElementById('gpu-text');
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          dot.classList.add('active');
+          text.textContent = data.status || 'Spot GPU: Active';
+          text.style.color = 'var(--accent-emerald)';
+        } else {
+          throw new Error('Non-OK response');
+        }
+      } catch (err) {
+        dot.classList.remove('active');
+        text.textContent = 'Spot GPU: Offline';
+        text.style.color = 'var(--text-faint)';
+      }
+      setTimeout(pollGPUStatus, 10000);
+    }
+    pollGPUStatus();
+
+    // Fetch Recent Assets
+    async function fetchAssets() {
+      const grid = document.getElementById('gallery-grid');
+      try {
+        const res = await fetch('/api/assets');
+        if (!res.ok) throw new Error('Failed to fetch assets');
+        const assets = await res.json();
+        
+        if (!assets || assets.length === 0) {
+          grid.innerHTML = '<div class="empty-state">No recent generations found. Click "Quick Prompt-to-Video" to start.</div>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        assets.forEach(asset => {
+          const a = document.createElement('a');
+          a.href = `/studio?asset_id=${asset.id}`;
+          a.className = 'gallery-item';
+          a.innerHTML = `
+            <div class="item-thumbnail">
+              <img src="/api/media/${asset.id}.png" alt="${asset.prompt || 'Asset'}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxNDE3MjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iIzk0YTNiOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBUaHVtYm5haWw8L3RleHQ+PC9zdmc+'">
+              <video src="/api/media/${asset.id}.mp4" loop muted playsinline></video>
+            </div>
+            <div class="item-meta">
+              <div class="item-title">${asset.prompt || 'Untitled Generation'}</div>
+              <div class="item-date">${new Date(asset.created_at * 1000 || Date.now()).toLocaleTimeString()}</div>
+            </div>
+          `;
+          
+          // Hover to play
+          const video = a.querySelector('video');
+          a.addEventListener('mouseenter', () => video.play().catch(e=>e));
+          a.addEventListener('mouseleave', () => {
+            video.pause();
+            video.currentTime = 0;
+          });
+          
+          grid.appendChild(a);
+        });
+      } catch (err) {
+        // Mock fallback for UI demo purposes if API isn't live
+        grid.innerHTML = `
+          <a href="/studio?asset_id=mock-1" class="gallery-item">
+            <div class="item-thumbnail">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMyMzJhMzUiLz48L3N2Zz4=" alt="Mock">
+            </div>
+            <div class="item-meta">
+              <div class="item-title">Cyberpunk Cityscape Sweep</div>
+              <div class="item-date">Just now</div>
+            </div>
+          </a>
+          <a href="/studio?asset_id=mock-2" class="gallery-item">
+            <div class="item-thumbnail">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZTI5M2IiLz48L3N2Zz4=" alt="Mock">
+            </div>
+            <div class="item-meta">
+              <div class="item-title">Macro Flower Blooming</div>
+              <div class="item-date">2 hours ago</div>
+            </div>
+          </a>
+        `;
+      }
+    }
+    fetchAssets();
+
+    // Hot Reload Listener
+    try {
+      const evtSource = new EventSource('/api/live-reload');
+      evtSource.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.event === 'reload-css') {
+          const links = document.querySelectorAll('link[rel="stylesheet"]');
+          links.forEach(l => {
+            const u = new URL(l.href);
+            u.searchParams.set('t', Date.now());
+            l.href = u.toString();
+          });
+        } else if (data.event === 'reload-full') {
+          window.location.reload();
+        }
+      };
+    } catch (e) {}
+  </script>
+  <script src="theme.js"></script>
+  <script src="sidebar.js"></script>
+</body>
+</html>

@@ -28,8 +28,8 @@
               <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="url(#logoGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
               <defs>
                 <linearGradient id="logoGrad" x1="4.5" y1="3.5" x2="19.5" y2="20.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#38bdf8"/>
-                  <stop offset="1" stop-color="#6366f1"/>
+                  <stop stop-color="#fafafa"/>
+                  <stop offset="1" stop-color="#a1a1aa"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -37,6 +37,12 @@
           <span class="brand-title">PLUTO <span class="brand-sub">STUDIO</span></span>
           <span class="version-pill">2.5 PRO</span>
         </div>
+
+        <nav class="header-nav-links" style="margin-left: 16px; display: flex; gap: 12px; align-items: center;">
+          <a href="/" class="nav-link" style="color: var(--text-dim, #9ca3af); text-decoration: none; font-size: 13px;">Home</a>
+          <a href="/create" class="nav-link" style="color: var(--text-dim, #9ca3af); text-decoration: none; font-size: 13px;">Create</a>
+          <a href="/cockpit" class="nav-link" style="color: var(--text-dim, #9ca3af); text-decoration: none; font-size: 13px;">Cockpit</a>
+        </nav>
 
         <div class="project-title-container">
           <span class="project-divider">/</span>
@@ -59,6 +65,19 @@
 
       <!-- Right HUD & Actions -->
       <div class="header-right">
+        <!-- Theme Toggle -->
+        <div class="theme-switch-capsule" title="Theme Mode">
+          <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          </button>
+          <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </button>
+        </div>
+
         <!-- Command Palette Trigger (⌘K) -->
         <button id="btnOpenCommandPalette" class="cmd-palette-btn" title="Open Command Palette (⌘K)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -315,8 +334,29 @@
             </div>
           </div>
 
+          <!-- ── Takes Filmstrip Shelf (MotionVector Take Auditions) ── -->
+          <section class="takes-filmstrip-shelf" id="takesFilmstripShelf" aria-label="Takes Filmstrip Shelf">
+            <div class="takes-shelf-header">
+              <div class="takes-shelf-title-group">
+                <div class="takes-shelf-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                </div>
+                <span class="takes-shelf-label">TAKES FILMSTRIP</span>
+                <span id="takesShelfCount" class="takes-count-pill">0 TAKES</span>
+                <span class="takes-shelf-hint">Click take to instant-preview &amp; deep-load into Track V1</span>
+              </div>
+              <div class="takes-shelf-actions">
+                <button id="btnTakesPrev" class="takes-scroll-btn" title="Scroll takes left" aria-label="Scroll left">‹</button>
+                <button id="btnTakesNext" class="takes-scroll-btn" title="Scroll takes right" aria-label="Scroll right">›</button>
+              </div>
+            </div>
+            <div class="takes-filmstrip-scroller custom-scrollbar" id="takesFilmstripTrack" role="listbox" aria-label="Recent video takes">
+              <!-- Populated dynamically with take cards -->
+            </div>
+          </section>
+
           <!-- Hero Prompt Input Bar (Vibe Generation Engine) -->
-          <div class="prompt-bar-container">
+          <div class="prompt-bar-container" id="promptBarContainer">
             <div class="prompt-input-row">
               <textarea 
                 id="promptInput" 
@@ -324,10 +364,25 @@
                 rows="2"
                 placeholder="Describe the motion and scene plate you want to generate (e.g. Microscopic Brownian motion of particles diffusing through dark viscous fluid, illuminated sparks, 4k)..."
               ></textarea>
+              <button id="btnAttachImage" class="btn-attach-image" title="Attach image keyframe for Image-to-Video (I2V)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>Image (I2V)</span>
+              </button>
+              <input type="file" id="imageKeyframeInput" accept="image/*" style="display: none;" />
               <button id="btnEnhance" class="btn-enhance-prompt" title="Enhance prompt with cinematic camera tokens">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
                 <span>Enhance</span>
               </button>
+            </div>
+
+            <!-- Attached Image Keyframe Chip (shown when keyframe attached) -->
+            <div id="imageKeyframeChip" class="image-keyframe-chip" style="display: none;">
+              <img id="imageKeyframeThumb" class="keyframe-thumb" src="" alt="Keyframe preview" />
+              <div class="keyframe-meta">
+                <span class="keyframe-tag">I2V KEYFRAME</span>
+                <span id="imageKeyframeName" class="keyframe-title">image.png</span>
+              </div>
+              <button id="btnRemoveKeyframe" class="btn-remove-keyframe" title="Remove attached keyframe" aria-label="Remove image keyframe">✕</button>
             </div>
 
             <div class="prompt-controls-row">
@@ -340,6 +395,15 @@
               </div>
 
               <div class="controls-right-group">
+                <!-- Engine Mode: Draft / Pro -->
+                <div class="control-group">
+                  <span class="group-label">Mode</span>
+                  <div class="pill-selector" id="engineModeSelector" role="radiogroup" aria-label="Engine Mode">
+                    <button class="pill-btn" data-mode="draft" title="Draft Mode (15s fast generation)" role="radio" aria-checked="false">⚡ Draft (15s)</button>
+                    <button class="pill-btn active" data-mode="pro" title="Pro Mode (30s high quality)" role="radio" aria-checked="true">🎬 Pro (30s)</button>
+                  </div>
+                </div>
+
                 <!-- Duration -->
                 <div class="control-group">
                   <span class="group-label">Duration</span>
@@ -416,11 +480,11 @@
               <div class="control-field">
                 <label class="field-label">Card Accent Color</label>
                 <div class="color-palette-dots">
-                  <span class="color-dot active" data-color="#38bdf8" style="background:#38bdf8"></span>
+                  <span class="color-dot active" data-color="#fafafa" style="background:#fafafa"></span>
                   <span class="color-dot" data-color="#10b981" style="background:#10b981"></span>
-                  <span class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></span>
                   <span class="color-dot" data-color="#f59e0b" style="background:#f59e0b"></span>
                   <span class="color-dot" data-color="#f43f5e" style="background:#f43f5e"></span>
+                  <span class="color-dot" data-color="#71717a" style="background:#71717a"></span>
                 </div>
               </div>
 
@@ -487,6 +551,16 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15-4-4 4-4"/><path d="M2 11h14a4 4 0 0 1 0 8H10"/></svg>
           </button>
           <span class="toolbar-sep">|</span>
+          <!-- In / Out Markers Controls -->
+          <div class="inout-btn-group">
+            <button id="btnSetInPoint" class="tool-btn-inout" title="Set Mark In (I)">[ In</button>
+            <button id="btnSetOutPoint" class="tool-btn-inout" title="Set Mark Out (O)">] Out</button>
+            <button id="btnClearInOut" class="tool-btn-inout-clear" title="Clear In/Out Range (⌥X)">✕</button>
+          </div>
+          <span id="timelineInOutBadge" class="inout-badge" title="In/Out Active Frame Range">IN: --:-- · OUT: --:--</span>
+          <span class="toolbar-sep">|</span>
+          <span id="shuttleStatusPill" class="shuttle-status-pill" title="J-K-L NLE Shuttle Status">❚❚ Paused</span>
+          <span class="toolbar-sep">|</span>
           <span class="active-clip-label" id="timelineClipName">Diffusion Velocity Field</span>
         </div>
 
@@ -542,17 +616,26 @@
           <!-- SMPTE Time Ruler -->
           <div class="timeline-time-ruler" id="timelineRuler">
             <!-- Ruler Ticks generated in JS -->
+            <div id="markerInHandle" class="marker-handle marker-in" style="display: none;" title="Mark In Point (I)">
+              <span class="marker-label">IN</span>
+            </div>
+            <div id="markerOutHandle" class="marker-handle marker-out" style="display: none;" title="Mark Out Point (O)">
+              <span class="marker-label">OUT</span>
+            </div>
           </div>
+
+          <!-- In/Out Highlight Region Spanning All Tracks -->
+          <div id="timelineInOutRegion" class="timeline-in-out-region" style="display: none;"></div>
 
           <!-- Track Lanes Container -->
           <div class="track-lanes-container" id="trackLanesContainer">
             
             <!-- V2 Track Lane: MotionVector Keyframe Blocks -->
             <div class="track-lane v2-lane">
-              <div class="timeline-clip-block vector-clip" style="left: 0%; width: 100%;">
+              <div class="timeline-clip-block vector-clip" id="v2ClipBlock" style="left: 0%; width: 100%;">
                 <div class="clip-inner">
                   <span class="clip-icon">📐</span>
-                  <span class="clip-title-text">LaTeX: dx_t = f(x_t)dt + g(t)dw_t</span>
+                  <span class="clip-title-text" id="v2ClipTitle">LaTeX: dx_t = f(x_t)dt + g(t)dw_t</span>
                   <span class="keyframe-diamond" style="left: 10%;" title="Intro Keyframe (0.4s)">◆</span>
                   <span class="keyframe-diamond" style="left: 88%;" title="Outro Keyframe (3.5s)">◆</span>
                 </div>
@@ -560,12 +643,12 @@
             </div>
 
             <!-- V1 Track Lane: LTX Video Plate Thumbnails Strip -->
-            <div class="track-lane v1-lane">
-              <div class="timeline-clip-block video-clip" style="left: 0%; width: 100%;">
+            <div class="track-lane v1-lane" id="trackV1Lane">
+              <div class="timeline-clip-block video-clip" id="v1ClipBlock" style="left: 0%; width: 100%;">
                 <div class="clip-inner">
                   <span class="clip-icon">🎬</span>
-                  <span class="clip-title-text">LTX-2.5 Plate · 1024×576 @ 24fps</span>
-                  <div class="video-filmstrip-thumbs">
+                  <span class="clip-title-text" id="v1ClipTitle">LTX-2.5 Plate · 1024×576 @ 24fps</span>
+                  <div class="video-filmstrip-thumbs" id="v1ThumbsContainer">
                     <div class="thumb-frame"></div>
                     <div class="thumb-frame"></div>
                     <div class="thumb-frame"></div>
@@ -615,7 +698,9 @@
             <kbd>↵</kbd>
           </div>
           <div class="cmd-item" data-action="composite-4k" role="option">
-            <span class="cmd-item-icon">✦</span>
+            <span class="cmd-item-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </span>
             <div class="cmd-item-info">
               <span class="cmd-item-title">Export 4K Master (P0 Composite Order)</span>
               <span class="cmd-item-sub">Upscale plate to UHD first, then render Vello vectors</span>
@@ -623,7 +708,9 @@
             <kbd>↵</kbd>
           </div>
           <div class="cmd-item" data-action="enhance-prompt" role="option">
-            <span class="cmd-item-icon">✨</span>
+            <span class="cmd-item-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            </span>
             <div class="cmd-item-info">
               <span class="cmd-item-title">Enhance Current Prompt</span>
               <span class="cmd-item-sub">Add cinematic 35mm camera, lens, and lighting tokens</span>
@@ -631,19 +718,249 @@
             <kbd>↵</kbd>
           </div>
           <div class="cmd-item" data-action="toggle-grid" role="option">
-            <span class="cmd-item-icon">⊞</span>
+            <span class="cmd-item-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            </span>
             <div class="cmd-item-info">
               <span class="cmd-item-title">Toggle Safe Margins Grid</span>
               <span class="cmd-item-sub">Show 90% action-safe and 80% title-safe guide boxes</span>
             </div>
             <kbd>↵</kbd>
           </div>
+          <div class="cmd-item" data-action="export-master" role="option">
+            <span class="cmd-item-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Export Master Delivery Drawer...</span>
+              <span class="cmd-item-sub">Open ProRes 422 HQ / H.264 / 4K UHD export settings</span>
+            </div>
+            <kbd>⌘E</kbd>
+          </div>
+          <div class="cmd-item" data-action="set-in-point" role="option">
+            <span class="cmd-item-icon">📍</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Set Mark In</span>
+              <span class="cmd-item-sub">Set timeline in-point to current playhead</span>
+            </div>
+            <kbd>I</kbd>
+          </div>
+          <div class="cmd-item" data-action="set-out-point" role="option">
+            <span class="cmd-item-icon">🏁</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Set Mark Out</span>
+              <span class="cmd-item-sub">Set timeline out-point to current playhead</span>
+            </div>
+            <kbd>O</kbd>
+          </div>
+          <div class="cmd-item" data-action="clear-in-out" role="option">
+            <span class="cmd-item-icon">✕</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Clear In / Out Points</span>
+              <span class="cmd-item-sub">Reset timeline selection range to entire duration</span>
+            </div>
+            <kbd>⌥X</kbd>
+          </div>
+          <div class="cmd-item" data-action="play-pause" role="option">
+            <span class="cmd-item-icon">⏯</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Play / Pause</span>
+              <span class="cmd-item-sub">Toggle video preview playback</span>
+            </div>
+            <kbd>Space</kbd>
+          </div>
+          <div class="cmd-item" data-action="shuttle-rewind" role="option">
+            <span class="cmd-item-icon">⏪</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Shuttle Rewind (2x)</span>
+              <span class="cmd-item-sub">Engage smooth reverse NLE scrubbing</span>
+            </div>
+            <kbd>J</kbd>
+          </div>
+          <div class="cmd-item" data-action="shuttle-stop" role="option">
+            <span class="cmd-item-icon">⏹</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Stop Shuttle / Pause</span>
+              <span class="cmd-item-sub">Halt playback and reset speed to 1x</span>
+            </div>
+            <kbd>K</kbd>
+          </div>
+          <div class="cmd-item" data-action="shuttle-forward" role="option">
+            <span class="cmd-item-icon">⏩</span>
+            <div class="cmd-item-info">
+              <span class="cmd-item-title">Shuttle Fast Forward (2x)</span>
+              <span class="cmd-item-sub">Engage high-speed forward NLE scrubbing</span>
+            </div>
+            <kbd>L</kbd>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Master 4K / ProRes 422 Export Drawer & Modal ─────────── -->
+    <div id="exportMasterModal" class="export-drawer-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-label="Export Master Video">
+      <div class="export-drawer-card">
+        <div class="export-drawer-header">
+          <div class="export-header-title-group">
+            <div class="export-icon-pill">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </div>
+            <div>
+              <h3 class="export-modal-heading">Export Master Delivery</h3>
+              <span class="export-modal-sub">Broadcast Master ProRes 422 HQ &amp; 4K MotionVector UHD Composites</span>
+            </div>
+          </div>
+          <button id="btnCloseExportModal" class="btn-close-drawer" title="Close (Esc)">✕</button>
+        </div>
+
+        <div class="export-drawer-body custom-scrollbar">
+          <!-- Active Source Clip Summary -->
+          <div class="export-source-summary">
+            <div class="export-source-thumb-wrap">
+              <img id="exportSourceThumb" class="export-source-thumb" src="" alt="" loading="lazy" onerror="this.style.opacity='0'" />
+            </div>
+            <div class="export-source-meta">
+              <span class="meta-label-tiny">SOURCE PLATE (TRACK V1)</span>
+              <h4 id="exportSourceTitle" class="export-source-title">Diffusion Velocity Field</h4>
+              <div class="export-source-pills">
+                <span id="exportSourceRes" class="source-pill">1024×576</span>
+                <span id="exportSourceDur" class="source-pill">4.0s</span>
+                <span class="source-pill">24 fps</span>
+                <span class="source-pill p0-pill">P0 Composite Ready</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Presets Selector (3 Cards) -->
+          <div class="export-section-label">SELECT MASTER PRESET</div>
+          <div class="export-presets-grid" id="exportPresetsGrid">
+            <!-- Preset 1: ProRes 422 HQ -->
+            <div class="export-preset-card active" data-preset="prores">
+              <div class="preset-card-header">
+                <span class="preset-badge prores-badge">BROADCAST MASTER</span>
+                <span class="preset-tag">10-BIT 422 HQ</span>
+              </div>
+              <h4 class="preset-title">Apple ProRes 422 HQ</h4>
+              <p class="preset-desc">3840×2160 UHD @ 24fps Apple ProRes 422 HQ with Rec.709 NCLC 1-1-1 tagging and razor-sharp Vello typography.</p>
+              <div class="preset-specs">
+                <span>• Codec: ProRes 422 HQ (prores_ks profile 3)</span>
+                <span>• Pixel Format: yuv422p10le</span>
+                <span>• MotionVector Native 4K Vector Composite</span>
+              </div>
+            </div>
+
+            <!-- Preset 2: H.264 / MP4 -->
+            <div class="export-preset-card" data-preset="h264">
+              <div class="preset-card-header">
+                <span class="preset-badge web-badge">WEB &amp; SOCIAL</span>
+                <span class="preset-tag">45 MBPS MP4</span>
+              </div>
+              <h4 class="preset-title">H.264 / MP4 Master</h4>
+              <p class="preset-desc">High-bitrate web-ready MP4 with hardware accelerated Apple VideoToolbox encoding and stereo AAC voiceover.</p>
+              <div class="preset-specs">
+                <span>• Codec: H.264 High Profile (FastStart)</span>
+                <span>• Bitrate: 45 Mbps CBR Rec.709</span>
+                <span>• Audio: Kokoro Voiceover 48kHz</span>
+              </div>
+            </div>
+
+            <!-- Preset 3: 4K UHD Plate -->
+            <div class="export-preset-card" data-preset="upscale">
+              <div class="preset-card-header">
+                <span class="preset-badge upscale-badge">CLEAN PLATE</span>
+                <span class="preset-tag">COREML 4X UHD</span>
+              </div>
+              <h4 class="preset-title">4K UHD Upscaled Plate</h4>
+              <p class="preset-desc">Pure 3840×2160 Super-Resolution video plate without vector overlay, upscaled on Apple Neural Engine.</p>
+              <div class="preset-specs">
+                <span>• Engine: CoreML / Lanczos 4x</span>
+                <span>• Clean visual effects plate</span>
+                <span>• Native 3840×2160 UHD Output</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Configuration Fields -->
+          <div class="export-section-label">EXPORT SETTINGS</div>
+          <div class="export-settings-form">
+            <!-- Range -->
+            <div class="form-row">
+              <label class="form-label">Export Range</label>
+              <div class="pill-selector full-width" id="exportRangeSelector">
+                <button class="pill-btn active" data-range="full">Entire Clip (0.0s - <span id="exportFullDurText">4.0s</span>)</button>
+                <button class="pill-btn" data-range="inout" id="btnExportRangeInOut">In/Out Range (<span id="exportInOutRangeText">0.0s - 4.0s</span>)</button>
+              </div>
+            </div>
+
+            <!-- Resolution -->
+            <div class="form-row">
+              <label class="form-label">Output Resolution</label>
+              <div class="pill-selector full-width" id="exportResSelector">
+                <button class="pill-btn active" data-res="4k">3840×2160 UHD (4K Native)</button>
+                <button class="pill-btn" data-res="1080p">1920×1080 FHD</button>
+              </div>
+            </div>
+
+            <!-- Overlay Options -->
+            <div class="form-row" id="exportOverlayControls">
+              <label class="form-label">Vector Overlay (LaTeX / Titles)</label>
+              <div class="export-toggle-box">
+                <label class="checkbox-container">
+                  <input type="checkbox" id="chkIncludeOverlay" checked />
+                  <span class="checkmark"></span>
+                  <span class="chk-label">Composite MotionVector Glass Card &amp; KaTeX Typography (P0 Order)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Title & Formula Override in Drawer -->
+            <div class="form-row-grid" id="exportOverlayFields">
+              <div class="control-field">
+                <label class="field-label">Overlay Title</label>
+                <input type="text" id="inpExportTitle" class="studio-input" value="Diffusion Velocity Field" />
+              </div>
+              <div class="control-field">
+                <label class="field-label">LaTeX Formula</label>
+                <input type="text" id="inpExportFormula" class="studio-input math-font" value="dx_t = f(x_t)dt + g(t)dw_t" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Status & Progress -->
+          <div id="exportStatusBox" class="export-status-box" style="display: none;">
+            <div class="status-indicator-row">
+              <div class="spinner-small" id="exportSpinner"></div>
+              <span id="exportStatusText" class="export-status-text">Rendering Broadcast Master...</span>
+            </div>
+            <div class="export-progress-track">
+              <div id="exportProgressBar" class="export-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div id="exportSuccessActions" class="export-success-actions" style="display: none;">
+              <a id="btnDownloadExported" class="btn-download-master" target="_blank" href="#" download>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download Master File</span>
+              </a>
+              <button id="btnLoadExportedToCanvas" class="btn-preview-master">
+                <span>Preview on Canvas</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="export-drawer-footer">
+          <button id="btnCancelExport" class="btn-secondary-action">Cancel</button>
+          <button id="btnStartExport" class="btn-primary-action">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span id="btnStartExportLabel">Export &amp; Render Master</span>
+          </button>
         </div>
       </div>
     </div>
 
   </div>
 
+  <script src="theme.js"></script>
+  <script src="sidebar.js"></script>
   <script src="studio.js"></script>
 </body>
 </html>
