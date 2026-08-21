@@ -1111,3 +1111,26 @@ def test_multi_provider_config_redaction():
     assert real_cfg["provider"] == "aws"
 
 
+
+def test_generate_video_4take_batch():
+    payload = {
+        "prompt": "4 take test",
+        "seconds": 2.0,
+        "seed": 100,
+        "takes": 4,
+        "draft_mode": True
+    }
+    response = client.post("/api/generate", json=payload, headers=AUTH)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "queued"
+    assert "jobs" in data
+    assert len(data["jobs"]) == 4
+    assert "take_group_id" in data
+    
+    seeds = [job["meta"]["seed"] for job in data["jobs"]]
+    assert seeds == [100, 101, 102, 103]
+    
+    for i, job in enumerate(data["jobs"]):
+        assert job["meta"]["take_index"] == i + 1
+        assert job["meta"]["take_group_id"] == data["take_group_id"]

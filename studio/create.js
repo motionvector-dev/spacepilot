@@ -575,7 +575,8 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePatchCardDiff();
 
   // 5. Video Generation & Multi-Phase Pipeline
-  btnGenerate.addEventListener('click', async () => {
+  
+  async function startGeneration(takesCount) {
     const prompt = promptInput.value.trim();
     if (!prompt && !config.imageFile && !config.imagePath) {
       if (window.mvDialog) {
@@ -608,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fps: config.fps,
       enhance: false,
       draft_mode: config.draftMode,
+      takes: takesCount,
 
       camera_pan: config.cameraPan !== 'static' ? config.cameraPan : null,
       camera_tilt: config.cameraTilt !== 'static' ? config.cameraTilt : null,
@@ -651,7 +653,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const mockId = 'mock_' + Math.random().toString(36).substr(2, 8);
       runGenerationTracker(mockId, null);
     }
-  });
+  }
+
+  btnGenerate.addEventListener('click', () => startGeneration(1));
+  const btnGenerate4Take = document.getElementById('btn-generate-4take');
+  if (btnGenerate4Take) {
+    btnGenerate4Take.addEventListener('click', () => startGeneration(4));
+  }
+
 
   function setStage(stageIdx, phaseText, subtitleText, progressPct, customStepLabel) {
     for (let i = 1; i <= 5; i++) {
@@ -682,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function runGenerationTracker(jobId, patchData) {
+  function runGenerationTracker(jobId, patchData, jobData) {
     const totalSteps = config.steps || (config.draftMode ? 15 : 30);
     const tierName = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5 Resident';
     const genPhaseTag = document.getElementById('gen-phase-tag');
@@ -744,28 +753,68 @@ document.addEventListener('DOMContentLoaded', () => {
         'Video rendered successfully! Finalizing asset...',
         100
       );
-      setTimeout(() => finishJob(jobId, patchData), 800);
+      setTimeout(() => finishJob(jobId, patchData, jobData), 800);
     }, completeTime);
   }
 
-  function finishJob(jobId, patchData) {
+    function finishJob(jobId, patchData, jobData) {
     panelGenerating.style.display = 'none';
     panelCompleted.style.display = 'block';
 
-    const videoSrc = `/api/media/${jobId}.mp4`;
-    resultVideo.src = videoSrc;
-    resultVideo.onerror = () => {
-      resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">Video Plate Ready (' + jobId + '.mp4)</div>';
-    };
+    const grid4Take = document.getElementById('grid-4take');
+    const resultVideoFrame = document.querySelector('.video-preview-frame');
+
+    if (jobData && jobData.jobs && jobData.jobs.length > 1) {
+      // It's a 4-Take Batch
+      grid4Take.style.display = 'grid';
+      resultVideoFrame.classList.add('hide');
+      grid4Take.innerHTML = '';
+      
+      jobData.jobs.forEach((job, index) => {
+        const jId = job.job_id;
+        const videoSrc = `/api/media/${jId}.mp4`;
+        
+        const item = document.createElement('div');
+        item.className = 'grid-item';
+        item.innerHTML = `
+          <video src="${videoSrc}" controls loop playsinline muted></video>
+          <div class="grid-item-actions">
+            <button class="grid-btn" title="Star / Keep Best Take">⭐</button>
+            <button class="grid-btn" title="Extend (+4s)">➕</button>
+            <button class="grid-btn" title="Send to Timeline NLE">✂️</button>
+            <button class="grid-btn" title="Download MP4" onclick="window.open('${videoSrc}', '_blank')">💾</button>
+          </div>
+        `;
+        
+        const vid = item.querySelector('video');
+        item.addEventListener('mouseenter', () => vid.play().catch(e=>e));
+        item.addEventListener('mouseleave', () => vid.pause());
+        
+        grid4Take.appendChild(item);
+      });
+      
+      if (compReceipt) {
+        compReceipt.textContent = `4 takes generated · ~$0.16 — LTX-2.5 · Group: ${jobData.take_group_id}`;
+      }
+    } else {
+      // Single Take
+      grid4Take.style.display = 'none';
+      resultVideoFrame.classList.remove('hide');
+      const videoSrc = `/api/media/${jobId}.mp4`;
+      resultVideo.src = videoSrc;
+      resultVideo.onerror = () => {
+        resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">Video Plate Ready (' + jobId + '.mp4)</div>';
+      };
+
+      if (compReceipt) {
+        const cost = config.draftMode ? '~$0.01' : '~$0.04';
+        const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
+        compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
+      }
+    }
 
     if (btnOpenStudio) {
       btnOpenStudio.href = `/studio?asset_id=${jobId}`;
-    }
-
-    if (compReceipt) {
-      const cost = config.draftMode ? '~$0.01' : '~$0.04';
-      const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
-      compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
     }
   }
 

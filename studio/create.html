@@ -1129,6 +1129,70 @@
         transform: translateY(0);
       }
     }
+
+    /* 4-Take Director Grid */
+    .grid-4take {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+      margin-bottom: 16px;
+    }
+    .grid-4take.active {
+      display: grid;
+    }
+    .grid-item {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface-200);
+      border: 1px solid var(--border-subtle);
+      transition: border-color 0.2s ease;
+    }
+    .grid-item:hover {
+      border-color: var(--accent-rose);
+    }
+    .grid-item video {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+    .grid-item-actions {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      padding: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .grid-item:hover .grid-item-actions {
+      opacity: 1;
+    }
+    .grid-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .grid-btn:hover {
+      background: var(--accent-rose);
+    }
+    
+    .video-preview-frame.hide {
+      display: none !important;
+    }
+
   </style>
 </head>
 <body>
@@ -1472,6 +1536,9 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span>Generate Video</span>
         </button>
+        <button id="btn-generate-4take" class="btn-generate-main" style="margin-top: 8px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);">
+          <span>🎲 4-Take Director Grid (Batch 4 Seeds)</span>
+        </button>
 
       </div>
     </div>
@@ -1554,6 +1621,9 @@
         <div id="comp-receipt" class="receipt-line">
           1 op applied · ~$0.04 — LTX-2.5 · undo byte-exact
         </div>
+
+                <!-- 4-Take Grid Mode -->
+        <div id="grid-4take" class="grid-4take"></div>
 
         <!-- d. Completion State with instant player, download button, and deep-link -->
         <div class="video-preview-frame">

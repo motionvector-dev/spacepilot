@@ -1095,187 +1095,204 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 
     raw_frames = int(req.seconds * 24)
     num_frames = ((raw_frames - 1) // 8) * 8 + 1
-    seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
 
-    patch = {
-        "target": "LTX-2.5 Video Generation",
-        "specs": {
-            "resolution": f"{width}x{height}",
-            "fps": f"{req.fps}fps",
-            "duration": f"{req.seconds:.1f}s",
-            "frames": num_frames,
+    base_seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
+    
+    take_group_id = f"tg_{uuid.uuid4().hex[:10]}" if req.takes > 1 else None
+    jobs = []
+    
+    for i in range(req.takes):
+        job_id = f"pluto_{uuid.uuid4().hex[:10]}"
+        seed = (base_seed + i) % 2147483648
+        
+        patch = {
+            "target": "LTX-2.5 Video Generation",
+            "specs": {
+                "resolution": f"{width}x{height}",
+                "fps": f"{req.fps}fps",
+                "duration": f"{req.seconds:.1f}s",
+                "frames": num_frames,
+                "steps": steps,
+                "stg_scale": stg_scale,
+                "seed": seed,
+                "draft_mode": req.draft_mode,
+            },
+            "compute_quote": compute_quote,
+            "diff": {
+                "prompt": {"before": None, "after": req.prompt},
+                "stg_scale": {"before": 1.0, "after": stg_scale},
+                "aspect": {"before": "16:9 (1024x576)", "after": f"{width}x{height}"},
+                "duration": {"before": "4.0s", "after": f"{req.seconds:.1f}s"},
+                "seed": {"before": "random", "after": seed},
+            },
+            "ops": [
+                {
+                    "address": "video.generation",
+                    "subject": "LTX-2.5 Video Generation",
+                    "before": None,
+                    "after": f"{width}x{height} @ {req.fps}fps, {req.seconds:.1f}s",
+                    "generate": {
+                        "kind": "video",
+                        "prompt": req.prompt,
+                        "tier": "LTX-2.5",
+                        "units": req.seconds,
+                        "resolution": f"{width}x{height}",
+                        "fps": req.fps,
+                        "stg_scale": stg_scale,
+                        "seed": seed,
+                        "draft_mode": req.draft_mode,
+                    },
+                    "quote": {
+                        "estimated": True,
+                        "compute_text": compute_quote,
+                        "cost_usd": cost_usd,
+                    },
+                }
+            ],
+        }
+
+        meta = {
+            "id": job_id,
+            "prompt": req.prompt,
+            "enhanced_prompt": target_prompt,
+            "width": width,
+            "height": height,
+            "seconds": req.seconds,
+            "num_frames": num_frames,
+            "seed": seed,
             "steps": steps,
             "stg_scale": stg_scale,
-            "seed": seed,
             "draft_mode": req.draft_mode,
-        },
-        "compute_quote": compute_quote,
-        "diff": {
-            "prompt": {"before": None, "after": req.prompt},
-            "stg_scale": {"before": 1.0, "after": stg_scale},
-            "aspect": {"before": "16:9 (1024x576)", "after": f"{width}x{height}"},
-            "duration": {"before": "4.0s", "after": f"{req.seconds:.1f}s"},
-            "seed": {"before": "random", "after": seed},
-        },
-        "ops": [
-            {
-                "address": "video.generation",
-                "subject": "LTX-2.5 Video Generation",
-                "before": None,
-                "after": f"{width}x{height} @ {req.fps}fps, {req.seconds:.1f}s",
-                "generate": {
-                    "kind": "video",
-                    "prompt": req.prompt,
-                    "tier": "LTX-2.5",
-                    "units": req.seconds,
-                    "resolution": f"{width}x{height}",
-                    "fps": req.fps,
-                    "stg_scale": stg_scale,
-                    "seed": seed,
-                    "draft_mode": req.draft_mode,
-                },
-                "quote": {
-                    "estimated": True,
-                    "compute_text": compute_quote,
-                    "cost_usd": cost_usd,
-                },
-            }
-        ],
-    }
+            "image_path": req.image_path,
+            "status": "queued",
+            "created_at": time.time(),
+            "is_upscaled": False,
+            "duration_sec": req.seconds,
+            "patch": patch,
+        }
+        
+        if take_group_id:
+            meta["take_group_id"] = take_group_id
+            meta["take_index"] = i + 1
 
-    meta = {
-        "id": job_id,
-        "prompt": req.prompt,
-        "enhanced_prompt": target_prompt,
-        "width": width,
-        "height": height,
-        "seconds": req.seconds,
-        "num_frames": num_frames,
-        "seed": seed,
-        "steps": steps,
-        "stg_scale": stg_scale,
-        "draft_mode": req.draft_mode,
-        "image_path": req.image_path,
-        "status": "queued",
-        "created_at": time.time(),
-        "is_upscaled": False,
-        "duration_sec": req.seconds,
-        "patch": patch,
-    }
+        meta_file = OUTPUTS_DIR / f"{job_id}.json"
+        with open(meta_file, "w") as f:
+            json.dump(meta, f, indent=2)
 
-    meta_file = OUTPUTS_DIR / f"{job_id}.json"
-    with open(meta_file, "w") as f:
-        json.dump(meta, f, indent=2)
+        # If GPU box is running, dispatch to remote worker
+        if inst and inst.get("ip") and inst.get("state") == "running":
+            def _dispatch_remote(current_job_id=job_id, current_meta=meta, current_meta_file=meta_file, current_seed=seed):
+                ip = inst["ip"]
+                try:
+                    payload = {
+                        "job_id": current_job_id,
+                        "prompt": target_prompt,
+                        "negative_prompt": req.negative_prompt,
+                        "width": width,
+                        "height": height,
+                        "seconds": req.seconds,
+                        "seed": current_seed,
+                        "steps": steps,
+                        "stg_scale": stg_scale,
+                        "modality_scale": req.modality_scale,
+                        "fps": req.fps,
+                        "draft_mode": req.draft_mode,
+                    }
+                    if req.image_path:
+                        payload["image_path"] = req.image_path
+                    data = json.dumps(payload).encode()
+                    remote_req = urllib.request.Request(
+                        f"http://{ip}:5000/generate",
+                        data=data,
+                        headers=worker_headers({"Content-Type": "application/json"}),
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(remote_req) as resp:
+                        pass
 
-    # If GPU box is running, dispatch to remote worker
-    if inst and inst.get("ip") and inst.get("state") == "running":
-        def _dispatch_remote():
-            ip = inst["ip"]
-            try:
-                payload = {
-                    "job_id": job_id,
-                    "prompt": target_prompt,
-                    "negative_prompt": req.negative_prompt,
-                    "width": width,
-                    "height": height,
-                    "seconds": req.seconds,
-                    "seed": seed,
-                    "steps": steps,
-                    "stg_scale": stg_scale,
-                    "modality_scale": req.modality_scale,
-                    "fps": req.fps,
-                    "draft_mode": req.draft_mode,
-                }
-                if req.image_path:
-                    payload["image_path"] = req.image_path
-                data = json.dumps(payload).encode()
-                remote_req = urllib.request.Request(
-                    f"http://{ip}:5000/generate",
-                    data=data,
-                    headers=worker_headers({"Content-Type": "application/json"}),
-                    method="POST"
-                )
-                with urllib.request.urlopen(remote_req) as resp:
-                    pass
+                    # Poll remote until complete
+                    while True:
+                        time.sleep(1.5)
+                        st_req = urllib.request.Request(f"http://{ip}:5000/status/{current_job_id}", headers=worker_headers())
+                        with urllib.request.urlopen(st_req) as st_resp:
+                            st_data = json.loads(st_resp.read().decode())
+                            if st_data.get("status") == "completed":
+                                # Download MP4
+                                dl_req = urllib.request.Request(f"http://{ip}:5000/download/{current_job_id}", headers=worker_headers())
+                                out_mp4 = OUTPUTS_DIR / f"{current_job_id}.mp4"
+                                with urllib.request.urlopen(dl_req) as dl_resp, open(out_mp4, "wb") as out_f:
+                                    shutil.copyfileobj(dl_resp, out_f)
 
-                # Poll remote until complete
-                while True:
-                    time.sleep(1.5)
-                    st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
-                    with urllib.request.urlopen(st_req) as st_resp:
-                        st_data = json.loads(st_resp.read().decode())
-                        if st_data.get("status") == "completed":
-                            # Download MP4
-                            dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
-                            out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4"
-                            with urllib.request.urlopen(dl_req) as dl_resp, open(out_mp4, "wb") as out_f:
-                                shutil.copyfileobj(dl_resp, out_f)
+                                # Extract thumbnail
+                                thumb_png = OUTPUTS_DIR / f"{current_job_id}.png"
+                                thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
 
-                            # Extract thumbnail
-                            thumb_png = OUTPUTS_DIR / f"{job_id}.png"
-                            thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
+                                current_meta["status"] = "completed"
+                                current_meta["file_path"] = str(out_mp4)
+                                if thumb_res.returncode == 0:
+                                    current_meta["thumbnail_path"] = str(thumb_png)
+                                else:
+                                    current_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+                                write_meta(current_meta_file, current_meta)
+                                break
+                            elif st_data.get("status") == "failed":
+                                current_meta["status"] = "failed"
+                                current_meta["error"] = st_data.get("error")
+                                write_meta(current_meta_file, current_meta)
+                                break
+                except Exception as e:
+                    current_meta["status"] = "failed"
+                    current_meta["error"] = str(e)
+                    write_meta(current_meta_file, current_meta)
 
-                            meta["status"] = "completed"
-                            meta["file_path"] = str(out_mp4)
-                            if thumb_res.returncode == 0:
-                                meta["thumbnail_path"] = str(thumb_png)
-                            else:
-                                meta["thumbnail_error"] = ffmpeg_error(thumb_res)
-                            write_meta(meta_file, meta)
-                            break
-                        elif st_data.get("status") == "failed":
-                            meta["status"] = "failed"
-                            meta["error"] = st_data.get("error")
-                            write_meta(meta_file, meta)
-                            break
-            except Exception as e:
-                meta["status"] = "failed"
-                meta["error"] = str(e)
-                write_meta(meta_file, meta)
+            background_tasks.add_task(_dispatch_remote)
+        else:
+            # Mock mode generation for zero-latency local testing
+            def _mock_gen(current_job_id=job_id, current_meta=meta, current_meta_file=meta_file):
+                out_mp4 = OUTPUTS_DIR / f"{current_job_id}.mp4"
+                thumb_png = OUTPUTS_DIR / f"{current_job_id}.png"
 
-        background_tasks.add_task(_dispatch_remote)
+                # Generate test video pattern with ffmpeg
+                current_meta["is_mock"] = True
+                if req.image_path and Path(req.image_path).exists():
+                    gen_res = run_ffmpeg([
+                        "-loop", "1", "-i", str(req.image_path),
+                        "-t", f"{req.seconds}",
+                        "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+                    ])
+                else:
+                    gen_res = run_ffmpeg([
+                        "-f", "lavfi",
+                        "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+                    ])
+                if gen_res.returncode != 0:
+                    current_meta["status"] = "failed"
+                    current_meta["error"] = ffmpeg_error(gen_res)
+                    discard_partial(out_mp4)
+                    write_meta(current_meta_file, current_meta)
+                    return
+
+                thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
+                if thumb_res.returncode != 0:
+                    thumb_res = run_ffmpeg(["-ss", "00:00:00", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
+                current_meta["status"] = "completed"
+                current_meta["file_path"] = str(out_mp4)
+                if thumb_res.returncode == 0:
+                    current_meta["thumbnail_path"] = str(thumb_png)
+                else:
+                    current_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+                write_meta(current_meta_file, current_meta)
+
+            background_tasks.add_task(_mock_gen)
+
+        jobs.append({"job_id": job_id, "meta": meta, "patch": patch})
+        
+    if req.takes > 1:
+        return {"status": "queued", "jobs": jobs, "take_group_id": take_group_id, "patch": jobs[0]["patch"]}
     else:
-        # Mock mode generation for zero-latency local testing
-        def _mock_gen():
-            out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4"
-            thumb_png = OUTPUTS_DIR / f"{job_id}.png"
-
-            # Generate test video pattern with ffmpeg
-            meta["is_mock"] = True
-            if req.image_path and Path(req.image_path).exists():
-                gen_res = run_ffmpeg([
-                    "-loop", "1", "-i", str(req.image_path),
-                    "-t", f"{req.seconds}",
-                    "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-                ])
-            else:
-                gen_res = run_ffmpeg([
-                    "-f", "lavfi",
-                    "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-                ])
-            if gen_res.returncode != 0:
-                meta["status"] = "failed"
-                meta["error"] = ffmpeg_error(gen_res)
-                discard_partial(out_mp4)
-                write_meta(meta_file, meta)
-                return
-
-            thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
-            if thumb_res.returncode != 0:
-                thumb_res = run_ffmpeg(["-ss", "00:00:00", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
-            meta["status"] = "completed"
-            meta["file_path"] = str(out_mp4)
-            if thumb_res.returncode == 0:
-                meta["thumbnail_path"] = str(thumb_png)
-            else:
-                meta["thumbnail_error"] = ffmpeg_error(thumb_res)
-            write_meta(meta_file, meta)
-
-        background_tasks.add_task(_mock_gen)
-
-    return {"status": "queued", "job_id": job_id, "meta": meta, "patch": patch}
+        return {"status": "queued", "job_id": jobs[0]["job_id"], "meta": jobs[0]["meta"], "patch": jobs[0]["patch"]}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
