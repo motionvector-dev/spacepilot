@@ -14,6 +14,7 @@ import TimelineEditor from '../components/studio/TimelineEditor';
 import DirectorView from '../components/studio/DirectorView';
 import VibeCanvasView from '../components/studio/VibeCanvasView';
 import CommandPalette from '../components/studio/CommandPalette';
+import ExportDrawer from '../components/studio/ExportDrawer';
 
 export default function StudioPage() {
   const { 
@@ -24,6 +25,7 @@ export default function StudioPage() {
 
   const { status: gpuStatus } = useGpuStore();
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Activate continuous background telemetry polling
   useGpuPoller(4000);
@@ -94,6 +96,7 @@ export default function StudioPage() {
           </a>
           <button 
             disabled={isGenerating}
+            onClick={() => setExportOpen(true)}
             className="flex items-center gap-1.5 text-xs font-semibold bg-white text-black px-4 py-1.5 rounded hover:bg-[#e4e4e7] transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer disabled:opacity-50"
           >
             {isGenerating ? (
@@ -121,6 +124,9 @@ export default function StudioPage() {
 
       {/* Command Palette (⌘K) Modal */}
       <CommandPalette isOpen={cmdOpen} onClose={() => setCmdOpen(false)} />
+
+      {/* Export Master Delivery Drawer */}
+      <ExportDrawer isOpen={exportOpen} onClose={() => setExportOpen(false)} />
     </div>
   );
 }
