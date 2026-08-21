@@ -1865,6 +1865,7 @@ if __name__ == "__main__":
         "src.studio_api:app",
         host="127.0.0.1",
         port=port,
+        app_dir=str(PLUTO_ROOT),
         reload=True,
         reload_dirs=[str(PLUTO_ROOT / "src"), str(PLUTO_ROOT / "studio")],
     )
