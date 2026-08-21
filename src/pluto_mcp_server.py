@@ -372,4 +372,7 @@ def pluto_train_lora(name: str, base_model: str, image_paths: list[str], trigger
         )
         return {"status": "success", "job": job}
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to train LoRA")
         return {"status": "error", "message": str(e)}
