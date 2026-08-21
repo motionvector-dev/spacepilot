@@ -329,7 +329,8 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             body.write(f"--{boundary}--\r\n".encode())
             body_bytes = body.getvalue()
             headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
-            conn = http.client.HTTPConnection(ip, 5000, timeout=30)
+            headers["Content-Length"] = str(len(body_bytes))
+            conn = http.client.HTTPConnection(ip, 5000, timeout=120)
             conn.request("POST", "/upload", body=body_bytes, headers=headers)
             resp = conn.getresponse()
             data = resp.read().decode()
