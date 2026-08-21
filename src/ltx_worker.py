@@ -53,6 +53,7 @@ OUTPUT_DIR = Path(os.environ.get("LTX_OUTPUT_DIR", "/scratch/out"))
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB image upload limit
 _lock = threading.Lock()
 _active = 0
 _model_ready = False
@@ -328,11 +329,15 @@ def upload_image():
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     file = request.files["file"]
-    # Sanitize the filename — alphanumeric + dot +dash only
+    # Sanitize the filename — alphanumeric + dot + dash only, no leading dots (prevent path traversal)
     safe_name = re.sub(r"[^A-Za-z0-9._-]", "", file.filename or "upload.png")
-    if not safe_name:
+    safe_name = safe_name.lstrip(".")  # prevent hidden files / traversal
+    if not safe_name or safe_name.startswith("."):
         safe_name = f"upload_{uuid.uuid4().hex[:8]}.png"
     dest = upload_dir / safe_name
+    # Resolve and verify containment (prevent path traversal via crafted names)
+    if not dest.resolve().parent == upload_dir.resolve():
+        return jsonify(error="invalid_filename", message="Filename must not escape upload directory"), 400
     file.save(str(dest))
 
     return jsonify(
