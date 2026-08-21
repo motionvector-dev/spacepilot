@@ -361,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startDropzoneTitle.textContent = 'Reference Keyframe (I2V)';
         endDropzoneBlock.style.display = 'none';
       }
+      checkAspectMismatch();
       updatePatchCardDiff();
     });
   });
@@ -459,6 +460,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePatchCardDiff();
   }
 
+  function checkAspectMismatch() {
+    if (config.keyframeMode === 'dual' && config.imageFile && config.endImageFile) {
+      if (config.detectedAspect && config.detectedAspectEnd && config.detectedAspect !== config.detectedAspectEnd) {
+        if (dropzone) dropzone.style.borderColor = 'red';
+        if (dropzoneEnd) dropzoneEnd.style.borderColor = 'red';
+        if (btnGenerate) {
+            btnGenerate.disabled = true;
+            btnGenerate.title = 'Aspect ratio mismatch between start and end keyframes.';
+        }
+        return true;
+      }
+    }
+    
+    if (dropzone) dropzone.style.borderColor = '';
+    if (dropzoneEnd) dropzoneEnd.style.borderColor = '';
+    if (btnGenerate) {
+        btnGenerate.disabled = false;
+        btnGenerate.title = '';
+    }
+    return false;
+  }
+
   function handleImage(file) {
     if (!file || !file.type.startsWith('image/')) return;
     config.imageFile = file;
@@ -492,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
           btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-match Aspect Ratio</span>`;
         }
 
+        checkAspectMismatch();
         updatePatchCardDiff();
       };
       img.src = dataUrl;
@@ -565,10 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dropzonePromptEnd) dropzonePromptEnd.style.display = 'none';
         if (dropzoneEnd) dropzoneEnd.classList.add('has-image');
 
-        if (config.detectedAspect && config.detectedAspectEnd !== config.detectedAspect) {
-           console.warn('Aspect ratio mismatch between start and end keyframes.');
-        }
-
+        checkAspectMismatch();
         updatePatchCardDiff();
       };
       img.src = dataUrl;
@@ -623,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dropzone) dropzone.classList.remove('has-image');
       if (btnAutoAspect) btnAutoAspect.classList.remove('matched');
 
+      checkAspectMismatch();
       updatePatchCardDiff();
     });
   }
@@ -643,6 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dropzonePromptEnd) dropzonePromptEnd.style.display = 'flex';
       if (dropzoneEnd) dropzoneEnd.classList.remove('has-image');
 
+      checkAspectMismatch();
       updatePatchCardDiff();
     });
   }

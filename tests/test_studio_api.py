@@ -757,6 +757,19 @@ def test_generate_dual_keyframe():
     assert disk_meta["image_path"] == start_image
     assert disk_meta["last_image_path"] == end_image
 
+def test_generate_dual_keyframe_validation():
+    """Verify validation error when last_image_path is sent without image_path."""
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Morph from nowhere to end",
+            "last_image_path": "end.png",
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code in [400, 422], "Should reject last_image_path without image_path"
+
 
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")

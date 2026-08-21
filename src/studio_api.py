@@ -29,7 +29,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from typing import Optional, List, Dict, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends, Request, UploadFile, File, Form
 from fastapi.exceptions import RequestValidationError
@@ -272,6 +272,12 @@ class GenerateRequest(BaseModel):
     camera_zoom: Optional[Literal["in", "out"]] = None
     camera_roll: Optional[Literal["left", "right", "orbit"]] = None
     camera_intensity: Optional[int] = Field(None, ge=1, le=5)
+
+    @model_validator(mode="after")
+    def validate_dual_keyframe(self) -> "GenerateRequest":
+        if self.last_image_path is not None and self.image_path is None:
+            raise ValueError("last_image_path requires image_path to be present")
+        return self
 
 
 class MusicRequest(BaseModel):
