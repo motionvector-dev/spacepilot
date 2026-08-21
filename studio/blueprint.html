@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pluto Studio · VC & Product Strategy Memorandum (2026)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-root: #000000;
+      --bg-ground: #09090b;
+      --bg-panel: #111114;
+      --bg-card: #18181b;
+      --bg-raised: #222226;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-highlight: rgba(255, 255, 255, 0.25);
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --text-faint: #52525b;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --svg-diagram-bg: #111114;
+      --svg-diagram-card: #18181b;
+      --svg-text: #fafafa;
+      --svg-text-muted: #a1a1aa;
+      --svg-line: #3f3f46;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-theme="light"] {
+      --bg-root: #ffffff;
+      --bg-ground: #f4f4f5;
+      --bg-panel: #ffffff;
+      --bg-card: #fafafa;
+      --bg-raised: #e4e4e7;
+      --border-subtle: rgba(0, 0, 0, 0.07);
+      --border-medium: rgba(0, 0, 0, 0.13);
+      --border-highlight: rgba(0, 0, 0, 0.24);
+      --text-main: #09090b;
+      --text-muted: #52525b;
+      --text-dim: #71717a;
+      --text-faint: #a1a1aa;
+      --svg-diagram-bg: #ffffff;
+      --svg-diagram-card: #f4f4f5;
+      --svg-text: #09090b;
+      --svg-text-muted: #71717a;
+      --svg-line: #d4d4d8;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-ground);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 120px;
+    }
+
+    /* Top Navigation */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .memo-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .theme-toggle-btn {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      color: var(--text-main);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .theme-toggle-btn:hover {
+      border-color: var(--border-highlight);
+    }
+
+    /* Document Layout */
+    .report-layout {
+      max-width: 1080px;
+      margin: 40px auto 0;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    /* Memo Header Box */
+    .memo-header-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    .memo-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 20px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .meta-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .memo-title-area {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .memo-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+    }
+
+    .memo-subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 85ch;
+      line-height: 1.6;
+    }
+
+    /* Key Numbers Grid */
+    .numbers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .numbers-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .num-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .num-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .num-val.emerald { color: var(--accent-emerald); }
+    .num-val.blue { color: var(--accent-blue); }
+
+    .num-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Table of Contents */
+    .toc-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toc-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .toc-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      font-size: 13px;
+    }
+
+    .toc-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .toc-link:hover {
+      color: var(--accent-emerald);
+    }
+
+    /* Section Styling */
+    .report-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 16px;
+    }
+
+    .section-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .section-p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* Bullet Point Lists */
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: 24px;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .bullet-list li::before {
+      content: '•';
+      position: absolute;
+      left: 6px;
+      color: var(--accent-emerald);
+      font-weight: bold;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .bullet-list strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* SVG Diagram Container */
+    .svg-container {
+      background: var(--svg-diagram-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      overflow-x: auto;
+    }
+
+    .svg-caption {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Tables */
+    .table-box {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-medium);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-card); }
+
+    /* Feature Specs Grid */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .spec-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .spec-badge {
+      align-self: flex-start;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-p0 { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-p1 { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-p2 { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .spec-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .spec-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .spec-foot {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      background: var(--bg-ground);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      margin-top: auto;
+    }
+
+    /* Executive Callout */
+    .exec-quote {
+      background: var(--bg-card);
+      border-left: 3px solid var(--accent-emerald);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Fixed Header -->
+  <header class="top-header">
+    <div class="brand-wrap">
+      <span class="memo-tag">INTERNAL MEMO</span>
+      <span class="brand-title">Pluto Studio · Product & Investment Memorandum</span>
+    </div>
+    <button id="btn-theme-toggle" class="theme-toggle-btn" type="button">
+      <span id="theme-icon">☀️</span>
+      <span id="theme-text">Toggle Theme</span>
+    </button>
+  </header>
+
+  <main class="report-layout">
+
+    <!-- Header / Metadata Card -->
+    <div class="memo-header-card">
+      <div class="memo-meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Date</span>
+          <span class="meta-val">August 21, 2026</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Author</span>
+          <span class="meta-val">Principal PM & Systems Architect</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Subject</span>
+          <span class="meta-val">Pluto Generative Media Workstation & Fleet Moat</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Status</span>
+          <span class="meta-val" style="color: var(--accent-emerald);">Post-GA Consolidated (55/55 Tests Passing)</span>
+        </div>
+      </div>
+
+      <div class="memo-title-area">
+        <h1 class="memo-title">Pluto Studio: Executive Strategy, Unit Economics & 4-Sprint Rollout Blueprint</h1>
+        <p class="memo-subtitle">
+          A forensic analysis of the $45.8B generative video ecosystem, dismantling the 20x credit-markup model via resident AWS Spot orchestration, zero-build FastAPI architecture, and autonomous multi-shot directing.
+        </p>
+      </div>
+
+      <div class="numbers-grid">
+        <div class="num-card">
+          <span class="num-val emerald">$0.012</span>
+          <span class="num-label">Cost per 4s Video Take</span>
+        </div>
+        <div class="num-card">
+          <span class="num-val blue">$0.0004</span>
+          <span class="num-label">Kokoro VO per Min (108× vs ElevenLabs)</span>
+        </div>
+        <div class="num-card">
+          <span class="num-val">0.0s</span>
+          <span class="num-label">Resident VRAM Cold Start</span>
+        </div>
+        <div class="num-card">
+          <span class="num-val">55 / 55</span>
+          <span class="num-label">Verified Test Suite</span>
+        </div>
+      </div>
+    </div>
+
+        <!-- Table of Contents -->
+    <nav class="toc-card">
+      <span class="toc-title">Table of Contents</span>
+      <div class="toc-links">
+        <a href="#sec-vision" class="toc-link">1. The Core Product Vision & 4-Layer Open-Weight Architecture</a>
+        <a href="#sec-moat" class="toc-link">2. The Economic Moat & Unit Cost Arbitrage</a>
+        <a href="#sec-specs" class="toc-link">3. Granular Product Features & Directing Suite</a>
+        <a href="#sec-swot" class="toc-link">4. 39-Rival Competitive Topology & Market Matrix</a>
+        <a href="#sec-arch" class="toc-link">5. Fleet, Security & Infrastructure Blueprint</a>
+        <a href="#sec-roadmap" class="toc-link">6. 4-Sprint Execution Roadmap & Delivery Gantt</a>
+      </div>
+    </nav>
+
+<!-- SECTION 1: THE CORE PRODUCT VISION & 4-LAYER OPEN-WEIGHT ARCHITECTURE -->
+    <section id="sec-vision" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 1.0</span>
+        <h2 class="section-title">The Core Product Vision & 4-Layer Open-Weight Architecture</h2>
+      </div>
+
+      <div class="exec-quote">
+        <strong>The Core Product Vision:</strong> "Run open-weight models on AWS/RunPod using a Cockpit ──> Select & install models to local NVMe ──> An autonomous AI agent is available to write code, prompt, debug CUDA/MLOps, and orchestrate pipelines ──> Serve warm Flask/FastAPI endpoints exposing all features ──> Controlled effortlessly from a visual creative studio."
+      </div>
+
+      <p class="section-p">
+        A forensic landscape audit of open-source tools and adjacent platforms revealing why no single project integrates the entire 4-layer stack:
+      </p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Project / Platform</th>
+              <th>Category</th>
+              <th>What It Does Well (Strengths)</th>
+              <th>What It Lacks vs. Pluto Studio Vision</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SkyPilot</strong> (UC Berkeley)</td>
+              <td>Multi-Cloud Orchestrator</td>
+              <td>1-click launch on AWS, RunPod, GCP; automatic spot recovery and lowest-cost routing; clean Python/CLI API.</td>
+              <td><strong>CLI-only / No Creative UI:</strong> Zero visual studio, no built-in AI coding agent, no video/audio media workflow.</td>
+            </tr>
+            <tr>
+              <td><strong>dstack</strong> (dstack.ai)</td>
+              <td>AI Control Plane</td>
+              <td>BYOC fleet management (AWS, GCP, RunPod, K8s); dashboard for GPU clusters & volumes; serves vLLM/Ollama.</td>
+              <td><strong>Generic LLM focus:</strong> Not designed for generative media; no embedded coding agent; no creative directing surface.</td>
+            </tr>
+            <tr>
+              <td><strong>BentoML / OpenLLM</strong></td>
+              <td>Model Serving & BYOC</td>
+              <td>Packages Diffusers/PyTorch models into APIs; warm worker management; BentoCloud VPC deployments.</td>
+              <td><strong>Developer-only:</strong> No visual creator frontend; manual container setup; no prompt/media director capabilities.</td>
+            </tr>
+            <tr>
+              <td><strong>ComfyUI + ComfyDeploy</strong></td>
+              <td>Diffusion Node Graph</td>
+              <td>Unmatched granular control over diffusion pipelines; community nodes for LTX, Wan, Flux; headless API export.</td>
+              <td><strong>Spaghetti Node Graph:</strong> Complex learning curve; no cloud GPU lifecycle / spot cost management; no AI debugger.</td>
+            </tr>
+            <tr>
+              <td><strong>Open WebUI + LiteLLM</strong></td>
+              <td>LLM Gateway & UI</td>
+              <td>Multi-model router & dashboard; manages Ollama/vLLM + OpenAI APIs; built-in web search and tools.</td>
+              <td><strong>Chat-only:</strong> Focused on text LLMs; cannot orchestrate raw EC2/RunPod GPU spot hardware or heavy video diffusion.</td>
+            </tr>
+            <tr>
+              <td><strong>Modal Labs</strong></td>
+              <td>Serverless GPU Infra</td>
+              <td>Clean Python decorators for GPU/RAM; sub-second cold starts; warm container holding.</td>
+              <td><strong>Proprietary Cloud:</strong> Pay-per-second markup over raw spot compute; no open-source BYOC; no creator frontend studio.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SVG 4: Full System Design & Dataflow Architecture -->
+      <div class="svg-container">
+        <span class="svg-caption">Figure 1.1: Complete End-to-End System Design & Dataflow Architecture</span>
+        <svg width="100%" style="max-width: 1060px;" height="620" viewBox="0 0 1060 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gradEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--accent-emerald)" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="var(--accent-emerald)" stop-opacity="0.2"/>
+            </linearGradient>
+            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--accent-blue)" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="var(--accent-blue)" stop-opacity="0.2"/>
+            </linearGradient>
+            <linearGradient id="gradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--accent-purple)" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="var(--accent-purple)" stop-opacity="0.2"/>
+            </linearGradient>
+            <linearGradient id="gradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--accent-amber)" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="var(--accent-amber)" stop-opacity="0.2"/>
+            </linearGradient>
+            
+            <marker id="arrowEmerald" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-emerald)" />
+            </marker>
+            <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-blue)" />
+            </marker>
+            <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-purple)" />
+            </marker>
+            <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-amber)" />
+            </marker>
+          </defs>
+
+          <!-- Plane 1 -->
+          <rect x="20" y="20" width="230" height="580" rx="16" fill="var(--svg-diagram-card)" stroke="url(#gradEmerald)" stroke-width="2"/>
+          <text x="135" y="55" fill="var(--text-main)" font-family="Plus Jakarta Sans" font-weight="800" font-size="15" text-anchor="middle">PLANE 1</text>
+          <text x="135" y="75" fill="var(--accent-emerald)" font-family="JetBrains Mono" font-weight="700" font-size="11" text-anchor="middle">CREATOR &amp; WORKSTATION EDGE</text>
+          
+          <rect x="35" y="100" width="200" height="130" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="50" y="125" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Directing Controls</text>
+          <text x="50" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 3D Camera Trajectory Compass</text>
+          <text x="50" y="170" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• FLF2V Morph Dropzones</text>
+          <text x="50" y="190" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Aesthetic Style Matrix</text>
+          <text x="50" y="210" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Real-Time Dial Scrubber</text>
+
+          <rect x="35" y="250" width="200" height="90" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="50" y="275" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">NLE &amp; Timeline</text>
+          <text x="50" y="300" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• J-K-L Frame Scrubber</text>
+          <text x="50" y="320" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Audio Sync Canvas</text>
+
+          <rect x="35" y="360" width="200" height="80" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="50" y="385" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Telemetry</text>
+          <text x="50" y="410" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Live 1s Cost Odometer</text>
+          <text x="50" y="430" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• SSE Status Streaming</text>
+
+          <!-- Plane 2 -->
+          <rect x="280" y="20" width="230" height="580" rx="16" fill="var(--svg-diagram-card)" stroke="url(#gradBlue)" stroke-width="2"/>
+          <text x="395" y="55" fill="var(--text-main)" font-family="Plus Jakarta Sans" font-weight="800" font-size="15" text-anchor="middle">PLANE 2</text>
+          <text x="395" y="75" fill="var(--accent-blue)" font-family="JetBrains Mono" font-weight="700" font-size="11" text-anchor="middle">EDGE &amp; SECURITY GATEWAY</text>
+
+          <rect x="295" y="100" width="200" height="150" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="310" y="125" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Zero-Build Control Plane</text>
+          <text x="310" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Auth / Bearer Gateway</text>
+          <text x="310" y="170" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• confirm:true Safety Barrier</text>
+          <text x="310" y="190" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Path Traversal Sandbox</text>
+          <text x="310" y="210" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 50MB Binary Ingestion</text>
+          <text x="310" y="230" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• SSE Telemetry Streamer</text>
+
+          <rect x="295" y="270" width="200" height="110" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="310" y="295" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Media &amp; Audio Engine</text>
+          <text x="310" y="320" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• In-Process Kokoro TTS</text>
+          <text x="310" y="340" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Audio LUFS Normalizer</text>
+          <text x="310" y="360" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Curated BGM Cache Router</text>
+
+          <!-- Plane 3 -->
+          <rect x="540" y="20" width="230" height="580" rx="16" fill="var(--svg-diagram-card)" stroke="url(#gradPurple)" stroke-width="2"/>
+          <text x="655" y="55" fill="var(--text-main)" font-family="Plus Jakarta Sans" font-weight="800" font-size="15" text-anchor="middle">PLANE 3</text>
+          <text x="655" y="75" fill="var(--accent-purple)" font-family="JetBrains Mono" font-weight="700" font-size="11" text-anchor="middle">AUTONOMOUS MLOPS MESH</text>
+
+          <rect x="555" y="100" width="200" height="130" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="570" y="125" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">The Director Core</text>
+          <text x="570" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Gemini Narrative Decomposer</text>
+          <text x="570" y="170" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 6-8 Shots Script Engine</text>
+          <text x="570" y="190" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Multi-Take Seed Consistency</text>
+          <text x="570" y="210" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Continuity Locker Tracker</text>
+
+          <rect x="555" y="250" width="200" height="150" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="570" y="275" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">MLOps &amp; Safety</text>
+          <text x="570" y="300" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• CUDA VRAM Live Watchdog</text>
+          <text x="570" y="320" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• OOM Crash Prevention</text>
+          <text x="570" y="340" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Dead Man's Auto-Idle</text>
+          <text x="570" y="360" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 20m Cost Guard Shutdown</text>
+          <text x="570" y="380" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Spot Price Arbitrage Poller</text>
+
+          <!-- Plane 4 -->
+          <rect x="800" y="20" width="240" height="580" rx="16" fill="var(--svg-diagram-card)" stroke="url(#gradAmber)" stroke-width="2"/>
+          <text x="920" y="55" fill="var(--text-main)" font-family="Plus Jakarta Sans" font-weight="800" font-size="15" text-anchor="middle">PLANE 4</text>
+          <text x="920" y="75" fill="var(--accent-amber)" font-family="JetBrains Mono" font-weight="700" font-size="11" text-anchor="middle">ELASTIC DATA PLANE</text>
+
+          <rect x="815" y="100" width="210" height="150" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="830" y="125" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Resident GPU Worker</text>
+          <text x="830" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• AWS Spot L40S/A10G</text>
+          <text x="830" y="170" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• PyTorch Resident Daemon</text>
+          <text x="830" y="190" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• `ltx_worker.py` (Active)</text>
+          <text x="830" y="210" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Quantized Float8 LTX-2.5</text>
+          <text x="830" y="230" fill="var(--accent-amber)" font-family="JetBrains Mono" font-weight="700" font-size="11">• Warm 48GB VRAM (0.0s cold)</text>
+
+          <rect x="815" y="270" width="210" height="130" rx="8" fill="var(--svg-diagram-bg)" stroke="var(--border-medium)"/>
+          <text x="830" y="295" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="13">Local Storage Node</text>
+          <text x="830" y="320" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 230GB NVMe Scratch Disk</text>
+          <text x="830" y="340" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• `/scratch/hf` Model Cache</text>
+          <text x="830" y="360" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• `/scratch/out` Output Dir</text>
+          <text x="830" y="380" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Compressed Rsync Ready</text>
+
+          <!-- Arrows and Connections -->
+          <!-- P1 to P2 -->
+          <path d="M250 150 L275 150" stroke="var(--accent-emerald)" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+          <text x="265" y="142" fill="var(--accent-emerald)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">REST / SSE</text>
+
+          <path d="M275 170 L255 170" stroke="var(--accent-emerald)" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+
+          <!-- P2 to P3 -->
+          <path d="M510 150 L535 150" stroke="var(--accent-blue)" stroke-width="2" marker-end="url(#arrowBlue)"/>
+          <text x="522" y="142" fill="var(--accent-blue)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">RPC</text>
+
+          <path d="M535 170 L515 170" stroke="var(--accent-purple)" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+          <!-- P2 to P4 (Bearer Token HTTP) -->
+          <path d="M510 450 L795 450" stroke="var(--accent-blue)" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrowBlue)"/>
+          <text x="655" y="442" fill="var(--accent-blue)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Bearer Token HTTP:8088 (Inference Requests)</text>
+
+          <!-- P4 to P1 (Compressed Rsync Stream) -->
+          <path d="M800 490 L255 490" stroke="var(--accent-amber)" stroke-width="2" marker-end="url(#arrowAmber)"/>
+          <text x="525" y="482" fill="var(--accent-amber)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Compressed Diff / Rsync Video Stream directly to workstation</text>
+
+          <!-- P4 to P3 (Telemetry Heartbeat) -->
+          <path d="M800 530 L545 530" stroke="var(--accent-purple)" stroke-width="2" marker-end="url(#arrowPurple)"/>
+          <text x="672" y="522" fill="var(--accent-purple)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Telemetry Heartbeat (2s)</text>
+
+        </svg>
+      </div>
+
+      <ul class="bullet-list">
+        <li><strong>The Missing Synthesis:</strong> Developers today are forced to stitch together 4 different tools (SkyPilot for EC2 spot spinning, BentoML for API serving, Claude/ChatGPT for debugging, and Runway/ComfyUI for creative prompting). Pluto consolidates this entire lifecycle into a unified, zero-friction workstation.</li>
+        <li><strong>In-Loop Autonomous Partner:</strong> An integrated agent monitors worker logs in real time, diagnoses memory spikes or fragmentation before OOM crashes occur, and dynamically tunes guidance parameters.</li>
+      </ul>
+    </section>
+
+<!-- SECTION 2: THE ECONOMIC MOAT & UNIT COST ARBITRAGE -->
+    <section id="sec-moat" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 2.0</span>
+        <h2 class="section-title">The Economic Moat & Unit Cost Arbitrage</h2>
+      </div>
+
+      <div class="exec-quote">
+        <strong>The Strategic Insight:</strong> Every incumbent in generative video (Runway, Pika, Kling, Luma) acts as a centralized cloud middleman, marking up GPU cycles by <strong>500% to 2,000%</strong> through artificial credit currencies. Pluto Studio inverts this by offering direct, single-tenant <strong>BYOC (Bring Your Own Compute) Spot GPU execution (~$0.75/hr = $0.01/take)</strong> combined with resident model memory, zero cold starts, and in-process speech synthesis.
+      </div>
+
+      <!-- SVG 1: Moat Architecture -->
+      <div class="svg-container">
+        <span class="svg-caption">Figure 2.1: The Three Pillars of Pluto's Structural Cost Moat</span>
+        <svg width="100%" max-width="850" height="240" viewBox="0 0 850 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pillar 1 -->
+          <rect x="20" y="30" width="240" height="170" rx="12" fill="var(--svg-diagram-card)" stroke="var(--accent-emerald)" stroke-width="1.5"/>
+          <text x="40" y="65" fill="var(--accent-emerald)" font-family="JetBrains Mono" font-weight="700" font-size="13">01 · RAW COMPUTE</text>
+          <text x="40" y="95" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="16">AWS Spot Fleet ($0.75/h)</text>
+          <text x="40" y="125" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• ~$0.01 per 4s take</text>
+          <text x="40" y="145" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• 10×-20× cheaper than credits</text>
+          <text x="40" y="165" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• Direct single-tenant allocation</text>
+
+          <!-- Connector 1 -->
+          <path d="M260 115 H300" stroke="var(--svg-line)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polygon points="300,115 292,110 292,120" fill="var(--svg-text-muted)"/>
+
+          <!-- Pillar 2 -->
+          <rect x="305" y="30" width="240" height="170" rx="12" fill="var(--svg-diagram-card)" stroke="var(--accent-blue)" stroke-width="1.5"/>
+          <text x="325" y="65" fill="var(--accent-blue)" font-family="JetBrains Mono" font-weight="700" font-size="13">02 · RESIDENT DAEMON</text>
+          <text x="325" y="95" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="16">Warm VRAM Model Core</text>
+          <text x="325" y="125" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• LTX-2.5 warm in 48GB VRAM</text>
+          <text x="325" y="145" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• 230GB NVMe local scratch</text>
+          <text x="325" y="165" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• 0.0s request cold start</text>
+
+          <!-- Connector 2 -->
+          <path d="M545 115 H585" stroke="var(--svg-line)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polygon points="585,115 577,110 577,120" fill="var(--svg-text-muted)"/>
+
+          <!-- Pillar 3 -->
+          <rect x="590" y="30" width="240" height="170" rx="12" fill="var(--svg-diagram-card)" stroke="var(--accent-purple)" stroke-width="1.5"/>
+          <text x="610" y="65" fill="var(--accent-purple)" font-family="JetBrains Mono" font-weight="700" font-size="13">03 · FULL PRODUCTION</text>
+          <text x="610" y="95" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="16">Voice + BGM + Camera</text>
+          <text x="610" y="125" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• Kokoro TTS ($0.0004/min)</text>
+          <text x="610" y="145" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• Curated BGM router cache</text>
+          <text x="610" y="165" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="12">• Sidechain auto-ducking</text>
+        </svg>
+      </div>
+
+      <ul class="bullet-list">
+        <li><strong>Structural Margin Superiority:</strong> Closed competitors must fund large cloud overhead and GPU multi-tenancy queuing layers, forcing them into $12–$99/month subscriptions. Pluto connects directly to spot hardware, dropping the marginal cost of a 4-second scene take to $0.012.</li>
+        <li><strong>Output Duration vs Compute Time Arbitrage:</strong> Traditional video APIs charge fixed rates by the output video second (e.g. Plainly at $0.75/min). When hardware gets faster, incumbents pocket the savings. Pluto passes 100% of GPU optimizations to the creator.</li>
+        <li><strong>Zero Egress Overhead:</strong> By co-locating the quantized LTX-2.5 model and the 230GB NVMe scratch drive on the same EC2 instance, renders are held locally and synced via compressed rsync on demand.</li>
+      </ul>
+    </section>
+
+<!-- SECTION 3: GRANULAR PRODUCT FEATURES & DIRECTING SUITE -->
+    <section id="sec-specs" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 3.0</span>
+        <h2 class="section-title">Granular Product Features & Directing Suite</h2>
+      </div>
+
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="spec-badge badge-p0">P0 · Core Control</div>
+          <div class="spec-title">🎥 3D Camera Trajectory Compass</div>
+          <p class="spec-desc">Visual dial controller in `/create` translating user adjustments (Pan, Tilt, Dolly Zoom, Roll, Velocity) into deterministic spatial tokens injected into LTX-2.5 guidance vectors.</p>
+          <div class="spec-foot">Target: src/studio_api.py + studio/create.js</div>
+        </div>
+
+        <div class="spec-card">
+          <div class="spec-badge badge-p0">P0 · Continuity</div>
+          <div class="spec-title">🔄 Video Extension & Branching (+4s)</div>
+          <p class="spec-desc">1-click extension on any completed take. Extracts the final video frame losslessly via FFmpeg and seeds it as the keyframe for the next take, maintaining temporal continuity across scenes.</p>
+          <div class="spec-foot">Target: Frame -1 Extraction -> I2V Pipeline</div>
+        </div>
+
+        <div class="spec-card">
+          <div class="spec-badge badge-p0">P0 · Cost Guard</div>
+          <div class="spec-title">🛡️ Dead Man's Switch (Auto-Shutdown)</div>
+          <p class="spec-desc">Watchdog on the GPU Cockpit API. If no jobs are active or queued for 20 minutes (configurable), automatically executes `pluto terminate` to halt AWS Spot billing.</p>
+          <div class="spec-foot">Target: Background Daemon + Cockpit UI</div>
+        </div>
+
+        <div class="spec-card">
+          <div class="spec-badge badge-p1">P1 · Transformation</div>
+          <div class="spec-title">🖼️ First-Frame & Last-Frame (FLF2V)</div>
+          <p class="spec-desc">Dual image dropzones (`[Start Keyframe]` ──> `[Motion]` ──> `[End Keyframe]`), allowing creators to direct complex physical morphs and cinematic scene-to-scene transitions.</p>
+          <div class="spec-foot">Target: Dual Aspect Dropzones + Worker Hook</div>
+        </div>
+
+        <div class="spec-card">
+          <div class="spec-badge badge-p1">P1 · Exploration</div>
+          <div class="spec-title">🎲 4-Take Director Grid (2×2 Batching)</div>
+          <p class="spec-desc">Single-click trigger generating 4 seed-varied takes of the same prompt in parallel on the L40S, displayed in a responsive gallery for rapid visual branching.</p>
+          <div class="spec-foot">Target: Batch Size = 4 · Seed Variance Matrix</div>
+        </div>
+
+        <div class="spec-card">
+          <div class="spec-badge badge-p2">P2 · Autonomous</div>
+          <div class="spec-title">🎭 Multi-Shot Script-to-Storyboard</div>
+          <p class="spec-desc">Paste a full script -> Gemini Flash decomposes the narrative into 6–8 shot prompts with locked character seeds and camera motion cues for batch production.</p>
+          <div class="spec-foot">Target: Domain Pack #3 Studio Directing</div>
+        </div>
+      </div>
+    </section>
+
+<!-- SECTION 4: 39-RIVAL COMPETITIVE TOPOLOGY & MARKET MATRIX -->
+    <section id="sec-swot" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 4.0</span>
+        <h2 class="section-title">39-Rival Competitive Topology & Market Matrix</h2>
+      </div>
+
+      <p class="section-p">
+        Mapping the generative video ecosystem across two critical dimensions: <em>World Simulation Fidelity</em> (cinematic motion vs static avatars) and <em>Production Control</em> (casual 1-click generators vs pro workstations).
+      </p>
+
+      <!-- SVG 2: 2D Landscape -->
+      <div class="svg-container">
+        <span class="svg-caption">Figure 4.1: 2D Generative Video Competitive Topology ($45.8B TAM)</span>
+        <svg width="100%" max-width="850" height="340" viewBox="0 0 850 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="100" y1="170" x2="780" y2="170" stroke="var(--svg-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <line x1="440" y1="30" x2="440" y2="300" stroke="var(--svg-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+          <text x="440" y="22" fill="var(--svg-text)" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">▲ CINEMATIC & WORLD SIMULATION</text>
+          <text x="440" y="325" fill="var(--svg-text)" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">▼ AVATAR & SPOKESPERSON</text>
+          <text x="50" y="174" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">CONSUMER</text>
+          <text x="815" y="174" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">PRO WORKSTATION</text>
+
+          <!-- Pluto Zone -->
+          <rect x="520" y="45" width="240" height="90" rx="10" fill="rgba(16, 185, 129, 0.12)" stroke="var(--accent-emerald)" stroke-width="2"/>
+          <text x="540" y="75" fill="var(--accent-emerald)" font-family="Plus Jakarta Sans" font-weight="800" font-size="16">🎬 PLUTO STUDIO</text>
+          <text x="540" y="98" fill="var(--svg-text)" font-family="JetBrains Mono" font-size="11">• LTX-2.5 Resident VRAM</text>
+          <text x="540" y="118" fill="var(--svg-text)" font-family="JetBrains Mono" font-size="11">• Voice + BGM + Spot Fleet</text>
+
+          <!-- Nodes -->
+          <circle cx="490" cy="85" r="7" fill="var(--accent-blue)"/>
+          <text x="410" y="80" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-size="12" font-weight="600">Runway Gen-3</text>
+          <text x="410" y="96" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="10">Kling · Luma Dream</text>
+
+          <circle cx="340" cy="110" r="6" fill="#71717a"/>
+          <text x="250" y="114" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-size="12" font-weight="600">Grok Imagine</text>
+
+          <circle cx="280" cy="140" r="6" fill="#71717a"/>
+          <text x="180" y="144" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-size="12" font-weight="600">Higgsfield · Pika</text>
+
+          <circle cx="620" cy="240" r="7" fill="var(--accent-rose)"/>
+          <text x="635" y="238" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-size="12" font-weight="600">HeyGen · Synthesia</text>
+          <text x="635" y="254" fill="var(--svg-text-muted)" font-family="Plus Jakarta Sans" font-size="10">Talking Heads / LMS</text>
+
+          <circle cx="700" cy="185" r="6" fill="var(--accent-amber)"/>
+          <text x="650" y="195" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-size="12" font-weight="600">Diffusion Studio · Remotion</text>
+        </svg>
+      </div>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Competitor</th>
+              <th>Core Category</th>
+              <th>Key Strengths</th>
+              <th>Fatal Weaknesses</th>
+              <th>Pluto's Asymmetric Wedge</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Runway (Gen-3)</strong></td>
+              <td>Cloud AI Suite</td>
+              <td>High brand recognition, Act-One character capture, Motion Brush.</td>
+              <td>Prohibitive credit pricing ($76/mo), shared queue delays, closed model.</td>
+              <td><strong>Direct AWS Compute:</strong> 10x-20x cheaper per take with dedicated zero-wait GPU.</td>
+            </tr>
+            <tr>
+              <td><strong>Grok Imagine (xAI)</strong></td>
+              <td>Social Real-Time</td>
+              <td>Extreme generation speed, unmoderated physics, viral X integration.</td>
+              <td>Single-shot only; zero camera dials, audio synthesis, multi-shot sequencing or project state.</td>
+              <td><strong>Full Production Suite:</strong> Multi-shot storyboard, Kokoro voice, BGM, and 4K mastering.</td>
+            </tr>
+            <tr>
+              <td><strong>HeyGen / Synthesia</strong></td>
+              <td>Corporate Avatars</td>
+              <td>Hyper-realistic avatars, multi-language dubbing, enterprise procurement dominance.</td>
+              <td>Stiff talking-head format. Incapable of cinematic world motion, camera sweeps, or VFX.</td>
+              <td><strong>Cinematic Storytelling:</strong> Dynamic camera physics for VFX, creators, and indie studios.</td>
+            </tr>
+            <tr>
+              <td><strong>Diffusion Studio</strong></td>
+              <td>Web-Native NLE</td>
+              <td>Smooth WebCodecs canvas, clean modern UI, developer-first tooling.</td>
+              <td>Relies on third-party API wrappers; no native resident GPU orchestration or diffusion core.</td>
+              <td><strong>Integrated Stack:</strong> Direct resident model control with live telemetry and auto-shutdown.</td>
+            </tr>
+            <tr>
+              <td><strong>Remotion</strong></td>
+              <td>Code-First Video</td>
+              <td>Deterministic React video rendering, perfect parameter keyframing, dev loyalty.</td>
+              <td>Requires full TypeScript coding for every cut; CPU Lambda rendering cannot do live diffusion.</td>
+              <td><strong>Visual Generative Directing:</strong> Visual prompt-to-video workflow with underlying reproducibility.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+<!-- SECTION 5: FLEET, SECURITY & INFRASTRUCTURE BLUEPRINT -->
+    <section id="sec-arch" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 5.0</span>
+        <h2 class="section-title">Fleet, Security & Infrastructure Blueprint</h2>
+      </div>
+
+      <!-- SVG 3: Architecture Topology -->
+      <div class="svg-container">
+        <span class="svg-caption">Figure 5.1: Pluto Studio Zero-Build Request & Worker Topology</span>
+        <svg width="100%" max-width="850" height="260" viewBox="0 0 850 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Client -->
+          <rect x="20" y="40" width="200" height="180" rx="10" fill="var(--svg-diagram-card)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="40" y="70" fill="var(--svg-text)" font-family="Plus Jakarta Sans" font-weight="700" font-size="14">STUDIO CLIENT</text>
+          <text x="40" y="100" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• /create (Prompt/I2V)</text>
+          <text x="40" y="125" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• /cockpit (Telemetry)</text>
+          <text x="40" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• window.mvDialog</text>
+          <text x="40" y="175" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• SSE Log Stream</text>
+
+          <!-- Connector 1 -->
+          <path d="M220 130 H290" stroke="var(--accent-emerald)" stroke-width="2"/>
+          <text x="255" y="120" fill="var(--accent-emerald)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">REST / SSE</text>
+
+          <!-- FastAPI Backend -->
+          <rect x="290" y="40" width="240" height="180" rx="10" fill="var(--svg-diagram-card)" stroke="var(--accent-emerald)" stroke-width="1.5"/>
+          <text x="310" y="70" fill="var(--accent-emerald)" font-family="Plus Jakarta Sans" font-weight="700" font-size="14">FASTAPI BACKEND</text>
+          <text x="310" y="100" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Port 8000 (Uvicorn)</text>
+          <text x="310" y="125" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Auth & confirm: true Guard</text>
+          <text x="310" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Kokoro TTS + LUFS</text>
+          <text x="310" y="175" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• 55 Unit Tests Verified</text>
+
+          <!-- Connector 2 -->
+          <path d="M530 130 H600" stroke="var(--accent-blue)" stroke-width="2"/>
+          <text x="565" y="120" fill="var(--accent-blue)" font-family="JetBrains Mono" font-size="10" text-anchor="middle">HTTP:8088</text>
+
+          <!-- AWS Spot L40S -->
+          <rect x="600" y="40" width="230" height="180" rx="10" fill="var(--svg-diagram-card)" stroke="var(--accent-blue)" stroke-width="1.5"/>
+          <text x="620" y="70" fill="var(--accent-blue)" font-family="Plus Jakarta Sans" font-weight="700" font-size="14">AWS SPOT L40S</text>
+          <text x="620" y="100" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• ltx_worker.py (Flask)</text>
+          <text x="620" y="125" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Warm VRAM (Float8)</text>
+          <text x="620" y="150" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• /scratch NVMe 230GB</text>
+          <text x="620" y="175" fill="var(--svg-text-muted)" font-family="JetBrains Mono" font-size="11">• Rsync Output Stream</text>
+        </svg>
+      </div>
+
+      <ul class="bullet-list">
+        <li><strong>Zero-Build Frontend:</strong> Pure ES6 modules + native CSS variables. No Webpack, Vite, or node_modules churn. Serves directly from FastAPI static mounts in &lt;10ms.</li>
+        <li><strong>Hardened Security Boundary:</strong> Dotted path traversal blocked via `resolve_output()`, 50MB upload limits enforced, shell metacharacter injection prohibited by strict argv list subprocess invocation.</li>
+        <li><strong>Fail-Closed Action Guards:</strong> Destructive or spending actions require an explicit `{"confirm": true}` body payload, preventing accidental automated triggers.</li>
+      </ul>
+    </section>
+
+<!-- SECTION 6: 4-SPRINT EXECUTION ROADMAP & DELIVERY GANTT -->
+    <section id="sec-roadmap" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 6.0</span>
+        <h2 class="section-title">4-Sprint Execution Roadmap & Delivery Gantt</h2>
+      </div>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Sprint Phase</th>
+              <th>Strategic Objective</th>
+              <th>Key Deliverables</th>
+              <th>Success Metrics</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sprint 1</strong></td>
+              <td><strong>Runtime & Cost Safety</strong></td>
+              <td>
+                • Dead Man's Switch (Auto-Shutdown timer after 20m idle)<br>
+                • 60-shot render script automation (`01_launch.sh` / `02_render.sh`)<br>
+                • Background task progress drawer across all views
+              </td>
+              <td>Zero abandoned cloud billing; 60/60 film takes render cleanly off GPU box.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 2</strong></td>
+              <td><strong>Creative Direction Matrix</strong></td>
+              <td>
+                • Visual Camera Compass (Pan / Tilt / Zoom dials)<br>
+                • Clip Extension & Branching (+4s from final frame)<br>
+                • First-Frame + Last-Frame (FLF2V) dual dropzones
+              </td>
+              <td>Prompting with camera dials yields visible directional bias in video output.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 3</strong></td>
+              <td><strong>Audio & Aesthetic Suite</strong></td>
+              <td>
+                • Style Matrix token chips (35mm Kodak, Cyberpunk, Concept Art)<br>
+                • Kokoro voiceover studio integration in `/create`<br>
+                • Sidechain BGM auto-ducking on take preview
+              </td>
+              <td>One-click audio-visual take assembly with normalized broadcast speech.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 4</strong></td>
+              <td><strong>Autonomous AI Director</strong></td>
+              <td>
+                • Script-to-Storyboard generator (6-8 coherent shots)<br>
+                • 4-take 2×2 exploration grid<br>
+                • Cloudflare R2 / S3 project sync & shareable web links
+              </td>
+              <td>User pastes 60s script and gets full multi-take storyboard with coherent seeds.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Theme Switcher Logic
+    const themeBtn = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const htmlEl = document.documentElement;
+
+    function applyTheme(theme) {
+      htmlEl.setAttribute('data-theme', theme);
+      themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('pluto_memo_theme', theme);
+    }
+
+    themeBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    });
+
+    const savedTheme = localStorage.getItem('pluto_memo_theme') || 'dark';
+    applyTheme(savedTheme);
+  </script>
+</body>
+</html>
