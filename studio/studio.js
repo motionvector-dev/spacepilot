@@ -35,11 +35,22 @@ let state = {
   storyboard: null,
   timelineZoom: 1.0,
   safeGridVisible: false,
+  shuttleRate: 0, // 0 = paused, 1, 2, 4, 8, -2, -4, -8
+  shuttleInterval: null,
+  inPoint: null,
+  outPoint: null,
+  exportConfig: {
+    preset: 'prores', // 'prores' | 'h264' | 'upscale'
+    range: 'full',    // 'full' | 'inout'
+    resolution: '4k', // '4k' | '1080p'
+    includeOverlay: true,
+    isExporting: false,
+  },
   overlayConfig: {
     visible: true,
     title: 'Diffusion Velocity Field',
     formula: 'dx_t = f(x_t)dt + g(t)dw_t',
-    accentColor: '#38bdf8',
+    accentColor: '#fafafa',
     position: 'bottom_left',
   }
 };
@@ -73,6 +84,13 @@ const elements = {
   assetGrid: document.getElementById('assetGrid'),
   assetCount: document.getElementById('assetCount'),
   btnSyncAssets: document.getElementById('btnSyncAssets'),
+
+  // Takes Filmstrip Shelf
+  takesFilmstripShelf: document.getElementById('takesFilmstripShelf'),
+  takesFilmstripTrack: document.getElementById('takesFilmstripTrack'),
+  takesShelfCount: document.getElementById('takesShelfCount'),
+  btnTakesPrev: document.getElementById('btnTakesPrev'),
+  btnTakesNext: document.getElementById('btnTakesNext'),
 
   // Viewport & Player
   mainVideoPlayer: document.getElementById('mainVideoPlayer'),
@@ -133,16 +151,63 @@ const elements = {
   timelineClipDur: document.getElementById('timelineClipDur'),
   audioWaveformCanvas: document.getElementById('audioWaveformCanvas'),
 
+  // NLE Timeline Marker & Shuttle Elements
+  btnSetInPoint: document.getElementById('btnSetInPoint'),
+  btnSetOutPoint: document.getElementById('btnSetOutPoint'),
+  btnClearInOut: document.getElementById('btnClearInOut'),
+  timelineInOutBadge: document.getElementById('timelineInOutBadge'),
+  shuttleStatusPill: document.getElementById('shuttleStatusPill'),
+  markerInHandle: document.getElementById('markerInHandle'),
+  markerOutHandle: document.getElementById('markerOutHandle'),
+  timelineInOutRegion: document.getElementById('timelineInOutRegion'),
+
+  // Track V1 & V2 Elements
+  trackV1Lane: document.getElementById('trackV1Lane'),
+  v1ClipBlock: document.getElementById('v1ClipBlock'),
+  v1ClipTitle: document.getElementById('v1ClipTitle'),
+  v1ThumbsContainer: document.getElementById('v1ThumbsContainer'),
+  v2ClipBlock: document.getElementById('v2ClipBlock'),
+  v2ClipTitle: document.getElementById('v2ClipTitle'),
+
   // Command Palette (⌘K)
   btnOpenCommandPalette: document.getElementById('btnOpenCommandPalette'),
   commandPaletteModal: document.getElementById('commandPaletteModal'),
   cmdSearchInput: document.getElementById('cmdSearchInput'),
   cmdResultsList: document.getElementById('cmdResultsList'),
+
+  // Export Master Drawer & Modal
+  exportMasterModal: document.getElementById('exportMasterModal'),
+  btnCloseExportModal: document.getElementById('btnCloseExportModal'),
+  btnCancelExport: document.getElementById('btnCancelExport'),
+  btnStartExport: document.getElementById('btnStartExport'),
+  btnStartExportLabel: document.getElementById('btnStartExportLabel'),
+  exportSourceThumb: document.getElementById('exportSourceThumb'),
+  exportSourceTitle: document.getElementById('exportSourceTitle'),
+  exportSourceRes: document.getElementById('exportSourceRes'),
+  exportSourceDur: document.getElementById('exportSourceDur'),
+  exportFullDurText: document.getElementById('exportFullDurText'),
+  exportInOutRangeText: document.getElementById('exportInOutRangeText'),
+  exportPresetsGrid: document.getElementById('exportPresetsGrid'),
+  exportRangeSelector: document.getElementById('exportRangeSelector'),
+  exportResSelector: document.getElementById('exportResSelector'),
+  chkIncludeOverlay: document.getElementById('chkIncludeOverlay'),
+  exportOverlayControls: document.getElementById('exportOverlayControls'),
+  exportOverlayFields: document.getElementById('exportOverlayFields'),
+  inpExportTitle: document.getElementById('inpExportTitle'),
+  inpExportFormula: document.getElementById('inpExportFormula'),
+  exportStatusBox: document.getElementById('exportStatusBox'),
+  exportSpinner: document.getElementById('exportSpinner'),
+  exportStatusText: document.getElementById('exportStatusText'),
+  exportProgressBar: document.getElementById('exportProgressBar'),
+  exportSuccessActions: document.getElementById('exportSuccessActions'),
+  btnDownloadExported: document.getElementById('btnDownloadExported'),
+  btnLoadExportedToCanvas: document.getElementById('btnLoadExportedToCanvas'),
 };
 
 // ── Initialization ──────────────────────────────────────────
 async function init() {
   setupEventListeners();
+  initPointerScrubbing();
   buildTimelineRuler();
   renderAudioWaveform();
   updateKaTeXMath();
@@ -170,7 +235,7 @@ async function init() {
     
     // Fallback if not found in API but ID is provided
     if (!clip) {
-      clip = { id: cleanId, prompt: cleanId, width: 1024, height: 576, seconds: 4 };
+      clip = { id: cleanId, prompt: cleanId, width: 1024, height: 576, seconds: 4.0 };
     }
     
     selectAsset(clip);
@@ -297,14 +362,14 @@ function setupEventListeners() {
 
   elements.btnRenderAllTakes.addEventListener('click', renderAllStoryboardTakes);
   elements.btnExportFullDoc.addEventListener('click', exportFullDocumentaryMaster);
-  elements.btnHeaderExport.addEventListener('click', exportFullDocumentaryMaster);
+  elements.btnHeaderExport.addEventListener('click', openExportMasterDrawer);
 
   // Play / Pause & Transport Controls
   elements.btnPlayPause.addEventListener('click', togglePlayPause);
   elements.btnSkipBack.addEventListener('click', () => stepTime(-1.0));
   elements.btnSkipFwd.addEventListener('click', () => stepTime(1.0));
   elements.mainVideoPlayer.addEventListener('timeupdate', updatePlaybackProgress);
-  elements.mainVideoPlayer.addEventListener('ended', () => setPlaying(false));
+  elements.mainVideoPlayer.addEventListener('ended', () => shuttleStop());
 
   // Volume & Mute Controls
   if (elements.volumeSlider) {
@@ -422,25 +487,82 @@ function setupEventListeners() {
     });
   });
 
-  // Keyboard Shortcuts (J / K / L Shuttle + ⌘K + Space)
+  // Takes Filmstrip Scroll Buttons
+  if (elements.btnTakesPrev && elements.takesFilmstripTrack) {
+    elements.btnTakesPrev.addEventListener('click', () => {
+      elements.takesFilmstripTrack.scrollBy({ left: -240, behavior: 'smooth' });
+    });
+  }
+  if (elements.btnTakesNext && elements.takesFilmstripTrack) {
+    elements.btnTakesNext.addEventListener('click', () => {
+      elements.takesFilmstripTrack.scrollBy({ left: 240, behavior: 'smooth' });
+    });
+  }
+
+  // NLE Timeline In / Out Buttons
+  if (elements.btnSetInPoint) {
+    elements.btnSetInPoint.addEventListener('click', setInPoint);
+  }
+  if (elements.btnSetOutPoint) {
+    elements.btnSetOutPoint.addEventListener('click', setOutPoint);
+  }
+  if (elements.btnClearInOut) {
+    elements.btnClearInOut.addEventListener('click', clearInOutPoints);
+  }
+
+  // Keyboard Shortcuts (J / K / L Shuttle + ⌘K + In / Out + Arrows)
   window.addEventListener('keydown', (e) => {
     const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
     
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       toggleCommandPalette(true);
-    } else if (e.key === 'Escape' && elements.commandPaletteModal.style.display !== 'none') {
-      toggleCommandPalette(false);
+    } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      openExportMasterDrawer();
+    } else if (e.key === 'Escape') {
+      if (elements.commandPaletteModal && elements.commandPaletteModal.style.display !== 'none') {
+        toggleCommandPalette(false);
+      }
+      if (elements.exportMasterModal && elements.exportMasterModal.style.display !== 'none') {
+        closeExportMasterDrawer();
+      }
     } else if (!isTyping) {
-      if (e.code === 'Space' || e.key === 'k') {
+      if (e.code === 'Space') {
         e.preventDefault();
         togglePlayPause();
-      } else if (e.key === 'j') {
+      } else if (e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        stepTime(-1.0);
-      } else if (e.key === 'l') {
+        shuttleStop();
+      } else if (e.key.toLowerCase() === 'j') {
         e.preventDefault();
-        stepTime(1.0);
+        shuttleRewind();
+      } else if (e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        shuttleForward();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          stepTime(-1.0);
+        } else {
+          stepFrame(-1);
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          stepTime(1.0);
+        } else {
+          stepFrame(1);
+        }
+      } else if (e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        setInPoint();
+      } else if (e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        setOutPoint();
+      } else if ((e.altKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        clearInOutPoints();
       }
     }
   });
@@ -514,8 +636,8 @@ function setupEventListeners() {
   elements.btnGenerate.addEventListener('click', triggerGenerate);
 
   // 4K Compositor (P0 Composite Order Enforced)
-  elements.btnQuickUpscale.addEventListener('click', triggerMotionVectorComposite);
-  elements.btnRun4kUpscale.addEventListener('click', triggerMotionVectorComposite);
+  elements.btnQuickUpscale.addEventListener('click', openExportMasterDrawer);
+  elements.btnRun4kUpscale.addEventListener('click', openExportMasterDrawer);
 
   // Download File
   elements.btnDownloadCurrent.addEventListener('click', () => {
@@ -562,53 +684,6 @@ function setupEventListeners() {
     elements.timelineRuler.style.width = `${100 * state.timelineZoom}%`;
   });
 
-  // Continuous Drag & Seek Scrubbing on Timeline
-  let isTimelineScrubbing = false;
-  function handleTimelineScrub(e) {
-    const rect = elements.timelineScrollArea.getBoundingClientRect();
-    const clickX = e.clientX - rect.left + elements.timelineScrollArea.scrollLeft;
-    const totalWidth = elements.timelineRuler.offsetWidth;
-    const ratio = Math.max(0, Math.min(1, clickX / totalWidth));
-    
-    if (elements.mainVideoPlayer.duration) {
-      elements.mainVideoPlayer.currentTime = ratio * elements.mainVideoPlayer.duration;
-      updatePlaybackProgress();
-    }
-  }
-
-  elements.timelineScrollArea.addEventListener('mousedown', (e) => {
-    isTimelineScrubbing = true;
-    handleTimelineScrub(e);
-  });
-
-  // Viewport Scrubber Track Drag & Seek
-  let isViewportScrubbing = false;
-  const vpTrack = document.getElementById('viewportScrubberTrack');
-  function handleViewportScrub(e) {
-    if (!vpTrack || !elements.mainVideoPlayer.duration) return;
-    const rect = vpTrack.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    elements.mainVideoPlayer.currentTime = ratio * elements.mainVideoPlayer.duration;
-    updatePlaybackProgress();
-  }
-
-  if (vpTrack) {
-    vpTrack.addEventListener('mousedown', (e) => {
-      isViewportScrubbing = true;
-      handleViewportScrub(e);
-    });
-  }
-
-  window.addEventListener('mousemove', (e) => {
-    if (isTimelineScrubbing) handleTimelineScrub(e);
-    if (isViewportScrubbing) handleViewportScrub(e);
-  });
-
-  window.addEventListener('mouseup', () => {
-    isTimelineScrubbing = false;
-    isViewportScrubbing = false;
-  });
-
   // Command Palette
   elements.btnOpenCommandPalette.addEventListener('click', () => toggleCommandPalette(true));
   elements.commandPaletteModal.addEventListener('click', (e) => {
@@ -621,6 +696,132 @@ function setupEventListeners() {
       toggleCommandPalette(false);
     });
   });
+
+  // Export Master Drawer Listeners
+  if (elements.btnCloseExportModal) {
+    elements.btnCloseExportModal.addEventListener('click', closeExportMasterDrawer);
+  }
+  if (elements.btnCancelExport) {
+    elements.btnCancelExport.addEventListener('click', closeExportMasterDrawer);
+  }
+  if (elements.exportMasterModal) {
+    elements.exportMasterModal.addEventListener('click', (e) => {
+      if (e.target === elements.exportMasterModal) closeExportMasterDrawer();
+    });
+  }
+  if (elements.btnStartExport) {
+    elements.btnStartExport.addEventListener('click', triggerMasterExport);
+  }
+
+  // Export Presets Selection
+  if (elements.exportPresetsGrid) {
+    elements.exportPresetsGrid.querySelectorAll('.export-preset-card').forEach(card => {
+      card.addEventListener('click', () => {
+        elements.exportPresetsGrid.querySelectorAll('.export-preset-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        state.exportConfig.preset = card.dataset.preset;
+        
+        // Toggle overlay fields based on preset
+        if (card.dataset.preset === 'upscale') {
+          if (elements.exportOverlayControls) elements.exportOverlayControls.style.opacity = '0.4';
+          if (elements.exportOverlayFields) elements.exportOverlayFields.style.opacity = '0.4';
+        } else {
+          if (elements.exportOverlayControls) elements.exportOverlayControls.style.opacity = '1';
+          if (elements.exportOverlayFields) elements.exportOverlayFields.style.opacity = '1';
+        }
+      });
+    });
+  }
+
+  // Export Range Selection
+  if (elements.exportRangeSelector) {
+    elements.exportRangeSelector.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.exportRangeSelector.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.exportConfig.range = btn.dataset.range;
+      });
+    });
+  }
+
+  // Export Resolution Selection
+  if (elements.exportResSelector) {
+    elements.exportResSelector.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.exportResSelector.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.exportConfig.resolution = btn.dataset.res;
+      });
+    });
+  }
+
+  // Include Overlay Checkbox
+  if (elements.chkIncludeOverlay) {
+    elements.chkIncludeOverlay.addEventListener('change', (e) => {
+      state.exportConfig.includeOverlay = e.target.checked;
+      if (elements.exportOverlayFields) {
+        elements.exportOverlayFields.style.display = e.target.checked ? 'grid' : 'none';
+      }
+    });
+  }
+}
+
+// ── "No Modes, Ever" Pointer Scrubbing Engine ────────────────
+let isPointerScrubbing = false;
+
+function scrubToClientX(clientX, containerElement) {
+  const v = elements.mainVideoPlayer;
+  if (!v || !v.duration || !containerElement) return;
+
+  const rect = containerElement.getBoundingClientRect();
+  const clickX = clientX - rect.left;
+  const totalWidth = rect.width;
+  const ratio = Math.max(0, Math.min(1, clickX / totalWidth));
+
+  v.currentTime = ratio * v.duration;
+  updatePlaybackProgress();
+}
+
+function initPointerScrubbing() {
+  let activeScrubTarget = null;
+
+  function onPointerDown(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.take-audition-btn')) return;
+
+    shuttleStop();
+    isPointerScrubbing = true;
+    activeScrubTarget = e.currentTarget;
+    scrubToClientX(e.clientX, activeScrubTarget);
+  }
+
+  function onPointerMove(e) {
+    if (!isPointerScrubbing || !activeScrubTarget) return;
+    scrubToClientX(e.clientX, activeScrubTarget);
+  }
+
+  function onPointerUp() {
+    isPointerScrubbing = false;
+    activeScrubTarget = null;
+  }
+
+  if (elements.timelineRuler) {
+    elements.timelineRuler.addEventListener('pointerdown', onPointerDown);
+  }
+  if (elements.trackLanesContainer) {
+    elements.trackLanesContainer.addEventListener('pointerdown', onPointerDown);
+  }
+  if (elements.timelineScrollArea) {
+    elements.timelineScrollArea.addEventListener('pointerdown', onPointerDown);
+  }
+  const vpTrack = document.getElementById('viewportScrubberTrack');
+  if (vpTrack) {
+    vpTrack.addEventListener('pointerdown', onPointerDown);
+  }
+
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
 }
 
 // ── Mode Switching ──────────────────────────────────────────
@@ -801,7 +1002,61 @@ async function renderAllStoryboardTakes() {
 }
 
 async function exportFullDocumentaryMaster() {
-  alert('Compositing Full 5-Scene 4K Master Documentary with MotionVector native Vello typography and Kokoro TTS speech.');
+  openExportMasterDrawer();
+}
+
+// ── Takes Filmstrip Shelf Controller ─────────────────────────
+function renderTakesFilmstrip(assets) {
+  if (!elements.takesFilmstripTrack) return;
+  elements.takesFilmstripTrack.innerHTML = '';
+
+  if (!assets || assets.length === 0) {
+    elements.takesFilmstripTrack.innerHTML = `
+      <div class="takes-empty-hint">No rendered video takes found. Generate a clip to populate filmstrip.</div>
+    `;
+    if (elements.takesShelfCount) elements.takesShelfCount.textContent = '0 TAKES';
+    return;
+  }
+
+  if (elements.takesShelfCount) {
+    elements.takesShelfCount.textContent = `${assets.length} TAKE${assets.length > 1 ? 'S' : ''}`;
+  }
+
+  assets.forEach((asset, idx) => {
+    const card = document.createElement('div');
+    const isSelected = state.activeAsset && state.activeAsset.id === asset.id;
+    const isMaster = Boolean(asset.is_motionvector_master);
+    const isUhd = Boolean(asset.is_upscaled);
+    const badgeLabel = isMaster ? '4K MASTER' : isUhd ? '4K UHD' : `TAKE ${String(idx + 1).padStart(2, '0')}`;
+    const badgeClass = isMaster ? 'master' : isUhd ? 'uhd' : '';
+    
+    card.className = `take-strip-card ${isSelected ? 'active' : ''}`;
+    card.setAttribute('role', 'option');
+    card.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    card.setAttribute('data-asset-id', asset.id);
+
+    card.innerHTML = `
+      <div class="take-thumb-wrap">
+        <img class="take-thumb-img" src="/api/assets/${encodeURIComponent(asset.id)}/thumbnail" alt="" loading="lazy" onerror="this.style.opacity='0'" />
+        <span class="take-badge-tag ${badgeClass}">${esc(badgeLabel)}</span>
+        <span class="take-dur-pill">${esc(asset.seconds || 4.0)}s</span>
+      </div>
+      <div class="take-card-info">
+        <div class="take-card-title" title="${esc(asset.overlay_title || asset.prompt || asset.id)}">${esc(asset.overlay_title || asset.prompt || asset.id)}</div>
+        <div class="take-card-meta">
+          <span>${esc(asset.width)}×${esc(asset.height)}</span>
+          <span>24fps</span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      selectAsset(asset);
+      showToast(`🎬 Deep-loaded take into Track V1: ${asset.overlay_title || asset.prompt || asset.id}`);
+    });
+
+    elements.takesFilmstripTrack.appendChild(card);
+  });
 }
 
 // ── Vibe Editor Generation & Compositor ────────────────────────
@@ -865,51 +1120,6 @@ async function pollJob(jobId) {
   showRenderError('timed out waiting for the render');
 }
 
-// ── P0 Composite Order 4K Master Export ────────────────────────
-async function triggerMotionVectorComposite() {
-  if (!state.activeAsset) return;
-
-  setGenerating(true, 'Compositing Native 4K MotionVector Master (P0 Order)...');
-
-  try {
-    const res = await fetch('/api/composite-motionvector', {
-      method: 'POST',
-      headers: await authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        asset_id: state.activeAsset.id,
-        title: state.overlayConfig.title,
-        latex_formula: state.overlayConfig.formula,
-        accent_color: state.overlayConfig.accentColor,
-        card_position: state.overlayConfig.position,
-        export_4k: true,
-      })
-    });
-    const data = await res.json();
-
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 1000));
-      const job = await fetchJob(data.master_id);
-      if (job && job.status === 'failed') {
-        showRenderError(job.error || 'composite failed');
-        break;
-      }
-      if (job && job.status === 'completed') {
-        const adata = await (await fetch('/api/assets')).json();
-        const match = adata.assets.find(a => a.id === data.master_id);
-        if (match) selectAsset(match);
-        elements.upscaleStatus.textContent = '✓ 4K UHD Master Ready!';
-        break;
-      }
-    }
-    await refreshAssets();
-  } catch (e) {
-    console.error('Composite failed', e);
-    elements.upscaleStatus.textContent = `Error: ${e.message}`;
-  } finally {
-    setGenerating(false);
-  }
-}
-
 // ── Status & Asset Telemetry ─────────────────────────────────
 async function refreshStatus() {
   try {
@@ -942,6 +1152,7 @@ async function refreshAssets() {
     state.assets = data.assets || [];
     elements.assetCount.textContent = state.assets.length;
     renderAssetGrid(state.assets);
+    renderTakesFilmstrip(state.assets);
 
     if (!state.activeAsset && state.assets.length > 0) {
       selectAsset(state.assets[0]);
@@ -975,6 +1186,7 @@ function renderAssetGrid(assets) {
   assets.forEach(asset => {
     const card = document.createElement('div');
     card.className = `asset-card ${state.activeAsset && state.activeAsset.id === asset.id ? 'active' : ''}`;
+    card.setAttribute('data-asset-id', asset.id);
     
     const isMaster = asset.is_motionvector_master;
     const is4k = asset.is_upscaled || isMaster;
@@ -996,8 +1208,23 @@ function renderAssetGrid(assets) {
 
 function selectAsset(asset) {
   state.activeAsset = asset;
-  document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
   
+  // Highlight in Project Bin
+  document.querySelectorAll('.asset-card').forEach(c => {
+    const isMatch = c.getAttribute('data-asset-id') === asset.id || c.innerHTML.includes(asset.id);
+    c.classList.toggle('active', isMatch);
+  });
+
+  // Highlight in Takes Filmstrip Shelf
+  if (elements.takesFilmstripTrack) {
+    elements.takesFilmstripTrack.querySelectorAll('.take-strip-card').forEach(c => {
+      const isMatch = c.getAttribute('data-asset-id') === asset.id;
+      c.classList.toggle('active', isMatch);
+      c.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+  }
+
+  // Load Video source
   elements.mainVideoPlayer.src = `/api/assets/${encodeURIComponent(asset.id)}/file`;
   elements.mainVideoPlayer.load();
   elements.mainVideoPlayer.play().catch(() => {});
@@ -1014,31 +1241,242 @@ function selectAsset(asset) {
     elements.resolutionTag.className = 'bound-tag preview-tag';
   }
 
-  elements.timelineClipName.textContent = asset.overlay_title || asset.prompt || asset.id;
+  // Deep-load into Track V1
+  const displayTitle = asset.overlay_title || asset.prompt || asset.id;
+  elements.timelineClipName.textContent = displayTitle;
   elements.timelineClipDur.textContent = `${asset.seconds || 4.0}s`;
-  buildTimelineRuler(asset.seconds || 5.0);
+  
+  if (elements.v1ClipTitle) {
+    elements.v1ClipTitle.textContent = `V1: ${displayTitle} · ${asset.width || 1024}×${asset.height || 576} @ 24fps`;
+  }
+
+  if (elements.v1ThumbsContainer) {
+    const thumbUrl = `/api/assets/${encodeURIComponent(asset.id)}/thumbnail`;
+    elements.v1ThumbsContainer.innerHTML = `
+      <div class="thumb-frame"><img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.opacity='0'" /></div>
+      <div class="thumb-frame"><img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.opacity='0'" /></div>
+      <div class="thumb-frame"><img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.opacity='0'" /></div>
+      <div class="thumb-frame"><img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.opacity='0'" /></div>
+    `;
+  }
+
+  // Bounds check In/Out markers
+  const dur = asset.seconds || 4.0;
+  if (state.inPoint !== null && state.inPoint > dur) state.inPoint = 0;
+  if (state.outPoint !== null && state.outPoint > dur) state.outPoint = dur;
+  updateInOutVisuals();
+
+  buildTimelineRuler(dur);
   
   elements.mainVideoPlayer.addEventListener('loadedmetadata', () => {
     buildTimelineRuler(elements.mainVideoPlayer.duration);
     updatePlaybackProgress();
+    updateInOutVisuals();
   }, { once: true });
+
+  updateExportDrawerSource();
 }
 
-// ── Playback & Scrubber Controls ─────────────────────────────
+// ── NLE J-K-L Shuttle & Transport Controls ────────────────────
 function togglePlayPause() {
   if (elements.mainVideoPlayer.paused) {
+    shuttleStop();
     elements.mainVideoPlayer.play();
     setPlaying(true);
+    if (elements.shuttleStatusPill) {
+      elements.shuttleStatusPill.textContent = '▶ 1.0×';
+      elements.shuttleStatusPill.className = 'shuttle-status-pill playing';
+    }
   } else {
-    elements.mainVideoPlayer.pause();
-    setPlaying(false);
+    shuttleStop();
   }
 }
 
+function shuttleStop() {
+  if (state.shuttleInterval) {
+    clearInterval(state.shuttleInterval);
+    state.shuttleInterval = null;
+  }
+  state.shuttleRate = 0;
+  elements.mainVideoPlayer.pause();
+  elements.mainVideoPlayer.playbackRate = 1.0;
+  setPlaying(false);
+
+  if (elements.shuttleStatusPill) {
+    elements.shuttleStatusPill.textContent = '❚❚ Paused';
+    elements.shuttleStatusPill.className = 'shuttle-status-pill';
+  }
+  if (elements.speedLabel) elements.speedLabel.textContent = '1.0×';
+}
+
+function shuttleForward() {
+  if (state.shuttleInterval) {
+    clearInterval(state.shuttleInterval);
+    state.shuttleInterval = null;
+  }
+
+  if (state.shuttleRate <= 0) {
+    state.shuttleRate = 2; // 2x forward shuttle
+  } else if (state.shuttleRate === 1) {
+    state.shuttleRate = 2;
+  } else if (state.shuttleRate === 2) {
+    state.shuttleRate = 4;
+  } else if (state.shuttleRate === 4) {
+    state.shuttleRate = 8;
+  } else {
+    state.shuttleRate = 2;
+  }
+
+  elements.mainVideoPlayer.playbackRate = state.shuttleRate;
+  elements.mainVideoPlayer.play().catch(() => {});
+  setPlaying(true);
+
+  if (elements.shuttleStatusPill) {
+    elements.shuttleStatusPill.textContent = `▶▶ ${state.shuttleRate}.0×`;
+    elements.shuttleStatusPill.className = 'shuttle-status-pill forward';
+  }
+  if (elements.speedLabel) elements.speedLabel.textContent = `${state.shuttleRate}.0×`;
+}
+
+function shuttleRewind() {
+  elements.mainVideoPlayer.pause();
+  if (state.shuttleInterval) {
+    clearInterval(state.shuttleInterval);
+    state.shuttleInterval = null;
+  }
+
+  if (state.shuttleRate >= 0) {
+    state.shuttleRate = -2; // 2x rewind
+  } else if (state.shuttleRate === -2) {
+    state.shuttleRate = -4;
+  } else if (state.shuttleRate === -4) {
+    state.shuttleRate = -8;
+  } else {
+    state.shuttleRate = -2;
+  }
+
+  if (elements.shuttleStatusPill) {
+    elements.shuttleStatusPill.textContent = `◀◀ ${Math.abs(state.shuttleRate)}.0×`;
+    elements.shuttleStatusPill.className = 'shuttle-status-pill rewind';
+  }
+
+  // Smooth seek-safe reverse playback interval at 24fps
+  const fps = 24;
+  const stepSec = (Math.abs(state.shuttleRate) * (1 / fps));
+  const intervalMs = Math.round(1000 / fps);
+
+  setPlaying(true);
+  state.shuttleInterval = setInterval(() => {
+    const v = elements.mainVideoPlayer;
+    if (!v.duration || v.currentTime <= 0) {
+      shuttleStop();
+      return;
+    }
+    v.currentTime = Math.max(0, v.currentTime - stepSec);
+    updatePlaybackProgress();
+  }, intervalMs);
+}
+
+function stepFrame(deltaFrames) {
+  shuttleStop();
+  const v = elements.mainVideoPlayer;
+  const fps = 24;
+  const deltaSec = deltaFrames / fps;
+  v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + deltaSec));
+  updatePlaybackProgress();
+}
+
 function stepTime(delta) {
+  shuttleStop();
   const v = elements.mainVideoPlayer;
   v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + delta));
   updatePlaybackProgress();
+}
+
+function setInPoint() {
+  const v = elements.mainVideoPlayer;
+  state.inPoint = v.currentTime || 0;
+  if (state.outPoint !== null && state.outPoint < state.inPoint) {
+    state.outPoint = null;
+  }
+  updateInOutVisuals();
+  showToast(`📍 In Point set: ${formatSMPTE(state.inPoint)}`);
+}
+
+function setOutPoint() {
+  const v = elements.mainVideoPlayer;
+  state.outPoint = v.currentTime || (v.duration || 4.0);
+  if (state.inPoint !== null && state.inPoint > state.outPoint) {
+    state.inPoint = 0;
+  }
+  updateInOutVisuals();
+  showToast(`🏁 Out Point set: ${formatSMPTE(state.outPoint)}`);
+}
+
+function clearInOutPoints() {
+  state.inPoint = null;
+  state.outPoint = null;
+  updateInOutVisuals();
+  showToast('Cleared In/Out selection range');
+}
+
+function updateInOutVisuals() {
+  const totalDur = (elements.mainVideoPlayer && elements.mainVideoPlayer.duration) || state.duration || 4.0;
+  
+  if (elements.markerInHandle) {
+    if (state.inPoint !== null) {
+      const inPct = Math.max(0, Math.min(100, (state.inPoint / totalDur) * 100));
+      elements.markerInHandle.style.left = `${inPct}%`;
+      elements.markerInHandle.style.display = 'flex';
+    } else {
+      elements.markerInHandle.style.display = 'none';
+    }
+  }
+
+  if (elements.markerOutHandle) {
+    if (state.outPoint !== null) {
+      const outPct = Math.max(0, Math.min(100, (state.outPoint / totalDur) * 100));
+      elements.markerOutHandle.style.left = `${outPct}%`;
+      elements.markerOutHandle.style.display = 'flex';
+    } else {
+      elements.markerOutHandle.style.display = 'none';
+    }
+  }
+
+  if (elements.timelineInOutRegion) {
+    if (state.inPoint !== null || state.outPoint !== null) {
+      const inVal = state.inPoint !== null ? state.inPoint : 0;
+      const outVal = state.outPoint !== null ? state.outPoint : totalDur;
+      const inPct = Math.max(0, Math.min(100, (inVal / totalDur) * 100));
+      const outPct = Math.max(0, Math.min(100, (outVal / totalDur) * 100));
+      const widthPct = Math.max(0, outPct - inPct);
+
+      elements.timelineInOutRegion.style.left = `${inPct}%`;
+      elements.timelineInOutRegion.style.width = `${widthPct}%`;
+      elements.timelineInOutRegion.style.display = 'block';
+    } else {
+      elements.timelineInOutRegion.style.display = 'none';
+    }
+  }
+
+  if (elements.timelineInOutBadge) {
+    if (state.inPoint !== null || state.outPoint !== null) {
+      const inStr = state.inPoint !== null ? formatSMPTE(state.inPoint) : '00:00:00:00';
+      const outStr = state.outPoint !== null ? formatSMPTE(state.outPoint) : formatSMPTE(totalDur);
+      const rangeSec = Math.max(0, (state.outPoint !== null ? state.outPoint : totalDur) - (state.inPoint !== null ? state.inPoint : 0));
+      elements.timelineInOutBadge.textContent = `IN: ${inStr} · OUT: ${outStr} (${rangeSec.toFixed(1)}s)`;
+      elements.timelineInOutBadge.className = 'inout-badge active-range';
+    } else {
+      elements.timelineInOutBadge.textContent = 'IN: --:-- · OUT: --:--';
+      elements.timelineInOutBadge.className = 'inout-badge';
+    }
+  }
+
+  if (elements.exportInOutRangeText) {
+    const inVal = state.inPoint !== null ? state.inPoint : 0;
+    const outVal = state.outPoint !== null ? state.outPoint : totalDur;
+    elements.exportInOutRangeText.textContent = `${inVal.toFixed(1)}s - ${outVal.toFixed(1)}s`;
+  }
 }
 
 function setPlaying(playing) {
@@ -1091,11 +1529,160 @@ function setGenerating(generating, text = '') {
   elements.btnGenerate.disabled = generating;
 }
 
+// ── Master 4K / ProRes 422 Export Drawer Controller ──────────
+function openExportMasterDrawer() {
+  if (!elements.exportMasterModal) return;
+  elements.exportMasterModal.style.display = 'flex';
+  updateExportDrawerSource();
+}
+
+function closeExportMasterDrawer() {
+  if (!elements.exportMasterModal) return;
+  elements.exportMasterModal.style.display = 'none';
+  if (elements.exportStatusBox) elements.exportStatusBox.style.display = 'none';
+  if (elements.btnStartExport) {
+    elements.btnStartExport.disabled = false;
+    elements.btnStartExportLabel.textContent = 'Export & Render Master';
+  }
+}
+
+function updateExportDrawerSource() {
+  const asset = state.activeAsset;
+  if (!asset) return;
+
+  if (elements.exportSourceThumb) {
+    elements.exportSourceThumb.src = `/api/assets/${encodeURIComponent(asset.id)}/thumbnail`;
+  }
+  if (elements.exportSourceTitle) {
+    elements.exportSourceTitle.textContent = asset.overlay_title || asset.prompt || asset.id;
+  }
+  if (elements.exportSourceRes) {
+    elements.exportSourceRes.textContent = `${asset.width || 1024}×${asset.height || 576}`;
+  }
+  if (elements.exportSourceDur) {
+    elements.exportSourceDur.textContent = `${asset.seconds || 4.0}s`;
+  }
+  if (elements.exportFullDurText) {
+    elements.exportFullDurText.textContent = `${asset.seconds || 4.0}s`;
+  }
+  if (elements.inpExportTitle) {
+    elements.inpExportTitle.value = state.overlayConfig.title;
+  }
+  if (elements.inpExportFormula) {
+    elements.inpExportFormula.value = state.overlayConfig.formula;
+  }
+  updateInOutVisuals();
+}
+
+async function triggerMasterExport() {
+  if (!state.activeAsset || state.exportConfig.isExporting) return;
+
+  const preset = state.exportConfig.preset;
+  const isProRes = preset === 'prores';
+  const isUpscaleOnly = preset === 'upscale';
+  const asset = state.activeAsset;
+
+  state.exportConfig.isExporting = true;
+  elements.btnStartExport.disabled = true;
+  elements.btnStartExportLabel.textContent = 'Exporting Master...';
+  elements.exportStatusBox.style.display = 'flex';
+  elements.exportSuccessActions.style.display = 'none';
+  elements.exportProgressBar.style.width = '15%';
+  elements.exportStatusText.textContent = isProRes 
+    ? 'Encoding Apple ProRes 422 HQ Broadcast Master...' 
+    : isUpscaleOnly 
+    ? 'Upscaling plate to 4K UHD with Apple Neural Engine...' 
+    : 'Compositing H.264 High Profile Master...';
+
+  try {
+    let jobId = null;
+    if (isUpscaleOnly) {
+      const res = await fetch('/api/upscale-4k', {
+        method: 'POST',
+        headers: await authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          asset_id: asset.id,
+          scale: 4,
+          engine: 'coreml'
+        })
+      });
+      const data = await res.json();
+      jobId = data.output_id;
+    } else {
+      const res = await fetch('/api/composite-motionvector', {
+        method: 'POST',
+        headers: await authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          asset_id: asset.id,
+          title: elements.inpExportTitle ? elements.inpExportTitle.value : state.overlayConfig.title,
+          latex_formula: elements.inpExportFormula ? elements.inpExportFormula.value : state.overlayConfig.formula,
+          accent_color: state.overlayConfig.accentColor,
+          card_position: state.overlayConfig.position,
+          export_4k: state.exportConfig.resolution === '4k',
+          export_prores: isProRes,
+        })
+      });
+      const data = await res.json();
+      jobId = data.master_id;
+    }
+
+    elements.exportProgressBar.style.width = '50%';
+
+    // Poll until complete
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const job = await fetchJob(jobId);
+      if (job && job.status === 'failed') {
+        throw new Error(job.error || 'Export failed');
+      }
+      if (job && job.status === 'completed') {
+        elements.exportProgressBar.style.width = '100%';
+        elements.exportStatusText.textContent = `✓ Export Complete: ${isProRes ? 'Apple ProRes 422 HQ Master' : '4K UHD Master'}`;
+        elements.exportSpinner.style.display = 'none';
+        elements.exportSuccessActions.style.display = 'flex';
+        
+        if (elements.btnDownloadExported) {
+          elements.btnDownloadExported.href = `/api/assets/${encodeURIComponent(jobId)}/file`;
+          elements.btnDownloadExported.download = `${jobId}.mp4`;
+        }
+
+        if (elements.btnLoadExportedToCanvas) {
+          elements.btnLoadExportedToCanvas.onclick = async () => {
+            await refreshAssets();
+            const match = state.assets.find(a => a.id === jobId);
+            if (match) selectAsset(match);
+            closeExportMasterDrawer();
+          };
+        }
+
+        await refreshAssets();
+        showToast(`🎉 Master Export Ready: ${jobId}`);
+        return;
+      }
+    }
+    throw new Error('Export timed out');
+  } catch (err) {
+    console.error('Export error', err);
+    elements.exportStatusText.textContent = `Export Failed: ${err.message}`;
+    elements.exportProgressBar.style.backgroundColor = 'var(--accent-rose, #f43f5e)';
+  } finally {
+    state.exportConfig.isExporting = false;
+    elements.btnStartExport.disabled = false;
+    elements.btnStartExportLabel.textContent = 'Export & Render Master';
+  }
+}
+
 // ── Timeline Ruler & Waveform Generation ─────────────────────
 function buildTimelineRuler(totalDuration = 5) {
   const ruler = elements.timelineRuler;
   if (!ruler) return;
+  
+  // Preserve marker handles when rebuilding tick marks
+  const inHandle = elements.markerInHandle;
+  const outHandle = elements.markerOutHandle;
   ruler.innerHTML = '';
+  if (inHandle) ruler.appendChild(inHandle);
+  if (outHandle) ruler.appendChild(outHandle);
   
   const totalSec = Math.max(1, Math.ceil(totalDuration));
   const numMajorTicks = 10;
@@ -1117,6 +1704,8 @@ function buildTimelineRuler(totalDuration = 5) {
     label.textContent = `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     ruler.appendChild(label);
   }
+
+  updateInOutVisuals();
 }
 
 /**
@@ -1173,6 +1762,7 @@ function renderAudioWaveform() {
 
 // ── Command Palette (⌘K) Controller ──────────────────────────
 function toggleCommandPalette(open) {
+  if (!elements.commandPaletteModal) return;
   elements.commandPaletteModal.style.display = open ? 'flex' : 'none';
   if (open) {
     elements.cmdSearchInput.value = '';
@@ -1183,12 +1773,26 @@ function toggleCommandPalette(open) {
 function executeCommandAction(action) {
   if (action === 'render-all') {
     renderAllStoryboardTakes();
-  } else if (action === 'composite-4k') {
-    triggerMotionVectorComposite();
+  } else if (action === 'composite-4k' || action === 'export-master') {
+    openExportMasterDrawer();
   } else if (action === 'enhance-prompt') {
     elements.btnEnhance.click();
   } else if (action === 'toggle-grid') {
     elements.btnToggleGrid.click();
+  } else if (action === 'set-in-point') {
+    setInPoint();
+  } else if (action === 'set-out-point') {
+    setOutPoint();
+  } else if (action === 'clear-in-out') {
+    clearInOutPoints();
+  } else if (action === 'play-pause') {
+    togglePlayPause();
+  } else if (action === 'shuttle-rewind') {
+    shuttleRewind();
+  } else if (action === 'shuttle-stop') {
+    shuttleStop();
+  } else if (action === 'shuttle-forward') {
+    shuttleForward();
   }
 }
 

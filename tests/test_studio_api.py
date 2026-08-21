@@ -122,11 +122,67 @@ def test_studio_generate_mock_pipeline():
     data = response.json()
     assert data["status"] == "queued"
     assert "job_id" in data
+    assert "meta" in data
+    assert "patch" in data
     job_id = data["job_id"]
 
     # Verify metadata on disk
     meta_path = OUTPUTS_DIR / f"{job_id}.json"
     assert meta_path.exists()
+    disk_meta = json.loads(meta_path.read_text())
+    assert disk_meta["id"] == job_id
+    assert "patch" in disk_meta
+
+
+def test_generate_patch_card_metadata():
+    """Verify /api/generate returns MotionVector PatchCard fact block and diff specs."""
+    response = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Cinematic wide tracking shot of cybernetic vehicle",
+            "seconds": 4.0,
+            "width": 1024,
+            "height": 576,
+            "stg_scale": 0.8,
+            "steps": 25,
+            "fps": 24,
+            "seed": 1337,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "patch" in data
+    patch = data["patch"]
+
+    # a. Upfront Fact Block
+    assert patch["target"] == "LTX-2.5 Video Generation"
+    assert "specs" in patch
+    assert patch["specs"]["resolution"] == "1024x576"
+    assert patch["specs"]["fps"] == "24fps"
+    assert patch["specs"]["duration"] == "4.0s"
+    assert patch["specs"]["steps"] == 25
+    assert patch["specs"]["stg_scale"] == 0.8
+    assert patch["specs"]["seed"] == 1337
+    assert "Estimated Spot compute: ~$0.04 (No charge on failure)" in patch["compute_quote"]
+
+    # b. Parameter Diff Inspector
+    assert "diff" in patch
+    diff = patch["diff"]
+    assert diff["prompt"]["after"] == "Cinematic wide tracking shot of cybernetic vehicle"
+    assert diff["stg_scale"]["after"] == 0.8
+    assert diff["aspect"]["after"] == "1024x576"
+    assert diff["seed"]["after"] == 1337
+    assert diff["duration"]["after"] == "4.0s"
+
+    # c. Ops list
+    assert "ops" in patch
+    assert len(patch["ops"]) >= 1
+    op = patch["ops"][0]
+    assert op["subject"] == "LTX-2.5 Video Generation"
+    assert op["generate"]["kind"] == "video"
+    assert op["generate"]["tier"] == "LTX-2.5"
+    assert op["quote"]["cost_usd"] == 0.04
 
 
 def test_studio_assets_list():
@@ -471,6 +527,8 @@ if __name__ == "__main__":
     print("✓ Prompt enhancement test passed")
     test_studio_generate_mock_pipeline()
     print("✓ Generate mock pipeline test passed")
+    test_generate_patch_card_metadata()
+    print("✓ MotionVector PatchCard metadata test passed")
     test_studio_assets_list()
     print("✓ Assets listing test passed")
     test_studio_4k_upscale_chain()

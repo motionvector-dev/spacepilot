@@ -18,29 +18,75 @@ document.addEventListener('DOMContentLoaded', () => {
   const dropLabel = document.getElementById('dropzone-label');
 
   const btnGenerate = document.getElementById('btn-generate');
+  const btnToggleDiff = document.getElementById('btn-toggle-diff');
+  const diffOpsList = document.getElementById('diff-ops-list');
 
+  // Patch Card Diff Values
+  const diffPromptVal = document.getElementById('diff-prompt-val');
+  const diffStgVal = document.getElementById('diff-stg-val');
+  const diffAspectVal = document.getElementById('diff-aspect-val');
+  const diffDurationVal = document.getElementById('diff-duration-val');
+  const diffSeedVal = document.getElementById('diff-seed-val');
+
+  // Fact Specs Badges
+  const patchFactSpecs = document.getElementById('patch-fact-specs');
+  const genFactSpecs = document.getElementById('gen-fact-specs');
+  const compFactSpecs = document.getElementById('comp-fact-specs');
+
+  // Panels
   const panelEditor = document.getElementById('panel-editor');
   const panelGenerating = document.getElementById('panel-generating');
   const panelCompleted = document.getElementById('panel-completed');
 
+  // Generating & Completed state elements
   const genProgressFill = document.getElementById('gen-progress-fill');
   const genSubtitle = document.getElementById('gen-subtitle');
+  const genPhaseText = document.getElementById('gen-phase-text');
   const resultVideo = document.getElementById('result-video');
   const btnRestart = document.getElementById('btn-restart');
   const btnDownload = document.getElementById('btn-download');
   const btnOpenStudio = document.getElementById('btn-open-studio');
+  const compReceipt = document.getElementById('comp-receipt');
 
   const navGpuDot = document.getElementById('nav-gpu-dot');
   const navGpuText = document.getElementById('nav-gpu-text');
 
   // Config State
-  let config = {
+  const config = {
     width: 1024,
     height: 576,
+    aspectName: '16:9',
     seconds: 4.0,
     stg: 0.8,
+    steps: 25,
+    fps: 24,
     imageFile: null
   };
+
+  function updatePatchCardDiff() {
+    const rawPrompt = promptInput.value.trim();
+    if (diffPromptVal) {
+      diffPromptVal.textContent = rawPrompt ? `“${rawPrompt.slice(0, 80)}${rawPrompt.length > 80 ? '…' : ''}”` : 'empty';
+    }
+    if (diffStgVal) {
+      diffStgVal.textContent = config.stg.toFixed(1);
+    }
+    if (diffAspectVal) {
+      diffAspectVal.textContent = `${config.aspectName} (${config.width}x${config.height})`;
+    }
+    if (diffDurationVal) {
+      const frames = Math.floor((config.seconds * config.fps - 1) / 8) * 8 + 1;
+      diffDurationVal.textContent = `${config.seconds.toFixed(1)}s (${frames} frames)`;
+    }
+    if (diffSeedVal) {
+      diffSeedVal.textContent = 'Dynamic (Auto)';
+    }
+
+    const specsText = `${config.width}x${config.height} · ${config.fps}fps · ${config.seconds.toFixed(1)}s`;
+    if (patchFactSpecs) patchFactSpecs.textContent = specsText;
+    if (genFactSpecs) genFactSpecs.textContent = specsText;
+    if (compFactSpecs) compFactSpecs.textContent = specsText;
+  }
 
   // 1. Live Telemetry Polling
   async function pollStatus() {
@@ -67,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Prompt & Character Counter
   promptInput.addEventListener('input', () => {
     charCounter.textContent = `${promptInput.value.length} / 4000`;
+    updatePatchCardDiff();
   });
 
   // AI Prompt Enhance
@@ -118,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       config.width = parseInt(btn.dataset.w, 10);
       config.height = parseInt(btn.dataset.h, 10);
+      config.aspectName = btn.dataset.aspect || '16:9';
+      updatePatchCardDiff();
     });
   });
 
@@ -126,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
       durationBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       config.seconds = parseFloat(btn.dataset.sec);
+      updatePatchCardDiff();
     });
   });
 
@@ -134,23 +184,33 @@ document.addEventListener('DOMContentLoaded', () => {
     stgVal.textContent = val;
     stgDisplay.textContent = val;
     config.stg = parseFloat(val);
+    updatePatchCardDiff();
   });
+
+  // Toggle Diff Inspector
+  if (btnToggleDiff && diffOpsList) {
+    btnToggleDiff.addEventListener('click', () => {
+      const isHidden = diffOpsList.style.display === 'none';
+      diffOpsList.style.display = isHidden ? 'flex' : 'none';
+      btnToggleDiff.textContent = isHidden ? 'Collapse' : 'Expand';
+    });
+  }
 
   // 4. Reference Image Dropzone
   dropzone.addEventListener('click', () => fileInput.click());
 
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropzone.style.borderColor = 'var(--mv-accent-indigo)';
+    dropzone.style.borderColor = 'var(--border-focus)';
   });
 
   dropzone.addEventListener('dragleave', () => {
-    dropzone.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    dropzone.style.borderColor = 'var(--border-medium)';
   });
 
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropzone.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    dropzone.style.borderColor = 'var(--border-medium)';
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleImage(e.dataTransfer.files[0]);
     }
@@ -175,7 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(file);
   }
 
-  // 5. Video Generation & Polling
+  // Initialize initial diff values
+  updatePatchCardDiff();
+
+  // 5. Video Generation & Multi-Phase Pipeline
   btnGenerate.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();
     if (!prompt && !config.imageFile) {
@@ -201,8 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
       width: config.width,
       height: config.height,
       stg_scale: config.stg,
-      steps: 30,
-      fps: 24,
+      steps: config.steps,
+      fps: config.fps,
       enhance: false
     };
 
@@ -222,61 +285,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const jobData = await genRes.json();
       const jobId = jobData.job_id || ('job_' + Math.random().toString(36).substr(2, 9));
-      runGenerationTracker(jobId);
+      runGenerationTracker(jobId, jobData.patch);
     } catch (err) {
       console.warn('API error, falling back to animated preview:', err);
       const mockId = 'mock_' + Math.random().toString(36).substr(2, 8);
-      runGenerationTracker(mockId);
+      runGenerationTracker(mockId, null);
     }
   });
 
-  function setStage(idx, subtitleText, progressPct) {
+  function setStage(stageIdx, phaseText, subtitleText, progressPct, customStepLabel) {
     for (let i = 1; i <= 5; i++) {
       const stageEl = document.getElementById(`stage-${i}`);
-      if (i < idx) {
-        stageEl.className = 'stage-item done';
-      } else if (i === idx) {
-        stageEl.className = 'stage-item active';
+      if (!stageEl) continue;
+      if (i < stageIdx) {
+        stageEl.className = 'phase-step done stage-item done';
+      } else if (i === stageIdx) {
+        stageEl.className = 'phase-step active stage-item active';
       } else {
-        stageEl.className = 'stage-item';
+        stageEl.className = 'phase-step stage-item';
       }
     }
-    genProgressFill.style.width = `${progressPct}%`;
-    if (subtitleText) genSubtitle.textContent = subtitleText;
+
+    if (customStepLabel) {
+      const step3Label = document.getElementById('stage-3-label');
+      if (step3Label) step3Label.textContent = customStepLabel;
+    }
+
+    if (genProgressFill) {
+      genProgressFill.style.width = `${progressPct}%`;
+    }
+    if (genPhaseText && phaseText) {
+      genPhaseText.textContent = phaseText;
+    }
+    if (genSubtitle && subtitleText) {
+      genSubtitle.textContent = subtitleText;
+    }
   }
 
-  function runGenerationTracker(jobId) {
-    setStage(1, 'Job queued in dispatch engine...', 15);
+  function runGenerationTracker(jobId, patchData) {
+    // Phase 1: Queued (0%)
+    setStage(
+      1,
+      'Phase 1: Queued (0%) — keep editing, it\'ll land when it\'s ready.',
+      'Job queued in dispatch engine... (0%)',
+      0
+    );
 
+    // Phase 2: Staging VRAM & Weights (15%) after 1.5s
     setTimeout(() => {
-      setStage(2, 'Model resident in GPU VRAM (48GB L40S)...', 35);
-    }, 2000);
+      setStage(
+        2,
+        'Phase 2: Staging VRAM & Weights (15%) — keep editing, it\'ll land when it\'s ready.',
+        'Model resident in GPU VRAM (48GB L40S)... (15%)',
+        15
+      );
+    }, 1500);
 
-    setTimeout(() => {
-      setStage(3, 'Sampling DiT Spatial-Temporal latents (30 steps)...', 65);
-    }, 5000);
+    // Phase 3: DiT Sampling (Step X/25) (20% - 85%) across 25 steps
+    const totalSteps = 25;
+    const samplingStartTime = 3000;
+    const samplingDuration = 5500;
+    const stepInterval = samplingDuration / totalSteps;
 
-    setTimeout(() => {
-      setStage(4, 'Decoding 3D VAE tensors to 24fps video stream...', 88);
-    }, 9000);
+    for (let step = 1; step <= totalSteps; step++) {
+      setTimeout(() => {
+        const pct = Math.round(20 + (step / totalSteps) * 65);
+        setStage(
+          3,
+          `Phase 3: DiT Sampling (Step ${step}/${totalSteps}) (${pct}%) — keep editing, it'll land when it's ready.`,
+          `Sampling DiT Spatial-Temporal latents (Step ${step}/${totalSteps})...`,
+          pct,
+          `DiT Sampling (Step ${step}/${totalSteps})`
+        );
+      }, samplingStartTime + (step - 1) * stepInterval);
+    }
 
+    // Phase 4: VAE Latent Decode & Audio Vocoder (90% - 98%)
+    const vaeTime = samplingStartTime + samplingDuration + 400;
     setTimeout(() => {
-      setStage(5, 'Video rendered successfully!', 100);
-      setTimeout(() => finishJob(jobId), 1200);
-    }, 12000);
+      setStage(
+        4,
+        'Phase 4: VAE Latent Decode & Audio Vocoder (94%) — keep editing, it\'ll land when it\'s ready.',
+        'Decoding 3D VAE tensors to 24fps video stream...',
+        94
+      );
+    }, vaeTime);
+
+    // Phase 5: Plate Ready (100%)
+    const completeTime = vaeTime + 2200;
+    setTimeout(() => {
+      setStage(
+        5,
+        'Phase 5: Plate Ready (100%)',
+        'Video rendered successfully! Finalizing asset...',
+        100
+      );
+      setTimeout(() => finishJob(jobId, patchData), 800);
+    }, completeTime);
   }
 
-  function finishJob(jobId) {
+  function finishJob(jobId, patchData) {
     panelGenerating.style.display = 'none';
     panelCompleted.style.display = 'block';
 
-    resultVideo.src = `/api/media/${jobId}.mp4`;
+    const videoSrc = `/api/media/${jobId}.mp4`;
+    resultVideo.src = videoSrc;
     resultVideo.onerror = () => {
-      // If mock job, display placeholder
-      resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">Video Plate Generated (' + jobId + '.mp4)</div>';
+      resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">Video Plate Ready (' + jobId + '.mp4)</div>';
     };
 
-    btnOpenStudio.href = `/studio?asset_id=${jobId}`;
+    if (btnOpenStudio) {
+      btnOpenStudio.href = `/studio?asset_id=${jobId}`;
+    }
+
+    if (compReceipt) {
+      compReceipt.textContent = '1 op applied · ~$0.04 — LTX-2.5 · undo byte-exact';
+    }
   }
 
   // 6. Action Handlers

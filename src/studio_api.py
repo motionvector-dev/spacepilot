@@ -538,6 +538,50 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
     num_frames = ((raw_frames - 1) // 8) * 8 + 1
     seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
 
+    patch = {
+        "target": "LTX-2.5 Video Generation",
+        "specs": {
+            "resolution": f"{width}x{height}",
+            "fps": f"{req.fps}fps",
+            "duration": f"{req.seconds:.1f}s",
+            "frames": num_frames,
+            "steps": req.steps,
+            "stg_scale": req.stg_scale,
+            "seed": seed,
+        },
+        "compute_quote": "Estimated Spot compute: ~$0.04 (No charge on failure)",
+        "diff": {
+            "prompt": {"before": None, "after": req.prompt},
+            "stg_scale": {"before": 1.0, "after": req.stg_scale},
+            "aspect": {"before": "16:9 (1024x576)", "after": f"{width}x{height}"},
+            "duration": {"before": "4.0s", "after": f"{req.seconds:.1f}s"},
+            "seed": {"before": "random", "after": seed},
+        },
+        "ops": [
+            {
+                "address": "video.generation",
+                "subject": "LTX-2.5 Video Generation",
+                "before": None,
+                "after": f"{width}x{height} @ {req.fps}fps, {req.seconds:.1f}s",
+                "generate": {
+                    "kind": "video",
+                    "prompt": req.prompt,
+                    "tier": "LTX-2.5",
+                    "units": req.seconds,
+                    "resolution": f"{width}x{height}",
+                    "fps": req.fps,
+                    "stg_scale": req.stg_scale,
+                    "seed": seed,
+                },
+                "quote": {
+                    "estimated": True,
+                    "compute_text": "Estimated Spot compute: ~$0.04 (No charge on failure)",
+                    "cost_usd": 0.04,
+                },
+            }
+        ],
+    }
+
     meta = {
         "id": job_id,
         "prompt": req.prompt,
@@ -552,6 +596,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         "created_at": time.time(),
         "is_upscaled": False,
         "duration_sec": req.seconds,
+        "patch": patch,
     }
 
     meta_file = OUTPUTS_DIR / f"{job_id}.json"
@@ -655,7 +700,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 
         background_tasks.add_task(_mock_gen)
 
-    return {"status": "queued", "job_id": job_id, "meta": meta}
+    return {"status": "queued", "job_id": job_id, "meta": meta, "patch": patch}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -881,11 +926,15 @@ def composite_motionvector_api(req: CompositeMotionVectorRequest, background_tas
         img.save(overlay_png)
 
         # 3. Composite 4K PNG over 4K plate with strict Rec.709 NCLC 1-1-1 tagging
-        codec_args = ["-c:v", "prores_ks", "-profile:v", "3"] if req.export_prores else ["-c:v", "h264_videotoolbox", "-b:v", "45M"]
+        codec_args = (
+            ["-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le"]
+            if req.export_prores
+            else ["-c:v", "h264_videotoolbox", "-b:v", "45M", "-pix_fmt", "yuv420p"]
+        )
         composite_res = run_ffmpeg([
             "-i", str(plate_4k), "-i", str(overlay_png),
             "-filter_complex", "[0:v][1:v]overlay=0:0",
-            *codec_args, "-pix_fmt", "yuv420p",
+            *codec_args,
             "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
             str(master_mp4),
         ])
