@@ -10,7 +10,19 @@ export interface Take {
   status: 'idle' | 'generating' | 'ready' | 'error';
 }
 
+export interface StoryboardScene {
+  id: string;
+  prompt: string;
+  duration: number;
+  panDeg: number;
+  zoomRatio: number;
+  status: 'idle' | 'generating' | 'ready';
+  videoUrl?: string;
+}
+
 interface StudioState {
+  activeMode: 'director' | 'vibe';
+  setActiveMode: (mode: 'director' | 'vibe') => void;
   prompt: string;
   setPrompt: (p: string) => void;
   voicePreset: string;
@@ -24,6 +36,12 @@ interface StudioState {
   selectedTakeId: number;
   setSelectedTakeId: (id: number) => void;
   takes: Take[];
+  scenes: StoryboardScene[];
+  activeSceneId: string;
+  setActiveSceneId: (id: string) => void;
+  addScene: (prompt: string) => void;
+  removeScene: (id: string) => void;
+  updateScenePrompt: (id: string, prompt: string) => void;
   isGenerating: boolean;
   setIsGenerating: (g: boolean) => void;
   audioWaveformPlaying: boolean;
@@ -31,6 +49,8 @@ interface StudioState {
 }
 
 export const useStudioStore = create<StudioState>((set) => ({
+  activeMode: 'director',
+  setActiveMode: (activeMode) => set({ activeMode }),
   prompt: 'Cyberpunk neon alleyway, volumetric rain, anamorphic reflections, 4k photorealistic',
   setPrompt: (prompt) => set({ prompt }),
   voicePreset: 'af_bella',
@@ -53,4 +73,31 @@ export const useStudioStore = create<StudioState>((set) => ({
     { id: 3, seed: 42803, panDeg: 15, zoomRatio: 1.4, selected: false, status: 'ready' },
     { id: 4, seed: 42804, panDeg: 15, zoomRatio: 1.4, selected: false, status: 'ready' },
   ],
+  activeSceneId: 'scene-1',
+  setActiveSceneId: (activeSceneId) => set({ activeSceneId }),
+  scenes: [
+    { id: 'scene-1', prompt: 'Establishing wide dolly-in: Cyberpunk neon alleyway with volumetric rain', duration: 4.0, panDeg: 15, zoomRatio: 1.4, status: 'ready' },
+    { id: 'scene-2', prompt: 'Medium close-up: Holographic terminal reflecting off wet asphalt', duration: 3.5, panDeg: -10, zoomRatio: 1.2, status: 'ready' },
+    { id: 'scene-3', prompt: 'Anamorphic pan: Autonomous courier drone launching into neon fog', duration: 4.5, panDeg: 25, zoomRatio: 1.6, status: 'ready' },
+  ],
+  addScene: (prompt) =>
+    set((state) => {
+      const newId = `scene-${state.scenes.length + 1}`;
+      return {
+        scenes: [
+          ...state.scenes,
+          { id: newId, prompt, duration: 4.0, panDeg: 0, zoomRatio: 1.0, status: 'idle' }
+        ],
+        activeSceneId: newId,
+      };
+    }),
+  removeScene: (id) =>
+    set((state) => ({
+      scenes: state.scenes.filter((s) => s.id !== id),
+      activeSceneId: state.scenes[0]?.id || '',
+    })),
+  updateScenePrompt: (id, prompt) =>
+    set((state) => ({
+      scenes: state.scenes.map((s) => (s.id === id ? { ...s, prompt } : s)),
+    })),
 }));

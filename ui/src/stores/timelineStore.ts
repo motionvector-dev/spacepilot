@@ -11,8 +11,11 @@ export interface TimelineTrack {
 
 interface TimelineState {
   isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
   currentTimeSeconds: number;
+  setCurrentTime: (seconds: number) => void;
   durationSeconds: number;
+  setDuration: (duration: number) => void;
   fps: number;
   zoomLevel: number;
   tracks: TimelineTrack[];
@@ -23,8 +26,11 @@ interface TimelineState {
 
 export const useTimelineStore = create<TimelineState>((set) => ({
   isPlaying: false,
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
   currentTimeSeconds: 0,
+  setCurrentTime: (currentTimeSeconds) => set({ currentTimeSeconds }),
   durationSeconds: 4.0,
+  setDuration: (durationSeconds) => set({ durationSeconds }),
   fps: 24,
   zoomLevel: 1.0,
   tracks: [
