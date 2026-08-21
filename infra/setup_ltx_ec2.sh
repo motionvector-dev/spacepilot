@@ -81,6 +81,9 @@ fi
 echo "==> [2/5] Installing and verifying PyTorch, Diffusers, and TorchAO dependencies..."
 
 /opt/pytorch/bin/python -m pip install -q --upgrade \
+  torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+/opt/pytorch/bin/python -m pip install -q --upgrade \
   "git+https://github.com/huggingface/diffusers.git" \
   "torchao>=0.8.0" \
   hf_transfer \
