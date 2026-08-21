@@ -75,6 +75,10 @@ class Settings(BaseModel):
             f"http://127.0.0.1:{self.port}",
             f"http://spacepilot.localhost:{self.port}",
             f"http://pluto.localhost:{self.port}",
+            "http://spacepilot.localhost",
+            "https://spacepilot.localhost",
+            "http://pluto.localhost",
+            "https://pluto.localhost",
         ]
 
 

@@ -15,12 +15,14 @@ from src.pluto.api.routes import (
     views_router,
     assets_router,
     compute_router,
+    recipes_router,
     engines_router,
     storyboard_router,
     gpu_router,
     generate_router,
     audio_router,
     checkpoints_router,
+    lora_router,
 )
 
 
@@ -67,11 +69,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Register Routers
     app.include_router(health_router)
     app.include_router(compute_router)
+    app.include_router(recipes_router)
     app.include_router(engines_router)
     app.include_router(storyboard_router)
     app.include_router(gpu_router)
     app.include_router(generate_router)
     app.include_router(audio_router)
+    app.include_router(lora_router)
     app.include_router(assets_router)
     app.include_router(views_router)
     app.include_router(checkpoints_router)
