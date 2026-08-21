@@ -59,6 +59,7 @@ from src.pluto.services.generation import (
     worker_headers,
 )
 from src.pluto.api.routes.engines import MultiEngineGenerateRequest
+from src.pluto.api.routes.lora import TrainLoRARequest
 from src.pluto.api.routes.audio import (
     MusicRequest,
     VoiceRequest,
