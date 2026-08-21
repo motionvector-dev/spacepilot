@@ -378,8 +378,47 @@ def test_worker_headers_require_token():
         studio_api.WORKER_TOKEN = original
 
 
+def test_multi_view_routes():
+    """Verify onboarding, creator, and studio editor routes return 200 and HTML."""
+    for path in ["/", "/onboarding", "/create", "/studio", "/editor"]:
+        res = client.get(path)
+        assert res.status_code == 200, f"Route {path} failed with status {res.status_code}"
+        assert "text/html" in res.headers.get("content-type", ""), f"Route {path} did not return HTML"
+
+
+def test_generate_request_supports_ltx25_fields():
+    """Verify /api/generate accepts stg_scale, modality_scale, fps, image_path."""
+    payload = {
+        "prompt": "Cybernetic tiger in neon jungle",
+        "seconds": 4.0,
+        "fps": 24,
+        "stg_scale": 1.2,
+        "modality_scale": 1.5,
+        "image_path": None,
+    }
+    res = client.post("/api/generate", json=payload, headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert "job_id" in data
+    assert data["status"] in ["queued", "processing", "completed"]
+
+
+def test_static_asset_routing():
+    """Verify static JS and CSS files are properly served."""
+    for asset in ["/studio.css", "/studio.js"]:
+        res = client.get(asset)
+        assert res.status_code == 200
+        assert len(res.text) > 0
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
+    test_multi_view_routes()
+    print("✓ Multi-view routes test passed")
+    test_generate_request_supports_ltx25_fields()
+    print("✓ LTX-2.5 generate parameters test passed")
+    test_static_asset_routing()
+    print("✓ Static asset routing test passed")
     test_studio_status_endpoint()
     print("✓ Status telemetry test passed")
     test_studio_enhance_prompt()
