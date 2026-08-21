@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pytest
 from src.pluto_mcp_server import (
     pluto_generate_video,
@@ -43,8 +47,13 @@ def test_pluto_get_fleet_status():
 
 def test_get_ltx25_model_info():
     result = get_ltx25_model_info()
-    assert "LTX25" in result
+    assert "Float8" in result
+    assert "48GB" in result
+    assert "24fps" in result
 
 def test_get_voice_catalogue():
     result = get_voice_catalogue()
     assert "af_heart" in result
+    import json
+    data = json.loads(result)
+    assert len(data) == 10
