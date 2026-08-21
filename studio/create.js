@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultVideo.src = `/api/media/${jobId}.mp4`;
     resultVideo.onerror = () => {
       // If mock job, display placeholder
-      resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">🎬 Video Plate Generated (' + jobId + '.mp4)</div>';
+      resultVideo.outerHTML = '<div style="width:100%; height:260px; display:flex; align-items:center; justify-content:center; background:#121215; color:#a1a1aa; border-radius:8px; font-family:JetBrains Mono, monospace; font-size:14px;">Video Plate Generated (' + jobId + '.mp4)</div>';
     };
 
     btnOpenStudio.href = `/studio?asset_id=${jobId}`;

@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnLaunchBox.addEventListener('click', async () => {
     btnLaunchBox.disabled = true;
     appendLog('[Cockpit] Dispatching Spot GPU Launch (g6e.xlarge)...', 'system');
-    showToast('🚀 Launching AWS Spot GPU box...');
+    showToast('Launching AWS Spot GPU box...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/launch', {
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnDeployWorker.addEventListener('click', async () => {
     btnDeployWorker.disabled = true;
     appendLog('[Cockpit] Hot-deploying ltx_worker.py to remote GPU box...', 'system');
-    showToast('🔄 Deploying worker code...');
+    showToast('Deploying worker code...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/deploy', {
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSyncOutputs.addEventListener('click', async () => {
     btnSyncOutputs.disabled = true;
     appendLog('[Cockpit] Rsyncing /scratch/out/ to local outputs/...', 'system');
-    showToast('📥 Syncing remote outputs...');
+    showToast('Syncing remote outputs...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/sync', {
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message}`, 'success');
-      showToast('✓ Sync complete');
+      showToast('Sync complete');
     } catch (err) {
       appendLog(`[Cockpit] Sync error: ${err.message}`, 'error');
     } finally {
@@ -212,18 +212,18 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCopySsh.addEventListener('click', () => {
     if (currentSshCmd) {
       navigator.clipboard.writeText(currentSshCmd);
-      showToast('📋 Copied SSH command to clipboard');
+      showToast('Copied SSH command to clipboard');
       appendLog(`[Cockpit] Copied: ${currentSshCmd}`, 'info');
     }
   });
 
   btnTerminateBox.addEventListener('click', async () => {
-    if (!confirm('⚠️ Are you sure you want to terminate this instance? This will halt billing immediately.')) {
+    if (!confirm('Are you sure you want to terminate this instance? This will halt billing immediately.')) {
       return;
     }
     btnTerminateBox.disabled = true;
     appendLog('[Cockpit] Terminating GPU box...', 'system');
-    showToast('🛑 Terminating instance...');
+    showToast('Terminating instance...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/terminate', {
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message}`, 'success');
-      showToast('✓ GPU box terminated. Billing stopped.');
+      showToast('GPU box terminated. Billing stopped.');
       fetchCockpitStatus();
     } catch (err) {
       appendLog(`[Cockpit] Terminate error: ${err.message}`, 'error');
