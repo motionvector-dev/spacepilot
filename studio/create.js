@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resultVideo.outerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#141720; color:#94a3b8;">[Mock Video Rendered Successfully]</div>';
     };
     
-    btnStudio.href = `index.html?asset_id=${jobId}`;
+    btnStudio.href = `/studio?asset_id=${jobId}`;
   }
 
   btnRestart.addEventListener('click', () => {
@@ -221,6 +221,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnDownload.addEventListener('click', () => {
-    alert('Downloading video...');
+    if (resultVideo && resultVideo.src) {
+      const a = document.createElement('a');
+      a.href = resultVideo.src;
+      a.download = `pluto_video_${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   });
+
+  // Hot Reload Listener
+  try {
+    const evtSource = new EventSource('/api/live-reload');
+    evtSource.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.event === 'reload-css') {
+        const links = document.querySelectorAll('link[rel="stylesheet"]');
+        links.forEach(l => {
+          const u = new URL(l.href);
+          u.searchParams.set('t', Date.now());
+          l.href = u.toString();
+        });
+      } else if (data.event === 'reload-full') {
+        window.location.reload();
+      }
+    };
+  } catch (e) {}
 });

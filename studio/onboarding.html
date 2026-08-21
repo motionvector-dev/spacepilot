@@ -400,6 +400,24 @@
       }
     }
     fetchAssets();
+
+    // Hot Reload Listener
+    try {
+      const evtSource = new EventSource('/api/live-reload');
+      evtSource.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.event === 'reload-css') {
+          const links = document.querySelectorAll('link[rel="stylesheet"]');
+          links.forEach(l => {
+            const u = new URL(l.href);
+            u.searchParams.set('t', Date.now());
+            l.href = u.toString();
+          });
+        } else if (data.event === 'reload-full') {
+          window.location.reload();
+        }
+      };
+    } catch (e) {}
   </script>
 </body>
 </html>

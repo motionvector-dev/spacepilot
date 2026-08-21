@@ -328,27 +328,26 @@ async def live_reload_events():
     """Stream Server-Sent Events (SSE) when studio files (CSS/HTML/JS) change."""
     async def event_generator():
         last_mtimes = {}
-        watch_files = [
-            STUDIO_DIR / "studio.css",
-            STUDIO_DIR / "index.html",
-            STUDIO_DIR / "studio.js",
-        ]
-        for f in watch_files:
-            if f.exists():
-                last_mtimes[str(f)] = f.stat().st_mtime
+
+        def get_watch_files():
+            if not STUDIO_DIR.exists():
+                return []
+            return [f for f in STUDIO_DIR.iterdir() if f.is_file() and f.suffix in {".html", ".js", ".css"}]
+
+        for f in get_watch_files():
+            last_mtimes[str(f)] = f.stat().st_mtime
 
         while True:
             await asyncio.sleep(0.4)
-            for f in watch_files:
-                if f.exists():
-                    current_mtime = f.stat().st_mtime
-                    path_str = str(f)
-                    if path_str in last_mtimes and current_mtime > last_mtimes[path_str]:
-                        last_mtimes[path_str] = current_mtime
-                        event_type = "reload-css" if f.name == "studio.css" else "reload-full"
-                        yield f"data: {json.dumps({'event': event_type, 'file': f.name, 'timestamp': current_mtime})}\n\n"
-                    elif path_str not in last_mtimes:
-                        last_mtimes[path_str] = current_mtime
+            for f in get_watch_files():
+                current_mtime = f.stat().st_mtime
+                path_str = str(f)
+                if path_str in last_mtimes and current_mtime > last_mtimes[path_str]:
+                    last_mtimes[path_str] = current_mtime
+                    event_type = "reload-css" if f.name.endswith(".css") else "reload-full"
+                    yield f"data: {json.dumps({'event': event_type, 'file': f.name, 'timestamp': current_mtime})}\n\n"
+                elif path_str not in last_mtimes:
+                    last_mtimes[path_str] = current_mtime
 
     return StreamingResponse(
         event_generator(),
@@ -1245,5 +1244,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
     print(f"\n──────────────────────────────────────────────────────────────────────────")
     print(f"  🎬 PLUTO STUDIO LIVE ON: http://localhost:{port}")
-    print(f"──────────────────────────────────────────────────────────────────────────\n")
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    uvicorn.run(
+        "src.studio_api:app",
+        host="127.0.0.1",
+        port=port,
+        reload=True,
+        reload_dirs=[str(PLUTO_ROOT / "src"), str(PLUTO_ROOT / "studio")],
+    )
