@@ -1,11 +1,15 @@
 import asyncio
 import uuid
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Dict, List, Optional
+import logging
+
+# Direct import from src.device_probe because it's an external utility not part of the pluto module structure
 from src.device_probe import probe_local_device
 
-@dataclass
-class ModelRecipeSpec:
+logger = logging.getLogger(__name__)
+
+class ModelRecipeSpec(BaseModel):
     recipe_id: str
     name: str
     family: str
@@ -17,8 +21,7 @@ class ModelRecipeSpec:
     recommended_gpu: str
     is_local_runnable: bool = False
 
-@dataclass
-class DownloadJob:
+class DownloadJob(BaseModel):
     job_id: str
     recipe_id: str
     status: str  # pending, downloading, completed, failed
@@ -26,6 +29,8 @@ class DownloadJob:
     speed_mb_s: float
 
 class ModelCatalogManager:
+    """Manages the available model recipes and handles background downloads."""
+    
     def __init__(self):
         self.recipes: Dict[str, ModelRecipeSpec] = {
             "wan-2.1-1.3b-fp8": ModelRecipeSpec(
@@ -98,6 +103,7 @@ class ModelCatalogManager:
         self.jobs: Dict[str, DownloadJob] = {}
 
     def get_all_recipes(self) -> List[ModelRecipeSpec]:
+        """Get all model recipes with updated local compatibility."""
         device_info = probe_local_device()
         vram_gb = device_info.vram_usable_gb
         
@@ -120,6 +126,7 @@ class ModelCatalogManager:
         return results
 
     def get_recipe(self, recipe_id: str) -> Optional[ModelRecipeSpec]:
+        """Get a specific model recipe by ID with updated local compatibility."""
         recipe = self.recipes.get(recipe_id)
         if not recipe:
             return None
@@ -142,19 +149,30 @@ class ModelCatalogManager:
         return spec
 
     async def _mock_download_task(self, job_id: str):
-        job = self.jobs[job_id]
-        job.status = "downloading"
-        job.speed_mb_s = 50.0
+        """
+        Mock task to simulate downloading a recipe.
         
-        for i in range(10):
-            await asyncio.sleep(1)
-            job.progress_percent = (i + 1) * 10
+        TODO(real-download): Replace this mock with an actual download implementation.
+        """
+        try:
+            job = self.jobs[job_id]
+            job.status = "downloading"
+            job.speed_mb_s = 50.0
             
-        job.status = "completed"
-        job.speed_mb_s = 0.0
-        job.progress_percent = 100.0
+            for i in range(10):
+                await asyncio.sleep(1)
+                job.progress_percent = (i + 1) * 10
+                
+            job.status = "completed"
+            job.speed_mb_s = 0.0
+            job.progress_percent = 100.0
+        except Exception as e:
+            logger.error(f"Error in mock download task: {e}", exc_info=True)
+            if job_id in self.jobs:
+                self.jobs[job_id].status = "failed"
 
     def download_recipe(self, recipe_id: str) -> str:
+        """Start a background download job for a recipe."""
         if recipe_id not in self.recipes:
             raise ValueError(f"Recipe not found: {recipe_id}")
             
@@ -167,10 +185,12 @@ class ModelCatalogManager:
             speed_mb_s=0.0
         )
         self.jobs[job_id] = job
+        # TODO(real-download): Update task creation when actual download is implemented
         asyncio.create_task(self._mock_download_task(job_id))
         return job_id
 
     def get_download_progress(self, job_id: str) -> Optional[DownloadJob]:
+        """Get the progress of a specific download job."""
         return self.jobs.get(job_id)
 
 catalog_manager = ModelCatalogManager()
