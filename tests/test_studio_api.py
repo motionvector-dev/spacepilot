@@ -46,6 +46,8 @@ GATED_POSTS = [
     ("/api/storyboard/decompose", {"script": "astronaut on moon"}),
     ("/api/audio/mix-ducked", {"voice_job_id": "test_voice"}),
     ("/api/compute/models/download", {"model_id": "kokoro-82m-tts"}),
+    ("/api/audio/synthesize-local", {"text": "test voiceover"}),
+    ("/api/narrative/decompose-local", {"script": "astronaut on mars"}),
 ]
 
 # POST routes that spend nothing and so need no token. Both are pure local

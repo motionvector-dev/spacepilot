@@ -2594,6 +2594,91 @@ def get_local_compute_status():
         raise HTTPException(status_code=500, detail=f"Failed to retrieve local status: {str(e)}")
 
 
+class LocalSynthesizeAudioRequest(BaseModel):
+    text: str = Field(max_length=8000)
+    voice: str = Field("af_heart", pattern=r"^[A-Za-z0-9_+.-]{1,64}$")
+    speed: float = Field(1.0, ge=0.5, le=2.0)
+    target_lufs: float = Field(-16.0, ge=-30.0, le=-6.0)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+
+
+@app.post("/api/audio/synthesize-local")
+def synthesize_local_audio_api(req: LocalSynthesizeAudioRequest, _: None = Depends(require_token)):
+    """In-process local speech synthesis using Kokoro-82M ONNX driver with -16 LUFS sidechain normalization."""
+    update_activity()
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    job_id = f"voice_local_{uuid.uuid4().hex[:10]}"
+    out_wav = OUTPUTS_DIR / f"{job_id}.wav"
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+
+    try:
+        from src.local_workers import local_worker_manager
+        driver_res = local_worker_manager.dispatch(
+            "voiceover",
+            text=text,
+            voice=req.voice,
+            speed=req.speed,
+            out_path=out_wav,
+            target_lufs=req.target_lufs,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Local voice synthesis failed: {str(e)}")
+
+    meta = {
+        "id": job_id,
+        "kind": "voice_local",
+        "text": text,
+        "voice": req.voice,
+        "speed": req.speed,
+        "target_lufs": req.target_lufs,
+        "sample_rate": driver_res.get("sample_rate", 24000),
+        "duration_sec": driver_res.get("duration_sec", 0.0),
+        "status": "completed",
+        "file_path": str(out_wav),
+        "audio_url": f"/api/media/{job_id}.wav",
+        "created_at": time.time(),
+        "backend": driver_res.get("backend", "onnx"),
+        "driver_id": driver_res.get("driver_id", "kokoro-82m-onnx"),
+    }
+    write_meta(meta_file, meta)
+    return meta
+
+
+class LocalNarrativeDecomposeRequest(BaseModel):
+    script: str = Field(min_length=1, max_length=10000)
+    scene_count: int = Field(6, ge=4, le=10)
+    target_duration_sec: float = Field(60.0, ge=10.0, le=300.0)
+    style: str = "cinematic"
+    character_seed: Optional[int] = None
+
+
+@app.post("/api/narrative/decompose-local")
+def decompose_local_narrative_api(req: LocalNarrativeDecomposeRequest, _: None = Depends(require_token)):
+    """In-process GGUF narrative decomposition driver for screenplay and cinematic scene beats."""
+    script_text = req.script.strip()
+    if not script_text:
+        raise HTTPException(status_code=400, detail="Script text cannot be empty")
+
+    update_activity()
+    try:
+        from src.local_workers import local_worker_manager
+        result = local_worker_manager.dispatch(
+            "storyboard",
+            script=script_text,
+            scene_count=req.scene_count,
+            target_duration_sec=req.target_duration_sec,
+            style=req.style,
+            character_seed=req.character_seed,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Local narrative decomposition failed: {str(e)}")
+
+
+
 @app.get("/")
 def read_root():
     onboarding_file = STUDIO_DIR / "onboarding.html"
