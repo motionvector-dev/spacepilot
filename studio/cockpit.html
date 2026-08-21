@@ -877,6 +877,80 @@
 
     <!-- 4. Cloud & Hardware Settings -->
     <div class="config-grid">
+      
+      <div class="config-card" style="grid-column: 1 / -1;">
+        <div class="metric-title">Compute Provider Hub</div>
+        <div class="form-group" style="max-width: 400px;">
+          <label class="form-label">Active Provider</label>
+          <select id="cfg-provider" class="form-select">
+            <option value="shadeform">🌐 Shadeform (20+ Clouds · Auto-Cheapest)</option>
+            <option value="aws" selected>☁️ AWS Direct Spot (us-east-1 · g6e.xlarge)</option>
+            <option value="runpod">🚀 RunPod Serverless / Pods</option>
+            <option value="local">💻 Local Homelab / Apple Silicon</option>
+          </select>
+        </div>
+        
+        <div id="cfg-provider-creds" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+           <div class="form-group provider-setting" data-prov="shadeform" style="display:none;">
+             <label class="form-label">Shadeform API Key</label>
+             <input type="password" id="cfg-shadeform-key" class="form-input" placeholder="********">
+           </div>
+           <div class="form-group provider-setting" data-prov="runpod" style="display:none;">
+             <label class="form-label">RunPod API Key</label>
+             <input type="password" id="cfg-runpod-key" class="form-input" placeholder="********">
+           </div>
+           <div class="form-group provider-setting" data-prov="aws" style="display:block;">
+             <label class="form-label">AWS Profile</label>
+             <input type="text" id="cfg-aws-profile" class="form-input" placeholder="default">
+           </div>
+           <div class="form-group provider-setting" data-prov="local" style="display:none;">
+             <label class="form-label">Local Host URL</label>
+             <input type="text" id="cfg-local-host" class="form-input" placeholder="http://127.0.0.1:8000">
+           </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+           <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-main);">Live Regional Price & GPU Fleet Availability Matrix</h4>
+           <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+             <thead>
+               <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted);">
+                 <th style="padding: 8px;">Provider</th>
+                 <th style="padding: 8px;">GPU Type</th>
+                 <th style="padding: 8px;">Spot Rate / Hr</th>
+                 <th style="padding: 8px;">Availability</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr style="border-bottom: 1px solid var(--border-light);">
+                 <td style="padding: 8px;">AWS Direct</td>
+                 <td style="padding: 8px;">g6e.xlarge (L40S)</td>
+                 <td style="padding: 8px;">$0.75</td>
+                 <td style="padding: 8px; color: var(--accent-emerald);">High</td>
+               </tr>
+               <tr style="border-bottom: 1px solid var(--border-light);">
+                 <td style="padding: 8px;">RunPod</td>
+                 <td style="padding: 8px;">1x RTX 4090</td>
+                 <td style="padding: 8px;">$0.69</td>
+                 <td style="padding: 8px; color: var(--accent-emerald);">Medium</td>
+               </tr>
+               <tr style="border-bottom: 1px solid var(--border-light);">
+                 <td style="padding: 8px;">Lambda Labs</td>
+                 <td style="padding: 8px;">1x A100</td>
+                 <td style="padding: 8px;">$0.79</td>
+                 <td style="padding: 8px; color: var(--accent-rose);">Low</td>
+               </tr>
+               <tr>
+                 <td style="padding: 8px;">Local Homelab</td>
+                 <td style="padding: 8px;">Mac / RTX Rig</td>
+                 <td style="padding: 8px;">$0.00</td>
+                 <td style="padding: 8px; color: var(--accent-emerald);">Ready</td>
+               </tr>
+             </tbody>
+           </table>
+        </div>
+      </div>
+
+
       <div class="config-card">
         <div class="metric-title">AWS Spot Configuration</div>
         <div class="form-group">
@@ -898,10 +972,10 @@
           <label class="form-label">Instance Type</label>
           <select id="cfg-instance-type" class="form-select">
             <optgroup label="Budget — T4">
-              <option value="g4dn.xlarge">g4dn.xlarge — T4 16GB · ~$0.16/hr</option>
-              <option value="g4dn.2xlarge">g4dn.2xlarge — T4 16GB · ~$0.23/hr</option>
-              <option value="g4dn.4xlarge">g4dn.4xlarge — T4 16GB · ~$0.38/hr</option>
-              <option value="g4dn.12xlarge">g4dn.12xlarge — 4×T4 64GB · ~$1.48/hr</option>
+              <option value="g4dn.xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.xlarge — T4 16GB · ~$0.16/hr</option>
+              <option value="g4dn.2xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.2xlarge — T4 16GB · ~$0.23/hr</option>
+              <option value="g4dn.4xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.4xlarge — T4 16GB · ~$0.38/hr</option>
+              <option value="g4dn.12xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.12xlarge — 4×T4 64GB · ~$1.48/hr</option>
             </optgroup>
             <optgroup label="Performance — A10G">
               <option value="g5.xlarge">g5.xlarge — A10G 24GB · ~$0.51/hr</option>
@@ -910,7 +984,7 @@
               <option value="g5.12xlarge">g5.12xlarge — 4×A10G 96GB · ~$4.23/hr</option>
             </optgroup>
             <optgroup label="Pro — L40S (recommended for LTX-2.5)">
-              <option value="g6e.xlarge" selected>g6e.xlarge — L40S 48GB · ~$0.75/hr</option>
+              <option value="g6e.xlarge" selected>g6e.xlarge — L40S 48GB · ~$0.75/hr (⭐ Recommended)</option>
               <option value="g6e.2xlarge">g6e.2xlarge — L40S 48GB · ~$1.10/hr</option>
               <option value="g6e.4xlarge">g6e.4xlarge — L40S 48GB · ~$1.60/hr</option>
               <option value="g6e.8xlarge">g6e.8xlarge — L40S 48GB · ~$2.35/hr</option>
@@ -976,7 +1050,47 @@
     <span id="toast-msg">Notification</span>
   </div>
 
-  <!-- Launch Confirmation Modal -->
+  
+  <!-- First-Run Onboarding Modal -->
+  <div id="modal-onboarding" class="mv-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(0,0,0,0.85);">
+    <div class="mv-modal-card" style="max-width: 800px; width: 90%;">
+      <div class="mv-modal-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
+        <div>
+          <h2 class="mv-modal-title" style="font-size: 24px; margin-bottom: 8px;">Welcome to Pluto Studio</h2>
+          <p class="mv-modal-subtitle">Choose your compute provider to get started</p>
+        </div>
+      </div>
+      <div class="mv-modal-body" style="display: flex; gap: 16px; padding: 24px 0;">
+        
+        <!-- Card 1: Shadeform -->
+        <div class="provider-card" data-provider="shadeform" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+          <h3 style="margin-bottom: 8px;">🌐 Shadeform Multi-Cloud <span style="font-size: 12px; background: var(--accent-blue); color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle;">⭐ Recommended</span></h3>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">1 Key to access 20+ Clouds (AWS, Lambda, RunPod, Nebius). Auto-finds cheapest spot GPU in seconds.</p>
+          <input type="text" id="onboard-shadeform-key" class="form-input" placeholder="Paste Shadeform API Key" style="display: none;" autocomplete="off">
+        </div>
+
+        <!-- Card 2: AWS -->
+        <div class="provider-card" data-provider="aws" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+          <h3 style="margin-bottom: 8px;">☁️ AWS Direct Spot</h3>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Connect your existing AWS account directly. Pure spot pricing ($0.75/hr for L40S).</p>
+          <input type="text" id="onboard-aws-profile" class="form-input" placeholder="AWS Profile (e.g. default)" style="display: none;" autocomplete="off">
+        </div>
+
+        <!-- Card 3: Local -->
+        <div class="provider-card" data-provider="local" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+          <h3 style="margin-bottom: 8px;">💻 Local Homelab / Free</h3>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Zero setup. Connects to local Mac Studio or local RTX rig ($0.00/hr).</p>
+          <p id="onboard-local-msg" style="display: none; font-size: 14px; color: var(--text-main);">Will use local endpoints.</p>
+        </div>
+
+      </div>
+      <div class="mv-modal-actions" style="justify-content: flex-end;">
+        <button id="modal-onboarding-confirm" class="mv-modal-btn mv-modal-btn-confirm" disabled>Connect Provider</button>
+      </div>
+    </div>
+  </div>
+
+<!-- Launch Confirmation Modal -->
   <div id="modal-launch" class="mv-modal-backdrop">
     <div class="mv-modal-card">
       <div class="mv-modal-header">

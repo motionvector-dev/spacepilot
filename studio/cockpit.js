@@ -28,6 +28,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClearTerm = document.getElementById('btn-clear-term');
   const btnPauseTerm = document.getElementById('btn-pause-term');
 
+  
+  const cfgProvider = document.getElementById('cfg-provider');
+  const cfgShadeformKey = document.getElementById('cfg-shadeform-key');
+  const cfgRunpodKey = document.getElementById('cfg-runpod-key');
+  const cfgAwsProfile = document.getElementById('cfg-aws-profile');
+  const cfgLocalHost = document.getElementById('cfg-local-host');
+  
+  const modalOnboarding = document.getElementById('modal-onboarding');
+  const providerCards = document.querySelectorAll('.provider-card');
+  const modalOnboardingConfirm = document.getElementById('modal-onboarding-confirm');
+  
+  let selectedOnboardProvider = null;
+
   const cfgRegion = document.getElementById('cfg-region');
   const cfgInstanceType = document.getElementById('cfg-instance-type');
   const cfgKeyFile = document.getElementById('cfg-key-file');
@@ -369,12 +382,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 5. Load and Save Config
+  
   async function loadConfig() {
     try {
       const res = await fetch('/api/cockpit/config');
       if (res.ok) {
         const data = await res.json();
         const cfg = data.config || {};
+        
+        if (!cfg.provider && !localStorage.getItem('pluto_onboarded')) {
+          showOnboardingModal();
+        }
+        
+        if (cfg.provider) {
+          cfgProvider.value = cfg.provider;
+          localStorage.setItem('pluto_onboarded', 'true');
+        }
+        if (cfg.shadeform_api_key) cfgShadeformKey.value = cfg.shadeform_api_key;
+        if (cfg.runpod_api_key) cfgRunpodKey.value = cfg.runpod_api_key;
+        if (cfg.aws_profile) cfgAwsProfile.value = cfg.aws_profile;
+        if (cfg.local_host) cfgLocalHost.value = cfg.local_host;
+        
+        updateProviderVisibility();
+        
         if (cfg.region) cfgRegion.value = cfg.region;
         if (cfg.instance_type) cfgInstanceType.value = cfg.instance_type;
         if (cfg.key_file) cfgKeyFile.value = cfg.key_file;
@@ -383,10 +413,84 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {}
   }
+  
+  function updateProviderVisibility() {
+    if (!cfgProvider) return;
+    document.querySelectorAll('.provider-setting').forEach(el => {
+      el.style.display = el.dataset.prov === cfgProvider.value ? 'block' : 'none';
+    });
+  }
+  
+  if (cfgProvider) {
+    cfgProvider.addEventListener('change', updateProviderVisibility);
+  }
+  
+  function showOnboardingModal() {
+    if(modalOnboarding) modalOnboarding.style.display = 'flex';
+  }
+  
+  providerCards.forEach(card => {
+    card.addEventListener('click', () => {
+      providerCards.forEach(c => {
+         c.style.borderColor = 'var(--border-light)';
+         c.style.background = 'transparent';
+         const input = c.querySelector('input');
+         if(input) input.style.display = 'none';
+         const p = c.querySelector('#onboard-local-msg');
+         if(p) p.style.display = 'none';
+      });
+      card.style.borderColor = 'var(--accent-blue)';
+      card.style.background = 'rgba(59, 130, 246, 0.05)';
+      
+      const input = card.querySelector('input');
+      if(input) {
+        input.style.display = 'block';
+        input.focus();
+      }
+      const p = card.querySelector('#onboard-local-msg');
+      if(p) p.style.display = 'block';
+      
+      selectedOnboardProvider = card.dataset.provider;
+      modalOnboardingConfirm.disabled = false;
+    });
+  });
+  
+  if(modalOnboardingConfirm) {
+    modalOnboardingConfirm.addEventListener('click', async () => {
+      let keyData = {};
+      keyData.provider = selectedOnboardProvider;
+      if (selectedOnboardProvider === 'shadeform') {
+         keyData.shadeform_api_key = document.getElementById('onboard-shadeform-key').value;
+      } else if (selectedOnboardProvider === 'aws') {
+         keyData.aws_profile = document.getElementById('onboard-aws-profile').value;
+      }
+      
+      const token = await getAuthToken();
+      try {
+        await fetch('/api/cockpit/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          body: JSON.stringify({ config: keyData })
+        });
+        localStorage.setItem('pluto_onboarded', 'true');
+        modalOnboarding.style.display = 'none';
+        loadConfig();
+        showToast('Provider connected successfully');
+      } catch (e) {
+        showToast('Error saving provider settings');
+      }
+    });
+  }
 
+  
   btnSaveCfg.addEventListener('click', async () => {
     const token = await getAuthToken();
     const updated = {
+      provider: cfgProvider.value,
+      shadeform_api_key: cfgShadeformKey.value,
+      runpod_api_key: cfgRunpodKey.value,
+      aws_profile: cfgAwsProfile.value,
+      local_host: cfgLocalHost.value,
       region: cfgRegion.value,
       instance_type: cfgInstanceType.value,
       key_file: cfgKeyFile.value,
@@ -401,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (res.ok) {
         showToast('✓ Settings saved');
+        loadConfig();
       }
     } catch (e) {
       showToast('Error saving settings');

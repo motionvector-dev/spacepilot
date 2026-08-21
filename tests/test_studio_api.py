@@ -4,6 +4,7 @@ import asyncio
 #!/usr/bin/env python3
 """Integration tests for Pluto Studio Backend API."""
 
+
 import json
 import os
 import sys
@@ -17,6 +18,7 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
+import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from src.studio_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
@@ -25,6 +27,7 @@ client = TestClient(app)
 
 # Every compute endpoint is gated; read-only routes are not.
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
+
 GATED_POSTS = [
     ("/api/generate", {"prompt": "x"}),
     ("/api/upscale-4k", {"asset_id": "x"}),
@@ -901,4 +904,43 @@ def test_watchdog_activity_reset(monkeypatch):
         assert len(term_calls) == 0
 
     asyncio.run(run_test())
+
+def test_multi_provider_config_redaction():
+    # Set up some test config
+    update_data = {
+        "config": {
+            "provider": "shadeform",
+            "shadeform_api_key": "sec_12345",
+            "aws_profile": "my-profile"
+        }
+    }
+    r = client.post("/api/cockpit/config", json=update_data, headers=AUTH)
+    assert r.status_code == 200
+    
+    # Check GET redacts
+    r_get = client.get("/api/cockpit/config", headers=AUTH)
+    assert r_get.status_code == 200
+    cfg = r_get.json()["config"]
+    assert cfg["provider"] == "shadeform"
+    assert cfg["shadeform_api_key"] == "********"
+    assert cfg["aws_profile"] == "my-profile"  # not redacted
+    
+    # Check POST doesn't overwrite with asterisks
+    update_data2 = {
+        "config": {
+            "provider": "aws",
+            "shadeform_api_key": "********",
+            "aws_profile": "new-profile"
+        }
+    }
+    r2 = client.post("/api/cockpit/config", json=update_data2, headers=AUTH)
+    assert r2.status_code == 200
+    
+    # Verify underlying config
+    from src.cli import load_config
+    real_cfg = load_config()
+    assert real_cfg["shadeform_api_key"] == "sec_12345"
+    assert real_cfg["aws_profile"] == "new-profile"
+    assert real_cfg["provider"] == "aws"
+
 
