@@ -68,16 +68,19 @@ def save_config(cfg):
         json.dump(cfg, f, indent=2)
 
 
-def run_cmd(cmd, check=True, capture=False, stdin_text=None):
+def run_cmd(cmd, check=True, capture=False, stdin_text=None, timeout=None):
     """Run an argv list. Strings are rejected so no caller can reintroduce a shell."""
     if isinstance(cmd, str):
         raise TypeError("run_cmd takes an argv list, not a shell string")
     if capture:
-        res = subprocess.run(cmd, text=True, input=stdin_text, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res = subprocess.run(
+            cmd, text=True, input=stdin_text, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, timeout=timeout,
+        )
         if check and res.returncode != 0:
             raise RuntimeError(f"Command failed ({res.returncode}): {' '.join(cmd)}\n{res.stderr}")
         return res.stdout.strip()
-    return subprocess.run(cmd, check=check, text=True, input=stdin_text)
+    return subprocess.run(cmd, check=check, text=True, input=stdin_text, timeout=timeout)
 
 
 def get_instance_info(cfg):
@@ -91,7 +94,9 @@ def get_instance_info(cfg):
         "--output", "json",
     ]
     try:
-        raw = run_cmd(cmd, capture=True)
+        # AWS is an external dependency and can leave a child behind when the
+        # CLI or network wedges. Status polling must always have a hard bound.
+        raw = run_cmd(cmd, capture=True, timeout=3.0)
         items = json.loads(raw) if raw else []
         if items and len(items) > 0:
             item = items[0]

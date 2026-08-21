@@ -5,6 +5,8 @@ import json
 import os
 import sys
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Add project root to sys.path
@@ -82,6 +84,51 @@ def test_compute_endpoints_all_require_the_token():
 def test_read_only_endpoints_stay_open():
     for path in ["/api/status", "/api/assets"]:
         assert client.get(path).status_code == 200
+
+
+def test_healthz_is_dependency_free_liveness():
+    """The supervisor probe must not invoke AWS or worker telemetry."""
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
+    """An adversarial poll burst must produce one AWS refresh, not one per call."""
+    import src.studio_api as studio_api
+
+    monkeypatch.setattr(studio_api, "_status_cache", None)
+    calls = 0
+    calls_lock = threading.Lock()
+
+    def fake_instance_info(_cfg):
+        nonlocal calls
+        with calls_lock:
+            calls += 1
+        time.sleep(0.05)
+        return None
+
+    monkeypatch.setattr(studio_api, "get_instance_info", fake_instance_info)
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        results = list(pool.map(lambda _n: studio_api.get_status(), range(20)))
+
+    assert calls == 1
+    assert all(result["gpu_online"] is False for result in results)
+
+
+def test_instance_info_passes_bounded_timeout(monkeypatch):
+    """The AWS child receives a hard timeout and a timeout is safe to report."""
+    import src.cli as cli
+
+    seen = {}
+
+    def fake_run_cmd(_cmd, **kwargs):
+        seen.update(kwargs)
+        raise TimeoutError("simulated AWS timeout")
+
+    monkeypatch.setattr(cli, "run_cmd", fake_run_cmd)
+    assert cli.get_instance_info(cli.DEFAULT_CONFIG) is None
+    assert seen["timeout"] == 3.0
 
 
 def test_studio_status_endpoint():
