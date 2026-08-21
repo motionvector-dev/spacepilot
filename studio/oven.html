@@ -407,43 +407,33 @@
       </div>
     </section>
 
-    <!-- Column 2: Planned / Todo -->
+    <!-- Column 2: Planned / Backlog -->
     <section class="kanban-column">
       <div class="col-header">
         <div class="col-title" style="color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
           Planned
         </div>
-        <span class="col-count">3</span>
+        <span class="col-count">2</span>
       </div>
       <div class="col-body">
         <div class="k-card">
-          <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">1-Click LoRA Studio</div>
-          <div class="k-desc">Upload 10-20 reference images directly in Cockpit, run spot PEFT training ($0.40), hot-swap adapter.</div>
+          <span class="k-badge badge-p2">P2 · Wave 6 Horizon</span>
+          <div class="k-title">Realtime WebRTC Latent Streamer</div>
+          <div class="k-desc">Sub-50ms StreamDiffusion interactive camera feedback loop for live viewport preview.</div>
           <div class="k-footer">
-            <span class="k-persona">LoRA Agent</span>
-            <span>Est: 2h</span>
+            <span class="k-persona">Realtime DiT</span>
+            <span>Est: Wave 6</span>
           </div>
         </div>
 
         <div class="k-card">
-          <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">Spot Training &amp; R2 Sync</div>
-          <div class="k-desc">Multi-node training recipes with preemption recovery and loss curve telemetry streaming.</div>
+          <span class="k-badge badge-p2">P2 · Wave 6 Horizon</span>
+          <div class="k-title">Multi-Node DDP Training Orchestrator</div>
+          <div class="k-desc">SkyPilot 8×H100 / 8×L40S multi-node PyTorch Distributed Data Parallel cluster dispatcher.</div>
           <div class="k-footer">
-            <span class="k-persona">MLOps</span>
-            <span>Est: 3h</span>
-          </div>
-        </div>
-
-        <div class="k-card">
-          <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">Top Model Leaderboard Recipes</div>
-          <div class="k-desc">1-click hardware allocation recipes for Wan2.1, HunyuanVideo, DeepSeek-R1, and Qwen2.5-VL.</div>
-          <div class="k-footer">
-            <span class="k-persona">Catalog</span>
-            <span>Est: 1.5h</span>
+            <span class="k-persona">Infra</span>
+            <span>Est: Wave 6</span>
           </div>
         </div>
       </div>
@@ -456,26 +446,16 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
           In-Flight
         </div>
-        <span class="col-count">2</span>
+        <span class="col-count">0</span>
       </div>
       <div class="col-body">
-        <div class="k-card" style="border-color: rgba(245, 158, 11, 0.4);">
-          <span class="k-badge badge-p1">P1 · Wave 5</span>
-          <div class="k-title">1-Click LoRA Studio</div>
-          <div class="k-desc">Upload 10-20 reference images in Cockpit, run spot PEFT training ($0.40), hot-swap adapter.</div>
+        <div class="k-card" style="display:none; box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);">
+          <span class="k-badge badge-p0" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.4);">P0 · Wave 5 Frontend</span>
+          <div class="k-title">SpacePilot.dev Flagship &amp; Studio React Redo</div>
+          <div class="k-desc">React 19 + TypeScript + Vite 6 + Tailwind v4 refactor. 2×2 Director Take Canvas, Kokoro waveform audio meter, and internal admin oven board.</div>
           <div class="k-footer">
-            <span class="k-persona">LoRA Agent</span>
-            <span style="color: var(--accent-amber);">In Progress</span>
-          </div>
-        </div>
-
-        <div class="k-card" style="border-color: rgba(245, 158, 11, 0.4);">
-          <span class="k-badge badge-p1">P1 · Wave 5</span>
-          <div class="k-title">Spot Training &amp; R2 Checkpoints</div>
-          <div class="k-desc">Multi-node training recipes with preemption recovery and loss curve telemetry streaming.</div>
-          <div class="k-footer">
-            <span class="k-persona">MLOps</span>
-            <span style="color: var(--accent-amber);">In Progress</span>
+            <span class="k-persona">Frontend Agent</span>
+            <span style="color: var(--accent-emerald); font-weight: 700;">Cooking in pluto-frontend</span>
           </div>
         </div>
       </div>
@@ -488,9 +468,68 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           Review Gate
         </div>
-        <span class="col-count">2</span>
+        <span class="col-count">7</span>
       </div>
       <div class="col-body">
+        <div class="k-card" style="border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);">
+          <span class="k-badge badge-p0" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.4);">P0 · Wave 5 Frontend (PR #14)</span>
+          <div class="k-title">SpacePilot.dev Flagship & Studio React 19 Suite</div>
+          <div class="k-desc">React 19 + TypeScript + Vite 6 + Tailwind v4 refactor. Storyboard Director, Vibe Canvas, ⌘K Command Palette, Export Drawer, and PostHog Org 570031.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #14</span>
+            <span style="color: var(--accent-emerald); font-weight: 700;">Ready for Merge</span>
+          </div>
+        </div>
+        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);">
+          <span class="k-badge badge-p1" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.4);">P1 · DX &amp; CLI</span>
+          <div class="k-title">SpacePilot CLI Doctor, Serve &amp; Archival</div>
+          <div class="k-desc">Zero-dependency hardware diagnostic HUD, Uvicorn app factory runner, and legacy prototype script archival with PR #15.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #15</span>
+            <span style="color: var(--accent-blue); font-weight: 700;">Review Ready</span>
+          </div>
+        </div>
+
+        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);">
+          <span class="k-badge badge-p1" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.4);">P1 · Wave 8 Backend</span>
+          <div class="k-title">Polar.sh MoR &amp; x402 Micropayments Engine</div>
+          <div class="k-desc">HMAC-SHA256 Polar webhook reconciliation, USDC agent micropayment verification, and compute rate cards with PR #12.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #12</span>
+            <span style="color: var(--accent-blue); font-weight: 700;">Review Ready</span>
+          </div>
+        </div>
+
+        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);">
+          <span class="k-badge badge-p1" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.4);">P1 · Wave 8 Backend</span>
+          <div class="k-title">Spot Checkpoint Sync &amp; R2/S3 Auto-Resume</div>
+          <div class="k-desc">Preemption-resilient multi-cloud training checkpoint snapshots, retention pruning, and FastMCP tools with PR #13.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #13</span>
+            <span style="color: var(--accent-blue); font-weight: 700;">Review Ready</span>
+          </div>
+        </div>
+
+        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);">
+          <span class="k-badge badge-p1" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.4);">P1 · Wave 8 Backend</span>
+          <div class="k-title">Model Recipes &amp; Quantized Weights Importer</div>
+          <div class="k-desc">Wan2.1, HunyuanVideo, DeepSeek-R1, and Qwen2.5-VL allocation recipes and async stream downloader with PR #11.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #11</span>
+            <span style="color: var(--accent-blue); font-weight: 700;">Review Ready</span>
+          </div>
+        </div>
+
+        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);">
+          <span class="k-badge badge-p1" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.4);">P1 · Wave 8 Backend</span>
+          <div class="k-title">1-Click LoRA Studio &amp; PEFT Hot-Swap Engine</div>
+          <div class="k-desc">Multi-DiT LoRA fine-tuning runner, dynamic adapter hot-swap registry, and FastMCP integration tools with PR #10.</div>
+          <div class="k-footer">
+            <span class="k-persona">PR #10</span>
+            <span style="color: var(--accent-blue); font-weight: 700;">Review Ready</span>
+          </div>
+        </div>
+
         <div class="k-card" style="border-color: rgba(59, 130, 246, 0.4);">
           <span class="k-badge badge-p0">P0 · Review Gate</span>
           <div class="k-title">Zero-Leniency Audit SLA</div>
@@ -498,16 +537,6 @@
           <div class="k-footer">
             <span class="k-persona">Opus 4.6</span>
             <span style="color: var(--accent-blue);">Passed (100/100)</span>
-          </div>
-        </div>
-
-        <div class="k-card" style="border-color: rgba(59, 130, 246, 0.4);">
-          <span class="k-badge badge-p1">P1 · Review Gate</span>
-          <div class="k-title">Polar.sh + x402 Header</div>
-          <div class="k-desc">Autonomous agent USDC micropayment verification and MoR webhook reconciliation.</div>
-          <div class="k-footer">
-            <span class="k-persona">Settlement</span>
-            <span style="color: var(--accent-blue);">Pending</span>
           </div>
         </div>
       </div>
@@ -520,9 +549,18 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
           Shipped (v2.8.0)
         </div>
-        <span class="col-count">17</span>
+        <span class="col-count">18</span>
       </div>
       <div class="col-body">
+        <div class="k-card" style="border-color: rgba(16, 185, 129, 0.4);">
+          <span class="k-badge badge-done">v2.8.0 Wave 8</span>
+          <div class="k-title">FastAPI Modular Package Layout (src/pluto)</div>
+          <div class="k-desc">Refactored monolith into core/config.py, app.py, services/ (audio, generation, gpu_lifecycle, image_utils, watchdog) &amp; api/routes/ with zero regressions.</div>
+          <div class="k-footer">
+            <span>Package: src/pluto</span>
+            <span style="color: var(--accent-emerald);">Shipped (100% SLA)</span>
+          </div>
+        </div>
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.4);">
           <span class="k-badge badge-done">v2.8.0 Wave 8</span>
           <div class="k-title">Public Developer Documentation Portal (/docs)</div>
