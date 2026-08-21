@@ -729,6 +729,56 @@ def test_generate_with_image_path():
     assert disk_meta["image_path"] == sample_image
 
 
+
+def test_inspect_metrics_endpoint(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import subprocess
+    
+    client = TestClient(studio_api.app)
+    
+    # Mock instance info
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    # Mock subprocess.run
+    def mock_run(cmd, *args, **kwargs):
+        class MockCompletedProcess:
+            returncode = 0
+            stdout = "95 %, 15000 MiB, 24000 MiB, 72\n---\nFilesystem Size Used Avail Use% Mounted on\n/dev/sda1 100G 50G 50G 50% /scratch\n---\n              total        used        free      shared  buff/cache   available\nMem:          32000       10000       15000           0        7000       20000"
+            stderr = ""
+        return MockCompletedProcess()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    
+    res = client.get("/api/gpu/inspect/metrics", headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["gpu"]["utilization"] == "95 %"
+    assert "df -h" not in data["disk"] # check real parsing
+    
+def test_inspect_action_endpoint(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import subprocess
+    
+    client = TestClient(studio_api.app)
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    def mock_run(cmd, *args, **kwargs):
+        class MockCompletedProcess:
+            returncode = 0
+            stdout = "Worker restarted"
+            stderr = ""
+        return MockCompletedProcess()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    
+    res = client.post("/api/gpu/inspect/action", json={"action": "restart_worker"}, headers=AUTH)
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+    
+    res_bad = client.post("/api/gpu/inspect/action", json={"action": "rm_rf_slash"}, headers=AUTH)
+    assert res_bad.status_code == 400
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()

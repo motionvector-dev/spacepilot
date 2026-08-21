@@ -702,6 +702,9 @@
       cursor: not-allowed;
     }
   </style>
+
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
 </head>
 <body>
 
@@ -781,7 +784,12 @@
         <div class="metric-header">
           <span class="metric-title">AWS EC2 Spot Compute</span>
                     <span id="badge-instance" class="badge-status badge-offline">Offline</span>
+          
           <span id="badge-idle" class="badge-status" style="display:none; margin-left: 8px;">⏳ Idle</span>
+          <button id="btn-inspect-box" class="btn-action" style="margin-left: auto; padding: 4px 8px; font-size: 12px; height: 28px; background: transparent; border: 1px solid var(--border-light);" disabled>
+            🔍 Inspect Box
+          </button>
+
         </div>
         <div id="val-instance-id" class="metric-value-lg">No Active Box</div>
         <div class="metric-detail-row">
@@ -1167,5 +1175,87 @@
   <script src="theme.js"></script>
   <script src="sidebar.js"></script>
   <script src="cockpit.js"></script>
+
+  <!-- Inspect Box Drawer -->
+  <div id="drawer-inspect" class="drawer-backdrop" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); justify-content: flex-end;">
+    <div class="drawer-panel" style="background: var(--bg-panel); width: 800px; max-width: 100vw; height: 100vh; border-left: 1px solid var(--border-light); display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,0.2); animation: slideInRight 0.3s ease;">
+      
+      <div class="drawer-header" style="padding: 16px 24px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="margin: 0; font-size: 18px;">🔍 Inspect Box</h2>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-faint);">Live diagnostics & SSH for <span id="inspect-ip">--</span></p>
+        </div>
+        <button id="btn-close-inspect" style="background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="drawer-tabs" style="display: flex; border-bottom: 1px solid var(--border-light); padding: 0 24px; gap: 16px;">
+        <button class="tab-btn active" data-tab="tab-ssh" style="background: none; border: none; padding: 12px 0; color: var(--text-main); font-weight: 600; border-bottom: 2px solid var(--accent-blue); cursor: pointer;">🖥️ SSH Terminal</button>
+        <button class="tab-btn" data-tab="tab-metrics" style="background: none; border: none; padding: 12px 0; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer;">📊 Metrics</button>
+        <button class="tab-btn" data-tab="tab-actions" style="background: none; border: none; padding: 12px 0; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer;">⚡ Actions</button>
+      </div>
+
+      <div class="drawer-content" style="flex: 1; overflow-y: auto; padding: 24px;">
+        
+        <!-- Tab 1: SSH -->
+        <div id="tab-ssh" class="tab-pane" style="display: block; height: 100%;">
+          <div id="terminal-container" style="width: 100%; height: 100%; background: #000; border-radius: 8px; overflow: hidden; padding: 8px;"></div>
+        </div>
+
+        <!-- Tab 2: Metrics -->
+        <div id="tab-metrics" class="tab-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px;">
+              <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">GPU Temp</div>
+              <div id="metric-gpu-temp" style="font-size: 24px; font-weight: 600;">-- °C</div>
+            </div>
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px;">
+              <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">VRAM Used</div>
+              <div id="metric-vram" style="font-size: 24px; font-weight: 600;">-- / --</div>
+            </div>
+          </div>
+          
+          <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">Scratch Disk Space</h3>
+          <pre id="metric-disk" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
+
+          <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">System RAM</h3>
+          <pre id="metric-ram" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
+          
+          <button id="btn-refresh-metrics" class="btn-action" style="margin-top: 16px;">Refresh Metrics</button>
+        </div>
+
+        <!-- Tab 3: Actions -->
+        <div id="tab-actions" class="tab-pane" style="display: none;">
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600; margin-bottom: 4px;">Restart LTX Worker</div>
+                <div style="font-size: 12px; color: var(--text-faint);">Restarts the systemd worker service.</div>
+              </div>
+              <button class="btn-action action-btn" data-action="restart_worker">Restart</button>
+            </div>
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600; margin-bottom: 4px;">Clear Tmp Space</div>
+                <div style="font-size: 12px; color: var(--text-faint);">Deletes everything in /scratch/tmp/</div>
+              </div>
+              <button class="btn-action action-btn" data-action="clear_tmp" style="background: var(--accent-rose); color: white; border: none;">Clear</button>
+            </div>
+          </div>
+          <div id="action-output" style="margin-top: 24px; display: none;">
+            <h3 style="font-size: 14px; margin-bottom: 8px;">Action Result</h3>
+            <pre id="action-output-text" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);"></pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <style>
+    @keyframes slideInRight {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+  </style>
+
 </body>
 </html>
