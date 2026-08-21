@@ -1,12 +1,12 @@
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from src.pluto.api.deps import require_token, update_activity
 from src.pluto.services.checkpoint_sync import CheckpointSyncEngine, CheckpointMetadata
 
 router = APIRouter(prefix="/api/checkpoints", tags=["checkpoints"])
 engine = CheckpointSyncEngine()
-
-from src.pluto.api.deps import require_token, update_activity
 
 class CreateSnapshotRequest(BaseModel):
     job_id: str
@@ -19,7 +19,7 @@ class RestoreSnapshotRequest(BaseModel):
     target_dir: Optional[str] = None
 
 @router.get("/snapshots")
-def list_snapshots(job_id: Optional[str] = None):
+def list_snapshots(job_id: Optional[str] = None, _: None = Depends(require_token)):
     return engine.list_snapshots(job_id)
 
 @router.post("/snapshot")
