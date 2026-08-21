@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnEnhance = document.getElementById('btn-enhance');
   const styleChips = document.querySelectorAll('.style-chip');
 
+  const selectComputeTarget = document.getElementById('select-compute-target');
+  const computeTargetBadge = document.getElementById('compute-target-badge');
   const selectEngine = document.getElementById('select-engine');
   const engineBadge = document.getElementById('engine-badge');
   const aspectBtns = document.querySelectorAll('#group-aspect .mv-seg-btn');
@@ -112,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     steps: 30,
     fps: 24,
     draftMode: false,
+    computeTarget: 'auto',
     cameraPan: 'static',
     cameraTilt: 'static',
     cameraZoom: 'static',
@@ -188,14 +191,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let costBadgeText, computeQuoteText;
-    if (config.gpuOnline) {
+    const isLocalTarget = config.computeTarget === 'local' || (config.computeTarget === 'auto' && config.draftMode);
+    
+    if (isLocalTarget) {
+      costBadgeText = '$0.00 · Local Compute';
+      computeQuoteText = 'Local GPU Execution ($0.00 / Zero Cloud Spend)';
+    } else if (config.gpuOnline || config.computeTarget === 'spot') {
       costBadgeText = config.draftMode ? '~$0.01 · Spot Draft' : '~$0.04 · Spot Compute (L40S)';
       computeQuoteText = config.draftMode
         ? 'Estimated Spot compute: ~$0.01 (No charge on failure)'
         : 'Estimated Spot compute: ~$0.04 (No charge on failure)';
     } else {
-      costBadgeText = '$0.00 · Local Mock Mode';
-      computeQuoteText = 'Local Mode (Free FFmpeg Preview)';
+      costBadgeText = '$0.00 · Local Compute';
+      computeQuoteText = 'Local GPU Execution ($0.00 / Zero Cloud Spend)';
     }
 
     if (patchCostBadge) patchCostBadge.textContent = costBadgeText;
@@ -289,6 +297,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 3. Controls
+  // Compute Target Dropdown Switcher (Auto vs Local vs Spot)
+  if (selectComputeTarget) {
+    selectComputeTarget.addEventListener('change', () => {
+      config.computeTarget = selectComputeTarget.value;
+      if (computeTargetBadge) {
+        if (config.computeTarget === 'local') {
+          computeTargetBadge.textContent = 'Local GPU ($0)';
+          computeTargetBadge.style.color = 'var(--accent-emerald)';
+        } else if (config.computeTarget === 'spot') {
+          computeTargetBadge.textContent = 'SkyPilot Spot';
+          computeTargetBadge.style.color = 'var(--accent-blue)';
+        } else {
+          computeTargetBadge.textContent = 'Auto (Local-First)';
+          computeTargetBadge.style.color = 'var(--accent-emerald)';
+        }
+      }
+      updatePatchCardDiff();
+    });
+  }
+
   // Engine Quality Dropdown Switcher (Draft vs Pro)
   if (selectEngine) {
     selectEngine.addEventListener('change', () => {

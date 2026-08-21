@@ -747,7 +747,65 @@
       </div>
     </div>
 
-    <!-- 4. Compute Provider Hub & SkyPilot Matrix (24px Radius) -->
+    <!-- 4. Host Device Compute & Model Registry HUD -->
+    <div class="panel">
+      <div class="metric-header" style="border-bottom: 1px solid var(--mv-border); padding-bottom: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          <div>
+            <h3 style="font-size: 17px; font-weight: 800; color: var(--mv-text);">Host Device Compute &amp; Model Registry</h3>
+            <p style="font-size: 12.5px; color: var(--mv-text-muted); margin-top: 2px;">Zero-cloud local inference engine. Automatically probed hardware and curated model weights.</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="badge-local-backend" class="badge-status badge-online">Apple Metal (MPS)</span>
+          <span id="badge-local-usable" class="badge-status badge-online">49.7 GB Usable</span>
+        </div>
+      </div>
+
+      <!-- Host Hardware Telemetry Strip -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px;">
+        <div style="background: var(--mv-surface); border: 1px solid var(--mv-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--mv-text-muted); text-transform: uppercase; font-family: var(--font-mono);">Device Architecture</div>
+          <div id="local-device-name" style="font-size: 13.5px; font-weight: 700; color: var(--mv-text); margin-top: 4px;">Apple M3 Max</div>
+        </div>
+        <div style="background: var(--mv-surface); border: 1px solid var(--mv-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--mv-text-muted); text-transform: uppercase; font-family: var(--font-mono);">Total / Free Memory</div>
+          <div id="local-memory-stats" style="font-size: 13.5px; font-weight: 700; color: var(--mv-text); margin-top: 4px;">64.0 GB / 40.2 GB Free</div>
+        </div>
+        <div style="background: var(--mv-surface); border: 1px solid var(--mv-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--mv-text-muted); text-transform: uppercase; font-family: var(--font-mono);">Instruction Set</div>
+          <div id="local-isa-stats" style="font-size: 13.5px; font-weight: 700; color: var(--accent-emerald); margin-top: 4px;">ARM_Neon_MPS</div>
+        </div>
+        <div style="background: var(--mv-surface); border: 1px solid var(--mv-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--mv-text-muted); text-transform: uppercase; font-family: var(--font-mono);">Local Cache Footprint</div>
+          <div id="local-cache-quota" style="font-size: 13.5px; font-weight: 700; color: var(--mv-text); margin-top: 4px;">~/.cache/pluto/models/</div>
+        </div>
+      </div>
+
+      <!-- Recommended Models Table -->
+      <div style="font-size: 12px; font-weight: 700; color: var(--mv-text-muted); text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 8px;">
+        Recommended Model Catalogue for Your Device
+      </div>
+      <div style="overflow-x: auto; border: 1px solid var(--mv-border); border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
+          <thead>
+            <tr style="background: var(--mv-surface); border-bottom: 1px solid var(--mv-border); font-family: var(--font-mono); font-size: 11px; color: var(--mv-text-muted);">
+              <th style="padding: 10px 14px;">Task Category</th>
+              <th style="padding: 10px 14px;">Model &amp; Precision</th>
+              <th style="padding: 10px 14px;">Disk Size</th>
+              <th style="padding: 10px 14px;">Hardware Fit</th>
+              <th style="padding: 10px 14px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="table-local-models-body">
+            <!-- Rendered by cockpit.js -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. Compute Provider Hub & SkyPilot Matrix (24px Radius) -->
     <div class="panel">
       <div class="metric-header">
         <div>

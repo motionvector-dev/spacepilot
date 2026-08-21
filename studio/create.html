@@ -1412,6 +1412,19 @@
       <!-- Right Column: Generation Controls -->
       <div class="card-sidebar">
 
+        <!-- Compute Target Selector -->
+        <div class="control-block">
+          <div class="control-header">
+            <span class="control-title">Compute Target</span>
+            <span id="compute-target-badge" class="control-badge" style="color: var(--accent-emerald);">Auto (Local)</span>
+          </div>
+          <select id="select-compute-target" class="mv-select">
+            <option value="auto" selected>⚡ Auto (Local-First · $0.00)</option>
+            <option value="local">💻 Local GPU Only ($0.00)</option>
+            <option value="spot">☁️ SkyPilot Spot Mesh (~$0.04)</option>
+          </select>
+        </div>
+
         <!-- Engine Quality Mode -->
         <div class="control-block">
           <div class="control-header">

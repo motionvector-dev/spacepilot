@@ -836,9 +836,110 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Local Compute & Model Registry
+  // ─────────────────────────────────────────────────────────────────────────
+  async function loadLocalComputeProfile() {
+    try {
+      const res = await fetch('/api/compute/models/recommended');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const dev = data.device || {};
+      const recs = data.recommendations || [];
+
+      const badgeBackend = document.getElementById('badge-local-backend');
+      const badgeUsable = document.getElementById('badge-local-usable');
+      const devName = document.getElementById('local-device-name');
+      const memStats = document.getElementById('local-memory-stats');
+      const isaStats = document.getElementById('local-isa-stats');
+      const cacheQuota = document.getElementById('local-cache-quota');
+      const tableBody = document.getElementById('table-local-models-body');
+
+      if (badgeBackend) {
+        badgeBackend.textContent = dev.backend === 'metal_mps' ? 'Apple Metal (MPS)' : (dev.backend === 'cuda' ? 'NVIDIA CUDA' : 'CPU Only');
+      }
+      if (badgeUsable) {
+        badgeUsable.textContent = `${dev.vram_usable_gb || 0} GB Usable`;
+      }
+      if (devName) {
+        devName.textContent = dev.device_name || 'Host Compute';
+      }
+      if (memStats) {
+        memStats.textContent = `${dev.ram_total_gb || 0} GB Total / ${dev.ram_free_gb || 0} GB Free`;
+      }
+      if (isaStats) {
+        isaStats.textContent = dev.isa_flags || 'Standard SIMD';
+      }
+      if (cacheQuota && data.cache_dir) {
+        cacheQuota.textContent = data.cache_dir.replace(/^.*(?=\/\.cache)/, '~');
+      }
+
+      if (tableBody) {
+        tableBody.innerHTML = '';
+        recs.forEach(m => {
+          const row = document.createElement('tr');
+          row.style.cssText = 'border-bottom: 1px solid var(--mv-border);';
+
+          const fitColor = m.execution_route === 'local' ? 'var(--accent-emerald)' : (m.execution_route === 'local_constrained' ? 'var(--accent-amber)' : 'var(--mv-text-muted)');
+          const isDownloaded = m.is_downloaded;
+
+          row.innerHTML = `
+            <td style="padding: 10px 14px; font-weight: 700; color: var(--mv-text); text-transform: capitalize;">${m.task.replace('_', ' ')}</td>
+            <td style="padding: 10px 14px; font-family: var(--font-mono); color: var(--mv-text);">${m.name} <span style="font-size: 10px; color: var(--mv-text-muted);">(${m.precision})</span></td>
+            <td style="padding: 10px 14px; font-family: var(--font-mono); color: var(--mv-text-muted);">${m.size_gb} GB</td>
+            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 11px; color: ${fitColor};">${m.fit_label}</td>
+            <td style="padding: 10px 14px; text-align: right;">
+              <button class="btn-action btn-download-model" data-id="${m.model_id}" style="padding: 4px 10px; font-size: 11px; ${isDownloaded ? 'background: rgba(16,185,129,0.15); color: var(--accent-emerald); border-color: rgba(16,185,129,0.3);' : ''}">
+                ${isDownloaded ? '✓ Cached' : '⬇ Download'}
+              </button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        // Wire download buttons
+        document.querySelectorAll('.btn-download-model').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const modelId = e.currentTarget.dataset.id;
+            e.currentTarget.disabled = true;
+            e.currentTarget.textContent = '⏳ Downloading...';
+            
+            try {
+              const token = await getAuthToken();
+              const dlRes = await fetch('/api/compute/models/download', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Pluto-Token': token
+                },
+                body: JSON.stringify({ model_id: modelId })
+              });
+              if (dlRes.ok) {
+                showToast(`Model ${modelId} cached successfully`);
+                loadLocalComputeProfile();
+              } else {
+                showToast(`Failed to download model ${modelId}`);
+                e.currentTarget.disabled = false;
+                e.currentTarget.textContent = '⬇ Download';
+              }
+            } catch (err) {
+              showToast(`Error downloading model: ${err}`);
+              e.currentTarget.disabled = false;
+              e.currentTarget.textContent = '⬇ Download';
+            }
+          });
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to load local compute profile:', e);
+    }
+  }
+
   // Initial fetch
   fetchSkyStatus();
   fetchSkyClouds();
+  loadLocalComputeProfile();
 
 });
 
