@@ -4,10 +4,12 @@ import {
   Clapperboard,
   Palette,
   Sparkles,
-  Command
+  Command,
+  Loader2
 } from 'lucide-react';
 import { useStudioStore } from '../stores/studioStore';
 import { useGpuStore } from '../stores/gpuStore';
+import { useGpuPoller } from '../hooks/useGpuPoller';
 import TimelineEditor from '../components/studio/TimelineEditor';
 import DirectorView from '../components/studio/DirectorView';
 import VibeCanvasView from '../components/studio/VibeCanvasView';
@@ -17,10 +19,14 @@ export default function StudioPage() {
   const { 
     activeMode,
     setActiveMode,
+    isGenerating
   } = useStudioStore();
 
   const { status: gpuStatus } = useGpuStore();
   const [cmdOpen, setCmdOpen] = useState(false);
+
+  // Activate continuous background telemetry polling
+  useGpuPoller(4000);
 
   return (
     <div className="h-screen bg-black text-[#fafafa] flex flex-col font-sans overflow-hidden">
@@ -62,7 +68,9 @@ export default function StudioPage() {
           <div className="h-4 w-px bg-white/[0.1] hidden md:block" />
           <div className="hidden md:flex items-center gap-2 font-mono text-xs text-[#a1a1aa]">
             <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-            <span>{gpuStatus.instanceType.toUpperCase()} (L40S 48GB) · 0.0s Daemon</span>
+            <span>
+              {gpuStatus.instanceType.toUpperCase()} (L40S 48GB) · {gpuStatus.vramUsedGb.toFixed(1)} / {gpuStatus.vramTotalGb}GB VRAM
+            </span>
           </div>
         </div>
 
@@ -84,9 +92,21 @@ export default function StudioPage() {
             <Terminal className="w-3.5 h-3.5 text-[#38bdf8]" />
             Cockpit SSH
           </a>
-          <button className="flex items-center gap-1.5 text-xs font-semibold bg-white text-black px-4 py-1.5 rounded hover:bg-[#e4e4e7] transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer">
-            <Sparkles className="w-3.5 h-3.5" />
-            Export 4K Master
+          <button 
+            disabled={isGenerating}
+            className="flex items-center gap-1.5 text-xs font-semibold bg-white text-black px-4 py-1.5 rounded hover:bg-[#e4e4e7] transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer disabled:opacity-50"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Export 4K Master</span>
+              </>
+            )}
           </button>
         </div>
       </header>

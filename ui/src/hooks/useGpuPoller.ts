@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useGpuStore } from '../stores/gpuStore';
 import { api } from '../lib/api';
 
-export function useGpuPoller(intervalMs = 5000) {
+export function useGpuPoller(intervalMs = 4000) {
   const { isLaunching } = useGpuStore();
 
   useEffect(() => {
@@ -14,18 +14,18 @@ export function useGpuPoller(intervalMs = 5000) {
         useGpuStore.setState({
           status: {
             instanceType: data.instance_type,
-            provider: data.provider as 'aws_spot' | 'shadeform' | 'local',
+            provider: data.provider,
             vramTotalGb: data.vram_total_gb,
             vramUsedGb: data.vram_used_gb,
             gpuUtilization: data.gpu_utilization,
             hourlyCostUsd: data.hourly_cost,
             uptimeSeconds: data.uptime_seconds,
             deadManTimeoutSeconds: data.dead_man_seconds_remaining,
-            residentModel: 'ltx-2.5-float8',
-          }
+            residentModel: data.resident_model,
+          },
         });
       } catch (err) {
-        // Fallback to state if backend offline during dev
+        // Safe fallback
       }
     };
 
