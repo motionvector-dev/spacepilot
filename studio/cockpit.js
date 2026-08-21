@@ -33,7 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgKeyFile = document.getElementById('cfg-key-file');
   const cfgDuration = document.getElementById('cfg-duration');
   const cfgStg = document.getElementById('cfg-stg');
+  const cfgModality = document.getElementById('cfg-modality');
   const btnSaveCfg = document.getElementById('btn-save-cfg');
+
+  // Spot rate lookup — mirrors sidebar.js INSTANCE_TYPES catalogue
+  const SPOT_RATES = {
+    'g4dn.xlarge': 0.16, 'g4dn.2xlarge': 0.23, 'g4dn.4xlarge': 0.38, 'g4dn.12xlarge': 1.48,
+    'g5.xlarge': 0.51,   'g5.2xlarge': 0.76,   'g5.4xlarge': 1.21,   'g5.12xlarge': 4.23,
+    'g6e.xlarge': 0.75,  'g6e.2xlarge': 1.10,  'g6e.4xlarge': 1.60,  'g6e.8xlarge': 2.35, 'g6e.12xlarge': 4.80,
+    'p4d.24xlarge': 9.83, 'p5.48xlarge': 43.04,
+  };
 
   const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toast-msg');
