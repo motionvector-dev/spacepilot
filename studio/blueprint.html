@@ -861,10 +861,76 @@
             </tr>
           </tbody>
         </table>
+      <!-- SECTION 2.2: THE UNIVERSAL AI DISTRIBUTION MESH -->
+      <div style="margin-top: 40px;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text-heading); margin-bottom: 12px;">2.2 The Universal AI Distribution Mesh: LiteLLM, MCP & Agent Skills</h3>
+        <p class="section-p">
+          Pluto Studio is designed not merely as a human creator tool, but as the <strong>universal video generation runtime for the global AI agent economy</strong>. By adhering to open protocol standards (LiteLLM Proxy, Model Context Protocol, and Agent Skills), Pluto can be discovered, scripted, and rented by any frontier LLM (Claude, GPT-4o, Gemini 2.0 Pro), open-source router (Ollama, vLLM, DeepSeek), or coding agent (Cursor, Claude Code, Antigravity) natively across four discovery interfaces:
+        </p>
+
+        <div class="swot-grid" style="margin-top: 20px;">
+          <div class="swot-card swot-s">
+            <div class="swot-card-title">🤖 1. LiteLLM & OpenAI-Compatible Gateway</div>
+            <p>Pluto exposes a drop-in <code>/v1/images/generations</code> and <code>/v1/video/generations</code> OpenAI-compatible proxy interface. Any developer using LiteLLM, LangChain, or LlamaIndex can point their existing SDK to Pluto by changing only <code>api_base</code>, gaining instant access to quantized LTX-2.5 and Kokoro TTS fleets with zero code refactoring.</p>
+          </div>
+
+          <div class="swot-card swot-w">
+            <div class="swot-card-title">🔌 2. Native Model Context Protocol (MCP) Server</div>
+            <p>A native MCP server (<code>pluto-mcp</code> via Python FastMCP) exposes granular directing tools: <code>pluto_generate_video()</code>, <code>pluto_adjust_camera(pan, tilt, zoom)</code>, <code>pluto_extend_clip(+4s)</code>, and <code>pluto_get_render_status()</code> directly into Cursor, Claude Desktop, and IDE sidecars without custom integrations.</p>
+          </div>
+
+          <div class="swot-card swot-o">
+            <div class="swot-card-title">🧠 3. Agent Skills Standard (`SKILL.md`)</div>
+            <p>Packages Pluto's procedural directing knowledge into an open <strong>Agent Skills</strong> format (<code>agentskills.io</code> standard). AI director agents load progressive guidance for 3D camera trajectory math, STG guidance tuning, and Kokoro voice LUFS normalization on-demand without context window exhaustion.</p>
+          </div>
+
+          <div class="swot-card swot-t">
+            <div class="swot-card-title">⚡ 4. Python SDK & Zero-Friction CLI (`pluto`)</div>
+            <p>Deterministic command-line interface for CI/CD pipelines, automated marketing bots, and programmatic video rendering: <code>pluto create --prompt "..." --camera-pan right --duration 4.0 --json</code>. Outputs clean JSON artifacts, MP4 byte streams, and machine-readable metadata.</p>
+          </div>
+        </div>
+
+        <table class="data-table" style="margin-top: 24px;">
+          <thead>
+            <tr>
+              <th>Integration Vector</th>
+              <th>Supported Consumers</th>
+              <th>Invocation Protocol</th>
+              <th>Pricing & Settlement Rail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>LiteLLM Proxy</strong></td>
+              <td>OpenAI SDK, LangChain, CrewAI, AutoGen, Vercel AI SDK</td>
+              <td>REST <code>POST /v1/video/generations</code></td>
+              <td>API Key / Usage Balance ($0.04/take)</td>
+            </tr>
+            <tr>
+              <td><strong>Model Context Protocol (MCP)</strong></td>
+              <td>Cursor, Claude Desktop, Windsurf, Antigravity, OpenCode</td>
+              <td>JSON-RPC 2.0 over Stdio / SSE</td>
+              <td>Session Token / Enterprise MoR</td>
+            </tr>
+            <tr>
+              <td><strong>Agent Skills (`SKILL.md`)</strong></td>
+              <td>Claude Code, OpenAI Swarms, Custom LLM Subagents</td>
+              <td>Progressive Disclosure YAML + Markdown</td>
+              <td>Free Procedural Knowledge / Open Standard</td>
+            </tr>
+            <tr>
+              <td><strong>Autonomous Agent API</strong></td>
+              <td>Independent Autonomous Agents, Crypto Bots, Web Crawlers</td>
+              <td>HTTP 402 + <code>x402</code> Header</td>
+              <td>Instant USDC Stablecoin Micropayments</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
 <!-- SECTION 3: GRANULAR PRODUCT FEATURES & DIRECTING SUITE -->
+
     <section id="sec-specs" class="report-section">
       <div class="section-header">
         <span class="section-num">Section 3.0</span>
