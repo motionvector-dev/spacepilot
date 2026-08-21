@@ -762,8 +762,45 @@
         </select>
       </div>
 
+      <!-- Provider Credentials Inputs -->
+      <div id="cfg-provider-creds" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px;">
+        <div class="form-group provider-setting" data-prov="shadeform" style="display:none;">
+          <label class="form-label">Shadeform API Key</label>
+          <input type="password" id="cfg-shadeform-key" class="form-input" placeholder="********">
+        </div>
+        <div class="form-group provider-setting" data-prov="runpod" style="display:none;">
+          <label class="form-label">RunPod API Key</label>
+          <input type="password" id="cfg-runpod-key" class="form-input" placeholder="********">
+        </div>
+        <div class="form-group provider-setting" data-prov="aws" style="display:block;">
+          <label class="form-label">AWS Profile</label>
+          <input type="text" id="cfg-aws-profile" class="form-input" placeholder="default">
+        </div>
+        <div class="form-group provider-setting" data-prov="local" style="display:none;">
+          <label class="form-label">Local Host URL</label>
+          <input type="text" id="cfg-local-host" class="form-input" placeholder="http://127.0.0.1:8000">
+        </div>
+      </div>
+
+      <!-- SkyPilot Controls Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 14px; font-weight: 600; color: var(--mv-text);">SkyPilot Cluster Status:</span>
+          <span id="sky-active-name" style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--mv-text-muted);">Auto-Arbitrage Mode</span>
+          <span id="sky-active-badge" style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-emerald); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 2px 6px; border-radius: 4px;">● Checkpoint Synced</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-sky-failover" class="btn-action" style="font-size: 11px; padding: 4px 10px; color: var(--accent-amber); border-color: rgba(245,158,11,0.3);">
+            ⚡ Trigger Failover
+          </button>
+          <button id="btn-sky-yaml" class="btn-action" style="font-size: 11px; padding: 4px 10px;">
+            📄 SkyPilot YAML
+          </button>
+        </div>
+      </div>
+
       <!-- Live Spot Arbitrage Matrix Table -->
-      <div style="margin-top: 16px; border: 1px solid var(--mv-border); border-radius: 12px; overflow: hidden; background: var(--mv-ground);">
+      <div style="margin-top: 12px; border: 1px solid var(--mv-border); border-radius: 12px; overflow: hidden; background: var(--mv-ground);">
         <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'Geist Mono', monospace;">
           <thead>
             <tr style="background: var(--mv-surface); border-bottom: 1px solid var(--mv-border); color: var(--mv-text-muted);">
