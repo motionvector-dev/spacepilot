@@ -1,47 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SpacePilot Cockpit 🚀 · Autonomous GPU Fleet & Spot Broker</title>
+  
+  <!-- Fonts: Geist & Geist Mono (MotionVector OpenDesign Standard) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="studio.css">
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+
   <style>
+    /* ============================================================
+       SPACEPILOT COCKPIT · OPENDESIGN OBSIDIAN ARCHITECTURE
+       ============================================================ */
+    :root {
+      --mv-bg: #000000;
+      --mv-ground: #09090b;
+      --mv-surface: #111114;
+      --mv-card: #18181b;
+      --mv-card-hover: #222226;
+      --mv-border: rgba(255, 255, 255, 0.08);
+      --mv-border-medium: rgba(255, 255, 255, 0.14);
+      --mv-border-highlight: rgba(255, 255, 255, 0.24);
+
+      --mv-text: #fafafa;
+      --mv-text-muted: #a1a1aa;
+      --mv-text-dim: #71717a;
+      --mv-text-faint: #52525b;
+
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43535;
+
+      --btn-primary-bg: #fafafa;
+      --btn-primary-text: #09090b;
+      --btn-primary-hover-bg: #ffffff;
+      
+      --btn-secondary-bg: #18181b;
+      --btn-secondary-text: #fafafa;
+      --btn-secondary-border: rgba(255, 255, 255, 0.14);
+      --btn-secondary-hover-bg: #222226;
+    }
+
+    [data-theme="light"] {
+      --mv-bg: #f8fafc;
+      --mv-ground: #ffffff;
+      --mv-surface: #f1f5f9;
+      --mv-card: #ffffff;
+      --mv-card-hover: #f8fafc;
+      --mv-border: rgba(0, 0, 0, 0.08);
+      --mv-border-medium: rgba(0, 0, 0, 0.14);
+      --mv-border-highlight: rgba(0, 0, 0, 0.24);
+
+      --mv-text: #09090b;
+      --mv-text-muted: #52525b;
+      --mv-text-dim: #71717a;
+      --mv-text-faint: #a1a1aa;
+
+      --btn-primary-bg: #09090b;
+      --btn-primary-text: #fafafa;
+      --btn-primary-hover-bg: #18181b;
+
+      --btn-secondary-bg: #ffffff;
+      --btn-secondary-text: #09090b;
+      --btn-secondary-border: rgba(0, 0, 0, 0.14);
+      --btn-secondary-hover-bg: #f1f5f9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background-color: var(--bg-ground);
-      color: var(--text-main);
-      font-family: 'Geist', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
-      padding: 0;
-      overflow-y: auto;
+      background-color: var(--mv-bg);
+      color: var(--mv-text);
+      font-family: 'Geist', 'Plus Jakarta Sans', -apple-system, sans-serif;
       min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Top Navigation */
+    /* Top Navigation Bar */
     .top-nav {
-      position: fixed;
+      height: 64px;
+      background: var(--mv-bg);
+      border-bottom: 1px solid var(--mv-border);
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
-      height: 56px;
-      background: var(--bg-panel);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-subtle);
+      z-index: 100;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 24px;
-      z-index: 100;
+      padding: 0 40px;
     }
 
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
     .brand-link {
@@ -49,24 +109,30 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
-      color: var(--text-main);
+      color: var(--mv-text);
     }
 
     .brand-mark-svg {
+      width: 22px;
       height: 22px;
-      width: auto;
     }
 
-    .brand-text {
+    .brand-title {
+      font-size: 15px;
       font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 0.05em;
-      color: var(--text-main);
+      letter-spacing: -0.02em;
     }
 
-    .brand-sub {
-      color: var(--text-dim);
-      font-weight: 500;
+    .brand-pill {
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
     }
 
     .nav-breadcrumbs {
@@ -74,28 +140,16 @@
       align-items: center;
       gap: 8px;
       font-size: 13px;
-      color: var(--text-dim);
+      color: var(--mv-text-dim);
+      font-family: 'Geist Mono', monospace;
     }
 
     .nav-breadcrumb-link {
-      color: var(--text-muted);
+      color: var(--mv-text-muted);
       text-decoration: none;
-      transition: color 0.15s;
     }
 
-    .nav-breadcrumb-link:hover {
-      color: var(--text-main);
-    }
-
-    .nav-breadcrumb-sep {
-      color: var(--text-dim);
-      font-size: 11px;
-    }
-
-    .nav-breadcrumb-active {
-      color: var(--text-main);
-      font-weight: 600;
-    }
+    .nav-breadcrumb-link:hover { color: var(--mv-text); }
 
     .nav-links {
       display: flex;
@@ -104,185 +158,202 @@
     }
 
     .nav-tab {
-      color: var(--text-muted);
-      text-decoration: none;
       font-size: 13px;
       font-weight: 500;
+      color: var(--mv-text-muted);
+      text-decoration: none;
       transition: color 0.15s;
     }
 
-    .nav-tab:hover {
-      color: var(--text-main);
+    .nav-tab:hover { color: var(--mv-text); }
+    .nav-tab.active { color: var(--mv-text); font-weight: 600; }
+
+    .theme-switch-capsule {
+      display: flex;
+      align-items: center;
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: 20px;
+      padding: 2px 4px;
+      gap: 2px;
     }
 
-    .nav-tab.active {
-      color: var(--text-main);
-      font-weight: 600;
+    .theme-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--mv-text-dim);
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .theme-toggle-btn:hover { color: var(--mv-text); }
+    .theme-toggle-btn.active {
+      background: var(--mv-card);
+      color: var(--mv-text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
     .gpu-pill {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
+      gap: 6px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      color: var(--mv-text-muted);
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      padding: 4px 10px;
+      border-radius: 20px;
     }
 
     .gpu-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: var(--text-dim);
+      background: var(--mv-text-dim);
     }
 
     .gpu-dot.online {
       background: var(--accent-emerald);
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+      box-shadow: 0 0 6px var(--accent-emerald);
     }
 
-    .gpu-dot.busy {
-      background: var(--accent-amber);
-      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
-    }
-
-    /* Main Cockpit Layout */
+    /* Cockpit Main Layout */
     .cockpit-main {
-      max-width: 1200px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 80px 24px 60px;
+      padding: 48px 24px 80px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 32px;
     }
 
     .page-header {
       display: flex;
-      justify-content: space-between;
       align-items: flex-end;
-      flex-wrap: wrap;
-      gap: 16px;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--mv-border);
     }
 
     .page-title {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 700;
-      letter-spacing: -0.02em;
-      margin: 0 0 6px 0;
-      color: var(--text-main);
+      letter-spacing: -0.025em;
+      color: var(--mv-text);
+      margin-bottom: 4px;
     }
 
     .page-subtitle {
       font-size: 14px;
-      color: var(--text-dim);
-      margin: 0;
+      color: var(--mv-text-muted);
     }
 
-    /* Telemetry Grid */
+    /* 24px Radius Framed Panels */
+    .panel {
+      background: var(--mv-card);
+      border: 1px solid var(--mv-border);
+      border-radius: 24px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: all 0.15s ease;
+    }
+
+    .panel:hover {
+      border-color: var(--mv-border-highlight);
+    }
+
     .telemetry-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
     }
 
     .metric-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      background: var(--mv-card);
+      border: 1px solid var(--mv-border);
       border-radius: 24px;
-      padding: 20px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: var(--shadow-sm);
+      gap: 14px;
     }
 
     .metric-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
     }
 
     .metric-title {
-      font-size: 12px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--mv-text-dim);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .badge-status {
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', monospace;
       font-size: 11px;
       font-weight: 600;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border-radius: 4px;
       text-transform: uppercase;
     }
 
     .badge-online {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.12);
       color: var(--accent-emerald);
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
     .badge-offline {
-      background: rgba(113, 113, 122, 0.15);
-      color: var(--text-dim);
-      border: 1px solid rgba(113, 113, 122, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--mv-text-dim);
+      border: 1px solid var(--mv-border);
     }
 
     .metric-value-lg {
-      font-size: 24px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 26px;
       font-weight: 700;
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       letter-spacing: -0.02em;
-      color: var(--text-main);
+      color: var(--mv-text);
     }
 
     .metric-detail-row {
       display: flex;
       justify-content: space-between;
       font-size: 13px;
-      color: var(--text-muted);
+      color: var(--mv-text-muted);
     }
 
     .metric-detail-val {
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
-      color: var(--text-main);
+      font-family: 'Geist Mono', monospace;
+      color: var(--mv-text);
       font-weight: 500;
-    }
-
-    .progress-bar-bg {
-      width: 100%;
-      height: 6px;
-      background: var(--bg-raised);
-      border-radius: 9999px;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--accent-emerald);
-      width: 0%;
-      transition: width 0.3s;
     }
 
     /* Actions Toolbar */
     .actions-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      background: var(--mv-card);
+      border: 1px solid var(--mv-border);
       border-radius: 24px;
-      padding: 16px 20px;
+      padding: 20px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
       flex-wrap: wrap;
-      box-shadow: var(--shadow-sm);
     }
 
     .actions-group {
@@ -293,25 +364,24 @@
     }
 
     .btn-action {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 24px;
+      font-family: 'Geist', sans-serif;
       font-size: 13px;
       font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-      border: 1px solid var(--btn-secondary-border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--mv-border-medium);
       background: var(--btn-secondary-bg);
       color: var(--btn-secondary-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
     }
 
     .btn-action:hover:not(:disabled) {
       background: var(--btn-secondary-hover-bg);
-      border-color: var(--btn-secondary-hover-border);
-      transform: translateY(-1px);
+      border-color: var(--mv-border-highlight);
     }
 
     .btn-action:disabled {
@@ -321,390 +391,173 @@
 
     .btn-launch {
       background: var(--btn-primary-bg);
-      border: 1px solid var(--btn-primary-border);
       color: var(--btn-primary-text);
-      box-shadow: var(--btn-primary-shadow);
-      font-weight: 700;
+      border-color: var(--btn-primary-bg);
     }
 
     .btn-launch:hover:not(:disabled) {
       background: var(--btn-primary-hover-bg);
-      color: var(--btn-primary-hover-text);
-      box-shadow: var(--btn-primary-shadow);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .btn-terminate {
-      background: rgba(244, 63, 94, 0.1);
-      border-color: rgba(244, 63, 94, 0.3);
+      background: rgba(244, 53, 53, 0.12);
+      border-color: rgba(244, 53, 53, 0.3);
       color: var(--accent-rose);
     }
 
     .btn-terminate:hover:not(:disabled) {
-      background: rgba(244, 63, 94, 0.2);
-      border-color: var(--accent-rose);
+      background: var(--accent-rose);
+      color: #ffffff;
     }
 
-    /* Terminal Console */
+    /* Terminal Frame */
     .terminal-card {
-      background: var(--bg-root);
-      border: 1px solid var(--border-subtle);
+      background: var(--mv-ground);
+      border: 1px solid var(--mv-border-medium);
       border-radius: 24px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: var(--shadow-lg);
     }
 
     .terminal-header {
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 16px;
+      background: var(--mv-surface);
+      border-bottom: 1px solid var(--mv-border);
+      padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
     .terminal-title {
+      font-family: 'Geist Mono', monospace;
       font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
+      color: var(--mv-text-muted);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .terminal-led {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--accent-emerald);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .terminal-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-terminal-ctrl {
-      background: transparent;
-      border: 1px solid var(--border-medium);
-      border-radius: 4px;
-      padding: 3px 8px;
-      font-size: 11px;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .btn-terminal-ctrl:hover {
-      background: var(--bg-raised);
-      color: var(--text-main);
     }
 
     .terminal-body {
-      height: 320px;
-      overflow-y: auto;
-      padding: 16px;
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+      padding: 20px;
+      font-family: 'Geist Mono', monospace;
       font-size: 12px;
-      line-height: 1.6;
-      color: var(--text-main);
-      background: var(--bg-root);
-      white-space: pre-wrap;
-      word-break: break-all;
+      color: var(--mv-text-muted);
+      height: 240px;
+      overflow-y: auto;
+      line-height: 1.7;
     }
 
-    .terminal-line {
-      margin-bottom: 2px;
-    }
-
-    .terminal-line.info { color: var(--text-muted); }
-    .terminal-line.system { color: var(--text-main); font-weight: 600; }
-    .terminal-line.success { color: var(--accent-emerald); }
-    .terminal-line.error { color: var(--accent-rose); }
-
-    /* Configuration Panel */
+    /* Form Styles */
     .config-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
-    }
-
-    .config-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      box-shadow: var(--shadow-sm);
+      gap: 24px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      margin-bottom: 14px;
     }
 
     .form-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    .form-input, .form-select {
-      background: var(--bg-ground);
-      border: 1px solid var(--border-medium);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 13px;
-      outline: none;
-    }
-
-    .form-input:focus, .form-select:focus {
-      border-color: var(--border-focus);
-    }
-
-    /* Toast */
-    .toast-popup {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--bg-raised);
-      border: 1px solid var(--border-medium);
-      border-radius: 24px;
-      padding: 12px 18px;
-      font-size: 13px;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: var(--shadow-lg);
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s ease;
-      z-index: 200;
-    }
-
-    .toast-popup.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    /* Danger & Confirmation Modals */
-    .mv-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 500;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .mv-modal-backdrop.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .mv-modal-card {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-medium);
-      border-radius: 24px;
-      width: 100%;
-      max-width: 460px;
-      padding: 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-      transform: scale(0.96) translateY(8px);
-      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .mv-modal-backdrop.open .mv-modal-card {
-      transform: scale(1) translateY(0);
-    }
-
-    .mv-modal-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mv-modal-icon-wrap {
-      width: 36px;
-      height: 36px;
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .mv-modal-icon-wrap.launch {
-      background: rgba(16, 185, 129, 0.12);
-      color: var(--accent-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-    }
-
-    .mv-modal-icon-wrap.terminate {
-      background: rgba(244, 63, 94, 0.12);
-      color: var(--accent-rose);
-      border: 1px solid rgba(244, 63, 94, 0.25);
-    }
-
-    .mv-modal-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin: 0;
-    }
-
-    .mv-modal-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin: 2px 0 0;
-    }
-
-    .mv-modal-body {
-      font-size: 13px;
-      line-height: 1.55;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .mv-modal-info-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
-      font-size: 12px;
-    }
-
-    .mv-modal-info-row {
-      display: flex;
-      justify-content: space-between;
-      color: var(--text-muted);
-    }
-
-    .mv-modal-info-row span:last-child {
-      color: var(--text-main);
-      font-weight: 600;
-    }
-
-    .mv-modal-type-confirm {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .mv-modal-type-label {
+      font-family: 'Geist Mono', monospace;
       font-size: 11px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--mv-text-dim);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    .mv-modal-type-input {
-      background: var(--bg-ground);
-      border: 1px solid var(--border-medium);
+    .form-select, .form-input {
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
       border-radius: 6px;
       padding: 8px 12px;
-      color: var(--text-main);
-      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+      color: var(--mv-text);
+      font-family: inherit;
       font-size: 13px;
       outline: none;
+      transition: border-color 0.15s;
     }
 
-    .mv-modal-type-input:focus {
-      border-color: var(--accent-rose);
+    .form-select:focus, .form-input:focus {
+      border-color: var(--mv-border-highlight);
     }
 
-    .mv-modal-actions {
+    /* Inspect Slide-Over Drawer */
+    #drawer-inspect {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      justify-content: flex-end;
+    }
+
+    .drawer-content {
+      width: 100%;
+      max-width: 800px;
+      height: 100%;
+      background: var(--mv-ground);
+      border-left: 1px solid var(--mv-border);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      height: 64px;
+      border-bottom: 1px solid var(--mv-border);
+      padding: 0 24px;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 6px;
+      justify-content: space-between;
     }
 
-    .mv-modal-btn {
-      padding: 8px 16px;
+    .drawer-tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .drawer-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--mv-text-muted);
+      padding: 6px 12px;
       border-radius: 6px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      font-family: inherit;
-      border: 1px solid transparent;
-      transition: all 0.15s ease;
     }
 
-    .mv-modal-btn-cancel {
-      background: transparent;
-      border-color: var(--border-medium);
-      color: var(--text-muted);
+    .drawer-tab.active {
+      background: var(--mv-surface);
+      border-color: var(--mv-border);
+      color: var(--mv-text);
     }
 
-    .mv-modal-btn-cancel:hover {
-      background: var(--bg-raised);
-      color: var(--text-main);
-    }
-
-    .mv-modal-btn-confirm-launch {
-      background: var(--btn-primary-bg);
-      border-color: var(--btn-primary-border);
-      color: var(--btn-primary-text);
-    }
-
-    .mv-modal-btn-confirm-launch:hover:not(:disabled) {
-      background: var(--btn-primary-hover-bg);
-      color: var(--btn-primary-hover-text);
-    }
-
-    .mv-modal-btn-confirm-terminate {
-      background: var(--accent-rose);
-      border-color: var(--accent-rose);
-      color: #ffffff;
-    }
-
-    .mv-modal-btn-confirm-terminate:hover:not(:disabled) {
-      background: #e11d48;
-      border-color: #e11d48;
-    }
-
-    .mv-modal-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .drawer-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
     }
   </style>
-
-  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
-  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
 </head>
 <body>
 
@@ -712,50 +565,36 @@
   <nav class="top-nav">
     <div class="brand-group">
       <a href="/" class="brand-link">
-        <svg class="brand-mark-svg" viewBox="0 0 52 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g fill="#a1a1aa">
-            <rect x="0" y="0" width="4.11" height="44"></rect>
-            <rect x="4.73" y="0" width="4.11" height="44"></rect>
-            <rect x="9.45" y="0" width="4.11" height="44"></rect>
-            <rect x="37.82" y="0" width="4.11" height="44"></rect>
-            <rect x="42.55" y="0" width="4.11" height="44"></rect>
-            <rect x="47.27" y="0" width="4.11" height="44"></rect>
-          </g>
-          <g fill="#fafafa">
-            <rect x="14.18" y="7.84" width="4.11" height="22.21"></rect>
-            <rect x="18.91" y="16.7" width="4.11" height="23.98"></rect>
-            <rect x="23.64" y="25.57" width="4.11" height="20.43"></rect>
-            <rect x="28.36" y="16.7" width="4.11" height="23.98"></rect>
-            <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
-          </g>
+        <svg class="brand-mark-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="#FAFAFA" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
         </svg>
-        <span class="brand-text">SPACEPILOT <span class="brand-sub">COCKPIT</span></span>
+        <span class="brand-title">SpacePilot</span>
+        <span class="brand-pill">Cockpit</span>
       </a>
 
       <div class="nav-breadcrumbs">
-        <span class="nav-breadcrumb-sep">/</span>
-        <a href="/" class="nav-breadcrumb-link">Hub</a>
-        <span class="nav-breadcrumb-sep">/</span>
-        <span class="nav-breadcrumb-active">Cockpit</span>
+        <span>/</span>
+        <a href="/" class="nav-breadcrumb-link">Studio</a>
+        <span>/</span>
+        <span style="color: var(--mv-text); font-weight: 600;">Cockpit</span>
       </div>
     </div>
 
     <div class="nav-links">
-      <a href="/" class="nav-tab">Hub</a>
+      <a href="/" class="nav-tab">Home</a>
       <a href="/create" class="nav-tab">Create</a>
       <a href="/studio" class="nav-tab">Editor</a>
+      <a href="/oven.html" class="nav-tab">Oven</a>
       <a href="/cockpit" class="nav-tab active">Cockpit</a>
-      <div class="theme-switch-capsule" title="Theme Mode">
-        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        </button>
-        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </button>
+
+      <!-- Theme Switcher Capsule -->
+      <div class="theme-switch-capsule">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">☀️</button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">🌙</button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">💻</button>
       </div>
+
+      <!-- GPU Pill -->
       <div class="gpu-pill">
         <span id="nav-gpu-dot" class="gpu-dot"></span>
         <span id="nav-gpu-text">Checking GPU...</span>
@@ -768,8 +607,8 @@
 
     <div class="page-header">
       <div>
-        <h1 class="page-title">GPU Cloud Cockpit</h1>
-        <p class="page-subtitle">Manage AWS Spot GPU compute, live worker telemetry, rsync transfers, and worker logs.</p>
+        <h1 class="page-title">Autonomous GPU Spot Cockpit</h1>
+        <p class="page-subtitle">Multi-cloud broker telemetry, resident VRAM watchdog, and zero-data-loss spot orchestration.</p>
       </div>
       <button id="btn-refresh" class="btn-action">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
@@ -777,19 +616,16 @@
       </button>
     </div>
 
-    <!-- 1. Telemetry Cards -->
+    <!-- 1. Telemetry Cards (24px Radius) -->
     <div class="telemetry-grid">
       <!-- Instance Card -->
       <div class="metric-card">
         <div class="metric-header">
           <span class="metric-title">AWS EC2 Spot Compute</span>
-                    <span id="badge-instance" class="badge-status badge-offline">Offline</span>
-          
-          <span id="badge-idle" class="badge-status" style="display:none; margin-left: 8px;">⏳ Idle</span>
-          <button id="btn-inspect-gpu" class="btn-action" style="margin-left: auto; padding: 4px 8px; font-size: 12px; height: 28px; background: transparent; border: 1px solid var(--border-light);" disabled>
+          <span id="badge-instance" class="badge-status badge-offline">Offline</span>
+          <button id="btn-inspect-gpu" class="btn-action" style="padding: 4px 8px; font-size: 11px; margin-left: auto;" disabled>
             🔍 Inspect Box
           </button>
-
         </div>
         <div id="val-instance-id" class="metric-value-lg">No Active Box</div>
         <div class="metric-detail-row">
@@ -809,8 +645,8 @@
           <span id="badge-worker" class="badge-status badge-offline">Offline</span>
         </div>
         <div id="val-vram" class="metric-value-lg">0.0 / 48.0 GiB</div>
-        <div class="progress-bar-bg">
-          <div id="bar-vram-fill" class="progress-bar-fill"></div>
+        <div style="width: 100%; height: 6px; background: var(--mv-surface); border-radius: 9999px; overflow: hidden;">
+          <div id="bar-vram-fill" style="height: 100%; width: 0%; background: var(--accent-emerald); transition: width 0.3s;"></div>
         </div>
         <div class="metric-detail-row">
           <span>Device:</span>
@@ -818,11 +654,11 @@
         </div>
       </div>
 
-      <!-- Cost & Billing Card -->
+      <!-- Cost & Billing Odometer Card -->
       <div class="metric-card">
         <div class="metric-header">
-          <span class="metric-title">Session Billing Odometer</span>
-          <span class="metric-title">Spot Rate</span>
+          <span class="metric-title">Live Billing Odometer</span>
+          <span class="badge-status badge-online">$0.75 / HR</span>
         </div>
         <div id="val-cost" class="metric-value-lg">$0.00</div>
         <div class="metric-detail-row">
@@ -830,8 +666,8 @@
           <span id="val-uptime" class="metric-detail-val">0.0 mins</span>
         </div>
         <div class="metric-detail-row">
-          <span>Effective Rate:</span>
-          <span id="val-rate" class="metric-detail-val">$0.75 / hr</span>
+          <span>Auto-Shutdown:</span>
+          <span id="badge-idle" class="metric-detail-val" style="color: var(--accent-amber);">20m Idle Guard</span>
         </div>
       </div>
     </div>
@@ -840,7 +676,7 @@
     <div class="actions-card">
       <div class="actions-group">
         <button id="btn-launch-box" class="btn-action btn-launch">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span>Launch Spot GPU</span>
         </button>
 
@@ -873,397 +709,147 @@
           <div class="terminal-led"></div>
           <span>Remote Worker Stream (/scratch/worker/worker.log)</span>
         </div>
-        <div class="terminal-controls">
-          <button id="btn-clear-term" class="btn-terminal-ctrl">Clear</button>
-          <button id="btn-pause-term" class="btn-terminal-ctrl">Pause</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-clear-term" class="btn-action" style="padding: 4px 8px; font-size: 11px;">Clear</button>
+          <button id="btn-pause-term" class="btn-action" style="padding: 4px 8px; font-size: 11px;">Pause</button>
         </div>
       </div>
       <div id="terminal-body" class="terminal-body">
-        <div class="terminal-line info">[Cockpit] Initializing live telemetry and log stream...</div>
+        <div>[Cockpit] Initializing live telemetry and log stream...</div>
       </div>
     </div>
 
-    <!-- 4. Cloud & Hardware Settings -->
-    <div class="config-grid">
-      
-      <div class="config-card" style="grid-column: 1 / -1;">
-        <div class="metric-title">Compute Provider Hub</div>
-        <div class="form-group" style="max-width: 400px;">
-          <label class="form-label">Active Provider</label>
-          <select id="cfg-provider" class="form-select">
-            <option value="shadeform">🌐 Shadeform (20+ Clouds · Auto-Cheapest)</option>
-            <option value="aws" selected>☁️ AWS Direct Spot (us-east-1 · g6e.xlarge)</option>
-            <option value="runpod">🚀 RunPod Serverless / Pods</option>
-            <option value="local">💻 Local Homelab / Apple Silicon</option>
-          </select>
+    <!-- 4. Compute Provider Hub & SkyPilot Matrix (24px Radius) -->
+    <div class="panel">
+      <div class="metric-header">
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700;">Multi-Cloud Compute Provider Hub</h3>
+          <p style="font-size: 13px; color: var(--mv-text-muted); margin-top: 2px;">Route workloads to lowest-latency, lowest-cost spot clusters across 12+ cloud providers.</p>
         </div>
-        
-        <div id="cfg-provider-creds" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-           <div class="form-group provider-setting" data-prov="shadeform" style="display:none;">
-             <label class="form-label">Shadeform API Key</label>
-             <input type="password" id="cfg-shadeform-key" class="form-input" placeholder="********">
-           </div>
-           <div class="form-group provider-setting" data-prov="runpod" style="display:none;">
-             <label class="form-label">RunPod API Key</label>
-             <input type="password" id="cfg-runpod-key" class="form-input" placeholder="********">
-           </div>
-           <div class="form-group provider-setting" data-prov="aws" style="display:block;">
-             <label class="form-label">AWS Profile</label>
-             <input type="text" id="cfg-aws-profile" class="form-input" placeholder="default">
-           </div>
-           <div class="form-group provider-setting" data-prov="local" style="display:none;">
-             <label class="form-label">Local Host URL</label>
-             <input type="text" id="cfg-local-host" class="form-input" placeholder="http://127.0.0.1:8000">
-           </div>
-        </div>
-
-        <div style="margin-top: 24px;">
-           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-             <h4 style="font-size: 14px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-               <span>☁️ SkyPilot Multi-Cloud Spot Arbitrage Matrix</span>
-               <span style="font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 11px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">12+ Clouds Active</span>
-             </h4>
-             <div style="display: flex; gap: 8px;">
-               <button id="btn-sky-failover" class="btn-action" style="font-size: 11px; padding: 4px 10px; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--accent-amber);" title="Simulate / Trigger Zero-Data-Loss Spot Preemption Failover">
-                 ⚡ Trigger Preemption Failover
-               </button>
-               <button id="btn-sky-yaml" class="btn-action" style="font-size: 11px; padding: 4px 10px;" title="View Declarative SkyPilot YAML">
-                 📄 SkyPilot YAML
-               </button>
-             </div>
-           </div>
-           
-           <div id="sky-cluster-banner" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 24px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 12px;">
-             <div>
-               <span style="color: var(--text-dim);">SkyPilot Cluster: </span>
-               <strong id="sky-active-name" style="color: var(--text-main);">Auto-Arbitrage Mode</strong>
-               <span id="sky-active-badge" style="margin-left: 8px; color: var(--accent-emerald);">● R2 Checkpoint Synced</span>
-             </div>
-             <div>
-               <span style="color: var(--text-dim);">Preemption Failovers: </span>
-               <strong id="sky-failover-count" style="color: var(--accent-amber);">0</strong>
-             </div>
-           </div>
-
-           <div style="overflow-x: auto;">
-             <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'Geist Mono', 'JetBrains Mono', monospace;">
-               <thead>
-                 <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted);">
-                   <th style="padding: 8px;">Cloud Provider</th>
-                   <th style="padding: 8px;">GPU Accelerator</th>
-                   <th style="padding: 8px;">VRAM</th>
-                   <th style="padding: 8px;">Spot / Hr</th>
-                   <th style="padding: 8px;">On-Demand</th>
-                   <th style="padding: 8px;">Preemption Risk</th>
-                   <th style="padding: 8px;">Action</th>
-                 </tr>
-               </thead>
-               <tbody id="sky-arbitrage-tbody">
-                 <!-- Populated dynamically by cockpit.js from /api/sky/clouds -->
-               </tbody>
-             </table>
-           </div>
-        </div>
+        <select id="cfg-provider" class="form-select" style="min-width: 240px;">
+          <option value="shadeform">🌐 Shadeform (20+ Clouds · Auto-Cheapest)</option>
+          <option value="aws" selected>☁️ AWS Direct Spot (us-east-1 · g6e.xlarge)</option>
+          <option value="runpod">🚀 RunPod Serverless / Pods</option>
+          <option value="local">💻 Local Homelab / Apple Silicon</option>
+        </select>
       </div>
 
+      <!-- Live Spot Arbitrage Matrix Table -->
+      <div style="margin-top: 16px; border: 1px solid var(--mv-border); border-radius: 12px; overflow: hidden; background: var(--mv-ground);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'Geist Mono', monospace;">
+          <thead>
+            <tr style="background: var(--mv-surface); border-bottom: 1px solid var(--mv-border); color: var(--mv-text-muted);">
+              <th style="padding: 12px 16px;">Provider</th>
+              <th style="padding: 12px 16px;">GPU Accelerator</th>
+              <th style="padding: 12px 16px;">VRAM</th>
+              <th style="padding: 12px 16px;">Spot / Hr</th>
+              <th style="padding: 12px 16px;">On-Demand</th>
+              <th style="padding: 12px 16px;">Preemption Risk</th>
+              <th style="padding: 12px 16px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="sky-arbitrage-tbody">
+            <!-- Populated dynamically by cockpit.js from /api/sky/clouds -->
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-      <div class="config-card">
-        <div class="metric-title">AWS Spot Configuration</div>
-        <div class="form-group">
+    <!-- 5. Cloud & Hardware Settings -->
+    <div class="config-grid">
+      <div class="panel">
+        <span class="metric-title">AWS Spot Fleet Settings</span>
+        <div class="form-group" style="margin-top: 8px;">
           <label class="form-label">AWS Region</label>
           <select id="cfg-region" class="form-select">
             <option value="us-east-1">us-east-1 (N. Virginia)</option>
             <option value="us-east-2">us-east-2 (Ohio)</option>
-            <option value="us-west-1">us-west-1 (N. California)</option>
             <option value="us-west-2">us-west-2 (Oregon)</option>
             <option value="eu-west-1">eu-west-1 (Ireland)</option>
-            <option value="eu-west-2">eu-west-2 (London)</option>
-            <option value="eu-central-1">eu-central-1 (Frankfurt)</option>
-            <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
-            <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
-            <option value="ap-south-1">ap-south-1 (Mumbai)</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Instance Type</label>
           <select id="cfg-instance-type" class="form-select">
-            <optgroup label="Budget — T4">
-              <option value="g4dn.xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.xlarge — T4 16GB · ~$0.16/hr</option>
-              <option value="g4dn.2xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.2xlarge — T4 16GB · ~$0.23/hr</option>
-              <option value="g4dn.4xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.4xlarge — T4 16GB · ~$0.38/hr</option>
-              <option value="g4dn.12xlarge" disabled title="Not recommended for video gen workloads. Minimum 24GB VRAM required for LTX.">🚫 g4dn.12xlarge — 4×T4 64GB · ~$1.48/hr</option>
-            </optgroup>
-            <optgroup label="Performance — A10G">
-              <option value="g5.xlarge">g5.xlarge — A10G 24GB · ~$0.51/hr</option>
-              <option value="g5.2xlarge">g5.2xlarge — A10G 24GB · ~$0.76/hr</option>
-              <option value="g5.4xlarge">g5.4xlarge — A10G 24GB · ~$1.21/hr</option>
-              <option value="g5.12xlarge">g5.12xlarge — 4×A10G 96GB · ~$4.23/hr</option>
-            </optgroup>
-            <optgroup label="Pro — L40S (recommended for LTX-2.5)">
-              <option value="g6e.xlarge" selected>g6e.xlarge — L40S 48GB · ~$0.75/hr (⭐ Recommended)</option>
-              <option value="g6e.2xlarge">g6e.2xlarge — L40S 48GB · ~$1.10/hr</option>
-              <option value="g6e.4xlarge">g6e.4xlarge — L40S 48GB · ~$1.60/hr</option>
-              <option value="g6e.8xlarge">g6e.8xlarge — L40S 48GB · ~$2.35/hr</option>
-              <option value="g6e.12xlarge">g6e.12xlarge — 4×L40S 192GB · ~$4.80/hr</option>
-            </optgroup>
-            <optgroup label="Flagship — A100 / H100">
-              <option value="p4d.24xlarge">p4d.24xlarge — 8×A100 320GB · ~$9.83/hr</option>
-              <option value="p5.48xlarge">p5.48xlarge — 8×H100 640GB · ~$43.04/hr</option>
-            </optgroup>
+            <option value="g6e.xlarge" selected>g6e.xlarge — L40S 48GB · ~$0.75/hr (⭐ Recommended)</option>
+            <option value="g5.xlarge">g5.xlarge — A10G 24GB · ~$0.51/hr</option>
+            <option value="g6e.2xlarge">g6e.2xlarge — L40S 48GB · ~$1.10/hr</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">SSH Key Path</label>
-          <input type="text" id="cfg-key-file" class="form-input" placeholder="~/.ssh/pluto-gpu-key-2026-07-26.pem">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Auto-Shutdown on Idle</label>
+          <label class="form-label">Auto-Shutdown Watchdog</label>
           <select id="cfg-idle-shutdown" class="form-select">
             <option value="10">10 mins</option>
-            <option value="15">15 mins</option>
-            <option value="20">20 mins (Default)</option>
+            <option value="20" selected>20 mins (Default)</option>
             <option value="30">30 mins</option>
             <option value="60">60 mins</option>
             <option value="0">Disabled</option>
           </select>
         </div>
+        <button id="btn-save-cfg" class="btn-action" style="margin-top: 8px; justify-content: center;">
+          <span>Save Settings</span>
+        </button>
       </div>
 
-      <div class="config-card">
-        <div class="metric-title">Generation Defaults</div>
-        <div class="form-group">
+      <div class="panel">
+        <span class="metric-title">Generation & Guidance Defaults</span>
+        <div class="form-group" style="margin-top: 8px;">
           <label class="form-label">Default Duration</label>
           <select id="cfg-duration" class="form-select">
             <option value="4.0">4.0 Seconds</option>
             <option value="6.0">6.0 Seconds</option>
             <option value="8.0">8.0 Seconds</option>
-            <option value="10.0">10.0 Seconds</option>
-            <option value="16.0">16.0 Seconds</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Default STG Scale <span style="font-size:10px;color:var(--text-faint)">(0 = distilled, 0.8 = dev)</span></label>
+          <label class="form-label">STG Guidance Scale</label>
           <input type="number" id="cfg-stg" class="form-input" min="0" max="5" step="0.1" value="0.8">
         </div>
         <div class="form-group">
-          <label class="form-label">Modality Scale <span style="font-size:10px;color:var(--text-faint)">(image fidelity)</span></label>
+          <label class="form-label">Modality Scale (Image Fidelity)</label>
           <input type="number" id="cfg-modality" class="form-input" min="0" max="5" step="0.1" value="1.0">
         </div>
-        <button id="btn-save-cfg" class="btn-action" style="margin-top: 8px;">
-          <span>Save Settings</span>
-        </button>
-        <p style="font-size:10px;color:var(--text-faint);margin-top:8px">
-          Config is also accessible from the sidebar panel on every page.
-        </p>
+        <div class="form-group">
+          <label class="form-label">SSH Key File Path</label>
+          <input type="text" id="cfg-key-file" class="form-input" placeholder="~/.ssh/pluto-gpu-key-2026-07-26.pem">
+        </div>
       </div>
     </div>
 
-
   </main>
+
+  <!-- Inspect Mode Slide-Over Drawer -->
+  <div id="drawer-inspect">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <div class="drawer-tabs">
+          <button class="drawer-tab active" data-tab="tab-terminal">🖥️ Web SSH Shell</button>
+          <button class="drawer-tab" data-tab="tab-metrics">📊 Hardware Metrics</button>
+          <button class="drawer-tab" data-tab="tab-actions">⚡ Service Actions</button>
+        </div>
+        <button id="btn-close-drawer" class="btn-action" style="padding: 4px 10px;">✕ Close</button>
+      </div>
+      <div class="drawer-body">
+        <div id="tab-terminal" class="drawer-panel" style="height: 100%;">
+          <div id="xterm-container" style="height: 100%; border-radius: 8px; overflow: hidden;"></div>
+        </div>
+        <div id="tab-metrics" class="drawer-panel" style="display: none;">
+          <pre id="metrics-output" style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--mv-text-muted);"></pre>
+        </div>
+        <div id="tab-actions" class="drawer-panel" style="display: none;">
+          <button class="btn-action action-btn" data-action="restart_worker">Restart Worker</button>
+          <button class="btn-action action-btn" data-action="clear_tmp" style="margin-left: 8px; color: var(--accent-rose);">Clear Scratch Tmp</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div id="toast" class="toast-popup">
     <span id="toast-msg">Notification</span>
   </div>
 
-  
-  <!-- First-Run Onboarding Modal -->
-  <div id="modal-onboarding" class="mv-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(0,0,0,0.85);">
-    <div class="mv-modal-card" style="max-width: 800px; width: 90%;">
-      <div class="mv-modal-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
-        <div>
-          <h2 class="mv-modal-title" style="font-size: 24px; margin-bottom: 8px;">Welcome to SpacePilot</h2>
-          <p class="mv-modal-subtitle">Choose your compute provider to get started</p>
-        </div>
-      </div>
-      <div class="mv-modal-body" style="display: flex; gap: 16px; padding: 24px 0;">
-        
-        <!-- Card 1: Shadeform -->
-        <div class="provider-card" data-provider="shadeform" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
-          <h3 style="margin-bottom: 8px;">🌐 Shadeform Multi-Cloud <span style="font-size: 12px; background: var(--accent-blue); color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle;">⭐ Recommended</span></h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">1 Key to access 20+ Clouds (AWS, Lambda, RunPod, Nebius). Auto-finds cheapest spot GPU in seconds.</p>
-          <input type="text" id="onboard-shadeform-key" class="form-input" placeholder="Paste Shadeform API Key" style="display: none;" autocomplete="off">
-        </div>
-
-        <!-- Card 2: AWS -->
-        <div class="provider-card" data-provider="aws" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
-          <h3 style="margin-bottom: 8px;">☁️ AWS Direct Spot</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Connect your existing AWS account directly. Pure spot pricing ($0.75/hr for L40S).</p>
-          <input type="text" id="onboard-aws-profile" class="form-input" placeholder="AWS Profile (e.g. default)" style="display: none;" autocomplete="off">
-        </div>
-
-        <!-- Card 3: Local -->
-        <div class="provider-card" data-provider="local" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
-          <h3 style="margin-bottom: 8px;">💻 Local Homelab / Free</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Zero setup. Connects to local Mac Studio or local RTX rig ($0.00/hr).</p>
-          <p id="onboard-local-msg" style="display: none; font-size: 14px; color: var(--text-main);">Will use local endpoints.</p>
-        </div>
-
-      </div>
-      <div class="mv-modal-actions" style="justify-content: flex-end;">
-        <button id="modal-onboarding-confirm" class="mv-modal-btn mv-modal-btn-confirm" disabled>Connect Provider</button>
-      </div>
-    </div>
-  </div>
-
-<!-- Launch Confirmation Modal -->
-  <div id="modal-launch" class="mv-modal-backdrop">
-    <div class="mv-modal-card">
-      <div class="mv-modal-header">
-        <div class="mv-modal-icon-wrap launch">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <div>
-          <h3 class="mv-modal-title">Authorize AWS GPU Launch</h3>
-          <p class="mv-modal-subtitle">Start Spot GPU compute & warm VRAM resident worker</p>
-        </div>
-      </div>
-      <div class="mv-modal-body">
-        <p>This will provision an on-demand AWS Spot instance in your connected AWS account. Billing will begin immediately upon boot.</p>
-        <div class="mv-modal-info-box">
-          <div class="mv-modal-info-row">
-            <span>Instance Tier:</span>
-            <span id="modal-launch-type">g6e.xlarge (L40S 48GB)</span>
-          </div>
-          <div class="mv-modal-info-row">
-            <span>Region:</span>
-            <span id="modal-launch-region">us-east-1</span>
-          </div>
-          <div class="mv-modal-info-row">
-            <span>Estimated Spot Rate:</span>
-            <span id="modal-launch-rate">~$0.75 / hr</span>
-          </div>
-        </div>
-      </div>
-      <div class="mv-modal-actions">
-        <button id="modal-launch-cancel" class="mv-modal-btn mv-modal-btn-cancel">Cancel</button>
-        <button id="modal-launch-confirm" class="mv-modal-btn mv-modal-btn-confirm-launch">Authorize & Launch Box</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Terminate Confirmation Modal (Destructive) -->
-  <div id="modal-terminate" class="mv-modal-backdrop">
-    <div class="mv-modal-card">
-      <div class="mv-modal-header">
-        <div class="mv-modal-icon-wrap terminate">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-        </div>
-        <div>
-          <h3 class="mv-modal-title">Terminate GPU Box</h3>
-          <p class="mv-modal-subtitle">Halt cloud billing and destroy instance</p>
-        </div>
-      </div>
-      <div class="mv-modal-body">
-        <p style="color: var(--accent-rose); font-weight: 500;">
-          ⚠️ Warning: Terminating destroys the temporary NVMe scratch volume. Any unsynced video renders or takes will be permanently lost.
-        </p>
-        <div class="mv-modal-info-box">
-          <div class="mv-modal-info-row">
-            <span>Active Instance:</span>
-            <span id="modal-terminate-id">i-0123456789</span>
-          </div>
-          <div class="mv-modal-info-row">
-            <span>Session Uptime:</span>
-            <span id="modal-terminate-uptime">0.0 mins</span>
-          </div>
-        </div>
-        <div class="mv-modal-type-confirm">
-          <label class="mv-modal-type-label">Type <strong style="color:var(--text-main);">TERMINATE</strong> to confirm:</label>
-          <input type="text" id="modal-terminate-input" class="mv-modal-type-input" placeholder="TERMINATE" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-      <div class="mv-modal-actions">
-        <button id="modal-terminate-cancel" class="mv-modal-btn mv-modal-btn-cancel">Cancel</button>
-        <button id="modal-terminate-confirm" class="mv-modal-btn mv-modal-btn-confirm-terminate" disabled>Destroy & Stop Billing</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="theme.js"></script>
-  <script src="sidebar.js"></script>
-  <script src="cockpit.js"></script>
-
-  <!-- Inspect Box Drawer -->
-  <div id="drawer-inspect" class="drawer-backdrop" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); justify-content: flex-end;">
-    <div class="drawer-panel" style="background: var(--bg-panel); width: 800px; max-width: 100vw; height: 100vh; border-left: 1px solid var(--border-light); display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,0.2); animation: slideInRight 0.3s ease;">
-      
-      <div class="drawer-header" style="padding: 16px 24px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h2 style="margin: 0; font-size: 18px;">🔍 Inspect Box</h2>
-          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-faint);">Live diagnostics & SSH for <span id="inspect-ip">--</span></p>
-        </div>
-        <button id="btn-close-inspect" style="background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer;">&times;</button>
-      </div>
-
-      <div class="drawer-tabs" style="display: flex; border-bottom: 1px solid var(--border-light); padding: 0 24px; gap: 16px;">
-        <button class="tab-btn active" data-tab="tab-ssh" style="background: none; border: none; padding: 12px 0; color: var(--text-main); font-weight: 600; border-bottom: 2px solid var(--accent-blue); cursor: pointer;">🖥️ SSH Terminal</button>
-        <button class="tab-btn" data-tab="tab-metrics" style="background: none; border: none; padding: 12px 0; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer;">📊 Metrics</button>
-        <button class="tab-btn" data-tab="tab-actions" style="background: none; border: none; padding: 12px 0; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer;">⚡ Actions</button>
-      </div>
-
-      <div class="drawer-content" style="flex: 1; overflow-y: auto; padding: 24px;">
-        
-        <!-- Tab 1: SSH -->
-        <div id="tab-ssh" class="tab-pane" style="display: block; height: 100%;">
-          <div id="terminal-container" style="width: 100%; height: 100%; background: #000; border-radius: 24px; overflow: hidden; padding: 8px;"></div>
-        </div>
-
-        <!-- Tab 2: Metrics -->
-        <div id="tab-metrics" class="tab-pane" style="display: none;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px;">
-              <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">GPU Temp</div>
-              <div id="metric-gpu-temp" style="font-size: 24px; font-weight: 600;">-- °C</div>
-            </div>
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px;">
-              <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">VRAM Used</div>
-              <div id="metric-vram" style="font-size: 24px; font-weight: 600;">-- / --</div>
-            </div>
-          </div>
-          
-          <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">Scratch Disk Space</h3>
-          <pre id="metric-disk" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
-
-          <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">System RAM</h3>
-          <pre id="metric-ram" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
-          
-          <button id="btn-refresh-metrics" class="btn-action" style="margin-top: 16px;">Refresh Metrics</button>
-        </div>
-
-        <!-- Tab 3: Actions -->
-        <div id="tab-actions" class="tab-pane" style="display: none;">
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-weight: 600; margin-bottom: 4px;">Restart LTX Worker</div>
-                <div style="font-size: 12px; color: var(--text-faint);">Restarts the systemd worker service.</div>
-              </div>
-              <button class="btn-action action-btn" data-action="restart_worker">Restart</button>
-            </div>
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-weight: 600; margin-bottom: 4px;">Clear Tmp Space</div>
-                <div style="font-size: 12px; color: var(--text-faint);">Deletes everything in /scratch/tmp/</div>
-              </div>
-              <button class="btn-action action-btn" data-action="clear_tmp" style="background: var(--accent-rose); color: white; border: none;">Clear</button>
-            </div>
-          </div>
-          <div id="action-output" style="margin-top: 24px; display: none;">
-            <h3 style="font-size: 14px; margin-bottom: 8px;">Action Result</h3>
-            <pre id="action-output-text" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);"></pre>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-  <style>
-    @keyframes slideInRight {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
-    }
-  </style>
-
+  <script src="/cockpit.js"></script>
+  <script src="/theme.js"></script>
 </body>
 </html>
