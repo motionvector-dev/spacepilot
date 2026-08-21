@@ -793,6 +793,51 @@ def test_cockpit_status_includes_launch_time(monkeypatch):
     assert "uptime_minutes" in data
     assert "estimated_cost_usd" in data
 
+
+def test_video_extension():
+    """Verify /api/video/extend extracts final frame, queues generation, and tracks lineage."""
+    import time
+    # Create a dummy source video for extraction
+    clean_id = "test_extend_src"
+    source_mp4 = OUTPUTS_DIR / f"{clean_id}.mp4"
+    import subprocess
+    subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=24", "-c:v", "libx264", "-y", str(source_mp4)], capture_output=True)
+
+    # Initial meta file
+    meta_file = OUTPUTS_DIR / f"{clean_id}.json"
+    meta_file.write_text('{"extension_index": 1}')
+
+    payload = {
+        "asset_id": f"{clean_id}.mp4",
+        "prompt": "extended prompt",
+        "duration": 4.0,
+        "draft_mode": True
+    }
+    
+    response = client.post(
+        "/api/video/extend",
+        json=payload,
+        headers={"X-Pluto-Token": STUDIO_TOKEN}
+    )
+    assert response.status_code == 200, f"Extend failed: {response.text}"
+    data = response.json()
+    assert "job_id" in data
+    assert data["meta"]["extended_from"] == f"{clean_id}.mp4"
+    assert data["meta"]["extension_index"] == 2
+    
+    # Check that job meta file on disk was updated
+    job_meta_file = OUTPUTS_DIR / f"{data['job_id']}.json"
+    assert job_meta_file.exists()
+    import json
+    with open(job_meta_file) as f:
+        job_meta = json.load(f)
+    assert job_meta["extended_from"] == f"{clean_id}.mp4"
+    assert job_meta["extension_index"] == 2
+    
+    # Wait for background task to finish (mock pipeline)
+    time.sleep(2)
+
+
 def test_generate_with_camera_motion():
     """Verify camera parameters are compiled into prompt and STG."""
     res = client.post(

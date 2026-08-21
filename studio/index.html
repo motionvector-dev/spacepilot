@@ -323,6 +323,12 @@
                 <span>✦ Composite 4K Master</span>
               </button>
 
+
+              <button id="btnExtendTake" class="btn-transport-accent" title="Extend Take (+4s)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>➕ Extend Take (+4s)</span>
+              </button>
+
               <button id="btnDownloadCurrent" class="btn-transport-tool" title="Download Active Video File">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </button>
@@ -962,5 +968,26 @@
   <script src="theme.js"></script>
   <script src="sidebar.js"></script>
   <script src="studio.js"></script>
+
+  
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnExtendTake = document.getElementById('btnExtendTake');
+      if (btnExtendTake) {
+        btnExtendTake.addEventListener('click', () => {
+          const activeTakeCard = document.querySelector('.take-strip-card.active');
+          if (activeTakeCard) {
+            const assetId = activeTakeCard.getAttribute('data-asset-id');
+            window.location.href = `/create?extend_id=${encodeURIComponent(assetId)}`;
+          } else {
+            alert('Please select a take to extend first.');
+          }
+        });
+      }
+    });
+  </script>
+
 </body>
+
 </html>
