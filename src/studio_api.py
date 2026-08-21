@@ -111,23 +111,11 @@ _watchdog_event = None
 
 
 def update_activity() -> None:
-    global _last_activity_time
-    _last_activity_time = time.time()
     from src.pluto.api import deps
-    deps._last_activity_time = _last_activity_time
+    deps.update_activity()
+    global _last_activity_time
+    _last_activity_time = deps.get_last_activity_time()
 
-
-def get_last_activity_time() -> float:
-    return _last_activity_time
-
-
-def require_token(x_pluto_token: Optional[str] = Header(None)) -> None:
-    try:
-        ok = bool(x_pluto_token) and secrets.compare_digest(x_pluto_token, STUDIO_TOKEN)
-    except TypeError:
-        ok = False
-    if not ok:
-        raise HTTPException(status_code=401, detail="Missing or invalid X-Pluto-Token")
 
 
 def _build_status(cfg: dict) -> dict:
