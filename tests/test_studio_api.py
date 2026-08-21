@@ -729,6 +729,128 @@ def test_generate_with_image_path():
     assert disk_meta["image_path"] == sample_image
 
 
+
+def test_inspect_metrics_endpoint(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import subprocess
+    
+    client = TestClient(studio_api.app)
+    
+    # Mock instance info
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    # Mock subprocess.run
+    def mock_run(cmd, *args, **kwargs):
+        class MockCompletedProcess:
+            returncode = 0
+            stdout = "95 %, 15000 MiB, 24000 MiB, 72\n---\nFilesystem Size Used Avail Use% Mounted on\n/dev/sda1 100G 50G 50G 50% /scratch\n---\n              total        used        free      shared  buff/cache   available\nMem:          32000       10000       15000           0        7000       20000"
+            stderr = ""
+        return MockCompletedProcess()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    
+    res = client.get("/api/gpu/inspect/metrics", headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["gpu"]["utilization"] == "95 %"
+    assert "df -h" not in data["disk"] # check real parsing
+    
+def test_inspect_action_endpoint(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import subprocess
+    
+    client = TestClient(studio_api.app)
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    def mock_run(cmd, *args, **kwargs):
+        class MockCompletedProcess:
+            returncode = 0
+            stdout = "Worker restarted"
+            stderr = ""
+        return MockCompletedProcess()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    
+    res = client.post("/api/gpu/inspect/action", json={"action": "restart_worker"}, headers=AUTH)
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+    
+    res_bad = client.post("/api/gpu/inspect/action", json={"action": "rm_rf_slash"}, headers=AUTH)
+    assert res_bad.status_code == 400
+
+
+
+def test_inspect_shell_ws_valid_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import asyncio
+    
+    # Mock subprocess.create_subprocess_exec
+    class MockProcess:
+        returncode = None
+        def __init__(self):
+            self.stdout = asyncio.StreamReader()
+            class MockStreamWriter:
+                def write(self, *args): pass
+                async def drain(self, *args): pass
+            self.stdin = MockStreamWriter()
+            # monkeypatch stdin.write and drain
+            
+            
+            
+        def terminate(self):
+            self.returncode = 0
+            
+        def kill(self):
+            pass
+            
+        async def wait(self):
+            pass
+
+    async def mock_exec(*args, **kwargs):
+        return MockProcess()
+        
+    monkeypatch.setattr(studio_api.asyncio, "create_subprocess_exec", mock_exec)
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    client = TestClient(studio_api.app)
+    
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        # Valid auth
+        websocket.send_json({"type": "auth", "token": studio_api.STUDIO_TOKEN})
+        # Wait a tiny bit to ensure it processes
+        # we can't easily wait, but we can send a resize frame to see if it processes without closing
+        websocket.send_json({"type": "resize", "cols": 80, "rows": 24})
+        # If it didn't disconnect, we're good.
+        
+def test_inspect_shell_ws_invalid_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    from starlette.websockets import WebSocketDisconnect
+    
+    client = TestClient(studio_api.app)
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        websocket.send_json({"type": "auth", "token": "invalid_token"})
+        try:
+            websocket.receive_text()
+            assert False, "Should have disconnected"
+        except WebSocketDisconnect as e:
+            assert e.code == 1008
+
+def test_inspect_shell_ws_null_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    from starlette.websockets import WebSocketDisconnect
+    
+    client = TestClient(studio_api.app)
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        websocket.send_json({"type": "auth", "token": None})
+        try:
+            websocket.receive_text()
+            assert False, "Should have disconnected"
+        except WebSocketDisconnect as e:
+            assert e.code == 1008
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()

@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends, Request, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends, Request, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -2063,6 +2063,200 @@ def get_asset_thumbnail_file(asset_id: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # HTML VIEWS
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INSPECT MODE (WEB SSH & DIAGNOSTICS)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.websocket("/api/gpu/inspect/shell")
+async def inspect_shell_ws(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        # Initial Auth Frame (wait up to 3s)
+        try:
+            auth_frame = await asyncio.wait_for(websocket.receive_json(), timeout=3.0)
+            if auth_frame.get("type") != "auth" or not secrets.compare_digest(str(auth_frame.get("token") or ""), STUDIO_TOKEN):
+                await websocket.close(code=1008)
+                return
+        except (asyncio.TimeoutError, json.JSONDecodeError):
+            await websocket.close(code=1008)
+            return
+
+        cfg = load_config()
+        inst = get_instance_info(cfg)
+        if not inst or inst.get("state") != "running" or not inst.get("ip"):
+            await websocket.send_json({"type": "error", "message": "Instance not running"})
+            await websocket.close(code=1011)
+            return
+
+        key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+        ip = inst["ip"]
+
+        # Non-blocking SSH Bridge
+        # We need a pseudo-terminal for interactive shell. ssh -t -t
+        ssh_cmd = [
+            "ssh", "-t", "-t", "-i", key,
+            "-o", "StrictHostKeyChecking=no",
+            f"ubuntu@{ip}",
+            "bash"
+        ]
+
+        process = await asyncio.create_subprocess_exec(
+            *ssh_cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT
+        )
+
+        async def read_stdout():
+            try:
+                while True:
+                    data = await process.stdout.read(4096)
+                    if not data:
+                        break
+                    # Send as text (base64 or just string if it's utf-8)
+                    # For xterm.js we can send raw text. But xterm handles ansi.
+                    # We can send as json with type='data' or just raw string.
+                    # Usually WebSocket sends raw text or bytes.
+                    # Let's send as string.
+                    try:
+                        text = data.decode("utf-8")
+                        await websocket.send_text(text)
+                    except UnicodeDecodeError:
+                        await websocket.send_bytes(data)
+            except Exception:
+                pass
+
+        async def read_ws():
+            try:
+                while True:
+                    msg = await websocket.receive()
+                    if "text" in msg:
+                        try:
+                            data = json.loads(msg["text"])
+                            if data.get("type") == "resize":
+                                # Handle resize gracefully if needed (e.g. via stty size in the stream or signals)
+                                # For a simple bridge, we might just ignore or send an stty command.
+                                cols = data.get("cols", 120)
+                                rows = data.get("rows", 40)
+                                # send stty command to set size
+                                process.stdin.write(f"stty cols {cols} rows {rows}\n".encode())
+                                await process.stdin.drain()
+                                continue
+                        except json.JSONDecodeError:
+                            # If not JSON, treat as raw input data
+                            process.stdin.write(msg["text"].encode("utf-8"))
+                            await process.stdin.drain()
+                    elif "bytes" in msg:
+                        process.stdin.write(msg["bytes"])
+                        await process.stdin.drain()
+            except Exception:
+                pass
+
+        stdout_task = asyncio.create_task(read_stdout())
+        ws_task = asyncio.create_task(read_ws())
+
+        done, pending = await asyncio.wait(
+            [stdout_task, ws_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        for task in pending:
+            task.cancel()
+
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if 'process' in locals() and process.returncode is None:
+            try:
+                process.terminate()
+                await asyncio.sleep(0.1)
+                if process.returncode is None:
+                    process.kill()
+                await process.wait()
+            except ProcessLookupError:
+                pass
+
+@app.get("/api/gpu/inspect/metrics")
+def get_inspect_metrics(_: None = Depends(require_token)):
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+    if not inst or inst.get("state") != "running" or not inst.get("ip"):
+        raise HTTPException(status_code=400, detail="Instance not running")
+
+    key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+    ip = inst["ip"]
+
+    # Execute bounded SSH command
+    ssh_cmd = [
+        "ssh", "-i", key,
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "ConnectTimeout=5",
+        f"ubuntu@{ip}",
+        "nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits && echo '---' && df -h /scratch && echo '---' && free -m"
+    ]
+    try:
+        res = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)
+        if res.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"SSH failed: {res.stderr}")
+        
+        parts = res.stdout.split('---')
+        if len(parts) >= 3:
+            gpu_stats = parts[0].strip().split(',')
+            df_stats = parts[1].strip()
+            free_stats = parts[2].strip()
+            return {
+                "gpu": {
+                    "utilization": gpu_stats[0].strip() if len(gpu_stats) > 0 else "0",
+                    "memory_used": gpu_stats[1].strip() if len(gpu_stats) > 1 else "0",
+                    "memory_total": gpu_stats[2].strip() if len(gpu_stats) > 2 else "0",
+                    "temperature": gpu_stats[3].strip() if len(gpu_stats) > 3 else "0",
+                },
+                "disk": df_stats,
+                "memory": free_stats
+            }
+        return {"raw": res.stdout}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class InspectActionRequest(BaseModel):
+    action: str
+
+@app.post("/api/gpu/inspect/action")
+def post_inspect_action(req: InspectActionRequest, _: None = Depends(require_token)):
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+    if not inst or inst.get("state") != "running" or not inst.get("ip"):
+        raise HTTPException(status_code=400, detail="Instance not running")
+
+    key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+    ip = inst["ip"]
+
+    whitelist = {
+        "restart_worker": "sudo systemctl restart ltx-worker",
+        "clear_tmp": "rm -rf /scratch/tmp/*"
+    }
+
+    if req.action not in whitelist:
+        raise HTTPException(status_code=400, detail=f"Action '{req.action}' not whitelisted")
+
+    cmd = whitelist[req.action]
+    ssh_cmd = [
+        "ssh", "-i", key,
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "ConnectTimeout=5",
+        f"ubuntu@{ip}",
+        cmd
+    ]
+    try:
+        res = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)
+        if res.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Action failed: {res.stderr}")
+        return {"ok": True, "message": f"Action {req.action} executed successfully", "output": res.stdout}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/")
 def read_root():
