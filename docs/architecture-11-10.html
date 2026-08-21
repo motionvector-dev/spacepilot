@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotionVector Architecture</title>
+<style>
+/* MotionVector Brand Core */
+:root {
+  --mv-bg: #000000;
+  --mv-surface: #050506;
+  --mv-border: #27272a;
+  --mv-text: #fafafa;
+  --mv-text-muted: #a1a1aa;
+  --mv-accent: #60a5fa;
+  --mv-accent-dim: rgba(96, 165, 250, 0.1);
+  --mv-accent-border: rgba(96, 165, 250, 0.3);
+}
+
+:root[data-theme="light"] {
+  --mv-bg: #ffffff;
+  --mv-surface: #f4f4f5;
+  --mv-border: #e4e4e7;
+  --mv-text: #09090b;
+  --mv-text-muted: #71717a;
+  --mv-accent: #3b82f6;
+  --mv-accent-dim: rgba(59, 130, 246, 0.1);
+  --mv-accent-border: rgba(59, 130, 246, 0.3);
+}
+
+body {
+  background-color: var(--mv-bg);
+  color: var(--mv-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.mv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--mv-border);
+  background-color: var(--mv-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mv-brand {
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+.mv-theme-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--mv-bg);
+  padding: 0.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--mv-border);
+}
+
+.mv-btn {
+  background: transparent;
+  border: none;
+  color: var(--mv-text-muted);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.mv-btn:hover {
+  color: var(--mv-text);
+}
+
+.mv-btn.active {
+  background-color: var(--mv-surface);
+  color: var(--mv-text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.mv-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.mv-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.mv-lead {
+  font-size: 1.25rem;
+  color: var(--mv-text-muted);
+  margin-bottom: 4rem;
+  max-width: 80%;
+}
+
+.mv-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mv-accent);
+  margin-bottom: 0.5rem;
+}
+
+.mv-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.mv-section {
+  margin-bottom: 5rem;
+}
+
+.mv-diagram-container {
+  background-color: var(--mv-surface);
+  border: 1px solid var(--mv-border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.mv-svg {
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+}
+
+.mv-svg-surface {
+  fill: var(--mv-bg);
+  stroke: var(--mv-border);
+  stroke-width: 2;
+}
+
+.mv-svg-accent-surface {
+  fill: var(--mv-accent-dim);
+  stroke: var(--mv-accent-border);
+  stroke-width: 2;
+}
+
+.mv-svg-text {
+  fill: var(--mv-text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.mv-svg-text-accent {
+  fill: var(--mv-accent);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.mv-svg-text-muted {
+  fill: var(--mv-text-muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.mv-svg-stroke-muted {
+  stroke: var(--mv-border);
+}
+
+.mv-svg-stroke-accent {
+  stroke: var(--mv-accent);
+}
+
+.mv-svg-fill-muted {
+  fill: var(--mv-text-muted);
+}
+
+.mv-svg-fill-accent {
+  fill: var(--mv-accent);
+}
+
+.mv-svg-track {
+  fill: var(--mv-surface);
+  stroke: var(--mv-border);
+  stroke-width: 1;
+}
+</style>
+</head>
+<body>
+
+  <div class="mv-header">
+    <div class="mv-brand">MotionVector Architecture</div>
+    <div class="mv-theme-toggle">
+      <button onclick="setTheme('system')" class="mv-btn active" id="btn-system">System</button>
+      <button onclick="setTheme('dark')" class="mv-btn" id="btn-dark">Dark</button>
+      <button onclick="setTheme('light')" class="mv-btn" id="btn-light">Light</button>
+    </div>
+  </div>
+
+  <div class="mv-content">
+    <h1 class="mv-title">The 11/10 Architecture Upgrade</h1>
+    <p class="mv-lead">
+      Moving the Katana GPU pipeline from a resilient survivor to a hyperscale, world-class video processing engine. A comprehensive 5-phase blueprint.
+    </p>
+
+    <!-- TOP SECTION 1: FULL END-TO-END ARCHITECTURE -->
+    <div class="mv-section">
+      <div class="mv-badge">Overview</div>
+      <h2>Full End-to-End System Architecture</h2>
+      <p>
+        Unified control plane connecting stateless client ingestion, event-driven queue dispatch, dynamic hybrid fleet scheduling (Mac, 5090, Runpod, Modal), and distributed observability.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 840 500" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="m-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="mv-svg-fill-muted" />
+            </marker>
+            <marker id="m-arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="mv-svg-fill-accent" />
+            </marker>
+          </defs>
+
+          <!-- INGESTION & STORAGE -->
+          <rect x="40" y="30" width="130" height="70" rx="8" class="mv-svg-surface" />
+          <text x="105" y="60" class="mv-svg-text" text-anchor="middle">Client App</text>
+          <text x="105" y="80" class="mv-svg-text-muted" text-anchor="middle">Web / API Upload</text>
+
+          <rect x="230" y="30" width="170" height="70" rx="8" class="mv-svg-surface" />
+          <text x="315" y="58" class="mv-svg-text" text-anchor="middle">Ingestion Gateway</text>
+          <text x="315" y="80" class="mv-svg-text-muted" text-anchor="middle">FFmpeg 7.1 Chunker</text>
+
+          <rect x="460" y="30" width="160" height="70" rx="8" class="mv-svg-accent-surface" />
+          <text x="540" y="58" class="mv-svg-text-accent" text-anchor="middle">S3 / Object Store</text>
+          <text x="540" y="80" class="mv-svg-text-muted" text-anchor="middle">Raw GOPs + Models</text>
+
+          <line x1="170" y1="65" x2="220" y2="65" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" />
+          <line x1="400" y1="65" x2="450" y2="65" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" />
+
+          <!-- CONTROL PLANE / SCHEDULER -->
+          <rect x="130" y="150" width="190" height="85" rx="8" class="mv-svg-accent-surface" />
+          <text x="225" y="180" class="mv-svg-text-accent" text-anchor="middle">Event Bus (SQS)</text>
+          <text x="225" y="202" class="mv-svg-text-muted" text-anchor="middle">Atomic Visibility Lock</text>
+          <text x="225" y="220" class="mv-svg-text-muted" text-anchor="middle">Zero Mongo Polling</text>
+
+          <rect x="380" y="150" width="240" height="85" rx="8" class="mv-svg-accent-surface" />
+          <text x="500" y="180" class="mv-svg-text-accent" text-anchor="middle">Fleet Scheduler Service</text>
+          <text x="500" y="202" class="mv-svg-text-muted" text-anchor="middle">WebSocket Heartbeats & Capacity</text>
+          <text x="500" y="220" class="mv-svg-text-muted" text-anchor="middle">Cost-Aware Dynamic Routing</text>
+
+          <line x1="315" y1="100" x2="225" y2="140" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#m-arr)" />
+          <line x1="320" y1="192" x2="370" y2="192" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" />
+
+          <!-- COMPUTE FLEET -->
+          <rect x="40" y="290" width="170" height="85" rx="8" class="mv-svg-surface" />
+          <text x="125" y="318" class="mv-svg-text" text-anchor="middle">Tier 0: Local Macs</text>
+          <text x="125" y="340" class="mv-svg-text-muted" text-anchor="middle">CoreML + Metal</text>
+          <text x="125" y="358" class="mv-svg-text-muted" text-anchor="middle">VideoToolbox H.264</text>
+
+          <rect x="235" y="290" width="170" height="85" rx="8" class="mv-svg-surface" />
+          <text x="320" y="318" class="mv-svg-text" text-anchor="middle">Tier 1: Local 5090</text>
+          <text x="320" y="340" class="mv-svg-text-muted" text-anchor="middle">ONNX / TensorRT</text>
+          <text x="320" y="358" class="mv-svg-text-muted" text-anchor="middle">NVENC Hardware</text>
+
+          <rect x="430" y="290" width="175" height="85" rx="8" class="mv-svg-surface" />
+          <text x="517" y="318" class="mv-svg-text" text-anchor="middle">Tier 2: RunPod Spot</text>
+          <text x="517" y="340" class="mv-svg-text-muted" text-anchor="middle">PyTorch / TensorRT</text>
+          <text x="517" y="358" class="mv-svg-text-muted" text-anchor="middle">Auto-scaling Pods</text>
+
+          <rect x="630" y="290" width="170" height="85" rx="8" class="mv-svg-surface" />
+          <text x="715" y="318" class="mv-svg-text" text-anchor="middle">Tier 3: Modal Burst</text>
+          <text x="715" y="340" class="mv-svg-text-muted" text-anchor="middle">Serverless Fallback</text>
+          <text x="715" y="358" class="mv-svg-text-muted" text-anchor="middle">Elastic Overflow</text>
+
+          <!-- Scheduler to Fleet Dispatch Lines -->
+          <path d="M 450 235 C 450 260, 125 260, 125 280" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" stroke-dasharray="3" />
+          <path d="M 480 235 C 480 265, 320 265, 320 280" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" stroke-dasharray="3" />
+          <path d="M 520 235 C 520 265, 517 265, 517 280" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" stroke-dasharray="3" />
+          <path d="M 560 235 C 560 260, 715 260, 715 280" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#m-arr-blue)" stroke-dasharray="3" />
+
+          <!-- OUTPUT & TELEMETRY -->
+          <rect x="40" y="415" width="365" height="60" rx="8" class="mv-svg-surface" />
+          <text x="222" y="442" class="mv-svg-text" text-anchor="middle">Assembly &amp; Delivery</text>
+          <text x="222" y="462" class="mv-svg-text-muted" text-anchor="middle">Lossless FFmpeg Stitch + Audio Mux + CDN</text>
+
+          <rect x="430" y="415" width="370" height="60" rx="8" class="mv-svg-surface" />
+          <text x="615" y="442" class="mv-svg-text" text-anchor="middle">OpenTelemetry Hub</text>
+          <text x="615" y="462" class="mv-svg-text-muted" text-anchor="middle">End-to-End Tracing + Real-Time VRAM Telemetry</text>
+
+          <line x1="222" y1="375" x2="222" y2="405" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#m-arr)" />
+          <line x1="615" y1="375" x2="615" y2="405" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#m-arr)" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- TOP SECTION 2: TIMELINE & LIFECYCLE -->
+    <div class="mv-section">
+      <div class="mv-badge">Lifecycle</div>
+      <h2>End-to-End Video Processing Timeline</h2>
+      <p>
+        Chronological execution trace showing parallel GOP chunking, atomic worker lease acquisition, neural super-resolution inference, and final audio-synchronized assembly.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 840 430" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <!-- Timeline Time Axis Header -->
+          <line x1="160" y1="40" x2="800" y2="40" class="mv-svg-stroke-muted" stroke-width="1.5" />
+          <circle cx="170" cy="40" r="4" class="mv-svg-fill-accent" />
+          <text x="170" y="25" class="mv-svg-text-muted" text-anchor="middle">T0: 0.0s</text>
+          
+          <circle cx="310" cy="40" r="4" class="mv-svg-fill-muted" />
+          <text x="310" y="25" class="mv-svg-text-muted" text-anchor="middle">T1: 1.5s</text>
+
+          <circle cx="470" cy="40" r="4" class="mv-svg-fill-muted" />
+          <text x="470" y="25" class="mv-svg-text-muted" text-anchor="middle">T2: 3.0s</text>
+
+          <circle cx="680" cy="40" r="4" class="mv-svg-fill-muted" />
+          <text x="680" y="25" class="mv-svg-text-muted" text-anchor="middle">T3: 15.0s</text>
+
+          <circle cx="780" cy="40" r="4" class="mv-svg-fill-accent" />
+          <text x="780" y="25" class="mv-svg-text-accent" text-anchor="middle">T4: Ready</text>
+
+          <!-- Swimlane 1: Ingestion & Splitting -->
+          <text x="30" y="90" class="mv-svg-text-accent" font-weight="bold">1. Ingestion</text>
+          <text x="30" y="108" class="mv-svg-text-muted">API &amp; Splitter</text>
+          <rect x="160" y="70" width="130" height="45" rx="6" class="mv-svg-surface" />
+          <text x="225" y="92" class="mv-svg-text" text-anchor="middle">Upload &amp; Probe</text>
+          <text x="225" y="106" class="mv-svg-text-muted" text-anchor="middle">Extract Audio</text>
+
+          <rect x="300" y="70" width="150" height="45" rx="6" class="mv-svg-accent-surface" />
+          <text x="375" y="92" class="mv-svg-text-accent" text-anchor="middle">FFmpeg 10s GOPs</text>
+          <text x="375" y="106" class="mv-svg-text-muted" text-anchor="middle">Upload to S3</text>
+
+          <!-- Swimlane 2: Scheduler & Queue -->
+          <text x="30" y="180" class="mv-svg-text-accent" font-weight="bold">2. Dispatch</text>
+          <text x="30" y="198" class="mv-svg-text-muted">Scheduler &amp; SQS</text>
+          <rect x="460" y="160" width="170" height="45" rx="6" class="mv-svg-accent-surface" />
+          <text x="545" y="182" class="mv-svg-text-accent" text-anchor="middle">SQS Visibility Lock</text>
+          <text x="545" y="196" class="mv-svg-text-muted" text-anchor="middle">Worker Lease Handshake</text>
+
+          <!-- Swimlane 3: Parallel Worker Inference -->
+          <text x="30" y="270" class="mv-svg-text-accent" font-weight="bold">3. Compute</text>
+          <text x="30" y="288" class="mv-svg-text-muted">Parallel Workers</text>
+
+          <!-- Chunk 0 (Mac) -->
+          <rect x="520" y="235" width="180" height="32" rx="5" class="mv-svg-surface" />
+          <text x="610" y="255" class="mv-svg-text" text-anchor="middle">Chunk 0: Mac Mini (CoreML)</text>
+
+          <!-- Chunk 1 (5090) -->
+          <rect x="500" y="275" width="200" height="32" rx="5" class="mv-svg-surface" />
+          <text x="600" y="295" class="mv-svg-text" text-anchor="middle">Chunk 1: RTX 5090 (TensorRT)</text>
+
+          <!-- Chunk 2 (Runpod) -->
+          <rect x="540" y="315" width="180" height="32" rx="5" class="mv-svg-surface" />
+          <text x="630" y="335" class="mv-svg-text" text-anchor="middle">Chunk 2: RunPod Spot Pod</text>
+
+          <!-- Swimlane 4: Stitching & Completion -->
+          <text x="30" y="390" class="mv-svg-text-accent" font-weight="bold">4. Assembly</text>
+          <text x="30" y="408" class="mv-svg-text-muted">FFmpeg &amp; Delivery</text>
+          <rect x="730" y="370" width="90" height="45" rx="6" class="mv-svg-accent-surface" />
+          <text x="775" y="392" class="mv-svg-text-accent" text-anchor="middle">Concat Chunks</text>
+          <text x="775" y="406" class="mv-svg-text-muted" text-anchor="middle">Mux Audio</text>
+
+          <!-- Flow Connectors -->
+          <line x1="290" y1="92" x2="300" y2="92" class="mv-svg-stroke-accent" stroke-width="1.5" />
+          <path d="M 450 92 C 480 92, 440 182, 460 182" fill="none" class="mv-svg-stroke-accent" stroke-width="1.5" stroke-dasharray="3" />
+          <path d="M 630 182 C 650 182, 500 250, 520 250" fill="none" class="mv-svg-stroke-muted" stroke-width="1.5" />
+          <path d="M 630 182 C 650 182, 480 290, 500 290" fill="none" class="mv-svg-stroke-muted" stroke-width="1.5" />
+          <path d="M 630 182 C 650 182, 520 330, 540 330" fill="none" class="mv-svg-stroke-muted" stroke-width="1.5" />
+          <path d="M 700 250 C 720 250, 720 392, 730 392" fill="none" class="mv-svg-stroke-accent" stroke-width="1.5" stroke-dasharray="3" />
+          <path d="M 700 290 C 720 290, 720 392, 730 392" fill="none" class="mv-svg-stroke-accent" stroke-width="1.5" stroke-dasharray="3" />
+          <path d="M 720 330 C 730 330, 720 392, 730 392" fill="none" class="mv-svg-stroke-accent" stroke-width="1.5" stroke-dasharray="3" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- PHASE 1: EVENT BUS -->
+    <div class="mv-section">
+      <div class="mv-badge">Phase 1</div>
+      <h2>Event-Driven State (Replacing MongoDB Polling)</h2>
+      <p>
+        Currently, the Node backend, DO Orchestrator, and local workers rely on high-frequency polling against MongoDB (<code>find_one_and_update</code> and heartbeat timestamps) to pass the job baton. This creates race conditions, deadlocks, and fragile "staleness watchdogs."
+      </p>
+      <p>
+        <strong>The Upgrade:</strong> Introduce a true message broker (e.g., AWS SQS or Redis Streams). The backend drops a job onto an <code>upscale-jobs</code> queue. Workers pull from the queue, locking the message via a visibility timeout. If a worker crashes, the timeout expires, and the message is instantly re-queued with exactly-once delivery guarantees.
+      </p>
+      
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 800 300" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="mv-svg-fill-muted" />
+            </marker>
+            <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="mv-svg-fill-accent" />
+            </marker>
+          </defs>
+
+          <rect x="50" y="100" width="140" height="60" rx="6" class="mv-svg-surface" />
+          <text x="120" y="135" class="mv-svg-text" text-anchor="middle">Node Backend</text>
+
+          <rect x="300" y="100" width="200" height="60" rx="6" class="mv-svg-accent-surface" />
+          <text x="400" y="135" class="mv-svg-text-accent" text-anchor="middle">SQS Event Bus</text>
+
+          <rect x="610" y="20" width="140" height="50" rx="6" class="mv-svg-surface" />
+          <text x="680" y="50" class="mv-svg-text" text-anchor="middle">Mac Worker</text>
+
+          <rect x="610" y="105" width="140" height="50" rx="6" class="mv-svg-surface" />
+          <text x="680" y="135" class="mv-svg-text" text-anchor="middle">RTX 5090</text>
+
+          <rect x="610" y="190" width="140" height="50" rx="6" class="mv-svg-surface" />
+          <text x="680" y="220" class="mv-svg-text" text-anchor="middle">Runpod Cluster</text>
+
+          <line x1="190" y1="130" x2="290" y2="130" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <text x="240" y="120" class="mv-svg-text-muted" text-anchor="middle">Push Job</text>
+
+          <line x1="500" y1="115" x2="600" y2="45" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="500" y1="130" x2="600" y2="130" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="500" y1="145" x2="600" y2="215" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+          
+          <text x="560" y="90" class="mv-svg-text-muted" text-anchor="middle">Poll & Lock</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- PHASE 2: ONNX -->
+    <div class="mv-section">
+      <div class="mv-badge">Phase 2</div>
+      <h2>Unified Inference Runtime (ONNX)</h2>
+      <p>
+        Currently, the Mac worker completely rips out the core <code>torchaudio</code>/<code>h264_cuvid</code>/TensorRT engine and replaces it with CoreML and VideoToolbox. Maintaining separate execution paths inevitably invites visual drift (FP16 rounding errors, color space shifts).
+      </p>
+      <p>
+        <strong>The Upgrade:</strong> Stop maintaining two separate inference stacks. Compile the PyTorch models (<code>srvgg_leaky_relu</code>) into <strong>ONNX</strong> or <strong>Apache TVM</strong>. ONNX Runtime executes the exact same graph via the CoreML Execution Provider on the Mac, and the TensorRT Execution Provider on the 5090/Runpod, guaranteeing true mathematical equivalence.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 800 200" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="70" width="160" height="60" rx="6" class="mv-svg-surface" />
+          <text x="130" y="100" class="mv-svg-text" text-anchor="middle">PyTorch Model</text>
+          <text x="130" y="120" class="mv-svg-text-muted" text-anchor="middle">srvgg_leaky_relu.pt</text>
+
+          <line x1="210" y1="100" x2="290" y2="100" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <text x="250" y="90" class="mv-svg-text-muted" text-anchor="middle">Export</text>
+
+          <rect x="300" y="60" width="160" height="80" rx="6" class="mv-svg-accent-surface" />
+          <text x="380" y="100" class="mv-svg-text-accent" text-anchor="middle">ONNX Runtime</text>
+          <text x="380" y="120" class="mv-svg-text-muted" text-anchor="middle">Single Graph</text>
+
+          <line x1="460" y1="80" x2="540" y2="50" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="460" y1="120" x2="540" y2="150" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+
+          <rect x="550" y="20" width="200" height="60" rx="6" class="mv-svg-surface" />
+          <text x="650" y="50" class="mv-svg-text" text-anchor="middle">Mac (M4)</text>
+          <text x="650" y="70" class="mv-svg-text-muted" text-anchor="middle">CoreML Execution Provider</text>
+
+          <rect x="550" y="120" width="200" height="60" rx="6" class="mv-svg-surface" />
+          <text x="650" y="150" class="mv-svg-text" text-anchor="middle">Runpod / 5090</text>
+          <text x="650" y="170" class="mv-svg-text-muted" text-anchor="middle">TensorRT Execution Provider</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- PHASE 3: VIRTUAL FLEET -->
+    <div class="mv-section">
+      <div class="mv-badge">Phase 3</div>
+      <h2>Virtual Fleet Abstraction (Unified Scheduler)</h2>
+      <p>
+        Currently, the Node backend explicitly codes routing logic for specific hardware (e.g., <code>&lt; 60s -> Mac</code>, <code>&gt; 1800s -> Runpod</code>). Adding new hardware (like AMD MI300s) requires rewriting backend business logic.
+      </p>
+      <p>
+        <strong>The Upgrade:</strong> Extract dispatch into an independent Scheduler Service. The backend submits a job statelessly. The Scheduler maintains a live inventory of connected nodes via WebSockets, evaluates real-time capacity and cost margins, and routes the job to the optimal tier automatically.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 800 350" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="150" width="120" height="50" rx="6" class="mv-svg-surface" />
+          <text x="110" y="180" class="mv-svg-text" text-anchor="middle">API Gateway</text>
+
+          <rect x="250" y="130" width="180" height="90" rx="6" class="mv-svg-accent-surface" />
+          <text x="340" y="165" class="mv-svg-text-accent" text-anchor="middle">Fleet Scheduler</text>
+          <text x="340" y="195" class="mv-svg-text-accent" text-anchor="middle" font-size="12" font-weight="normal">Live Node Inventory</text>
+
+          <rect x="550" y="40" width="200" height="50" rx="6" class="mv-svg-surface" />
+          <text x="650" y="70" class="mv-svg-text" text-anchor="middle">Tier 0: Local Macs ($0)</text>
+
+          <rect x="550" y="110" width="200" height="50" rx="6" class="mv-svg-surface" />
+          <text x="650" y="140" class="mv-svg-text" text-anchor="middle">Tier 1: Local 5090 ($0)</text>
+
+          <rect x="550" y="180" width="200" height="50" rx="6" class="mv-svg-surface" />
+          <text x="650" y="210" class="mv-svg-text" text-anchor="middle">Tier 2: Runpod Spot ($)</text>
+
+          <rect x="550" y="250" width="200" height="50" rx="6" class="mv-svg-surface" />
+          <text x="650" y="280" class="mv-svg-text" text-anchor="middle">Tier 3: Modal Serverless ($$)</text>
+
+          <line x1="170" y1="175" x2="240" y2="175" class="mv-svg-stroke-muted" stroke-width="2" marker-end="url(#arrow)" />
+          
+          <path d="M 430 150 C 480 150, 500 65, 540 65" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+          <path d="M 430 165 C 480 165, 500 135, 540 135" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+          <path d="M 430 185 C 480 185, 500 205, 540 205" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+          <path d="M 430 200 C 480 200, 500 275, 540 275" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- PHASE 4: OTEL -->
+    <div class="mv-section">
+      <div class="mv-badge">Phase 4</div>
+      <h2>Distributed Tracing (OpenTelemetry)</h2>
+      <p>
+        Flattening pod errors into a Mongo string field (from PR #9) was a vital stopgap, but SSH-ing into a Mac to read <code>worker.log</code> or grepping Mongo is not a hyperscale debugging strategy.
+      </p>
+      <p>
+        <strong>The Upgrade:</strong> Instrument every stage (<code>preprocess</code>, <code>gpu</code>, <code>postprocess</code>) with <strong>OpenTelemetry (OTel)</strong>. Pipe logs, VRAM metrics, network I/O, and trace spans to a centralized dashboard (Datadog or Honeycomb). When a job fails, you instantly see a visual waterfall chart of exactly which pod, host, and <code>ffmpeg</code> subprocess failed, alongside its hardware metrics.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 800 250" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <!-- Spans -->
+          <rect x="50" y="40" width="700" height="30" rx="4" class="mv-svg-surface" fill-opacity="0.5" />
+          <text x="60" y="60" class="mv-svg-text-muted">Job: id_abc123 [1m 45s]</text>
+
+          <rect x="80" y="80" width="150" height="30" rx="4" class="mv-svg-accent-surface" />
+          <text x="90" y="100" class="mv-svg-text-accent">Preprocess (CPU)</text>
+
+          <rect x="240" y="120" width="300" height="30" rx="4" class="mv-svg-accent-surface" />
+          <text x="250" y="140" class="mv-svg-text-accent">TensorRT Inference (GPU)</text>
+
+          <rect x="550" y="160" width="180" height="30" rx="4" style="fill: rgba(239, 68, 68, 0.1); stroke: rgba(239, 68, 68, 0.3); stroke-width: 2;" />
+          <text x="560" y="180" style="fill: #ef4444; font-family: inherit; font-size: 14px; font-weight: bold;">Postprocess (Crash)</text>
+
+          <!-- Metric Side Panel -->
+          <rect x="550" y="200" width="180" height="40" rx="4" class="mv-svg-surface" />
+          <text x="560" y="215" class="mv-svg-text-muted">VRAM Spike: 23.4 GB</text>
+          <text x="560" y="230" class="mv-svg-text-muted">Error: OOM Exit Code 137</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- PHASE 5: CD -->
+    <div class="mv-section">
+      <div class="mv-badge">Phase 5</div>
+      <h2>Pull-Based Fleet Deployments (NixOS / Ansible)</h2>
+      <p>
+        Pushing code to the Macs currently requires running a manual <code>deploy.sh</code> script over SSH from a specific laptop. This creates a bottleneck and makes emergency rollbacks dangerous.
+      </p>
+      <p>
+        <strong>The Upgrade:</strong> Use a pull-based configuration manager. The Macs and the 5090 run an agent that listens to the <code>main</code> branch. When a PR merges, the local boxes automatically pull the code, rebuild their virtual environments, gracefully drain their current jobs, restart the worker process, and reconnect to the load balancer. True zero-downtime, hands-free continuous deployment.
+      </p>
+
+      <div class="mv-diagram-container">
+        <svg viewBox="0 0 800 200" class="mv-svg" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="70" width="120" height="60" rx="6" class="mv-svg-surface" />
+          <text x="110" y="100" class="mv-svg-text" text-anchor="middle">GitHub main</text>
+          <text x="110" y="120" class="mv-svg-text-muted" text-anchor="middle">Merge Event</text>
+
+          <path d="M 170 100 C 250 100, 280 50, 350 50" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+          <text x="260" y="70" class="mv-svg-text-muted" text-anchor="middle">Poll / Webhook</text>
+
+          <path d="M 170 100 C 250 100, 280 150, 350 150" fill="none" class="mv-svg-stroke-accent" stroke-width="2" marker-end="url(#arrow-accent)" stroke-dasharray="4" />
+
+          <rect x="360" y="20" width="180" height="60" rx="6" class="mv-svg-accent-surface" />
+          <text x="450" y="50" class="mv-svg-text-accent" text-anchor="middle">Mac Agent</text>
+          <text x="450" y="70" class="mv-svg-text-muted" text-anchor="middle">Drain -> Pull -> Restart</text>
+
+          <rect x="360" y="120" width="180" height="60" rx="6" class="mv-svg-accent-surface" />
+          <text x="450" y="150" class="mv-svg-text-accent" text-anchor="middle">5090 Agent</text>
+          <text x="450" y="170" class="mv-svg-text-muted" text-anchor="middle">Drain -> Pull -> Restart</text>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+function updateActiveButton(mode) {
+  document.getElementById('btn-system').classList.remove('active');
+  document.getElementById('btn-dark').classList.remove('active');
+  document.getElementById('btn-light').classList.remove('active');
+  document.getElementById('btn-' + mode).classList.add('active');
+}
+
+function setTheme(mode) {
+  if (mode === 'system') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', mode);
+  }
+  updateActiveButton(mode);
+}
+
+// Initial state
+updateActiveButton('system');
+</script>
+
+</body>
+</html>

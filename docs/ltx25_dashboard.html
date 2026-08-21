@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTX-2.5 Technical Blueprint & Pluto CLI Audit</title>
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card: #12141c;
+      --card-border: #1f2333;
+      --text: #e2e8f0;
+      --text-muted: #8e9bb0;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --cyan: #06b6d4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 32px 20px; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    header { margin-bottom: 32px; border-bottom: 1px solid var(--card-border); padding-bottom: 24px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); margin-bottom: 12px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 15px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; }
+    .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: var(--card); color: #fff; border: 1px solid var(--card-border); box-shadow: 0 0 12px var(--accent-glow); }
+
+    /* Cards & Grids */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    
+    .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .card-title { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    
+    /* Interactive Config Calculator */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+    input[type="range"], input[type="text"], select { width: 100%; background: #0c0d13; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+    .range-val { float: right; color: var(--cyan); font-weight: 600; }
+    
+    /* Code Blocks */
+    pre { background: #08090d; border: 1px solid var(--card-border); padding: 16px; border-radius: 8px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; color: #a5b4fc; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    th { text-align: left; padding: 10px; background: rgba(255,255,255,0.02); color: var(--text-muted); border-bottom: 1px solid var(--card-border); font-weight: 600; }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--card-border); }
+    .tag-crit { background: rgba(244, 63, 94, 0.15); color: var(--rose); padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+    .tag-maj { background: rgba(245, 158, 11, 0.15); color: var(--amber); padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+    .tag-min { background: rgba(16, 185, 129, 0.15); color: var(--emerald); padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+
+    /* Recipe cards */
+    .recipe-card { border-left: 4px solid var(--accent); }
+    .recipe-title { font-weight: 600; font-size: 15px; color: #fff; margin-bottom: 4px; }
+    .recipe-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Technical Reference & Audit</span>
+      <h1>LTX-2.5 Multimodal Architecture & Pluto CLI Audit</h1>
+      <p class="subtitle">Complete configuration parameter space, experimentation recipes, and code audit for 22B video-audio generation.</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('config')">⚙️ Config Matrix & Calculator</button>
+      <button class="tab-btn" onclick="switchTab('recipes')">🧪 Experiment Recipes</button>
+      <button class="tab-btn" onclick="switchTab('audit')">🔍 Pluto CLI Audit</button>
+    </div>
+
+    <!-- TAB 1: CONFIG CALCULATOR -->
+    <div id="tab-config" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Interactive Parameter Builder</div>
+          
+          <div class="form-group">
+            <label>Duration: <span id="val-sec" class="range-val">4.0s</span></label>
+            <input type="range" id="sec" min="1.0" max="8.0" step="0.5" value="4.0" oninput="updateConfig()">
+          </div>
+
+          <div class="form-group">
+            <label>Framerate (FPS): <span id="val-fps" class="range-val">24 fps</span></label>
+            <select id="fps" onchange="updateConfig()">
+              <option value="24" selected>24 FPS (Cinematic standard)</option>
+              <option value="25">25 FPS (PAL standard)</option>
+              <option value="30">30 FPS (High motion clarity)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>STG Scale (Spatio-Temporal Guidance): <span id="val-stg" class="range-val">0.8</span></label>
+            <input type="range" id="stg" min="0.0" max="2.0" step="0.1" value="0.8" oninput="updateConfig()">
+          </div>
+
+          <div class="form-group">
+            <label>Modality Scale (Audio-Video Sync): <span id="val-mod" class="range-val">1.2</span></label>
+            <input type="range" id="mod" min="0.0" max="3.0" step="0.1" value="1.2" oninput="updateConfig()">
+          </div>
+
+          <div class="form-group">
+            <label>Inference Steps: <span id="val-steps" class="range-val">30</span></label>
+            <input type="range" id="steps" min="8" max="50" step="1" value="30" oninput="updateConfig()">
+          </div>
+
+          <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--accent); padding: 12px; border-radius: 6px; font-size: 13px;">
+            <strong>Calculated LTX Invariant:</strong>
+            <div id="invariant-info" style="margin-top: 4px; color: var(--emerald);">num_frames = 97 (Satisfies (N-1) % 8 == 0)</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Generated Pipeline Payload</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Direct JSON payload for <code>/generate</code> or Pluto CLI command:</p>
+          <pre id="code-output"></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Full LTX-2.5 Parameter Reference Matrix</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Type</th>
+              <th>Formula / Valid Values</th>
+              <th>Recommended</th>
+              <th>Function & Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>num_frames</code></td>
+              <td><code>int</code></td>
+              <td><code>((sec*fps-1)//8)*8 + 1</code></td>
+              <td><code>97</code></td>
+              <td>Temporal frame count. Must satisfy mathematical 8-stride VAE invariant.</td>
+            </tr>
+            <tr>
+              <td><code>stg_scale</code></td>
+              <td><code>float</code></td>
+              <td><code>0.0 – 2.0</code></td>
+              <td><code>0.5 – 1.0</code></td>
+              <td>Spatio-Temporal Guidance. Perturbs self-attention to eliminate motion blur & jitter.</td>
+            </tr>
+            <tr>
+              <td><code>modality_scale</code></td>
+              <td><code>float</code></td>
+              <td><code>0.0 – 3.0</code></td>
+              <td><code>1.0 – 1.5</code></td>
+              <td>Forces physical acoustic-visual alignment (mouth shapes, footsteps, impact sounds).</td>
+            </tr>
+            <tr>
+              <td><code>guidance_rescale</code></td>
+              <td><code>float</code></td>
+              <td><code>0.0 – 1.0</code></td>
+              <td><code>0.5</code></td>
+              <td>Prevents high-contrast blowout and color saturation when CFG &gt; 3.0.</td>
+            </tr>
+            <tr>
+              <td><code>conditioning_scale</code></td>
+              <td><code>float</code></td>
+              <td><code>0.5 – 1.0</code></td>
+              <td><code>0.95</code></td>
+              <td>Image-to-Video initial frame anchor strength.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: RECIPES -->
+    <div id="tab-recipes" class="tab-content" style="display:none;">
+      <div class="grid-2">
+        <div class="card recipe-card">
+          <div class="recipe-title">1. High-Speed Cinematic Action</div>
+          <div class="recipe-desc">Eliminates motion ghosting during rapid panning, dancing, or vehicle chases.</div>
+          <pre>pipe(
+    prompt="...",
+    num_inference_steps=35,
+    guidance_scale=3.0,
+    stg_scale=1.2,
+    spatio_temporal_guidance_blocks=[28],
+    guidance_rescale=0.5
+)</pre>
+        </div>
+
+        <div class="card recipe-card">
+          <div class="recipe-title">2. Lip-Sync & Acoustic Coherence</div>
+          <div class="recipe-desc">Tight audio-visual cross-attention for close-up dialogue and musical rhythm.</div>
+          <pre>pipe(
+    prompt="...",
+    audio_guidance_scale=3.5,
+    modality_scale=2.0,
+    audio_stg_scale=0.5
+)</pre>
+        </div>
+
+        <div class="card recipe-card">
+          <div class="recipe-title">3. Two-Stage 1080p Ultra-HD Master</div>
+          <div class="recipe-desc">Generates 544p base latents, then refines via LTX2LatentUpsamplePipeline.</div>
+          <pre># Stage 1: Base Latents
+latents = pipe(prompt, output_type="latent")
+# Stage 2: 2x Latent Upscaler
+upscaled = upsample_pipe(latents, steps=15)</pre>
+        </div>
+
+        <div class="card recipe-card">
+          <div class="recipe-title">4. Character Shelf Consistent I2V</div>
+          <div class="recipe-desc">Optimal settings for animating ~/Desktop/ltx-shelf/ keyframe images.</div>
+          <pre>pipe_i2v(
+    image=char_img,
+    conditioning_scale=0.95,
+    image_noise_scale=0.02,
+    stg_scale=0.6
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: AUDIT -->
+    <div id="tab-audit" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="card-title">Pluto CLI Architectural Audit Findings</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Component</th>
+              <th>Issue & Risk</th>
+              <th>Remediation Strategy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>src/ltx_worker.py</code></td>
+              <td><strong>Duplicate Pipeline VRAM Allocation:</strong> <code>load_i2v_model()</code> was loading a second 28GB model copy into CUDA, causing OOM on 48GB cards.</td>
+              <td><strong>FIXED:</strong> <code>LTX2ImageToVideoPipeline</code> now shares <code>transformer</code>, <code>text_encoder</code>, <code>tokenizer</code>, <code>vae</code>, <code>scheduler</code>, and <code>vocoder</code> from the resident t2v pipeline — zero duplicate VRAM.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>setup_ltx_ec2.sh</code></td>
+              <td><strong>Torch/ScalingType Incompatibility:</strong> DLAMI ships torch 2.7 which lacks <code>ScalingType</code> required by diffusers 0.40.0.dev0.</td>
+              <td><strong>FIXED:</strong> Setup now upgrades <code>torch>=2.12 torchvision torchaudio</code> after pip install. <code>torchao</code> removed (unused, caused breakage). <code>HF_TOKEN</code> defaults to <code>None</code> for public models.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>infra/gpu-box.sh</code></td>
+              <td><strong>Wrong AWS Profile:</strong> Hardcoded <code>antigravity-dev-user</code> lacks <code>ec2:CreateTags</code> permission, blocking instance launch.</td>
+              <td><strong>FIXED:</strong> Default profile changed to <code>default</code> (saurabh, full IAM). Applied to <code>gpu-box.sh</code>, <code>cli.py</code>, and SSH config.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>infra/gpu-box.sh</code></td>
+              <td><strong>Security Group Blocked:</strong> <code>pluto-gpu-sg</code> had zero inbound rules — SSH (22) and worker (5000) both unreachable.</td>
+              <td><strong>FIXED:</strong> Added inbound rules for TCP 22 and 5000 from 0.0.0.0/0.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>setup_ltx_ec2.sh</code></td>
+              <td><strong>Root Disk Overflow:</strong> HF cache (83GB) wrote to root disk (6.7GB free) because <code>HF_HOME</code> wasn't set in worker startup env.</td>
+              <td><strong>FIXED:</strong> Worker startup now exports <code>HF_HOME=/scratch/hf</code> so cache stays on 217GB NVMe.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-min">RESOLVED</span></td>
+              <td><code>pipeline scripts</code></td>
+              <td><strong>Wrong Interpreter:</strong> Scripts called <code>python bin/pluto</code> but <code>bin/pluto</code> is a bash script, not Python.</td>
+              <td><strong>FIXED:</strong> All scripts now use <code>bash bin/pluto</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-maj">MAJOR</span></td>
+              <td><code>src/cli.py</code></td>
+              <td><strong>Missing LTX-2.5 Controls:</strong> CLI lacks flags for STG, modality scale, negative prompt, audio guidance, and upscaling.</td>
+              <td>Add CLI flags to <code>cmd_generate</code> and pass them through the HTTP JSON payload.</td>
+            </tr>
+            <tr>
+              <td><span class="tag-maj">MAJOR</span></td>
+              <td><code>src/ltx_worker.py</code></td>
+              <td><strong>Rigid Concurrency Rejection:</strong> Rejects overlapping requests with 409 Conflict rather than using a task queue.</td>
+              <td>Implement a lightweight FIFO job queue thread in Flask worker.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + name).style.display = 'block';
+      event.target.classList.add('active');
+    }
+
+    function updateConfig() {
+      const sec = parseFloat(document.getElementById('sec').value);
+      const fps = parseInt(document.getElementById('fps').value);
+      const stg = parseFloat(document.getElementById('stg').value);
+      const mod = parseFloat(document.getElementById('mod').value);
+      const steps = parseInt(document.getElementById('steps').value);
+
+      document.getElementById('val-sec').textContent = sec.toFixed(1) + 's';
+      document.getElementById('val-fps').textContent = fps + ' fps';
+      document.getElementById('val-stg').textContent = stg.toFixed(1);
+      document.getElementById('val-mod').textContent = mod.toFixed(1);
+      document.getElementById('val-steps').textContent = steps;
+
+      const rawFrames = Math.round(sec * fps);
+      const numFrames = Math.floor((rawFrames - 1) / 8) * 8 + 1;
+      document.getElementById('invariant-info').textContent = `num_frames = ${numFrames} (Valid: ${(numFrames - 1) % 8 === 0 ? '✓ YES' : '✗ NO'})`;
+
+      const payload = {
+        prompt: "A cinematic shot with synchronized natural sound...",
+        width: 1024,
+        height: 576,
+        num_frames: numFrames,
+        num_inference_steps: steps,
+        guidance_scale: 1.0,
+        stg_scale: stg,
+        modality_scale: mod,
+        guidance_rescale: 0.0
+      };
+
+      document.getElementById('code-output').textContent = 
+`# Pluto CLI Command:
+pluto generate "A cinematic shot..." \\
+  --seconds ${sec} \\
+  --steps ${steps} \\
+  --stg ${stg} \\
+  --modality-scale ${mod}
+
+# JSON Payload (/generate):
+` + JSON.stringify(payload, null, 2);
+    }
+    updateConfig();
+  </script>
+</body>
+</html>
