@@ -1,46 +1,170 @@
 #!/bin/bash
-# One-command remote setup script for LTX-2.5 on EC2 DLAMI (g6e.2xlarge / L40S)
+# Hardened remote setup and worker orchestrator for LTX-2.5 on EC2 DLAMI (L40S / A100)
 set -euo pipefail
 
-echo "==> [1/4] Preparing NVMe instance store..."
-sudo mkdir -p /opt/dlami/nvme/hf /opt/dlami/nvme/out /opt/dlami/nvme/worker /opt/dlami/nvme/tmp
-sudo chown -R ubuntu:ubuntu /opt/dlami/nvme
-sudo ln -sfn /opt/dlami/nvme /scratch
+echo "=========================================================================="
+echo "  PLUTO LTX-2.5 HARDENED WORKER SETUP"
+echo "=========================================================================="
 
-echo "==> [2/4] Installing PyTorch, Diffusers, and TorchAO dependencies..."
-/opt/pytorch/bin/python -m pip install -q \
-  "git+https://github.com/huggingface/diffusers@7564fb016dabda0c943416190fc92398c50b1b20" \
-  "huggingface_hub[hf_transfer]>=1.23.0,<2.0" transformers==5.14.1 accelerate \
+# ─────────────────────────────────────────────────────────────────────────────
+# [1/5] Preflight: Environment & NVMe Storage Discovery
+# ─────────────────────────────────────────────────────────────────────────────
+echo "==> [1/5] Discovering NVMe storage & verifying host resources..."
+
+# 1.1 Verify LOCAL_WORKER_TOKEN
+if [ -z "${LOCAL_WORKER_TOKEN:-}" ]; then
+  echo "ERROR: LOCAL_WORKER_TOKEN is not set; the worker refuses to run unauthenticated." >&2
+  exit 1
+fi
+
+# 1.2 Verify HF_TOKEN
+if [ -z "${HF_TOKEN:-}" ]; then
+  echo "WARNING: HF_TOKEN is not set; downloading gated model Lightricks/LTX-2.5-Diffusers may fail with 401." >&2
+fi
+
+# 1.3 Detect best scratch storage (NVMe ephemeral vs root)
+SCRATCH_BASE=""
+if [ -d "/opt/dlami/nvme" ] && [ -w "/opt/dlami/nvme" ]; then
+  SCRATCH_BASE="/opt/dlami/nvme"
+elif [ -d "/mnt" ] && [ -w "/mnt" ]; then
+  SCRATCH_BASE="/mnt"
+else
+  # Fallback to local /scratch directory
+  sudo mkdir -p /scratch
+  sudo chown -R ubuntu:ubuntu /scratch
+  SCRATCH_BASE="/scratch"
+fi
+
+echo "  Target Scratch Disk : $SCRATCH_BASE"
+
+# Ensure target subdirectories exist
+sudo mkdir -p "$SCRATCH_BASE/hf" "$SCRATCH_BASE/out" "$SCRATCH_BASE/worker" "$SCRATCH_BASE/tmp"
+sudo chown -R ubuntu:ubuntu "$SCRATCH_BASE"
+sudo ln -sfn "$SCRATCH_BASE" /scratch
+
+# Check available disk space (require >= 80 GB)
+AVAILABLE_GB=$(df -BG /scratch | awk 'NR==2 {print $4}' | tr -d 'G')
+echo "  Available Disk      : ${AVAILABLE_GB} GB on /scratch"
+if [ "$AVAILABLE_GB" -lt 80 ]; then
+  echo "ERROR: Insufficient disk space (${AVAILABLE_GB} GB available, need >= 80 GB). Aborting." >&2
+  df -h
+  exit 1
+fi
+
+# 1.4 Check Host RAM
+TOTAL_RAM_GB=$(free -g | awk '/^Mem:/ {print $2}')
+echo "  Host System RAM     : ${TOTAL_RAM_GB} GB"
+if [ "$TOTAL_RAM_GB" -lt 30 ]; then
+  echo "ERROR: Host RAM is only ${TOTAL_RAM_GB} GB. Loading LTX-2.5 requires >= 32 GB (recommended 64 GB). Aborting." >&2
+  exit 1
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [2/5] Installing Dependencies (Diffusers Main, TorchAO, hf_transfer)
+# ─────────────────────────────────────────────────────────────────────────────
+echo "==> [2/5] Installing and verifying PyTorch, Diffusers, and TorchAO dependencies..."
+
+/opt/pytorch/bin/python -m pip install -q --upgrade \
+  "git+https://github.com/huggingface/diffusers.git" \
+  "torchao>=0.8.0" \
+  hf_transfer \
+  "huggingface_hub>=0.28.0" \
+  "transformers>=4.48.0" \
+  accelerate \
   safetensors sentencepiece protobuf av imageio imageio-ffmpeg Pillow numpy scipy \
-  kernels flask
-# Upgrade torch to >=2.12 (diffusers 0.40.0.dev0 needs ScalingType from torch>=2.12)
-# The DLAMI ships torch 2.7 which lacks ScalingType. Upgrade torch+torchvision+torchaudio together.
-/opt/pytorch/bin/python -m pip install -q --upgrade "torch>=2.12" torchvision torchaudio 2>&1 | tail -3
+  kernels flask 2>&1 | tail -5
 
-echo "==> [3/4] Parallel downloading LTX-2.5 FP8 weights (78 GB)..."
-HF_HOME=/scratch/hf TMPDIR=/scratch/tmp HF_ENABLE_PARALLEL_LOADING=YES /opt/pytorch/bin/python - <<'PY'
+# Ensure ScalingType compatibility if needed
+/opt/pytorch/bin/python -c "
+import torch, diffusers, torchao
+print(f'  PyTorch   : {torch.__version__} (CUDA: {torch.cuda.is_available()})')
+print(f'  Diffusers : {diffusers.__version__}')
+print(f'  TorchAO   : {torchao.__version__}')
+if torch.cuda.is_available():
+    print(f'  GPU Name  : {torch.cuda.get_device_name(0)}')
+"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [3/5] Parallel Downloading LTX-2.5 FP8 Weights (~78 GB)
+# ─────────────────────────────────────────────────────────────────────────────
+echo "==> [3/5] Fast downloading LTX-2.5 FP8 weights (via Rust hf_transfer)..."
+
+HF_HOME=/scratch/hf \
+TMPDIR=/scratch/tmp \
+HF_HUB_ENABLE_HF_TRANSFER=1 \
+HF_TOKEN="${HF_TOKEN:-}" \
+/opt/pytorch/bin/python - <<'PY'
 import os
 from huggingface_hub import snapshot_download
-token = os.environ.get("HF_TOKEN", None)
-print("Downloading snapshot...")
+
+token = os.environ.get("HF_TOKEN") or None
+print("  Initiating fast snapshot download for Lightricks/LTX-2.5-Diffusers...")
 snapshot_download(
     "Lightricks/LTX-2.5-Diffusers",
     ignore_patterns=["transformer_full/*", "*distilled-lora*", "transformer/*-of-00008.safetensors"],
     token=token,
     max_workers=16
 )
-print("Download complete!")
+print("  ✅ Download completed successfully!")
 PY
 
-echo "==> [4/4] Starting LTX-2.5 resident Flask worker on port 5000..."
-if [ -z "${LOCAL_WORKER_TOKEN:-}" ]; then
-  echo "ERROR: LOCAL_WORKER_TOKEN must be set; the worker refuses to run unauthenticated." >&2
-  exit 1
-fi
-cd /scratch/worker
-HF_HOME=/scratch/hf TMPDIR=/scratch/tmp LOCAL_WORKER_TOKEN="$LOCAL_WORKER_TOKEN" nohup /opt/pytorch/bin/python ltx_worker.py > /scratch/worker/worker.log 2>&1 &
+# ─────────────────────────────────────────────────────────────────────────────
+# [4/5] Single Worker Guarantee & Startup
+# ─────────────────────────────────────────────────────────────────────────────
+echo "==> [4/5] Launching resident LTX worker process..."
 
-echo "==> LTX Worker launched! Monitor logs with: tail -f /scratch/worker/worker.log"
-echo "==> Waiting for /health check..."
-sleep 5
-curl -s http://localhost:5000/health || true
+# Terminate any previously running worker instances
+if pgrep -f "ltx_worker.py" > /dev/null; then
+  echo "  Stopping existing worker process..."
+  pkill -f "ltx_worker.py" || true
+  sleep 2
+fi
+
+cd /scratch/worker
+PID_FILE="/scratch/worker/worker.pid"
+LOG_FILE="/scratch/worker/worker.log"
+
+export PYTHONUNBUFFERED=1
+export HF_HOME=/scratch/hf
+export TMPDIR=/scratch/tmp
+export LOCAL_WORKER_TOKEN="$LOCAL_WORKER_TOKEN"
+export HF_TOKEN="${HF_TOKEN:-}"
+
+nohup /opt/pytorch/bin/python ltx_worker.py > "$LOG_FILE" 2>&1 &
+WORKER_PID=$!
+echo "$WORKER_PID" > "$PID_FILE"
+echo "  Worker started with PID: $WORKER_PID (logging to $LOG_FILE)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [5/5] Warmup Health Polling & Failure Detection
+# ─────────────────────────────────────────────────────────────────────────────
+echo "==> [5/5] Monitoring initial warmup health (takes ~120-180s)..."
+
+for i in $(seq 1 30); do
+  sleep 6
+  # Check if PID is still alive
+  if ! kill -0 "$WORKER_PID" 2>/dev/null; then
+    echo "❌ ERROR: Worker process $WORKER_PID died unexpectedly during warmup!" >&2
+    echo "─── Last 30 lines of worker log ───"
+    tail -n 30 "$LOG_FILE" || true
+    echo "─── Kernel OOM / dmesg diagnostics ───"
+    dmesg | tail -n 20 || true
+    exit 1
+  fi
+
+  # Check /health endpoint
+  HEALTH_HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "000")
+  if [ "$HEALTH_HTTP_CODE" = "200" ]; then
+    echo "  ✅ LTX-2.5 Worker is fully warm and resident in VRAM (HTTP 200)!"
+    curl -s http://localhost:5000/health
+    echo ""
+    exit 0
+  elif [ "$HEALTH_HTTP_CODE" = "503" ]; then
+    echo "  [Warmup in progress] Shards loading into VRAM... ($((i*6))s elapsed)"
+  else
+    echo "  [Server initializing] Port 5000 status: $HEALTH_HTTP_CODE... ($((i*6))s elapsed)"
+  fi
+done
+
+echo "  Worker is still loading in background. Monitor progress with: tail -f /scratch/worker/worker.log"
+

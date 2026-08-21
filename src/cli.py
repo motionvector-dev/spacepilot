@@ -31,12 +31,12 @@ KEY_FILE_DEFAULT = Path(os.environ.get("PLUTO_SSH_KEY", Path.home() / ".ssh" / "
 DEFAULT_CONFIG = {
     "aws_profile": "default",
     "aws_region": "us-east-1",
-    "instance_type": "g6e.2xlarge",
+    "instance_type": "g6e.4xlarge",
     "key_name": "pluto-gpu-key-2026-07-26",
     "key_file": str(KEY_FILE_DEFAULT),
     "security_group": "pluto-gpu-sg",
     "market_type": "spot",
-    "spot_hourly_rate": 0.75,
+    "spot_hourly_rate": 2.31,
     "default_resolution": [1024, 576],
     "default_seconds": 4.0,
     "idle_shutdown_minutes": 20,
@@ -221,7 +221,8 @@ def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
     ip = inst["ip"]
     key = cfg["key_file"]
-    if not WORKER_TOKEN:
+    worker_token = os.environ.get("LOCAL_WORKER_TOKEN", WORKER_TOKEN)
+    if not worker_token:
         print("  Error: LOCAL_WORKER_TOKEN is not set; the worker would start unauthenticated.")
         return
 
@@ -231,10 +232,12 @@ def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/src/ltx_worker.py", f"ubuntu@{ip}:/scratch/worker/ltx_worker.py"])
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/infra/setup_ltx_ec2.sh", f"ubuntu@{ip}:/scratch/worker/setup.sh"])
     print("  Starting setup & warmup in background...")
-    # Token arrives on stdin so it never lands in the remote process list.
+    # Tokens arrive on stdin so they never land in the remote command line or process list.
+    hf_token = os.environ.get("HF_TOKEN", "")
+    token_payload = f"LOCAL_WORKER_TOKEN={worker_token}\nHF_TOKEN={hf_token}\n"
     run_cmd(["ssh", "-i", key, f"ubuntu@{ip}",
-             "cd /scratch/worker && export LOCAL_WORKER_TOKEN=$(cat) && bash setup.sh"],
-            stdin_text=WORKER_TOKEN)
+             "cd /scratch/worker && while IFS= read -r line; do export \"$line\"; done && bash setup.sh"],
+            stdin_text=token_payload)
     print("\n  Deployment complete! Check status with: pluto status")
 
 
