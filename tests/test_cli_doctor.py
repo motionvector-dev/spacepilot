@@ -102,5 +102,22 @@ class TestCliDoctor(unittest.TestCase):
         self.assertIn("LOCAL_WORKER_TOKEN=secret_worker_token", stdin_text)
         self.assertIn("HF_TOKEN=secret_hf_token", stdin_text)
 
+    def test_cmd_generate_custom_output_arg(self):
+        import argparse
+        from src.cli import main
+        # Verify parser handles --output, --stg, and --image-noise-scale without error
+        parser = argparse.ArgumentParser()
+        # Test cli argument parsing logic via sys.argv mock
+        with patch('sys.argv', ['pluto', 'generate', 'test prompt', '--output', '/tmp/test.mp4', '--stg', '0.8', '--image-noise-scale', '0.03']):
+            with patch('src.cli.cmd_generate') as mock_gen:
+                with patch('src.cli.get_instance_info') as mock_inst:
+                    mock_inst.return_value = {"id": "i-123", "ip": "1.2.3.4", "state": "running"}
+                    main()
+                    self.assertTrue(mock_gen.called)
+                    args, _ = mock_gen.call_args
+                    self.assertEqual(args[0].output, '/tmp/test.mp4')
+                    self.assertEqual(args[0].stg, 0.8)
+                    self.assertEqual(args[0].image_noise_scale, 0.03)
+
 if __name__ == '__main__':
     unittest.main()

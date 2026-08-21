@@ -405,7 +405,11 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
                     # Download MP4
                     dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
-                    out_path = OUTPUTS_DIR / f"{job_id}.mp4"
+                    if getattr(args, "output", None):
+                        out_path = Path(args.output).resolve()
+                        out_path.parent.mkdir(parents=True, exist_ok=True)
+                    else:
+                        out_path = OUTPUTS_DIR / f"{job_id}.mp4"
                     with urllib.request.urlopen(dl_req, timeout=60) as dl_resp, open(out_path, "wb") as out_f:
                         shutil.copyfileobj(dl_resp, out_f)
                     print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
@@ -676,6 +680,7 @@ def main():
     gen_p.add_argument("--guidance-rescale", type=float, default=0.0, help="Guidance rescale factor (default: 0.0)")
     gen_p.add_argument("--conditioning-scale", type=float, default=1.0, help="I2V anchor scale (default: 1.0)")
     gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
+    gen_p.add_argument("--output", "-o", type=str, default=None, help="Target path to save downloaded MP4")
     gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
 
     # sync
