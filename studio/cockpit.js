@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgDuration = document.getElementById('cfg-duration');
   const cfgStg = document.getElementById('cfg-stg');
   const cfgModality = document.getElementById('cfg-modality');
+  const cfgIdleShutdown = document.getElementById('cfg-idle-shutdown');
   const btnSaveCfg = document.getElementById('btn-save-cfg');
 
   // Spot rate lookup — mirrors sidebar.js INSTANCE_TYPES catalogue

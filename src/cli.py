@@ -35,6 +35,7 @@ DEFAULT_CONFIG = {
     "spot_hourly_rate": 0.75,
     "default_resolution": [1024, 576],
     "default_seconds": 4.0,
+    "idle_shutdown_minutes": 20,
     "default_steps": 30,
 }
 

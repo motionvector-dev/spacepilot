@@ -780,7 +780,8 @@
       <div class="metric-card">
         <div class="metric-header">
           <span class="metric-title">AWS EC2 Spot Compute</span>
-          <span id="badge-instance" class="badge-status badge-offline">Offline</span>
+                    <span id="badge-instance" class="badge-status badge-offline">Offline</span>
+          <span id="badge-idle" class="badge-status" style="display:none; margin-left: 8px;">⏳ Idle</span>
         </div>
         <div id="val-instance-id" class="metric-value-lg">No Active Box</div>
         <div class="metric-detail-row">
@@ -924,6 +925,17 @@
         <div class="form-group">
           <label class="form-label">SSH Key Path</label>
           <input type="text" id="cfg-key-file" class="form-input" placeholder="~/.ssh/pluto-gpu-key-2026-07-26.pem">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auto-Shutdown on Idle</label>
+          <select id="cfg-idle-shutdown" class="form-select">
+            <option value="10">10 mins</option>
+            <option value="15">15 mins</option>
+            <option value="20">20 mins (Default)</option>
+            <option value="30">30 mins</option>
+            <option value="60">60 mins</option>
+            <option value="0">Disabled</option>
+          </select>
         </div>
       </div>
 
