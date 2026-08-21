@@ -3,55 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SpacePilot 🚀 · The Open Generative Cinema & Neural Mesh Platform</title>
+  <title>SpacePilot · The Open Generative Cinema & Neural Mesh Platform</title>
+  
+  <!-- MotionVector Design System Typography: Geist & Geist Mono (Fallback to Plus Jakarta Sans & JetBrains Mono) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
+    /* ============================================================
+       MOTIONVECTOR DESIGN.MD STRICT OBSIDIAN PALETTE & TOKENS
+       ============================================================ */
     :root {
-      --bg: #07080d;
-      --bg-card: rgba(18, 21, 32, 0.85);
-      --bg-card-hover: rgba(28, 33, 50, 0.95);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-highlight: rgba(16, 185, 129, 0.5);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --mv-bg: #000000;
+      --mv-ground: #09090b;
+      --mv-surface: #111114;
+      --mv-card: #18181b;
+      --mv-card-hover: #222226;
+      --mv-border: rgba(255, 255, 255, 0.08);
+      --mv-border-medium: rgba(255, 255, 255, 0.14);
+      --mv-border-highlight: rgba(255, 255, 255, 0.24);
+      
+      --mv-text: #fafafa;
+      --mv-text-muted: #a1a1aa;
+      --mv-text-dim: #71717a;
+      --mv-text-faint: #52525b;
+
       --accent-emerald: #10b981;
-      --accent-blue: #3b82f6;
-      --accent-purple: #a855f7;
       --accent-amber: #f59e0b;
+      --accent-rose: #f43535;
+      --brand-red: #f43535;
+
+      --btn-primary-bg: #fafafa;
+      --btn-primary-text: #09090b;
+      --btn-primary-hover-bg: #ffffff;
+
+      --btn-secondary-bg: #18181b;
+      --btn-secondary-text: #fafafa;
+      --btn-secondary-border: rgba(255, 255, 255, 0.14);
+      --btn-secondary-hover-bg: #222226;
     }
 
     [data-theme="light"] {
-      --bg: #f8fafc;
-      --bg-card: rgba(255, 255, 255, 0.9);
-      --bg-card-hover: #ffffff;
-      --border: rgba(0, 0, 0, 0.08);
-      --text: #0f172a;
-      --text-muted: #475569;
-      --text-dim: #94a3b8;
+      --mv-bg: #f8fafc;
+      --mv-ground: #ffffff;
+      --mv-surface: #f1f5f9;
+      --mv-card: #ffffff;
+      --mv-card-hover: #f8fafc;
+      --mv-border: rgba(0, 0, 0, 0.08);
+      --mv-border-medium: rgba(0, 0, 0, 0.14);
+      --mv-border-highlight: rgba(0, 0, 0, 0.24);
+      
+      --mv-text: #09090b;
+      --mv-text-muted: #52525b;
+      --mv-text-dim: #71717a;
+      --mv-text-faint: #a1a1aa;
+
+      --btn-primary-bg: #09090b;
+      --btn-primary-text: #fafafa;
+      --btn-primary-hover-bg: #18181b;
+
+      --btn-secondary-bg: #ffffff;
+      --btn-secondary-text: #09090b;
+      --btn-secondary-border: rgba(0, 0, 0, 0.14);
+      --btn-secondary-hover-bg: #f1f5f9;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: 'Geist', 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--mv-bg);
+      color: var(--mv-text);
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.5;
       overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.15) 0%, transparent 60%),
-        radial-gradient(circle at 100% 40%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Navbar */
+    /* Top Navigation Bar */
     .navbar {
-      height: 72px;
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(16px);
+      height: 64px;
+      border-bottom: 1px solid var(--mv-border);
+      background: var(--mv-bg);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -66,299 +100,312 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      color: var(--text);
+      color: var(--mv-text);
     }
 
-    .brand-logo { font-size: 24px; }
-    .brand-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-    .brand-pill {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
+    .brand-mark {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-title {
+      font-size: 15px;
       font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-pill {
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
       color: var(--accent-emerald);
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 2px 7px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 2px 6px;
       border-radius: 4px;
+      text-transform: uppercase;
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 28px;
+      gap: 24px;
     }
 
     .nav-link {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--mv-text-muted);
       text-decoration: none;
-      transition: color 0.2s ease;
+      transition: color 0.15s ease;
     }
 
-    .nav-link:hover { color: var(--text); }
+    .nav-link:hover { color: var(--mv-text); }
 
     .nav-cta {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .btn {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist', -apple-system, sans-serif;
       font-size: 13px;
       font-weight: 600;
-      padding: 10px 18px;
-      border-radius: 8px;
+      padding: 8px 14px;
+      border-radius: 6px;
       text-decoration: none;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+      gap: 6px;
+      transition: all 0.15s ease;
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: var(--btn-secondary-bg);
+      border: 1px solid var(--btn-secondary-border);
+      color: var(--btn-secondary-text);
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--border-highlight);
+      background: var(--btn-secondary-hover-bg);
+      border-color: var(--mv-border-highlight);
     }
 
     .btn-primary {
-      background: var(--accent-emerald);
-      border: 1px solid var(--accent-emerald);
-      color: #000;
-      font-weight: 700;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+      background: var(--btn-primary-bg);
+      border: 1px solid var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      font-weight: 600;
     }
 
     .btn-primary:hover {
-      box-shadow: 0 0 28px rgba(16, 185, 129, 0.6);
+      background: var(--btn-primary-hover-bg);
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
-    /* Hero Section */
+    /* Hero Section (Design.md: Minimal, structured by weight & luminance) */
     .hero {
-      max-width: 1200px;
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 100px 24px 80px;
+      padding: 96px 24px 64px;
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 28px;
+      gap: 24px;
     }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 6px 16px;
-      border-radius: 30px;
-      font-family: 'JetBrains Mono', monospace;
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       font-size: 12px;
-      font-weight: 600;
-      color: var(--accent-emerald);
+      font-weight: 500;
+      color: var(--mv-text-muted);
     }
 
     .hero-badge .dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: var(--accent-emerald);
-      box-shadow: 0 0 8px var(--accent-emerald);
     }
 
     .hero-title {
-      font-size: 64px;
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-      max-width: 960px;
-    }
-
-    .hero-title .gradient-text {
-      background: linear-gradient(135deg, #ffffff 30%, var(--accent-emerald) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+      max-width: 900px;
+      color: var(--mv-text);
     }
 
     .hero-subtitle {
-      font-size: 20px;
-      color: var(--text-muted);
-      max-width: 760px;
-      line-height: 1.6;
+      font-size: 18px;
+      color: var(--mv-text-muted);
+      max-width: 680px;
+      line-height: 1.55;
     }
 
     .hero-actions {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-top: 12px;
+      gap: 12px;
+      margin-top: 8px;
     }
 
+    /* Terminal Frame (Design.md: 24px radius, monochromatic structure) */
     .terminal-hero {
       width: 100%;
-      max-width: 860px;
-      background: #090a0f;
-      border: 1px solid var(--border);
+      max-width: 820px;
+      background: var(--mv-ground);
+      border: 1px solid var(--mv-border-medium);
       border-radius: 12px;
-      margin-top: 30px;
+      margin-top: 32px;
       text-align: left;
       overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
     }
 
     .term-bar {
-      height: 36px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--border);
+      height: 34px;
+      background: var(--mv-surface);
+      border-bottom: 1px solid var(--mv-border);
       display: flex;
       align-items: center;
       padding: 0 14px;
-      gap: 8px;
+      gap: 6px;
     }
 
     .term-dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
     }
 
     .term-body {
       padding: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.8;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: var(--mv-text-muted);
+      line-height: 1.75;
     }
 
-    .term-body .cmd { color: var(--accent-emerald); font-weight: 700; }
-    .term-body .hl { color: var(--text); }
-    .term-body .dim { color: var(--text-dim); }
+    .term-body .cmd { color: var(--mv-text); font-weight: 600; }
+    .term-body .hl { color: var(--accent-emerald); }
+    .term-body .dim { color: var(--mv-text-dim); }
 
-    /* Matrix Features Grid */
+    /* Features Grid (Design.md: 40px gaps, 24px radius on framed panels) */
     .features-section {
-      max-width: 1200px;
-      margin: 60px auto;
+      max-width: 1080px;
+      margin: 64px auto;
       padding: 0 24px;
     }
 
     .section-head {
-      text-align: center;
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
 
     .section-title {
-      font-size: 36px;
-      font-weight: 800;
+      font-size: 28px;
+      font-weight: 700;
       letter-spacing: -0.02em;
+      color: var(--mv-text);
     }
 
     .section-subtitle {
-      font-size: 16px;
-      color: var(--text-muted);
-      margin-top: 8px;
+      font-size: 15px;
+      color: var(--mv-text-muted);
+      margin-top: 6px;
     }
 
     .grid-3 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
       gap: 24px;
     }
 
     .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 32px;
+      background: var(--mv-card);
+      border: 1px solid var(--mv-border);
+      border-radius: 12px;
+      padding: 28px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      transition: all 0.2s ease;
+      gap: 12px;
+      transition: all 0.15s ease;
     }
 
     .card:hover {
-      background: var(--bg-card-hover);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-4px);
+      background: var(--mv-card-hover);
+      border-color: var(--mv-border-highlight);
     }
 
-    .card-icon {
-      font-size: 32px;
+    .card-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mv-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .card-title {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--mv-text);
     }
 
     .card-desc {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
+      font-size: 13.5px;
+      color: var(--mv-text-muted);
+      line-height: 1.55;
     }
 
-    /* Price Table Comparison */
+    /* Comparison Table */
     .compare-section {
-      max-width: 1100px;
+      max-width: 1080px;
       margin: 80px auto;
       padding: 0 24px;
     }
 
     .table-box {
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border: 1px solid var(--mv-border);
+      border-radius: 10px;
       overflow: hidden;
-      background: var(--bg-card);
+      background: var(--mv-card);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 13.5px;
       text-align: left;
     }
 
     th {
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
+      background: var(--mv-surface);
+      color: var(--mv-text-muted);
+      font-family: 'Geist Mono', monospace;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.05em;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--mv-border);
     }
 
     td {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--mv-border);
+      color: var(--mv-text);
     }
 
     tr:last-child td { border-bottom: none; }
 
     /* Footer */
     .footer {
-      border-top: 1px solid var(--border);
-      padding: 60px 40px;
-      max-width: 1200px;
-      margin: 100px auto 0;
+      border-top: 1px solid var(--mv-border);
+      padding: 48px 40px;
+      max-width: 1080px;
+      margin: 96px auto 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      color: var(--text-dim);
-      font-size: 13px;
-      font-family: 'JetBrains Mono', monospace;
+      color: var(--mv-text-dim);
+      font-size: 12px;
+      font-family: 'Geist Mono', monospace;
     }
   </style>
 </head>
@@ -367,26 +414,31 @@
   <!-- Navbar -->
   <nav class="navbar">
     <a href="/" class="nav-brand">
-      <span class="brand-logo">🚀</span>
+      <div class="brand-mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 3.5L19.5 12L4.5 20.5V3.5Z" fill="#FAFAFA" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+        </svg>
+      </div>
       <span class="brand-title">SpacePilot</span>
-      <span class="brand-pill">v2.3 OPEN ENGINE</span>
+      <span class="brand-pill">v2.3 Open Engine</span>
     </a>
 
     <div class="nav-links">
       <a href="/create" class="nav-link">Studio</a>
       <a href="/cockpit" class="nav-link">Compute Cockpit</a>
       <a href="/oven.html" class="nav-link">Oven (Kanban)</a>
-      <a href="/blueprint.html" class="nav-link">Strategy Memo</a>
+      <a href="/blueprint.html" class="nav-link">Strategic Memo</a>
       <a href="https://github.com/motionvector-dev/pluto" target="_blank" class="nav-link">GitHub ⭐️</a>
     </div>
 
     <div class="nav-cta">
+      <button id="themeToggleBtn" class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;">☀️</button>
       <a href="/create" class="btn btn-secondary">Direct Scene</a>
-      <a href="/oven.html" class="btn btn-primary">🛸 Open Swarm Oven</a>
+      <a href="/oven.html" class="btn btn-primary">Open Swarm Oven</a>
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- Hero Section -->
   <header class="hero">
     <div class="hero-badge">
       <span class="dot"></span>
@@ -394,38 +446,38 @@
     </div>
 
     <h1 class="hero-title">
-      The Open Generative Cinema & <span class="gradient-text">Universal Neural Mesh</span>
+      The open generative cinema and neural execution fabric
     </h1>
 
     <p class="hero-subtitle">
-      Dismantle 20x SaaS credit markups. Run quantized foundation models on raw Spot GPU compute with 0.0s cold starts, 3D camera guidance, FLF2V morphing, and autonomous agent swarms.
+      Dismantle 20× SaaS credit markups. Run quantized foundation models on raw spot GPU compute with 0.0s cold starts, 3D camera guidance, FLF2V morphing, and autonomous agent swarms.
     </p>
 
     <div class="hero-actions">
-      <a href="/create" class="btn btn-primary" style="font-size: 14px; padding: 12px 24px;">🎬 Launch Studio ($0.012/take)</a>
-      <a href="/oven.html" class="btn btn-secondary" style="font-size: 14px; padding: 12px 24px;">🛸 Live Swarm Oven</a>
+      <a href="/create" class="btn btn-primary" style="font-size: 14px; padding: 10px 20px;">Launch Studio ($0.012/take)</a>
+      <a href="/oven.html" class="btn btn-secondary" style="font-size: 14px; padding: 10px 20px;">Open Swarm Oven</a>
     </div>
 
-    <!-- Interactive Terminal Preview -->
+    <!-- Terminal Preview Frame -->
     <div class="terminal-hero">
       <div class="term-bar">
         <div class="term-dot"></div>
         <div class="term-dot"></div>
         <div class="term-dot"></div>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); margin-left: 8px;">spacepilot-cli · spot-mesh</span>
+        <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--mv-text-dim); margin-left: 8px;">spacepilot-cli · spot-orchestrator</span>
       </div>
       <div class="term-body">
-        <div><span class="cmd">$</span> <span class="hl">sky spot launch</span> infra/skypilot.yaml --gpus L40S:1</div>
+        <div><span class="cmd">$</span> sky spot launch infra/skypilot.yaml --gpus L40S:1</div>
         <div class="dim">── Searching 12 clouds (AWS, RunPod, GCP, Lambda)... Found: AWS us-east-1 ($0.75/hr spot)</div>
         <div class="dim">── Mounting Quantized Float8 LTX-2.5 into 48GB VRAM... [0.0s cold start]</div>
         <br>
-        <div><span class="cmd">$</span> <span class="hl">spacepilot direct</span> --prompt "Cinematic hyperlapse of Europa ice caves" --camera-pan right --duration 4.0</div>
-        <div><span style="color: var(--accent-emerald);">✔</span> 4s 4K Take Rendered in 14.8s · <span style="color: var(--accent-amber);">Compute Receipt: $0.012</span> (vs $0.25 on SaaS)</div>
+        <div><span class="cmd">$</span> spacepilot direct --prompt "Cinematic hyperlapse of Europa ice caves" --camera-pan right</div>
+        <div><span class="hl">✔</span> 4s 4K Take Rendered in 14.8s · <span style="color: var(--accent-amber);">Compute Receipt: $0.012</span> (vs $0.25 on SaaS)</div>
       </div>
     </div>
   </header>
 
-  <!-- 3 Big Pillars -->
+  <!-- Feature Grid -->
   <section class="features-section">
     <div class="section-head">
       <h2 class="section-title">Built for Creators, Engineered for Swarms</h2>
@@ -434,26 +486,26 @@
 
     <div class="grid-3">
       <div class="card">
-        <div class="card-icon">🎥</div>
+        <span class="card-label">Directing Control</span>
         <h3 class="card-title">3D Camera Compass & FLF2V</h3>
         <p class="card-desc">Direct Pan, Tilt, Zoom, Roll, and 360° Orbit trajectories. Drop Start and End keyframes to morph complex scene plates with deterministic STG guidance scaling.</p>
       </div>
 
       <div class="card">
-        <div class="card-icon">⚡</div>
-        <h3 class="card-title">Zero-Cold Start Spot Broker</h3>
+        <span class="card-label">Compute Broker</span>
+        <h3 class="card-title">Zero-Cold Start Spot Engine</h3>
         <p class="card-desc">SkyPilot integration automatically hunts the cheapest spot GPU ($0.75/hr L40S) across 12+ clouds, keeping quantized models warm in VRAM with 20m dead-man auto-shutdown.</p>
       </div>
 
       <div class="card">
-        <div class="card-icon">🤖</div>
+        <span class="card-label">Swarm Protocol</span>
         <h3 class="card-title">FastMCP & Agent Skills Native</h3>
         <p class="card-desc">Native FastMCP tool suite and open `SKILL.md` standard allowing Claude, Cursor, and Antigravity swarms to write scripts, direct shots, and settle via HTTP 402 USDC.</p>
       </div>
     </div>
   </section>
 
-  <!-- Cost Arbitrage Table -->
+  <!-- Unit Cost Moat Table -->
   <section class="compare-section">
     <div class="section-head">
       <h2 class="section-title">The Unit Economics Moat</h2>
@@ -464,37 +516,37 @@
       <table>
         <thead>
           <tr>
-            <th>Generation Platform</th>
+            <th>Platform</th>
             <th>Billing Model</th>
             <th>Cost per 4s Take</th>
             <th>Cold Start Latency</th>
-            <th>Camera Control</th>
+            <th>Camera Directing</th>
           </tr>
         </thead>
         <tbody>
-          <tr style="background: rgba(16, 185, 129, 0.05);">
-            <td><strong>🚀 SpacePilot (Pluto Engine)</strong></td>
+          <tr style="background: var(--mv-surface);">
+            <td><strong>SpacePilot (Pluto Engine)</strong></td>
             <td><strong style="color: var(--accent-emerald);">Raw Spot ($0.75/hr)</strong></td>
             <td><strong style="color: var(--accent-emerald);">$0.012</strong></td>
             <td><strong style="color: var(--accent-emerald);">0.0s (Resident)</strong></td>
             <td><strong style="color: var(--accent-emerald);">3D Compass + FLF2V</strong></td>
           </tr>
           <tr>
-            <td><strong>Runway Gen-3 Alpha</strong></td>
+            <td>Runway Gen-3 Alpha</td>
             <td>Credits ($0.05/credit)</td>
             <td>$0.25 (20× Markup)</td>
             <td>12s–30s Queue</td>
             <td>Fixed Presets</td>
           </tr>
           <tr>
-            <td><strong>Luma Dream Machine</strong></td>
+            <td>Luma Dream Machine</td>
             <td>SaaS Subscription Tier</td>
             <td>$0.20 (16× Markup)</td>
             <td>15s Queue</td>
             <td>Text-Only Guidance</td>
           </tr>
           <tr>
-            <td><strong>fal.ai / Replicate API</strong></td>
+            <td>fal.ai / Replicate API</td>
             <td>Platform Compute Fee</td>
             <td>$0.08–$0.15</td>
             <td>8s–45s Container Pull</td>
@@ -507,9 +559,28 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <div>SpacePilot 🚀 · Powered by Pluto Engine & MotionVector</div>
+    <div>SpacePilot · Powered by Pluto Engine & MotionVector</div>
     <div>Apache 2.0 / MIT Open Source · 2026</div>
   </footer>
 
+  <script>
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const htmlEl = document.documentElement;
+
+    function applyTheme(theme) {
+      htmlEl.setAttribute('data-theme', theme);
+      themeToggleBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('spacepilot_theme', theme);
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    });
+
+    const saved = localStorage.getItem('spacepilot_theme') || 'dark';
+    applyTheme(saved);
+  </script>
 </body>
 </html>
