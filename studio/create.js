@@ -604,14 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload)
-      }
-
-  btnGenerate.addEventListener('click', () => startGeneration(1));
-  const btnGenerate4Take = document.getElementById('btn-generate-4take');
-  if (btnGenerate4Take) {
-    btnGenerate4Take.addEventListener('click', () => startGeneration(4));
-  }
-
+      });
 
       if (!genRes.ok) {
         throw new Error('Server returned ' + genRes.status);
@@ -625,7 +618,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const mockId = 'mock_' + Math.random().toString(36).substr(2, 8);
       runGenerationTracker(mockId, null);
     }
-  });
+  }
+
+  btnGenerate.addEventListener('click', () => startGeneration(1));
+  const btnGenerate4Take = document.getElementById('btn-generate-4take');
+  if (btnGenerate4Take) {
+    btnGenerate4Take.addEventListener('click', () => startGeneration(4));
+  }
+
 
   function setStage(stageIdx, phaseText, subtitleText, progressPct, customStepLabel) {
     for (let i = 1; i <= 5; i++) {
@@ -780,17 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnOpenStudio) {
       btnOpenStudio.href = `/studio?asset_id=${jobId}`;
-    }
-  };
-
-    if (btnOpenStudio) {
-      btnOpenStudio.href = `/studio?asset_id=${jobId}`;
-    }
-
-    if (compReceipt) {
-      const cost = config.draftMode ? '~$0.01' : '~$0.04';
-      const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
-      compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
     }
   }
 
