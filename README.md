@@ -1,17 +1,18 @@
-# Pluto
+# SpacePilot 🚀 (Pluto Engine)
 
-Local-first video and audio generation for macOS Apple Silicon. A studio web UI
-and CLI on the Mac, backed by a resident LTX-2.5 worker on an AWS spot GPU box
-that is launched only when needed and terminated when it isn't.
+> **"SkyPilot pilots your cloud servers. SpacePilot pilots your generative cinema."**
 
-Four things run here:
+**SpacePilot** is the high-performance generative cinema workstation and zero-markup compute broker for macOS Apple Silicon. A zero-build studio web UI (`/create`, `/cockpit`, `/studio`), native FastMCP server, and CLI on the Mac, backed by a resident Quantized LTX-2.5 diffusion worker on AWS/Shadeform/RunPod spot GPUs ($0.012/take instead of 20x SaaS subscription markups).
+
+Four core engines power SpacePilot:
 
 | Component | What it is |
 | --- | --- |
-| `src/studio_api.py` | The studio backend and web UI. FastAPI on `127.0.0.1:8088`. |
-| `src/cli.py` (`bin/pluto`) | GPU lifecycle, deploys, generation, log streaming. |
-| `src/ltx_worker.py` | Flask worker holding LTX-2.5 resident in VRAM. Runs on the EC2 box, not here. |
-| `src/server.py` | Older LTX-Video API bridge, superseded by the studio. |
+| `src/studio_api.py` | SpacePilot Studio backend & Web UI (FastAPI on `127.0.0.1:8000` / `:8088`). |
+| `src/pluto_mcp_server.py` | Native FastMCP Server exposing generative cinema tools to Claude, Cursor & Antigravity. |
+| `src/cli.py` (`bin/pluto` / `spacepilot`) | GPU lifecycle, deploys, generation, log streaming, and Spot arbitrage. |
+| `src/ltx_worker.py` | PyTorch resident worker holding Quantized Float8 LTX-2.5 warm in 48GB VRAM (0.0s cold start). |
+
 
 ---
 
