@@ -225,10 +225,12 @@ def cmd_deploy(args, cfg):
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/src/ltx_worker.py", f"ubuntu@{ip}:/scratch/worker/ltx_worker.py"])
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/infra/setup_ltx_ec2.sh", f"ubuntu@{ip}:/scratch/worker/setup.sh"])
     print("  Starting setup & warmup in background...")
-    # Token arrives on stdin so it never lands in the remote process list.
+    # Tokens arrive on stdin so they never land in the remote process list.
+    hf_token = os.environ.get("HF_TOKEN", "")
     run_cmd(["ssh", "-i", key, f"ubuntu@{ip}",
-             "cd /scratch/worker && export LOCAL_WORKER_TOKEN=$(cat) && bash setup.sh"],
-            stdin_text=WORKER_TOKEN)
+             "cd /scratch/worker && IFS='|' read -r LWT HFT && "
+             "export LOCAL_WORKER_TOKEN=\"$LWT\" HF_TOKEN=\"$HFT\" && bash setup.sh"],
+            stdin_text=f"{WORKER_TOKEN}|{hf_token}")
     print("\n  Deployment complete! Check status with: pluto status")
 
 
