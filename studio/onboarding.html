@@ -352,18 +352,18 @@
         grid.innerHTML = '';
         assets.forEach(asset => {
           const a = document.createElement('a');
-          a.href = `index.html?asset_id=${asset.id}`;
+          a.href = `/studio?asset_id=${asset.id}`;
           a.className = 'gallery-item';
-          a.innerHTML = \`
+          a.innerHTML = `
             <div class="item-thumbnail">
-              <img src="/api/media/\${asset.id}.jpg" alt="\${asset.prompt}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxNDE3MjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iIzk0YTNiOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBUaHVtYm5haWw8L3RleHQ+PC9zdmc+'">
-              <video src="/api/media/\${asset.id}.mp4" loop muted playsinline></video>
+              <img src="/api/media/${asset.id}.png" alt="${asset.prompt || 'Asset'}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxNDE3MjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iIzk0YTNiOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBUaHVtYm5haWw8L3RleHQ+PC9zdmc+'">
+              <video src="/api/media/${asset.id}.mp4" loop muted playsinline></video>
             </div>
             <div class="item-meta">
-              <div class="item-title">\${asset.prompt || 'Untitled Generation'}</div>
-              <div class="item-date">\${new Date(asset.created_at).toLocaleString()}</div>
+              <div class="item-title">${asset.prompt || 'Untitled Generation'}</div>
+              <div class="item-date">${new Date(asset.created_at * 1000 || Date.now()).toLocaleTimeString()}</div>
             </div>
-          \`;
+          `;
           
           // Hover to play
           const video = a.querySelector('video');
@@ -377,8 +377,8 @@
         });
       } catch (err) {
         // Mock fallback for UI demo purposes if API isn't live
-        grid.innerHTML = \`
-          <a href="index.html?asset_id=mock-1" class="gallery-item">
+        grid.innerHTML = `
+          <a href="/studio?asset_id=mock-1" class="gallery-item">
             <div class="item-thumbnail">
               <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMyMzJhMzUiLz48L3N2Zz4=" alt="Mock">
             </div>
@@ -387,7 +387,7 @@
               <div class="item-date">Just now</div>
             </div>
           </a>
-          <a href="index.html?asset_id=mock-2" class="gallery-item">
+          <a href="/studio?asset_id=mock-2" class="gallery-item">
             <div class="item-thumbnail">
               <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZTI5M2IiLz48L3N2Zz4=" alt="Mock">
             </div>
@@ -396,7 +396,7 @@
               <div class="item-date">2 hours ago</div>
             </div>
           </a>
-        \`;
+        `;
       }
     }
     fetchAssets();
