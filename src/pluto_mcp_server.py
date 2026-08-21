@@ -140,6 +140,73 @@ def pluto_decompose_storyboard(script: str, scene_count: int = 6, target_duratio
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@mcp.tool()
+def pluto_probe_hardware() -> Dict[str, Any]:
+    """Probe host hardware capabilities and VRAM headroom for local inference.
+    
+    Returns:
+        Dict[str, Any]: Device telemetry including backend (MPS/CUDA/CPU), total VRAM, and usable headroom.
+    """
+    try:
+        from src.device_probe import probe_local_device
+        profile = probe_local_device()
+        return {"status": "success", "profile": profile.to_dict()}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_recommend_models() -> Dict[str, Any]:
+    """Recommend task-based models (TTS, Storyboard, Video Diffusion) matched to host hardware.
+    
+    Returns:
+        Dict[str, Any]: Recommended models with fit scores, quantization levels, and local cache status.
+    """
+    try:
+        from src.model_recommender import recommend_models_for_device
+        return {"status": "success", **recommend_models_for_device()}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_download_model(model_id: str) -> Dict[str, Any]:
+    """Download a model from the recommended catalog to the local cache.
+    
+    Args:
+        model_id (str): The ID of the model to download (e.g. 'kokoro-82m-tts', 'qwen2.5-3b-instruct-gguf').
+        
+    Returns:
+        Dict[str, Any]: Download status and destination path.
+    """
+    try:
+        from src.model_recommender import download_model_mock
+        return download_model_mock(model_id)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_get_local_status() -> Dict[str, Any]:
+    """Get live status of local inference workers and loaded models.
+    
+    Returns:
+        Dict[str, Any]: Loaded model weights, current VRAM allocation, and worker availability.
+    """
+    try:
+        from src.device_probe import probe_local_device
+        from src.model_recommender import PLUTO_MODELS_CACHE
+        profile = probe_local_device()
+        downloaded = []
+        if PLUTO_MODELS_CACHE.exists():
+            downloaded = [f.name for f in PLUTO_MODELS_CACHE.iterdir() if f.is_file()]
+        return {
+            "status": "online",
+            "backend": profile.backend,
+            "vram_usable_gb": profile.vram_usable_gb,
+            "loaded_models": downloaded,
+            "is_local_capable": profile.is_local_capable,
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @mcp.resource("pluto://models/ltx25")
 def get_ltx25_model_info() -> str:
     """Get information about the LTX25 model.
@@ -179,3 +246,4 @@ def get_voice_catalogue() -> str:
 
 if __name__ == "__main__":
     mcp.run()
+
