@@ -156,4 +156,5 @@ def generate_multi_engine_api(
 
     background_tasks.add_task(_run_render)
     write_meta(meta_file, meta)
-    return {"status": "queued", "job_id": job_id, "meta": meta, "patch": patch}
+    return {"status": "queued", "job_id": job_id, "meta": meta, "patch": patch, "engine_id": spec.engine_id}
+

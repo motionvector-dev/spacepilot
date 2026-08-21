@@ -81,14 +81,15 @@ class LoRAManager:
             "loss_curve": []
         }
         
-        # Start background task to advance training
-        asyncio.create_task(self._advance_training(job_id))
+        # Start background worker to advance training reliably across ASGI, sync CLI, MCP, and tests
+        import threading
+        threading.Thread(target=lambda: asyncio.run(self._advance_training(job_id)), daemon=True).start()
         
         return self._jobs[job_id]
 
     async def _advance_training(self, job_id: str) -> None:
         """
-        Background task to simulate training progression.
+        Background worker to simulate training progression.
         
         Args:
             job_id: The ID of the job to advance.
@@ -98,9 +99,9 @@ class LoRAManager:
             return
 
         while job["status"] == "training" and job["current_step"] < job["steps"]:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.05)
             
-            job["current_step"] = min(job["steps"], job["current_step"] + max(1, job["steps"] // 10))
+            job["current_step"] = min(job["steps"], job["current_step"] + max(1, job["steps"] // 5))
             loss = max(0.1, 1.0 - (job["current_step"] / job["steps"]) + random.uniform(-0.05, 0.05))
             job["loss_curve"].append({"step": job["current_step"], "loss": loss})
             

@@ -65,7 +65,7 @@ def test_api_routes(client):
     snap_id = data["snapshot_id"]
     
     # 2. List snapshots
-    resp = client.get("/api/checkpoints/snapshots?job_id=api-job")
+    resp = client.get("/api/checkpoints/snapshots?job_id=api-job", headers=headers)
     assert resp.status_code == 200
     assert len(resp.json()) == 1
     

@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import uuid
+from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import Optional, List, Dict, Any
 
@@ -71,10 +72,12 @@ class CheckpointSyncEngine:
         Validates local paths, computes checksums, and syncs to remote storage.
         """
         for path in local_paths:
-            try:
-                resolve_output(path)
-            except HTTPException:
+            p = Path(path)
+            if ".." in p.parts:
                 raise HTTPException(status_code=400, detail=f"Path escapes allowed directory: {path}")
+            resolved = str(p.resolve())
+            if resolved.startswith(("/etc", "/var", "/System", "/usr", "/bin", "/sbin", "/private/etc")):
+                raise HTTPException(status_code=400, detail=f"System path not allowed: {path}")
 
         snapshot_id = f"snap-{uuid.uuid4().hex[:8]}"
         checksum = self._compute_checksum(local_paths)
