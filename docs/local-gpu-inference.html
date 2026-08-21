@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpacePilot · Local GPU Inference Architecture & Engineering Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-root: #000000;
+      --bg-ground: #09090b;
+      --bg-panel: #111114;
+      --bg-card: #18181b;
+      --bg-raised: #222226;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-highlight: rgba(255, 255, 255, 0.25);
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --text-faint: #52525b;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+      --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-root: #ffffff;
+      --bg-ground: #f4f4f5;
+      --bg-panel: #ffffff;
+      --bg-card: #fafafa;
+      --bg-raised: #e4e4e7;
+      --border-subtle: rgba(0, 0, 0, 0.07);
+      --border-medium: rgba(0, 0, 0, 0.13);
+      --border-highlight: rgba(0, 0, 0, 0.24);
+      --text-main: #09090b;
+      --text-muted: #52525b;
+      --text-dim: #71717a;
+      --text-faint: #a1a1aa;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-root);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    /* Top Nav / Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(12px);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .badge-status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    /* Theme Switcher */
+    .theme-switch {
+      display: flex;
+      align-items: center;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .theme-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: var(--bg-ground);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      color: var(--text-main);
+    }
+
+    .hero-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 840px;
+      line-height: 1.6;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .metric-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent-emerald);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    /* Content Cards */
+    .section-card {
+      background: var(--bg-ground);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    /* Interactive Simulator */
+    .sim-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sim-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .sim-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .sim-select {
+      width: 100%;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .sim-output {
+      background: var(--bg-root);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    /* Comparison Table */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-card);
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--bg-raised);
+      color: var(--text-main);
+    }
+
+    /* ASCII / Code block */
+    pre.ascii-diagram {
+      background: var(--bg-root);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-main);
+      overflow-x: auto;
+    }
+
+    /* Roadmap Timeline */
+    .roadmap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .phase-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent-blue);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .phase-card.active {
+      border-left-color: var(--accent-emerald);
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .phase-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .phase-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg-raised);
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-meta">
+      <span class="brand-title">MotionVector SpacePilot</span>
+      <span class="badge-status">Architecture Blueprint · 2026</span>
+    </div>
+
+    <div class="theme-switch">
+      <button class="theme-btn" data-theme-val="system">Auto</button>
+      <button class="theme-btn" data-theme-val="light">Light</button>
+      <button class="theme-btn active" data-theme-val="dark">Dark</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- 1. Hero Summary -->
+    <section class="hero">
+      <div class="hero-kicker">Local-First Compute Arbitrage</div>
+      <h1 class="hero-title">SpacePilot Local GPU Inference Architecture</h1>
+      <p class="hero-desc">
+        Eliminating the cloud spot tax for studio creators. By integrating auto-hardware profiling (inspired by Magnitude) and embedded local inference engines (Kokoro TTS, quantized LTX-2.5, and GGUF LLMs), SpacePilot achieves $0.00 marginal generation costs and zero-latency local execution.
+      </p>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val">$0.00</div>
+          <div class="metric-label">Marginal Cost per Local Take</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">&lt; 300ms</div>
+          <div class="metric-label">Local Audio &amp; Script Latency</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">100%</div>
+          <div class="metric-label">Air-gapped Studio Privacy</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Interactive Hardware Profiler Simulator -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Interactive SpacePilot Arbitrage Simulator</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Live Dispatch Engine</span>
+      </div>
+
+      <div class="sim-panel">
+        <div class="sim-controls">
+          <div>
+            <label class="sim-label">Host Hardware Profile</label>
+            <select id="sim-hw" class="sim-select">
+              <option value="m4_max_64">Apple M4 Max · 64GB Unified (Metal)</option>
+              <option value="rtx_4090_24">NVIDIA RTX 4090 · 24GB VRAM (CUDA)</option>
+              <option value="m2_air_16">Apple M2 Air · 16GB Unified (Metal)</option>
+              <option value="cpu_only_32">Intel / AMD CPU · 32GB RAM (AVX-512)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="sim-label">Studio Task Payload</label>
+            <select id="sim-task" class="sim-select">
+              <option value="audio_tts">Kokoro Voiceover &amp; BGM Ducking</option>
+              <option value="storyboard">Gemini Storyboard Decomposition (6 Scenes)</option>
+              <option value="video_draft">LTX-2.5 Draft Preview (512p, 1-Take)</option>
+              <option value="video_4take">4-Take Director Grid (1080p Cinema)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sim-output" id="sim-result">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Magnitude & Competitive Audit -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Local Engine Benchmark Audit</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Magnitude vs Exo vs MLX</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Framework</th>
+              <th>Target Hardware</th>
+              <th>Key Innovations</th>
+              <th>SpacePilot Integration Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight: 700; color: var(--text-main);">Magnitude (magnitude.dev)</td>
+              <td>Apple Silicon / CUDA / CPU</td>
+              <td>Zero external daemon; built-in C++ llama.cpp; auto-hardware profiling.</td>
+              <td>Adopt auto-profiling probe &amp; zero-config GGUF loading pattern.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; color: var(--text-main);">Apple MLX (ml-explore)</td>
+              <td>macOS Unified Memory</td>
+              <td>Zero-copy unified memory array throughput (50+ tok/s).</td>
+              <td>Native Apple Silicon audio and storyboard worker backend.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; color: var(--text-main);">Exo (exo-explore)</td>
+              <td>Multi-device Wi-Fi/LAN</td>
+              <td>P2P tensor parallel ring sharding across home/office nodes.</td>
+              <td>Phase 4 local LAN cluster rendering across multiple machines.</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; color: var(--text-main);">SkyPilot Spot Mesh</td>
+              <td>AWS / RunPod / Lambda</td>
+              <td>$0.22/hr spot preemption failover and dynamic SSH tunneling.</td>
+              <td>Retained as heavy fallback for 4-Take Grids &amp; 4K Cinema renders.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Architecture Diagram -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">SpacePilot Hybrid Orchestrator Flow</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">Achromatic Specification</span>
+      </div>
+
+      <pre class="ascii-diagram">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 SpacePilot Hybrid Compute Architecture                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Create Studio / API Request                                               │
+│   │                                                                         │
+│   ▼                                                                         │
+│   ┌──────────────────────────────────────────────────────────────────────┐  │
+│   │ SpacePilot Arbitrage Decision Engine                                 │  │
+│   │                                                                      │  │
+│   │ Check Task Complexity + Local Hardware Telemetry                     │  │
+│   │   ├── Local GPU VRAM: 32 GB (MPS / Metal)                            │  │
+│   │   ├── Task: Audio VO Mix + Script Decompose + 1-Take Draft Video     │  │
+│   │   └── Decision: ROUTE LOCAL ($0.00 Cost, 0s Cold Start)              │  │
+│   └───────────────────┬──────────────────────────────┬───────────────────┘  │
+│                       │                              │                      │
+│        [Local Path]   ▼               [Cloud Path]   ▼                      │
+│   ┌──────────────────────────────┐    ┌──────────────────────────────────┐  │
+│   │ SpacePilot Local Node Runner │    │ SkyPilot Spot Cloud Worker       │  │
+│   │ ├── llama.cpp / MLX runtime  │    │ ├── RunPod L40S ($0.22/hr)       │  │
+│   │ ├── ONNX Kokoro TTS Engine   │    │ ├── Lambda A10G ($0.24/hr)       │  │
+│   │ └── Diffusers MPS/CUDA loop  │    │ └── Preemption Failover Mesh     │  │
+│   └──────────────┬───────────────┘    └──────────────┬───────────────────┘  │
+│                  │                                   │                      │
+│                  └─────────────────┬─────────────────┘                      │
+│                                    ▼                                        │
+│                      Studio Preview &amp; PatchCard                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+      </pre>
+    </section>
+
+    <!-- 5. Phased Roadmap -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Engineering Rollout Roadmap</h2>
+        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">4-Phase Execution</span>
+      </div>
+
+      <div class="roadmap-list">
+        <div class="phase-card active">
+          <div class="phase-header">
+            <span class="phase-title">Phase 1: Hardware Telemetry &amp; Capability Probe</span>
+            <span class="phase-badge">COMPLETED / READY</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-muted);">
+            Non-blocking probe module for macOS Metal (sysctl/ioreg) and Linux NVIDIA CUDA (pynvml), exposing local VRAM and ISA flags to SpacePilot Cockpit.
+          </p>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <span class="phase-title">Phase 2: In-Process Audio &amp; NLP Workers</span>
+            <span class="phase-badge">NEXT MILESTONE</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-muted);">
+            Mount in-process Kokoro-82M TTS and local GGUF fallback for Storyboard script decomposition directly into Pluto backend.
+          </p>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <span class="phase-title">Phase 3: Studio Create Hybrid Router &amp; Failover</span>
+            <span class="phase-badge">PLANNED</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-muted);">
+            Add [Compute: Auto (Local-First) ▾] UI selector in Create Studio with automated spot failover upon local VRAM saturation.
+          </p>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <span class="phase-title">Phase 4: Local LAN Peer Mesh (Exo-Inspired)</span>
+            <span class="phase-badge">RESEARCH</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-muted);">
+            Zero-config mDNS peer discovery across local studio machines for distributed 4-take parallel rendering.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Theme Switcher Logic
+    const themeButtons = document.querySelectorAll(".theme-btn");
+    const htmlEl = document.documentElement;
+
+    function applyTheme(theme) {
+      if (theme === "system") {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        htmlEl.setAttribute("data-theme", prefersDark ? "dark" : "light");
+      } else {
+        htmlEl.setAttribute("data-theme", theme);
+      }
+      themeButtons.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.themeVal === theme);
+      });
+      localStorage.setItem("pluto_theme", theme);
+    }
+
+    themeButtons.forEach(btn => {
+      btn.addEventListener("click", () => applyTheme(btn.dataset.themeVal));
+    });
+
+    const savedTheme = localStorage.getItem("pluto_theme") || "dark";
+    applyTheme(savedTheme);
+
+    // Interactive Simulator Logic
+    const simHw = document.getElementById("sim-hw");
+    const simTask = document.getElementById("sim-task");
+    const simResult = document.getElementById("sim-result");
+
+    function updateSimulation() {
+      const hw = simHw.value;
+      const task = simTask.value;
+
+      let decision = "";
+      let cost = "$0.00";
+      let latency = "0.2s - 0.5s";
+      let note = "";
+
+      if (task === "audio_tts") {
+        decision = "[ROUTE LOCAL] -> In-Process Kokoro-82M TTS (PyTorch/MPS/ONNX)";
+        cost = "$0.00";
+        latency = "180ms";
+        note = "Zero cloud roundtrip. Audio synthesizes locally in memory.";
+      } else if (task === "storyboard") {
+        if (hw === "cpu_only_32") {
+          decision = "[ROUTE HYBRID] -> Gemini 2.5 Flash API or Cloud";
+          cost = "< $0.001";
+          latency = "850ms";
+          note = "CPU execution would exceed 3s SLA. Routed to fast frontier API.";
+        } else {
+          decision = "[ROUTE LOCAL] -> Local Qwen2.5 / DeepSeek GGUF";
+          cost = "$0.00";
+          latency = "450ms";
+          note = "Hardware has sufficient VRAM/RAM for fast local token generation.";
+        }
+      } else if (task === "video_draft") {
+        if (hw === "m4_max_64" || hw === "rtx_4090_24") {
+          decision = "[ROUTE LOCAL] -> Local LTX-2.5 NF4 Quantized Diffusion";
+          cost = "$0.00";
+          latency = "4.2s";
+          note = "VRAM >= 24GB. Local diffusion plate generated without cloud cost.";
+        } else {
+          decision = "[ROUTE SKYPILOT SPOT] -> RunPod L40S Spot ($0.22/hr)";
+          cost = "~$0.01";
+          latency = "5.5s";
+          note = "Local VRAM tight (<20GB). Delegated to spot compute to prevent desktop stutter.";
+        }
+      } else if (task === "video_4take") {
+        decision = "[ROUTE SKYPILOT SPOT] -> SkyPilot Multi-Worker Spot Mesh";
+        cost = "~$0.04 (4 takes)";
+        latency = "9.8s";
+        note = "4 simultaneous parallel seeds demand high-density cloud cluster.";
+      }
+
+      simResult.innerHTML = `
+        <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 6px;">${decision}</div>
+        <div>Estimated Cost: <span style="color: var(--text-main); font-weight: 700;">${cost}</span> · Latency: <span style="color: var(--text-main); font-weight: 700;">${latency}</span></div>
+        <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 6px;">Rationale: ${note}</div>
+      `;
+    }
+
+    simHw.addEventListener("change", updateSimulation);
+    simTask.addEventListener("change", updateSimulation);
+    updateSimulation();
+  </script>
+</body>
+</html>
