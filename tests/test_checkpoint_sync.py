@@ -78,14 +78,20 @@ def test_api_routes(client):
     resp = client.delete(f"/api/checkpoints/snapshots/{snap_id}", headers=headers)
     assert resp.status_code == 200
 
-def test_api_auth_gate(client):
-    resp = client.post("/api/checkpoints/snapshot", json={
-        "job_id": "api-job",
-        "step": 10,
-        "epoch": 1,
-        "loss": 0.1,
-        "local_paths": []
-    }, headers={"X-Pluto-Token": "badtoken"})
+@pytest.mark.parametrize("method,endpoint,payload", [
+    ("POST", "/api/checkpoints/snapshot", {"job_id": "api-job", "step": 10, "epoch": 1, "loss": 0.1, "local_paths": []}),
+    ("GET", "/api/checkpoints/snapshots", None),
+    ("POST", "/api/checkpoints/restore/snap-123", {"target_dir": "/tmp/test"}),
+    ("DELETE", "/api/checkpoints/snapshots/snap-123", None),
+])
+def test_api_auth_gate(client, method, endpoint, payload):
+    if method == "GET":
+        resp = client.get(endpoint, headers={"X-Pluto-Token": "badtoken"})
+    elif method == "POST":
+        resp = client.post(endpoint, json=payload, headers={"X-Pluto-Token": "badtoken"})
+    elif method == "DELETE":
+        resp = client.delete(endpoint, headers={"X-Pluto-Token": "badtoken"})
+    
     assert resp.status_code == 401
 
 def test_mcp_tools(reset_engine):
@@ -99,3 +105,25 @@ def test_mcp_tools(reset_engine):
     
     res_restore = pluto_restore_checkpoint(snap_id)
     assert res_restore["status"] == "success"
+
+def test_edge_cases(client):
+    from src.pluto.core.config import get_settings
+    headers = {"X-Pluto-Token": get_settings().studio_token}
+
+    # Test missing path / escapes directory
+    resp = client.post("/api/checkpoints/snapshot", json={
+        "job_id": "api-job",
+        "step": 10,
+        "epoch": 1,
+        "loss": 0.1,
+        "local_paths": ["/etc/passwd"]
+    }, headers=headers)
+    assert resp.status_code == 400
+
+    # Test invalid snapshot ID on restore
+    resp = client.post("/api/checkpoints/restore/invalid-snap-id", headers=headers)
+    assert resp.status_code == 404
+
+    # Test invalid snapshot ID on delete
+    resp = client.delete("/api/checkpoints/snapshots/invalid-snap-id", headers=headers)
+    assert resp.status_code == 404
