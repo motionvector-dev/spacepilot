@@ -1,61 +1,84 @@
 import { useEffect, useRef, useState } from 'react';
-import { Terminal as TerminalIcon, Copy, Check } from 'lucide-react';
+import { Terminal as TerminalIcon, Copy, Check, Wifi, WifiOff } from 'lucide-react';
 
 interface WebSshTerminalViewProps {
   wsUrl?: string;
 }
 
-export function WebSshTerminalView({ wsUrl: _wsUrl = 'ws://127.0.0.1:8080/ws/cockpit' }: WebSshTerminalViewProps) {
+export function WebSshTerminalView({ wsUrl = 'ws://127.0.0.1:8088/api/gpu/inspect/shell' }: WebSshTerminalViewProps) {
   const [lines, setLines] = useState<string[]>([
-    'SpacePilot Web SSH PTY Bridge [xterm v5.3.0]',
-    'Connected to resident daemon: ltx-2.5-float8 (PID: 40799)',
-    'GPU Box: AWS g6e.xlarge (L40S 48GB VRAM) @ $0.75/hr Spot',
-    'Type "spacepilot --help" or "nvidia-smi" to begin.',
-    'spacepilot@spacepilot-box:~$ '
+    'Connecting to resident PTY bridge...',
   ]);
   const [inputVal, setInputVal] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let ws: WebSocket;
+    try {
+      const targetUrl = wsUrl.startsWith('ws') 
+        ? wsUrl 
+        : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+
+      ws = new WebSocket(targetUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setIsConnected(true);
+        setLines(prev => [...prev, '[CONNECTED] Remote PTY bridge established.']);
+      };
+
+      ws.onmessage = (event) => {
+        const text = typeof event.data === 'string' ? event.data : '';
+        if (text) {
+          const splitLines = text.split('\n');
+          setLines(prev => [...prev, ...splitLines]);
+        }
+      };
+
+      ws.onerror = () => {
+        setIsConnected(false);
+        setLines(prev => [...prev, '[ERROR] WebSocket connection error. Backend PTY unreachable.']);
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        setLines(prev => [...prev, '[DISCONNECTED] PTY bridge closed.']);
+      };
+    } catch {
+      setIsConnected(false);
+    }
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [wsUrl]);
 
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputVal.trim()) return;
 
-    const cmd = inputVal.trim();
-    const newLines = [...lines];
-    newLines[newLines.length - 1] = `spacepilot@spacepilot-box:~$ ${cmd}`;
-
-    if (cmd === 'nvidia-smi') {
-      newLines.push(
-        '+-----------------------------------------------------------------------------------------+',
-        '| NVIDIA-SMI 550.54.14              Driver Version: 550.54.14      CUDA Version: 12.4     |',
-        '|-----------------------------------------+------------------------+----------------------+',
-        '| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |',
-        '| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |',
-        '|=========================================+========================+======================|',
-        '|   0  NVIDIA L40S                    On  | 00000000:00:1E.0   Off |                    0 |',
-        '| N/A   38C    P0              72W / 350W |  18432MiB / 46068MiB |     64%      Default |',
-        '+-----------------------------------------+------------------------+----------------------+'
-      );
-    } else if (cmd === 'spacepilot --help' || cmd === 'pluto --help') {
-      newLines.push(
-        'SpacePilot Cinema Runtime CLI v2.4.0',
-        'Commands:',
-        '  daemon start --model ltx-2.5-float8   Start resident zero-cold-start inference daemon',
-        '  spot launch --instance g6e.xlarge     Launch spot GPU with 30m dead-man switch',
-        '  spot terminate                        Safely terminate instance and prune cache',
-        '  doctor                                Run zero-dependency hardware diagnostic HUD'
-      );
-    } else if (cmd === 'clear') {
-      setLines(['spacepilot@spacepilot-box:~$ ']);
+    const cmd = inputVal;
+    if (cmd === 'clear') {
+      setLines([]);
       setInputVal('');
       return;
-    } else {
-      newLines.push(`bash: ${cmd}: command executed on remote bridge.`);
     }
 
-    newLines.push('spacepilot@spacepilot-box:~$ ');
-    setLines(newLines);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(cmd + '\n');
+    } else {
+      setLines(prev => [
+        ...prev, 
+        `spacepilot@box:~$ ${cmd}`,
+        `[OFFLINE] Cannot execute "${cmd}" — WebSocket not connected.`
+      ]);
+    }
+
     setInputVal('');
   };
 
@@ -81,11 +104,22 @@ export function WebSshTerminalView({ wsUrl: _wsUrl = 'ws://127.0.0.1:8080/ws/coc
           </div>
           <span className="text-[#a1a1aa] font-bold text-[11px] flex items-center gap-1.5">
             <TerminalIcon className="w-3.5 h-3.5 text-[#06b6d4]" />
-            xterm.js PTY Session · spacepilot@spot-g6e.xlarge
+            xterm PTY Bridge · {isConnected ? 'ws://localhost:8088' : 'offline'}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1 text-[10px] text-[#71717a]">
+            {isConnected ? (
+              <span className="flex items-center gap-1 text-[#10b981]">
+                <Wifi className="w-3 h-3" /> Live
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[#f59e0b]">
+                <WifiOff className="w-3 h-3" /> Standby
+              </span>
+            )}
+          </span>
           <button 
             onClick={copyLog}
             className="p-1 rounded hover:bg-white/[0.08] text-[#71717a] hover:text-white transition-all cursor-pointer"
@@ -97,19 +131,19 @@ export function WebSshTerminalView({ wsUrl: _wsUrl = 'ws://127.0.0.1:8080/ws/coc
       </div>
 
       {/* Terminal Body */}
-      <div className="p-4 h-72 overflow-y-auto bg-[#000000] text-[#a1a1aa] leading-relaxed select-text flex flex-col">
-        {lines.slice(0, -1).map((line, idx) => (
-          <div key={idx} className="whitespace-pre font-mono">{line}</div>
+      <div className="p-4 h-72 overflow-y-auto bg-[#000000] text-[#a1a1aa] leading-relaxed select-text flex flex-col font-mono text-[11px]">
+        {lines.map((line, idx) => (
+          <div key={idx} className="whitespace-pre-wrap">{line}</div>
         ))}
 
         {/* Input prompt line */}
-        <form onSubmit={handleCommand} className="flex items-center gap-1.5 text-white">
-          <span className="text-[#10b981] font-bold">spacepilot@spacepilot-box:~$</span>
+        <form onSubmit={handleCommand} className="flex items-center gap-1.5 text-white mt-1">
+          <span className="text-[#10b981] font-bold">spacepilot@box:~$</span>
           <input 
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-white font-mono text-xs focus:ring-0 p-0"
+            className="flex-1 bg-transparent border-none outline-none text-white font-mono text-[11px] focus:ring-0 p-0"
             autoFocus
           />
         </form>
