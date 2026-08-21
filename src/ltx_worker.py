@@ -141,15 +141,15 @@ def _generate_thread(job_id, params):
         seed = int(params.get("seed", int(time.time() * 1000) % 2147483647))
         steps = int(params.get("steps", 30))
 
-        # Advanced Guidance & Multi-Modal Controls
-        guidance_scale = float(params.get("guidance_scale", 1.0))
-        audio_guidance_scale = float(params.get("audio_guidance_scale", 1.0))
-        stg_scale = float(params.get("stg_scale", 0.0))
-        audio_stg_scale = float(params.get("audio_stg_scale", 0.0))
-        modality_scale = float(params.get("modality_scale", 1.0))
-        audio_modality_scale = float(params.get("audio_modality_scale", 1.0))
-        guidance_rescale = float(params.get("guidance_rescale", 0.0))
-        audio_guidance_rescale = float(params.get("audio_guidance_rescale", 0.0))
+        # Advanced Guidance & Multi-Modal Controls (official LTX-2.5 defaults)
+        guidance_scale = float(params.get("guidance_scale", 3.0))
+        audio_guidance_scale = float(params.get("audio_guidance_scale", 7.0))
+        stg_scale = float(params.get("stg_scale", 1.0))
+        audio_stg_scale = float(params.get("audio_stg_scale", 1.0))
+        modality_scale = float(params.get("modality_scale", 3.0))
+        audio_modality_scale = float(params.get("audio_modality_scale", 3.0))
+        guidance_rescale = float(params.get("guidance_rescale", 0.7))
+        audio_guidance_rescale = float(params.get("audio_guidance_rescale", 0.7))
         conditioning_scale = float(params.get("conditioning_scale", 1.0))
         image_noise_scale = float(params.get("image_noise_scale", 0.0))
 
@@ -201,6 +201,7 @@ def _generate_thread(job_id, params):
             "audio_modality_scale": audio_modality_scale,
             "guidance_rescale": guidance_rescale,
             "audio_guidance_rescale": audio_guidance_rescale,
+            "enable_prompt_enhancement": False,
             "generator": generator,
             "output_type": "np",
             "return_dict": False,
