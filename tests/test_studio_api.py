@@ -1,3 +1,18 @@
+
+import pytest
+from fastapi.testclient import TestClient
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.studio_api import app, STUDIO_TOKEN
+
+@pytest.fixture
+def client_test():
+    return TestClient(app)
+
+@pytest.fixture
+def auth_test_headers():
+    return {"X-Pluto-Token": STUDIO_TOKEN}
 #!/usr/bin/env python3
 """Integration tests for Pluto Studio Backend API."""
 
@@ -786,3 +801,41 @@ def test_cockpit_status_includes_launch_time(monkeypatch):
     assert data["instance"]["launch_time"] == "2026-08-21T10:00:00Z"
     assert "uptime_minutes" in data
     assert "estimated_cost_usd" in data
+
+def test_multi_provider_config_redaction(client_test, auth_test_headers):
+    # Set up some test config
+    update_data = {
+        "config": {
+            "provider": "shadeform",
+            "shadeform_api_key": "sec_12345",
+            "aws_profile": "my-profile"
+        }
+    }
+    r = client_test.post("/api/cockpit/config", json=update_data, headers=auth_test_headers)
+    assert r.status_code == 200
+    
+    # Check GET redacts
+    r_get = client_test.get("/api/cockpit/config", headers=auth_test_headers)
+    assert r_get.status_code == 200
+    cfg = r_get.json()["config"]
+    assert cfg["provider"] == "shadeform"
+    assert cfg["shadeform_api_key"] == "********"
+    assert cfg["aws_profile"] == "my-profile"  # not redacted
+    
+    # Check POST doesn't overwrite with asterisks
+    update_data2 = {
+        "config": {
+            "provider": "aws",
+            "shadeform_api_key": "********",
+            "aws_profile": "new-profile"
+        }
+    }
+    r2 = client_test.post("/api/cockpit/config", json=update_data2, headers=auth_test_headers)
+    assert r2.status_code == 200
+    
+    # Verify underlying config
+    from src.cli import load_config
+    real_cfg = load_config()
+    assert real_cfg["shadeform_api_key"] == "sec_12345"
+    assert real_cfg["aws_profile"] == "new-profile"
+    assert real_cfg["provider"] == "aws"

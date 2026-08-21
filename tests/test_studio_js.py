@@ -105,3 +105,9 @@ console.log('ok');
     result = subprocess.run([shutil.which("node"), "-e", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr or result.stdout
     assert "ok" in result.stdout
+
+
+def test_cockpit_syntax():
+    cockpit_js = PLUTO_ROOT / "studio" / "cockpit.js"
+    result = subprocess.run([shutil.which("node"), "--check", str(cockpit_js)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

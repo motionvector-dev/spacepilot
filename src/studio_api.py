@@ -454,7 +454,15 @@ def get_cockpit_status():
 def get_cockpit_config():
     """Get current configuration."""
     cfg = load_config()
-    safe_cfg = {k: v for k, v in cfg.items() if "secret" not in k.lower() and "token" not in k.lower()}
+    safe_cfg = {}
+    for k, v in cfg.items():
+        kl = k.lower()
+        if "secret" in kl or "token" in kl or "api_key" in kl:
+            safe_cfg[k] = "********" if v else ""
+        else:
+            safe_cfg[k] = v
+    if "provider" not in safe_cfg:
+        safe_cfg["provider"] = "aws"
     return {"config": safe_cfg}
 
 
@@ -464,9 +472,23 @@ def update_cockpit_config(body: dict, _: None = Depends(require_token)):
     cfg = load_config()
     new_data = body.get("config", {})
     for k, v in new_data.items():
+        if v == "********":
+            continue
         cfg[k] = v
+    if "provider" not in cfg:
+        cfg["provider"] = "aws"
     save_config(cfg)
-    return {"ok": True, "config": cfg}
+    
+    # Return safe config
+    safe_cfg = {}
+    for k, v in cfg.items():
+        kl = k.lower()
+        if "secret" in kl or "token" in kl or "api_key" in kl:
+            safe_cfg[k] = "********" if v else ""
+        else:
+            safe_cfg[k] = v
+            
+    return {"ok": True, "config": safe_cfg}
 
 
 @app.get("/api/gpu/logs/stream")
