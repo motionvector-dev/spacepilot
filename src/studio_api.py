@@ -273,6 +273,29 @@ class GenerateRequest(BaseModel):
     camera_intensity: Optional[int] = Field(None, ge=1, le=5)
 
 
+
+class ExtendRequest(BaseModel):
+    asset_id: str
+    prompt: str = Field(max_length=4000)
+    negative_prompt: Optional[str] = Field("worst quality, blurry, distorted, jittery", max_length=4000)
+    duration: float = Field(4.0, gt=0, le=600, allow_inf_nan=False)
+    width: Optional[int] = Field(None, ge=64, le=4096)
+    height: Optional[int] = Field(None, ge=64, le=4096)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+    steps: Optional[int] = Field(None, ge=1, le=200)
+    enhance: bool = False
+    takes: int = Field(1, ge=1, le=16)
+    stg_scale: Optional[float] = Field(None, ge=0.0, le=5.0)
+    modality_scale: float = Field(1.0, ge=0.0, le=5.0)
+    fps: int = Field(24, ge=1, le=60)
+    draft_mode: bool = False
+    camera_pan: Optional[Literal["left", "right"]] = None
+    camera_tilt: Optional[Literal["up", "down"]] = None
+    camera_zoom: Optional[Literal["in", "out"]] = None
+    camera_roll: Optional[Literal["left", "right", "orbit"]] = None
+    camera_intensity: Optional[int] = Field(None, ge=1, le=5)
+
+
 class MusicRequest(BaseModel):
     # lyrics is required by the backend even for instrumentals: pass section tags
     # only, e.g. "[Intro]\n[Instrumental]\n[Outro]". A sparse tag list ends the
@@ -1258,6 +1281,71 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4K SUPER-RESOLUTION LOCAL MAC UPSCALER ROUTE
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+@app.post("/api/video/extend")
+def extend_video_api(req: ExtendRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    update_activity()
+    clean_id = req.asset_id.replace(".mp4", "")
+    source_mp4 = OUTPUTS_DIR / f"{clean_id}.mp4"
+    if not source_mp4.exists():
+        raise HTTPException(status_code=404, detail="Source asset not found")
+        
+    out_frame = UPLOADS_DIR / f"ext_{uuid.uuid4().hex[:10]}.jpg"
+    
+    ffmpeg_res = run_ffmpeg(["-sseof", "-0.1", "-i", str(source_mp4), "-vframes", "1", "-q:v", "2", str(out_frame)])
+    if ffmpeg_res.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"Failed to extract final frame")
+        
+    meta_file = OUTPUTS_DIR / f"{clean_id}.json"
+    extension_index = 2
+    if meta_file.exists():
+        with open(meta_file) as f:
+            prev_meta = json.load(f)
+            extension_index = prev_meta.get("extension_index", 1) + 1
+            
+    gen_req = GenerateRequest(
+        prompt=req.prompt,
+        negative_prompt=req.negative_prompt,
+        seconds=req.duration,
+        width=req.width,
+        height=req.height,
+        seed=req.seed,
+        steps=req.steps,
+        enhance=req.enhance,
+        takes=req.takes,
+        stg_scale=req.stg_scale,
+        modality_scale=req.modality_scale,
+        fps=req.fps,
+        draft_mode=req.draft_mode,
+        image_path=str(out_frame),
+        camera_pan=req.camera_pan,
+        camera_tilt=req.camera_tilt,
+        camera_zoom=req.camera_zoom,
+        camera_roll=req.camera_roll,
+        camera_intensity=req.camera_intensity
+    )
+    
+    # For `generate_video_api`, `require_token` dependency is a default argument, we pass `None` because we verified it at route entry.
+    res = generate_video_api(gen_req, background_tasks)
+    
+    job_id = res["job_id"]
+    new_meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    
+    if new_meta_file.exists():
+        with open(new_meta_file) as f:
+            new_meta = json.load(f)
+        new_meta["extended_from"] = req.asset_id
+        new_meta["extension_index"] = extension_index
+        with open(new_meta_file, "w") as f:
+            json.dump(new_meta, f, indent=2)
+            
+    if "meta" in res:
+        res["meta"]["extended_from"] = req.asset_id
+        res["meta"]["extension_index"] = extension_index
+        
+    return res
+
 
 @app.post("/api/upscale-4k")
 def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):

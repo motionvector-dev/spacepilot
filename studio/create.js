@@ -545,6 +545,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize initial diff values
+  
+  // EXTENSION LOGIC
+  const urlParams = new URLSearchParams(window.location.search);
+  const extendId = urlParams.get('extend_id');
+  
+  if (extendId) {
+    fetch(`/api/jobs/${extendId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.prompt) {
+          promptInput.value = data.prompt;
+          promptInput.dispatchEvent(new Event('input'));
+        }
+        
+        dropzonePrompt.style.display = 'none';
+        dropzonePreviewBox.style.display = 'block';
+        dropPreview.src = `/api/assets/${extendId}/thumbnail`;
+        dropzoneDims.innerHTML = `<span class="badge" style="background:#0a84ff; color:white; padding: 2px 6px; border-radius: 4px; font-size:10px;">🔗 Extension: Continued from Take #${extendId.substring(0,6)}</span>`;
+        dropzoneAspectTag.textContent = 'EXTEND MODE';
+        btnRemoveImage.style.display = 'none';
+        
+        updatePatchCardDiff();
+      })
+      .catch(e => console.error("Failed to load extension job:", e));
+  }
+
+
   updatePatchCardDiff();
 
   // 5. Video Generation & Multi-Phase Pipeline
@@ -598,7 +625,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['X-Pluto-Token'] = token;
 
-      const genRes = await fetch('/api/generate', {
+      
+      let endpoint = '/api/generate';
+      if (extendId) {
+        endpoint = '/api/video/extend';
+        payload.asset_id = extendId;
+      }
+      
+      const genRes = await fetch(endpoint, {
+
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload)
