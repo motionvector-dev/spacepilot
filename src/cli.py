@@ -420,7 +420,7 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
                     break
                 elif st_data.get("status") == "failed":
                     print(f"\n  Error: Job failed: {st_data.get('error')}")
-                    break
+                    sys.exit(1)
         except Exception:
             logger.warning("Failed during worker status polling", exc_info=True)
             retries += 1
