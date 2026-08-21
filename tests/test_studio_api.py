@@ -47,6 +47,8 @@ GATED_POSTS = [
     ("/api/audio/mix-ducked", {"voice_job_id": "test_voice"}),
     ("/api/compute/models/download", {"model_id": "kokoro-82m-tts"}),
     ("/api/generate/multi-engine", {"prompt": "x", "engine_id": "wan-2.1-14b"}),
+    ("/api/audio/synthesize-local", {"text": "test voiceover"}),
+    ("/api/narrative/decompose-local", {"script": "astronaut on mars"}),
 ]
 
 # POST routes that spend nothing and so need no token. Both are pure local
