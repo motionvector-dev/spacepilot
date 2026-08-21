@@ -28,7 +28,7 @@ import shutil
 import urllib.request
 import urllib.error
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends, Request, UploadFile, File, Form
@@ -201,10 +201,10 @@ class GenerateRequest(BaseModel):
     fps: int = Field(24, ge=1, le=60)
     image_path: Optional[str] = None
     draft_mode: bool = False
-    camera_pan: Optional[str] = None
-    camera_tilt: Optional[str] = None
-    camera_zoom: Optional[str] = None
-    camera_roll: Optional[str] = None
+    camera_pan: Optional[Literal["left", "right"]] = None
+    camera_tilt: Optional[Literal["up", "down"]] = None
+    camera_zoom: Optional[Literal["in", "out"]] = None
+    camera_roll: Optional[Literal["left", "right", "orbit"]] = None
     camera_intensity: Optional[int] = Field(None, ge=1, le=5)
 
 
