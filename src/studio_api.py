@@ -241,7 +241,12 @@ def resolve_output(name: str) -> Path:
 _PORT = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[f"http://localhost:{_PORT}", f"http://127.0.0.1:{_PORT}"],
+    allow_origins=[
+        f"http://localhost:{_PORT}",
+        f"http://127.0.0.1:{_PORT}",
+        f"http://spacepilot.localhost:{_PORT}",
+        f"http://pluto.localhost:{_PORT}",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -2906,10 +2911,11 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
     print(f"\n──────────────────────────────────────────────────────────────────────────")
-    print(f"  🎬 PLUTO STUDIO LIVE ON: http://localhost:{port}")
+    print(f"  🎬 SPACEPILOT STUDIO LIVE ON: http://spacepilot.localhost:{port}")
+    print(f"  ⚡ LOCAL FALLBACK URL:        http://localhost:{port}")
     uvicorn.run(
         "src.studio_api:app",
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=port,
         app_dir=str(PLUTO_ROOT),
         reload=True,
