@@ -15,7 +15,7 @@ set -euo pipefail
 
 PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_REGION:-us-east-1}"
-TYPE="${INSTANCE_TYPE:-g6e.4xlarge}"       # 1x L40S 48GB VRAM + 64GB host RAM (prevents shard OOM)
+TYPE="${INSTANCE_TYPE:-g6e.2xlarge}"       # 8 vCPU Spot (fits 8 vCPU quota) + 1x L40S 48GB VRAM + 32GB RAM + 32GB Swap
 KEY="${KEY_NAME:-pluto-gpu-key-2026-07-26}"
 KEY_FILE="${KEY_FILE:-$HOME/.ssh/${KEY}.pem}"
 SG="${SECURITY_GROUP:-pluto-gpu-sg}"

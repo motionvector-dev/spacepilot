@@ -51,11 +51,27 @@ if [ "$AVAILABLE_GB" -lt 80 ]; then
   exit 1
 fi
 
-# 1.4 Check Host RAM
+# 1.4 Ensure 32GB high-speed swapfile exists to safely buffer peak shard loading (30.5GB RSS)
+CURRENT_SWAP_GB=$(free -g | awk '/^Swap:/ {print $2}')
+if [ "$CURRENT_SWAP_GB" -lt 16 ]; then
+  echo "  Configuring 32GB swapfile for safe shard buffering..."
+  if [ ! -f /swapfile ]; then
+    sudo fallocate -l 32G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=32768
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+  fi
+  sudo swapon /swapfile 2>/dev/null || true
+  # Tune swappiness for optimal burst buffering
+  sudo sysctl vm.swappiness=60 >/dev/null 2>&1 || true
+fi
+
+# 1.5 Check Total Virtual Memory (RAM + Swap)
 TOTAL_RAM_GB=$(free -g | awk '/^Mem:/ {print $2}')
-echo "  Host System RAM     : ${TOTAL_RAM_GB} GB"
-if [ "$TOTAL_RAM_GB" -lt 30 ]; then
-  echo "ERROR: Host RAM is only ${TOTAL_RAM_GB} GB. Loading LTX-2.5 requires >= 32 GB (recommended 64 GB). Aborting." >&2
+TOTAL_SWAP_GB=$(free -g | awk '/^Swap:/ {print $2}')
+TOTAL_VIRT_GB=$((TOTAL_RAM_GB + TOTAL_SWAP_GB))
+echo "  Host System Memory  : ${TOTAL_RAM_GB} GB RAM + ${TOTAL_SWAP_GB} GB Swap (${TOTAL_VIRT_GB} GB Total)"
+if [ "$TOTAL_VIRT_GB" -lt 40 ]; then
+  echo "ERROR: Total virtual memory is only ${TOTAL_VIRT_GB} GB. Loading LTX-2.5 requires >= 48 GB virtual memory headroom. Aborting." >&2
   exit 1
 fi
 

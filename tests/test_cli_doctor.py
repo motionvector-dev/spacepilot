@@ -79,8 +79,8 @@ class TestCliDoctor(unittest.TestCase):
 
     def test_default_config_sizing(self):
         from src.cli import DEFAULT_CONFIG
-        self.assertEqual(DEFAULT_CONFIG["instance_type"], "g6e.4xlarge")
-        self.assertGreaterEqual(DEFAULT_CONFIG["spot_hourly_rate"], 2.0)
+        self.assertEqual(DEFAULT_CONFIG["instance_type"], "g6e.2xlarge")
+        self.assertEqual(DEFAULT_CONFIG["spot_hourly_rate"], 0.75)
 
     @patch('src.cli.get_instance_info')
     @patch('src.cli.run_cmd')
