@@ -534,5 +534,184 @@ document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
   startLogStream();
   setInterval(fetchCockpitStatus, 5000);
+
+  // ------------------------------------------------------------------
+  // Inspect Mode Drawer
+  // ------------------------------------------------------------------
+  const btnInspectGpu = document.getElementById('btn-inspect-gpu');
+  const drawerInspect = document.getElementById('drawer-inspect');
+  const btnCloseInspect = document.getElementById('btn-close-inspect');
+  const tabBtns = document.querySelectorAll('.drawer-tabs .tab-btn');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  const inspectIp = document.getElementById('inspect-ip');
+  let xterm = null;
+  let sshWs = null;
+
+  if (btnInspectGpu) {
+    btnInspectGpu.addEventListener('click', () => {
+      drawerInspect.style.display = 'flex';
+      const valInstanceIp = document.getElementById('val-instance-ip');
+      inspectIp.textContent = valInstanceIp ? valInstanceIp.textContent : '--';
+      if (!xterm) {
+        initTerminal();
+      }
+    });
+  }
+
+  if (btnCloseInspect) {
+    btnCloseInspect.addEventListener('click', () => {
+      drawerInspect.style.display = 'none';
+    });
+  }
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      tabBtns.forEach(b => {
+        b.classList.remove('active');
+        b.style.borderBottomColor = 'transparent';
+        b.style.color = 'var(--text-muted)';
+      });
+      const targetBtn = e.target;
+      targetBtn.classList.add('active');
+      targetBtn.style.borderBottomColor = 'var(--accent-blue)';
+      targetBtn.style.color = 'var(--text-main)';
+
+      tabPanes.forEach(p => p.style.display = 'none');
+      const targetId = targetBtn.getAttribute('data-tab');
+      document.getElementById(targetId).style.display = 'block';
+
+      if (targetId === 'tab-metrics') {
+        fetchMetrics();
+      }
+    });
+  });
+
+  async function initTerminal() {
+    const container = document.getElementById('terminal-container');
+    container.innerHTML = ''; // clear
+
+    xterm = new Terminal({
+      cursorBlink: true,
+      theme: { background: '#000000', foreground: '#ffffff' },
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: 13
+    });
+    xterm.open(container);
+
+    const token = await getAuthToken();
+    const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    sshWs = new WebSocket(`${wsProto}//${location.host}/api/gpu/inspect/shell`);
+
+    sshWs.onopen = () => {
+      sshWs.send(JSON.stringify({ type: 'auth', token }));
+      sshWs.send(JSON.stringify({ type: 'resize', cols: xterm.cols, rows: xterm.rows }));
+    };
+
+    sshWs.onmessage = (e) => {
+      xterm.write(e.data);
+    };
+
+    sshWs.onclose = () => {
+      xterm.write('\r\n[Disconnected from SSH bridge]\r\n');
+    };
+
+    xterm.onData(data => {
+      if (sshWs && sshWs.readyState === WebSocket.OPEN) {
+        sshWs.send(data);
+      }
+    });
+
+    xterm.onResize(size => {
+      if (sshWs && sshWs.readyState === WebSocket.OPEN) {
+        sshWs.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
+      }
+    });
+  }
+
+  async function fetchMetrics() {
+    const btnRefresh = document.getElementById('btn-refresh-metrics');
+    if (btnRefresh) btnRefresh.disabled = true;
+    
+    document.getElementById('metric-gpu-temp').textContent = 'Loading...';
+    document.getElementById('metric-vram').textContent = 'Loading...';
+    document.getElementById('metric-disk').textContent = 'Loading...';
+    document.getElementById('metric-ram').textContent = 'Loading...';
+
+    const token = await getAuthToken();
+    try {
+      const res = await fetch('/api/gpu/inspect/metrics', {
+        headers: { 'X-Pluto-Token': token }
+      });
+      const data = await res.json();
+      if (res.ok && data.gpu) {
+        document.getElementById('metric-gpu-temp').textContent = data.gpu.temperature + ' °C';
+        document.getElementById('metric-vram').textContent = data.gpu.memory_used + ' / ' + data.gpu.memory_total;
+        document.getElementById('metric-disk').textContent = data.disk || 'Unavailable';
+        document.getElementById('metric-ram').textContent = data.memory || 'Unavailable';
+      } else {
+        document.getElementById('metric-gpu-temp').textContent = 'Error';
+        document.getElementById('metric-vram').textContent = 'Error';
+        document.getElementById('metric-disk').textContent = data.detail || 'Unavailable';
+      }
+    } catch (e) {
+      document.getElementById('metric-gpu-temp').textContent = 'Err';
+    } finally {
+      if (btnRefresh) btnRefresh.disabled = false;
+    }
+  }
+
+  const btnRefreshMetrics = document.getElementById('btn-refresh-metrics');
+  if (btnRefreshMetrics) {
+    btnRefreshMetrics.addEventListener('click', fetchMetrics);
+  }
+
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const action = e.target.getAttribute('data-action');
+      const outDiv = document.getElementById('action-output');
+      const outText = document.getElementById('action-output-text');
+      
+      e.target.disabled = true;
+      e.target.textContent = 'Running...';
+      outDiv.style.display = 'block';
+      outText.textContent = `Executing ${action}...`;
+
+      const token = await getAuthToken();
+      try {
+        const res = await fetch('/api/gpu/inspect/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        outText.textContent = data.output || data.message || data.detail || 'Done';
+      } catch (err) {
+        outText.textContent = `Error: ${err.message}`;
+      } finally {
+        e.target.disabled = false;
+        if (action === 'clear_tmp') e.target.textContent = 'Clear';
+        else e.target.textContent = 'Restart';
+      }
+    });
+  });
+
+  // Enable/Disable inspect button based on instance state
+  const observer = new MutationObserver(() => {
+    const badge = document.getElementById('badge-instance');
+    if (badge && badge.classList.contains('badge-online')) {
+      if (btnInspectGpu) btnInspectGpu.disabled = false;
+    } else {
+      if (btnInspectGpu) btnInspectGpu.disabled = true;
+      if (drawerInspect && drawerInspect.style.display !== 'none') {
+        drawerInspect.style.display = 'none';
+      }
+    }
+  });
+  const badgeInst = document.getElementById('badge-instance');
+  if (badgeInst) {
+    observer.observe(badgeInst, { attributes: true, attributeFilter: ['class'] });
+  }
+
+
 });
 

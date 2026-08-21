@@ -1987,7 +1987,7 @@ async def inspect_shell_ws(websocket: WebSocket):
         # Initial Auth Frame (wait up to 3s)
         try:
             auth_frame = await asyncio.wait_for(websocket.receive_json(), timeout=3.0)
-            if auth_frame.get("type") != "auth" or not secrets.compare_digest(auth_frame.get("token", ""), STUDIO_TOKEN):
+            if auth_frame.get("type") != "auth" or not secrets.compare_digest(str(auth_frame.get("token") or ""), STUDIO_TOKEN):
                 await websocket.close(code=1008)
                 return
         except (asyncio.TimeoutError, json.JSONDecodeError):

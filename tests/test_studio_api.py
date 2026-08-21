@@ -779,6 +779,78 @@ def test_inspect_action_endpoint(monkeypatch):
     assert res_bad.status_code == 400
 
 
+
+def test_inspect_shell_ws_valid_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    import asyncio
+    
+    # Mock subprocess.create_subprocess_exec
+    class MockProcess:
+        returncode = None
+        def __init__(self):
+            self.stdout = asyncio.StreamReader()
+            class MockStreamWriter:
+                def write(self, *args): pass
+                async def drain(self, *args): pass
+            self.stdin = MockStreamWriter()
+            # monkeypatch stdin.write and drain
+            
+            
+            
+        def terminate(self):
+            self.returncode = 0
+            
+        def kill(self):
+            pass
+            
+        async def wait(self):
+            pass
+
+    async def mock_exec(*args, **kwargs):
+        return MockProcess()
+        
+    monkeypatch.setattr(studio_api.asyncio, "create_subprocess_exec", mock_exec)
+    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    
+    client = TestClient(studio_api.app)
+    
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        # Valid auth
+        websocket.send_json({"type": "auth", "token": studio_api.STUDIO_TOKEN})
+        # Wait a tiny bit to ensure it processes
+        # we can't easily wait, but we can send a resize frame to see if it processes without closing
+        websocket.send_json({"type": "resize", "cols": 80, "rows": 24})
+        # If it didn't disconnect, we're good.
+        
+def test_inspect_shell_ws_invalid_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    from starlette.websockets import WebSocketDisconnect
+    
+    client = TestClient(studio_api.app)
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        websocket.send_json({"type": "auth", "token": "invalid_token"})
+        try:
+            websocket.receive_text()
+            assert False, "Should have disconnected"
+        except WebSocketDisconnect as e:
+            assert e.code == 1008
+
+def test_inspect_shell_ws_null_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    import src.studio_api as studio_api
+    from starlette.websockets import WebSocketDisconnect
+    
+    client = TestClient(studio_api.app)
+    with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
+        websocket.send_json({"type": "auth", "token": None})
+        try:
+            websocket.receive_text()
+            assert False, "Should have disconnected"
+        except WebSocketDisconnect as e:
+            assert e.code == 1008
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()
