@@ -10,6 +10,7 @@ from .assets import router as assets_router
 from .gpu import router as gpu_router
 from .generate import router as generate_router
 from .lora import router as lora_router
+from .recipes import router as recipes_router
 
 __all__ = [
     "audio_router",
@@ -22,4 +23,5 @@ __all__ = [
     "gpu_router",
     "generate_router",
     "lora_router",
+    "recipes_router",
 ]

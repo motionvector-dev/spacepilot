@@ -53,3 +53,21 @@ def read_docs():
     if docs_file.exists():
         return FileResponse(docs_file)
     return FileResponse(settings.studio_dir / "index.html")
+
+
+@router.get("/oven")
+def read_oven():
+    settings = get_settings()
+    oven_file = settings.studio_dir / "oven.html"
+    if oven_file.exists():
+        return FileResponse(oven_file)
+    return FileResponse(settings.studio_dir / "index.html")
+
+
+@router.get("/blueprint")
+def read_blueprint():
+    settings = get_settings()
+    blueprint_file = settings.studio_dir / "blueprint.html"
+    if blueprint_file.exists():
+        return FileResponse(blueprint_file)
+    return FileResponse(settings.studio_dir / "index.html")

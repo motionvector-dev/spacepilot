@@ -87,6 +87,7 @@ from src.cli import (
 from src.skypilot_orchestrator import sky_orchestrator, generate_skypilot_yaml
 from src.storyboard_decomposer import decompose_storyboard
 from src.pluto.app import create_app
+from src.pluto.api.deps import require_token  # re-export for backward compat
 
 # Settings & Directory Aliases
 _settings = get_settings()
