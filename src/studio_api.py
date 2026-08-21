@@ -137,30 +137,35 @@ def has_active_jobs():
 async def idle_watchdog_loop():
     global _watchdog_event
     while True:
-        await asyncio.sleep(30)
-        
-        if has_active_jobs():
-            update_activity()
+        try:
+            await asyncio.sleep(30)
             
-        cfg = load_config()
-        idle_mins = cfg.get("idle_shutdown_minutes", 20)
-        if idle_mins <= 0:
-            continue
-            
-        now = time.time()
-        elapsed = now - _last_activity_time
-        if elapsed > (idle_mins * 60):
-            inst = get_instance_info(cfg)
-            if inst and inst.get("state") == "running":
-                print(f"[Watchdog] Auto-terminating GPU instance {inst.get('id')} after {idle_mins}m of inactivity to save cost.")
-                _watchdog_event = {"event": "auto_shutdown", "time": now, "idle_mins": idle_mins}
-                infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
-                if infra_script.exists():
-                    try:
-                        run_cmd(["bash", str(infra_script), "terminate"])
-                    except Exception as e:
-                        print(f"[Watchdog] Failed to auto-terminate: {e}")
+            if await asyncio.to_thread(has_active_jobs):
                 update_activity()
+                
+            cfg = load_config()
+            idle_mins = cfg.get("idle_shutdown_minutes", 20)
+            if idle_mins <= 0:
+                continue
+                
+            now = time.time()
+            elapsed = now - _last_activity_time
+            if elapsed > (idle_mins * 60):
+                inst = await asyncio.to_thread(get_instance_info, cfg)
+                if inst and inst.get("state") == "running":
+                    print(f"[Watchdog] Auto-terminating GPU instance {inst.get('id')} after {idle_mins}m of inactivity to save cost.")
+                    _watchdog_event = {"event": "auto_shutdown", "time": now, "idle_mins": idle_mins}
+                    infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
+                    if infra_script.exists():
+                        try:
+                            await asyncio.to_thread(run_cmd, ["bash", str(infra_script), "terminate"])
+                        except Exception as e:
+                            print(f"[Watchdog] Failed to auto-terminate: {e}")
+                    update_activity()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            print(f"[Watchdog] Error in loop: {e}")
 
 @app.on_event("startup")
 async def startup_event():
@@ -527,6 +532,14 @@ def update_cockpit_config(body: dict, _: None = Depends(require_token)):
     """Update configuration settings."""
     cfg = load_config()
     new_data = body.get("config", {})
+    
+    if "idle_shutdown_minutes" in new_data:
+        try:
+            val = int(new_data["idle_shutdown_minutes"])
+            new_data["idle_shutdown_minutes"] = max(0, min(1440, val))
+        except (ValueError, TypeError):
+            new_data.pop("idle_shutdown_minutes")
+            
     for k, v in new_data.items():
         cfg[k] = v
     save_config(cfg)
