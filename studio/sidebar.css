@@ -289,6 +289,182 @@
 }
 .sidebar-toast.show { opacity: 1; transform: translateY(0); }
 
+/* ── Shared MotionVector Modal Dialogs ──────────────────────────────────── */
+.mv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mv-modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mv-modal-card {
+  background: var(--bg-panel, #111114);
+  border: 1px solid var(--border-medium, rgba(255,255,255,0.14));
+  border-radius: 14px;
+  width: 100%;
+  max-width: 460px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  transform: scale(0.96) translateY(8px);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mv-modal-backdrop.open .mv-modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.mv-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mv-modal-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mv-modal-icon-wrap.launch {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.mv-modal-icon-wrap.terminate {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.mv-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main, #fafafa);
+  margin: 0;
+}
+
+.mv-modal-subtitle {
+  font-size: 12px;
+  color: var(--text-muted, #a1a1aa);
+  margin: 2px 0 0;
+}
+
+.mv-modal-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted, #a1a1aa);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mv-modal-type-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mv-modal-type-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #a1a1aa);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mv-modal-type-input {
+  background: var(--bg-ground, #09090b);
+  border: 1px solid var(--border-medium, rgba(255,255,255,0.14));
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-main, #fafafa);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+
+.mv-modal-type-input:focus {
+  border-color: #f43f5e;
+}
+
+.mv-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mv-modal-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.mv-modal-btn-cancel {
+  background: transparent;
+  border-color: var(--border-medium, rgba(255,255,255,0.14));
+  color: var(--text-muted, #a1a1aa);
+}
+
+.mv-modal-btn-cancel:hover {
+  background: var(--bg-raised, #222226);
+  color: var(--text-main, #fafafa);
+}
+
+.mv-modal-btn-confirm-launch {
+  background: #fafafa;
+  border-color: rgba(255,255,255,0.9);
+  color: #09090b;
+}
+
+.mv-modal-btn-confirm-launch:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.mv-modal-btn-confirm-terminate {
+  background: #f43f5e;
+  border-color: #f43f5e;
+  color: #ffffff;
+}
+
+.mv-modal-btn-confirm-terminate:hover:not(:disabled) {
+  background: #e11d48;
+}
+
+.mv-modal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Light theme overrides ──────────────────────────────────────────────── */
 [data-theme="light"] .pluto-sidebar {
   background: #ffffff;
@@ -303,3 +479,13 @@
 [data-theme="light"] .sidebar-nav-link { color: #52525b; }
 [data-theme="light"] .sidebar-nav-link:hover,
 [data-theme="light"] .sidebar-nav-link.active { background: #f4f4f5; color: #09090b; }
+[data-theme="light"] .mv-modal-card {
+  background: #ffffff;
+  border-color: #e4e4e7;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] .mv-modal-type-input {
+  background: #f4f4f5;
+  border-color: #e4e4e7;
+  color: #09090b;
+}

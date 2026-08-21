@@ -719,30 +719,70 @@ function setupEventListeners() {
   });
 
   // GPU Action (Launch / Terminate)
-  elements.btnLaunchGpu.addEventListener('click', async () => {
-    if (!state.gpuStatus || !state.gpuStatus.instance || state.gpuStatus.instance.state === 'stopped') {
-      try {
-        elements.gpuActionLabel.textContent = 'Launching Spot GPU...';
-        elements.btnLaunchGpu.disabled = true;
-        await fetch('/api/gpu/launch', { method: 'POST', headers: await authHeaders() });
-        await refreshStatus();
-      } catch (e) {
-        console.error('Launch failed', e);
-      } finally {
-        elements.btnLaunchGpu.disabled = false;
+  elements.btnLaunchGpu.addEventListener('click', () => {
+    const isStopped = !state.gpuStatus || !state.gpuStatus.instance || state.gpuStatus.instance.state === 'stopped' || state.gpuStatus.instance.state === 'offline';
+    if (isStopped) {
+      const doLaunch = async () => {
+        try {
+          elements.gpuActionLabel.textContent = 'Launching Spot GPU...';
+          elements.btnLaunchGpu.disabled = true;
+          const headers = await authHeaders();
+          await fetch('/api/gpu/launch', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ confirm: true })
+          });
+          await refreshStatus();
+        } catch (e) {
+          console.error('Launch failed', e);
+        } finally {
+          elements.btnLaunchGpu.disabled = false;
+        }
+      };
+
+      if (window.mvDialog) {
+        window.mvDialog.confirm({
+          title: 'Authorize AWS GPU Launch',
+          subtitle: 'Start Spot GPU compute & warm VRAM',
+          message: 'Provision Spot GPU instance. Billing starts immediately upon boot (~$0.75/hr).',
+          type: 'launch',
+          confirmText: 'Authorize & Launch Box',
+          onConfirm: doLaunch
+        });
+      } else {
+        doLaunch();
       }
     } else {
-      if (confirm('Terminate Spot GPU instance to stop hourly cost?')) {
+      const doTerminate = async () => {
         try {
           elements.gpuActionLabel.textContent = 'Terminating...';
           elements.btnLaunchGpu.disabled = true;
-          await fetch('/api/gpu/terminate', { method: 'POST', headers: await authHeaders() });
+          const headers = await authHeaders();
+          await fetch('/api/gpu/terminate', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ confirm: true })
+          });
           await refreshStatus();
         } catch (e) {
           console.error('Terminate failed', e);
         } finally {
           elements.btnLaunchGpu.disabled = false;
         }
+      };
+
+      if (window.mvDialog) {
+        window.mvDialog.confirm({
+          title: 'Terminate GPU Box',
+          subtitle: 'Halt cloud billing and destroy instance',
+          message: '<span style="color:#f43f5e;font-weight:600;">⚠️ Warning:</span> Terminating destroys the temporary NVMe scratch volume. Any unsynced video renders will be permanently lost.',
+          type: 'danger',
+          requireTypedText: 'TERMINATE',
+          confirmText: 'Destroy & Stop Billing',
+          onConfirm: doTerminate
+        });
+      } else {
+        doTerminate();
       }
     }
   });

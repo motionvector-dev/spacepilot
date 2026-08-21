@@ -490,7 +490,11 @@ document.addEventListener('DOMContentLoaded', () => {
   btnGenerate.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();
     if (!prompt && !config.imageFile && !config.imagePath) {
-      alert('Please enter a scene description or upload an image keyframe.');
+      if (window.mvDialog) {
+        window.mvDialog.alert('Please enter a scene description or upload an image keyframe to start generation.', 'Input Required');
+      } else {
+        alert('Please enter a scene description or upload an image keyframe.');
+      }
       promptInput.focus();
       return;
     }

@@ -60,6 +60,112 @@
     return '#f43f5e';
   }
 
+  // ── Global Custom MotionVector Dialogs (Replaces browser alert/confirm) ──
+  window.mvDialog = {
+    confirm: function ({
+      title = 'Confirm Action',
+      subtitle = 'Are you sure you want to proceed?',
+      message = '',
+      type = 'danger', // 'danger' | 'launch' | 'warning' | 'info'
+      confirmText = 'Confirm',
+      requireTypedText = null, // e.g. 'TERMINATE'
+      onConfirm = () => {},
+      onCancel = () => {},
+    }) {
+      let backdrop = document.getElementById('mv-global-dialog-backdrop');
+      if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'mv-global-dialog-backdrop';
+        backdrop.className = 'mv-modal-backdrop';
+        document.body.appendChild(backdrop);
+      }
+
+      const isDanger = type === 'danger';
+      const isLaunch = type === 'launch';
+      const iconClass = isLaunch ? 'launch' : 'terminate';
+      const iconSvg = isLaunch
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+      const confirmBtnClass = isLaunch ? 'mv-modal-btn-confirm-launch' : 'mv-modal-btn-confirm-terminate';
+
+      backdrop.innerHTML = `
+        <div class="mv-modal-card">
+          <div class="mv-modal-header">
+            <div class="mv-modal-icon-wrap ${iconClass}">
+              ${iconSvg}
+            </div>
+            <div>
+              <h3 class="mv-modal-title">${esc(title)}</h3>
+              <p class="mv-modal-subtitle">${esc(subtitle)}</p>
+            </div>
+          </div>
+          <div class="mv-modal-body">
+            ${message ? `<p>${message}</p>` : ''}
+            ${requireTypedText ? `
+              <div class="mv-modal-type-confirm">
+                <label class="mv-modal-type-label">Type <strong style="color:var(--text-main);">${esc(requireTypedText)}</strong> to confirm:</label>
+                <input type="text" id="mv-dialog-type-input" class="mv-modal-type-input" placeholder="${esc(requireTypedText)}" autocomplete="off" spellcheck="false">
+              </div>
+            ` : ''}
+          </div>
+          <div class="mv-modal-actions">
+            <button id="mv-dialog-btn-cancel" class="mv-modal-btn mv-modal-btn-cancel">Cancel</button>
+            <button id="mv-dialog-btn-confirm" class="mv-modal-btn ${confirmBtnClass}" ${requireTypedText ? 'disabled' : ''}>${esc(confirmText)}</button>
+          </div>
+        </div>
+      `;
+
+      const btnCancel = backdrop.querySelector('#mv-dialog-btn-cancel');
+      const btnConfirm = backdrop.querySelector('#mv-dialog-btn-confirm');
+      const typeInput = backdrop.querySelector('#mv-dialog-type-input');
+
+      function close() {
+        backdrop.classList.remove('open');
+      }
+
+      if (typeInput) {
+        typeInput.addEventListener('input', (e) => {
+          btnConfirm.disabled = e.target.value.trim().toUpperCase() !== requireTypedText.toUpperCase();
+        });
+        setTimeout(() => typeInput.focus(), 50);
+      }
+
+      btnCancel.addEventListener('click', () => {
+        close();
+        onCancel();
+      });
+
+      btnConfirm.addEventListener('click', () => {
+        close();
+        onConfirm();
+      });
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          close();
+          onCancel();
+        }
+      });
+
+      backdrop.classList.add('open');
+    },
+
+    alert: function (message, title = 'Notice') {
+      this.confirm({
+        title: title,
+        subtitle: 'Pluto Studio',
+        message: esc(message),
+        type: 'launch',
+        confirmText: 'Acknowledge',
+        onConfirm: () => {},
+      });
+      // Hide cancel button for alerts
+      const cancelBtn = document.getElementById('mv-dialog-btn-cancel');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+  };
+
   // ── Build instance-type grouped <select> ─────────────────────────────────
   function buildInstanceOptions(selectedValue) {
     const tiers = {};
@@ -337,25 +443,58 @@
     const token = document.querySelector('meta[name="pluto-token"]')?.content || '';
     const headers = { 'Content-Type': 'application/json', ...(token ? { 'X-Pluto-Token': token } : {}) };
 
-    sbLaunch.addEventListener('click', async () => {
+    sbLaunch.addEventListener('click', () => {
       if (sbLaunch.disabled) return;
-      sbLaunch.disabled = true;
-      gpuDot.className = 'sidebar-gpu-dot busy';
-      gpuLabel.textContent = 'Launching…';
-      toast('GPU launch initiated — ~2 min to warm');
-      try {
-        await fetch('/api/gpu/launch', { method: 'POST', headers });
-      } catch (_) {}
+      const typeVal = sbInstanceType.value;
+      const match = INSTANCE_TYPES.find(t => t.value === typeVal) || { rate: 0.75, label: typeVal };
+      window.mvDialog.confirm({
+        title: 'Authorize AWS GPU Launch',
+        subtitle: 'Start Spot GPU compute & warm VRAM',
+        message: `Provision spot instance <strong>${esc(match.label)}</strong> in <strong>${esc(sbRegion.value)}</strong> (~$${match.rate.toFixed(2)}/hr). Billing starts immediately upon boot.`,
+        type: 'launch',
+        confirmText: 'Authorize & Launch Box',
+        onConfirm: async () => {
+          sbLaunch.disabled = true;
+          gpuDot.className = 'sidebar-gpu-dot busy';
+          gpuLabel.textContent = 'Launching…';
+          toast('GPU launch initiated — ~2 min to warm');
+          try {
+            await fetch('/api/gpu/launch', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ confirm: true })
+            });
+            setTimeout(pollGpu, 3000);
+          } catch (_) {
+            sbLaunch.disabled = false;
+          }
+        }
+      });
     });
 
-    sbTerminate.addEventListener('click', async () => {
-      if (!confirm('Terminate GPU instance? Billing stops immediately.')) return;
-      sbTerminate.disabled = true;
-      toast('Terminating…');
-      try {
-        await fetch('/api/gpu/terminate', { method: 'POST', headers });
-        setTimeout(pollGpu, 3000);
-      } catch (_) {}
+    sbTerminate.addEventListener('click', () => {
+      window.mvDialog.confirm({
+        title: 'Terminate GPU Box',
+        subtitle: 'Halt cloud billing and destroy instance',
+        message: '<span style="color:#f43f5e;font-weight:600;">⚠️ Warning:</span> Terminating destroys the temporary NVMe scratch volume. Any unsynced video renders will be permanently lost.',
+        type: 'danger',
+        requireTypedText: 'TERMINATE',
+        confirmText: 'Destroy & Stop Billing',
+        onConfirm: async () => {
+          sbTerminate.disabled = true;
+          toast('Terminating…');
+          try {
+            await fetch('/api/gpu/terminate', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ confirm: true })
+            });
+            setTimeout(pollGpu, 3000);
+          } catch (_) {
+            sbTerminate.disabled = false;
+          }
+        }
+      });
     });
 
     // Init
