@@ -282,6 +282,25 @@ class GenerateRequest(BaseModel):
         return self
 
 
+class MultiEngineGenerateRequest(BaseModel):
+    prompt: str = Field(max_length=4000)
+    engine_id: str = Field("ltx-2.5", max_length=100)
+    negative_prompt: Optional[str] = Field("worst quality, blurry, distorted, jittery", max_length=4000)
+    seconds: float = Field(4.0, gt=0, le=600, allow_inf_nan=False)
+    width: Optional[int] = Field(None, ge=64, le=4096)
+    height: Optional[int] = Field(None, ge=64, le=4096)
+    aspect_ratio: Optional[str] = Field("16:9", max_length=32)
+    seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
+    steps: Optional[int] = Field(None, ge=1, le=200)
+    enhance: bool = False
+    takes: int = Field(1, ge=1, le=16)
+    guidance_scale: Optional[float] = Field(None, ge=0.0, le=20.0)
+    fps: int = Field(24, ge=1, le=60)
+    image_path: Optional[str] = None
+    last_image_path: Optional[str] = None
+    draft_mode: bool = False
+    mock: bool = False
+
 
 class ExtendRequest(BaseModel):
     asset_id: str
@@ -1320,6 +1339,177 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
     else:
         return {"status": "queued", "job_id": jobs[0]["job_id"], "meta": jobs[0]["meta"], "patch": jobs[0]["patch"]}
 
+
+@app.get("/api/engines")
+def list_engines_api():
+    """List supported video diffusion engines and capabilities."""
+    from engines import list_video_engines
+    return {
+        "status": "ok",
+        "engines": [spec.to_dict() for spec in list_video_engines()]
+    }
+
+
+@app.post("/api/generate/multi-engine")
+def generate_multi_engine_api(
+    req: MultiEngineGenerateRequest,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(require_token),
+):
+    """Queue polymorphic video generation job across LTX-2.5, Wan2.1, or HunyuanVideo."""
+    update_activity()
+    from engines import get_video_engine
+
+    engine = get_video_engine(req.engine_id)
+    spec = engine.get_spec()
+
+    clean_engine_id = spec.engine_id.replace(".", "_").replace("-", "_")
+    job_id = f"pluto_{clean_engine_id}_{uuid.uuid4().hex[:8]}"
+    target_prompt = req.prompt
+
+    if req.enhance:
+        enh_res = enhance_prompt_api({"prompt": req.prompt})
+        target_prompt = enh_res.get("enhanced_prompt", req.prompt)
+
+    # Determine dimensions based on aspect ratio or explicit width/height
+    if req.width is not None and req.height is not None:
+        raw_w, raw_h = req.width, req.height
+    else:
+        if req.aspect_ratio == "9:16":
+            raw_w, raw_h = (432, 768) if req.draft_mode else (720, 1280)
+        elif req.aspect_ratio == "1:1":
+            raw_w, raw_h = (512, 512) if req.draft_mode else (768, 768)
+        elif req.aspect_ratio == "4:3":
+            raw_w, raw_h = (640, 480) if req.draft_mode else (960, 720)
+        else:  # 16:9
+            raw_w, raw_h = (768, 432) if req.draft_mode else spec.default_resolution
+
+    width, height = engine.adjust_dimensions(raw_w, raw_h)
+    raw_frames = int(req.seconds * req.fps)
+    num_frames = engine.adjust_frame_count(raw_frames, fps=req.fps)
+
+    seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
+    steps = req.steps if req.steps is not None else (15 if req.draft_mode else 30)
+
+    out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4"
+    thumb_png = OUTPUTS_DIR / f"{job_id}.png"
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+
+    patch = {
+        "target": f"{spec.name} Video Generation",
+        "specs": {
+            "engine": spec.engine_id,
+            "resolution": f"{width}x{height}",
+            "fps": f"{req.fps}fps",
+            "duration": f"{req.seconds:.1f}s",
+            "frames": num_frames,
+            "steps": steps,
+            "seed": seed,
+            "draft_mode": req.draft_mode,
+        },
+        "diff": {
+            "prompt": {"before": None, "after": req.prompt},
+            "engine": {"before": "ltx-2.5", "after": spec.engine_id},
+            "aspect": {"before": "16:9", "after": f"{width}x{height}"},
+            "duration": {"before": "4.0s", "after": f"{req.seconds:.1f}s"},
+        },
+        "ops": [
+            {
+                "address": "video.generation",
+                "subject": f"{spec.name} Video Generation",
+                "before": None,
+                "after": f"{width}x{height} @ {req.fps}fps, {req.seconds:.1f}s",
+                "generate": {
+                    "kind": "video",
+                    "engine": spec.engine_id,
+                    "prompt": req.prompt,
+                    "resolution": f"{width}x{height}",
+                    "fps": req.fps,
+                    "seed": seed,
+                    "draft_mode": req.draft_mode,
+                },
+            }
+        ],
+    }
+
+    meta = {
+        "id": job_id,
+        "engine_id": spec.engine_id,
+        "engine_name": spec.name,
+        "prompt": req.prompt,
+        "enhanced_prompt": target_prompt,
+        "width": width,
+        "height": height,
+        "seconds": req.seconds,
+        "num_frames": num_frames,
+        "seed": seed,
+        "steps": steps,
+        "fps": req.fps,
+        "guidance_scale": req.guidance_scale,
+        "draft_mode": req.draft_mode,
+        "image_path": req.image_path,
+        "last_image_path": req.last_image_path,
+        "status": "queued",
+        "created_at": time.time(),
+        "is_upscaled": False,
+        "duration_sec": req.seconds,
+        "patch": patch,
+    }
+
+    with open(meta_file, "w") as f:
+        json.dump(meta, f, indent=2)
+
+    def _render_multi_engine_job(
+        cur_job_id=job_id,
+        cur_meta=meta,
+        cur_meta_file=meta_file,
+        cur_out_mp4=out_mp4,
+        cur_thumb_png=thumb_png,
+    ):
+        try:
+            cur_meta["is_mock"] = True
+            engine.generate_video(
+                prompt=target_prompt,
+                width=width,
+                height=height,
+                seconds=req.seconds,
+                image_path=req.image_path,
+                seed=seed,
+                steps=steps,
+                guidance_scale=req.guidance_scale,
+                fps=req.fps,
+                draft_mode=req.draft_mode,
+                output_path=str(cur_out_mp4),
+                mock=True,
+            )
+
+            thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(cur_out_mp4), "-frames:v", "1", str(cur_thumb_png)])
+            if thumb_res.returncode != 0:
+                thumb_res = run_ffmpeg(["-ss", "00:00:00", "-i", str(cur_out_mp4), "-frames:v", "1", str(cur_thumb_png)])
+
+            cur_meta["status"] = "completed"
+            cur_meta["file_path"] = str(cur_out_mp4)
+            if thumb_res.returncode == 0:
+                cur_meta["thumbnail_path"] = str(cur_thumb_png)
+            else:
+                cur_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+            write_meta(cur_meta_file, cur_meta)
+        except Exception as e:
+            cur_meta["status"] = "failed"
+            cur_meta["error"] = str(e)
+            write_meta(cur_meta_file, cur_meta)
+
+    background_tasks.add_task(_render_multi_engine_job)
+
+    return {
+        "status": "queued",
+        "job_id": job_id,
+        "engine_id": spec.engine_id,
+        "engine_name": spec.name,
+        "engine_spec": spec.to_dict(),
+        "meta": meta,
+        "patch": patch,
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
