@@ -114,15 +114,8 @@ def load_i2v_model():
     print("[ltx_worker] Instantiating LTX-2.5 i2v pipeline sharing resident VRAM weights...", flush=True)
     start_t = time.time()
 
-    # Reuse the exact resident quantized transformer, text encoder, VAE, and vocoder
-    _pipe_i2v = LTX2ImageToVideoPipeline(
-        transformer=_pipe.transformer,
-        text_encoder=_pipe.text_encoder,
-        tokenizer=_pipe.tokenizer,
-        vae=_pipe.vae,
-        scheduler=_pipe.scheduler,
-        vocoder=getattr(_pipe, "vocoder", None),
-    )
+    # Reuse the exact resident quantized components from _pipe
+    _pipe_i2v = LTX2ImageToVideoPipeline(**_pipe.components)
     _pipe_i2v.vae.enable_tiling()
     load_dur = time.time() - start_t
     print(f"[ltx_worker] LTX-2.5 i2v pipeline READY in {load_dur:.2f}s (zero duplicate VRAM overhead)!", flush=True)
