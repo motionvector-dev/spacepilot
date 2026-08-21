@@ -20,6 +20,7 @@ from src.pluto.api.routes import (
     gpu_router,
     generate_router,
     audio_router,
+    checkpoints_router,
 )
 
 
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(audio_router)
     app.include_router(assets_router)
     app.include_router(views_router)
+    app.include_router(checkpoints_router)
 
     # Mount static frontend if available
     if settings.studio_dir.exists():

@@ -321,6 +321,67 @@ def get_voice_catalogue() -> str:
     ]
     return json.dumps(voices, indent=2)
 
+@mcp.tool()
+def pluto_create_checkpoint(job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> Dict[str, Any]:
+    """Create a new training checkpoint snapshot.
+    
+    Args:
+        job_id (str): The ID of the training job.
+        step (int): The current training step.
+        epoch (int): The current training epoch.
+        loss (float): The current loss value.
+        local_paths (List[str]): List of local file paths to include in the snapshot.
+        
+    Returns:
+        Dict[str, Any]: The metadata of the created snapshot.
+    """
+    try:
+        from src.pluto.services.checkpoint_sync import CheckpointSyncEngine
+        from dataclasses import asdict
+        engine = CheckpointSyncEngine()
+        meta = engine.create_snapshot(job_id, step, epoch, loss, local_paths)
+        return {"status": "success", "snapshot": asdict(meta)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_list_checkpoints(job_id: Optional[str] = None) -> Dict[str, Any]:
+    """List training checkpoint snapshots.
+    
+    Args:
+        job_id (str, optional): The ID of the training job to filter by.
+        
+    Returns:
+        Dict[str, Any]: List of snapshot metadata.
+    """
+    try:
+        from src.pluto.services.checkpoint_sync import CheckpointSyncEngine
+        from dataclasses import asdict
+        engine = CheckpointSyncEngine()
+        snapshots = engine.list_snapshots(job_id)
+        return {"status": "success", "snapshots": [asdict(s) for s in snapshots]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_restore_checkpoint(snapshot_id: str, target_dir: Optional[str] = None) -> Dict[str, Any]:
+    """Restore a training checkpoint snapshot.
+    
+    Args:
+        snapshot_id (str): The ID of the snapshot to restore.
+        target_dir (str, optional): The local directory to restore to.
+        
+    Returns:
+        Dict[str, Any]: The restore operation status.
+    """
+    try:
+        from src.pluto.services.checkpoint_sync import CheckpointSyncEngine
+        engine = CheckpointSyncEngine()
+        res = engine.restore_snapshot(snapshot_id, target_dir)
+        return res
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     mcp.run()
 
