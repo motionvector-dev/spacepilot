@@ -36,6 +36,7 @@
       --accent-emerald: #10b981;
       --accent-amber: #f59e0b;
       --accent-rose: #f43535;
+      --accent-blue: #3b82f6;
 
       --btn-primary-bg: #fafafa;
       --btn-primary-text: #09090b;
@@ -494,6 +495,33 @@
       border-color: var(--mv-border-highlight);
     }
 
+    /* Modals */
+    .mv-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mv-modal-backdrop.open { display: flex; }
+
+    .mv-modal {
+      background: var(--mv-ground);
+      border: 1px solid var(--mv-border-medium);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
     /* Inspect Slide-Over Drawer */
     #drawer-inspect {
       position: fixed;
@@ -505,7 +533,7 @@
       justify-content: flex-end;
     }
 
-    .drawer-content {
+    .drawer-panel {
       width: 100%;
       max-width: 800px;
       height: 100%;
@@ -535,7 +563,7 @@
       gap: 8px;
     }
 
-    .drawer-tab {
+    .tab-btn {
       background: transparent;
       border: 1px solid transparent;
       color: var(--mv-text-muted);
@@ -546,13 +574,13 @@
       cursor: pointer;
     }
 
-    .drawer-tab.active {
+    .tab-btn.active {
       background: var(--mv-surface);
       border-color: var(--mv-border);
       color: var(--mv-text);
     }
 
-    .drawer-body {
+    .drawer-content {
       flex: 1;
       padding: 24px;
       overflow-y: auto;
@@ -658,7 +686,7 @@
       <div class="metric-card">
         <div class="metric-header">
           <span class="metric-title">Live Billing Odometer</span>
-          <span class="badge-status badge-online">$0.75 / HR</span>
+          <span id="val-rate" class="badge-status badge-online">$0.75 / HR</span>
         </div>
         <div id="val-cost" class="metric-value-lg">$0.00</div>
         <div class="metric-detail-row">
@@ -818,27 +846,103 @@
 
   </main>
 
+  <!-- Modals -->
+  <!-- 1. Launch Confirmation Modal -->
+  <div id="modal-launch" class="mv-modal-backdrop">
+    <div class="mv-modal">
+      <h3 style="font-size: 18px; font-weight: 700;">Confirm Spot GPU Launch</h3>
+      <p style="font-size: 13px; color: var(--mv-text-muted);">You are about to spin up an AWS Spot Instance. Billing will begin immediately.</p>
+      <div style="background: var(--mv-surface); padding: 12px 16px; border-radius: 8px; font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mv-text-muted);">Instance Type:</span>
+          <span id="modal-launch-type" style="font-family: 'Geist Mono', monospace; font-weight: 600;">g6e.xlarge</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mv-text-muted);">Region:</span>
+          <span id="modal-launch-region" style="font-family: 'Geist Mono', monospace;">us-east-1</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mv-text-muted);">Estimated Spot Rate:</span>
+          <span id="modal-launch-rate" style="font-family: 'Geist Mono', monospace; color: var(--accent-emerald); font-weight: 700;">~$0.75 / hr</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+        <button id="modal-launch-cancel" class="btn-action">Cancel</button>
+        <button id="modal-launch-confirm" class="btn-action btn-launch">Confirm & Launch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Terminate Confirmation Modal -->
+  <div id="modal-terminate" class="mv-modal-backdrop">
+    <div class="mv-modal">
+      <h3 style="font-size: 18px; font-weight: 700; color: var(--accent-rose);">Terminate GPU Instance</h3>
+      <p style="font-size: 13px; color: var(--mv-text-muted);">This will destroy the NVMe scratch volume and halt all spot billing.</p>
+      <div style="background: var(--mv-surface); padding: 12px 16px; border-radius: 8px; font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mv-text-muted);">Instance:</span>
+          <span id="modal-terminate-id" style="font-family: 'Geist Mono', monospace;">--</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--mv-text-muted);">Uptime:</span>
+          <span id="modal-terminate-uptime" style="font-family: 'Geist Mono', monospace;">--</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+        <label style="font-size: 12px; color: var(--mv-text-muted);">Type <strong>TERMINATE</strong> to confirm:</label>
+        <input type="text" id="modal-terminate-input" class="form-input" placeholder="TERMINATE">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+        <button id="modal-terminate-cancel" class="btn-action">Cancel</button>
+        <button id="modal-terminate-confirm" class="btn-action btn-terminate" disabled>Destroy & Stop Billing</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Inspect Mode Slide-Over Drawer -->
   <div id="drawer-inspect">
-    <div class="drawer-content">
+    <div class="drawer-panel">
       <div class="drawer-header">
         <div class="drawer-tabs">
-          <button class="drawer-tab active" data-tab="tab-terminal">🖥️ Web SSH Shell</button>
-          <button class="drawer-tab" data-tab="tab-metrics">📊 Hardware Metrics</button>
-          <button class="drawer-tab" data-tab="tab-actions">⚡ Service Actions</button>
+          <button class="tab-btn active" data-tab="tab-ssh">🖥️ Web SSH Shell</button>
+          <button class="tab-btn" data-tab="tab-metrics">📊 Hardware Metrics</button>
+          <button class="tab-btn" data-tab="tab-actions">⚡ Service Actions</button>
         </div>
-        <button id="btn-close-drawer" class="btn-action" style="padding: 4px 10px;">✕ Close</button>
+        <button id="btn-close-inspect" class="btn-action" style="padding: 4px 10px;">✕ Close</button>
       </div>
-      <div class="drawer-body">
-        <div id="tab-terminal" class="drawer-panel" style="height: 100%;">
-          <div id="xterm-container" style="height: 100%; border-radius: 8px; overflow: hidden;"></div>
+      <div class="drawer-content">
+        <div id="tab-ssh" class="tab-pane" style="height: 100%;">
+          <div id="terminal-container" style="height: 100%; border-radius: 8px; overflow: hidden; background: #000;"></div>
         </div>
-        <div id="tab-metrics" class="drawer-panel" style="display: none;">
-          <pre id="metrics-output" style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--mv-text-muted);"></pre>
+        <div id="tab-metrics" class="tab-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div class="metric-card">
+              <span class="metric-title">GPU Temperature</span>
+              <div id="metric-gpu-temp" class="metric-value-lg">-- °C</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-title">VRAM Allocation</span>
+              <div id="metric-vram" class="metric-value-lg">-- / --</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Scratch Disk Space</label>
+            <pre id="metric-disk" style="background: var(--mv-surface); padding: 12px; border-radius: 8px; font-size: 12px; font-family: 'Geist Mono', monospace;"></pre>
+          </div>
+          <div class="form-group">
+            <label class="form-label">System RAM</label>
+            <pre id="metric-ram" style="background: var(--mv-surface); padding: 12px; border-radius: 8px; font-size: 12px; font-family: 'Geist Mono', monospace;"></pre>
+          </div>
+          <button id="btn-refresh-metrics" class="btn-action" style="margin-top: 12px;">Refresh Metrics</button>
         </div>
-        <div id="tab-actions" class="drawer-panel" style="display: none;">
-          <button class="btn-action action-btn" data-action="restart_worker">Restart Worker</button>
-          <button class="btn-action action-btn" data-action="clear_tmp" style="margin-left: 8px; color: var(--accent-rose);">Clear Scratch Tmp</button>
+        <div id="tab-actions" class="tab-pane" style="display: none;">
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-action action-btn" data-action="restart_worker">Restart Worker</button>
+            <button class="btn-action action-btn" data-action="clear_tmp" style="color: var(--accent-rose);">Clear Scratch Tmp</button>
+          </div>
+          <div id="action-output" style="margin-top: 16px; display: none;">
+            <pre id="action-output-text" style="background: var(--mv-surface); padding: 12px; border-radius: 8px; font-size: 12px; font-family: 'Geist Mono', monospace;"></pre>
+          </div>
         </div>
       </div>
     </div>
