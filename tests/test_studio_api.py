@@ -1,17 +1,6 @@
-
-import pytest
-from fastapi.testclient import TestClient
-from src.studio_api import app, STUDIO_TOKEN
-
-@pytest.fixture
-def client_test():
-    return TestClient(app)
-
-@pytest.fixture
-def auth_test_headers():
-    return {"X-Pluto-Token": STUDIO_TOKEN}
 #!/usr/bin/env python3
 """Integration tests for Pluto Studio Backend API."""
+
 
 import json
 import os
