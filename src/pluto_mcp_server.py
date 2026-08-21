@@ -321,6 +321,30 @@ def get_voice_catalogue() -> str:
     ]
     return json.dumps(voices, indent=2)
 
+@mcp.tool()
+def pluto_list_model_recipes() -> Dict[str, Any]:
+    """List available model recipes enriched with local compatibility status."""
+    try:
+        from src.pluto.services.model_catalog import catalog_manager
+        recipes = catalog_manager.get_all_recipes()
+        return {"status": "success", "recipes": [r.__dict__ for r in recipes]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_download_model_recipe(recipe_id: str) -> Dict[str, Any]:
+    """Queue background weight download for a specific model recipe.
+    
+    Args:
+        recipe_id (str): The ID of the model recipe to download.
+    """
+    try:
+        from src.pluto.services.model_catalog import catalog_manager
+        job_id = catalog_manager.download_recipe(recipe_id)
+        return {"status": "success", "job_id": job_id}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     mcp.run()
 

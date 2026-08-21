@@ -9,6 +9,7 @@ from .views import router as views_router
 from .assets import router as assets_router
 from .gpu import router as gpu_router
 from .generate import router as generate_router
+from .recipes import router as recipes_router
 
 __all__ = [
     "audio_router",
@@ -20,4 +21,5 @@ __all__ = [
     "assets_router",
     "gpu_router",
     "generate_router",
+    "recipes_router",
 ]
