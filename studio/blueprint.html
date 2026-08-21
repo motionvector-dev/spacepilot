@@ -817,6 +817,51 @@
         <li><strong>Output Duration vs Compute Time Arbitrage:</strong> Traditional video APIs charge fixed rates by the output video second (e.g. Plainly at $0.75/min). When hardware gets faster, incumbents pocket the savings. Pluto passes 100% of GPU optimizations to the creator.</li>
         <li><strong>Zero Egress Overhead:</strong> By co-locating the quantized LTX-2.5 model and the 230GB NVMe scratch drive on the same EC2 instance, renders are held locally and synced via compressed rsync on demand.</li>
       </ul>
+
+      <!-- SUBSECTION 2.1: THE FINANCIALIZED INFERENCE EXCHANGE -->
+      <div class="exec-quote" style="border-left-color: var(--accent-purple); margin-top: 14px;">
+        <strong style="color: var(--accent-purple);">The Macro Paradigm Shift: The Emergence of the "AI Inference Market"</strong><br>
+        <em>"Interfaces and frontends are generated at the speed of thought for free. Backend glue code is free. SOTA intelligence and open weights are free. Local homelab inference is free. The <strong>only un-fakeable commodity left on earth is GPU compute</strong>. We are witnessing the transformation of AI inference into a financialized commodity market—complete with dynamic pricing, warm-capacity priority routing, spot auctions, and cross-cloud arbitrage."</em>
+      </div>
+
+      <div class="table-box" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Tier / Pricing Mechanism</th>
+              <th>Clearing Model</th>
+              <th>Creator SLA & Latency</th>
+              <th>Economic Advantage vs. SaaS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>🔥 On-Demand Warm (Surge)</strong></td>
+              <td>Dynamic surge pricing based on real-time cluster load.</td>
+              <td><strong>Instant / 0.0s cold start:</strong> Model held warm in 48GB VRAM.</td>
+              <td>Users willingly pay $0.03 instead of $0.01 for immediate director take iteration without 5-minute boot penalties.</td>
+            </tr>
+            <tr>
+              <td><strong>⚡ Spot Priority</strong></td>
+              <td>Bidded AWS/RunPod spot capacity + double-digit % orchestration fee.</td>
+              <td><strong>~30s render:</strong> Dedicated single-tenant L40S execution.</td>
+              <td><strong>10x–20x cheaper:</strong> Creator captures pure spot savings ($0.75/hr) rather than locked $50/mo credit bundles.</td>
+            </tr>
+            <tr>
+              <td><strong>🌙 Trough Batch (Overnight)</strong></td>
+              <td>Preemptible queue absorbing idle valley capacity.</td>
+              <td><strong>Asynchronous:</strong> 60-shot storyboard film renders in background.</td>
+              <td>Sub-cent floor pricing ($0.006/take), soaking up surplus compute when global demand drops.</td>
+            </tr>
+            <tr>
+              <td><strong>🌐 Cross-Cloud Arbitrage</strong></td>
+              <td>Multi-provider router (AWS Spot ⇆ RunPod ⇆ Lambda ⇆ Homelab).</td>
+              <td><strong>Dynamic Failover:</strong> Auto-routes if spot capacity pre-empts.</td>
+              <td>Zero vendor lock-in. Real-time arbitrage between geographical spot price drops.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
 <!-- SECTION 3: GRANULAR PRODUCT FEATURES & DIRECTING SUITE -->
