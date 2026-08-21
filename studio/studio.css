@@ -22,10 +22,10 @@
   /* Semantic Truth Colors Only */
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  --accent-rose: #f43535;
   --semantic-online: #10b981;
   --semantic-warning: #f59e0b;
-  --semantic-error: #f43f5e;
+  --semantic-error: #f43535;
 
   /* Typography */
   --text-main: #fafafa;
@@ -52,7 +52,7 @@
   --track-v2: #fafafa;
   --track-v1: #a1a1aa;
   --track-a1: #10b981;
-  --track-playhead: #f43f5e;
+  --track-playhead: #f43535;
 
   /* Common mv-* tokens for full ecosystem compatibility */
   --mv-bg: #000000;
@@ -68,8 +68,8 @@
   --mv-text-dim: #71717a;
   --mv-text-faint: #52525b;
 
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --font-sans: 'Geist', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -82,7 +82,7 @@
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.75);
   --shadow-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.25);
   --shadow-glow-amber: 0 0 20px rgba(245, 158, 11, 0.25);
-  --shadow-glow-rose: 0 0 20px rgba(244, 63, 94, 0.25);
+  --shadow-glow-rose: 0 0 20px rgba(244, 53, 53, 0.25);
 
   /* Spacing Scale (4px base, geometric) */
   --space-0: 0;
@@ -2630,7 +2630,7 @@ body.obsidian-theme:has(.app-root) {
   bottom: 0;
   background: rgba(16, 185, 129, 0.08);
   border-left: 1px dashed rgba(16, 185, 129, 0.5);
-  border-right: 1px dashed rgba(244, 63, 94, 0.5);
+  border-right: 1px dashed rgba(244, 53, 53, 0.5);
   pointer-events: none;
   z-index: 5;
 }
@@ -3149,7 +3149,7 @@ body.obsidian-theme:has(.app-root) {
   transition: all 0.15s ease;
 }
 .image-keyframe-chip .btn-remove-keyframe:hover {
-  color: var(--accent-rose, #f43f5e);
-  background: rgba(244, 63, 94, 0.12);
+  color: var(--accent-rose, #f43535);
+  background: rgba(244, 53, 53, 0.12);
 }
 

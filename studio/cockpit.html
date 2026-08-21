@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cockpit · MotionVector Pluto Cloud</title>
+  <title>SpacePilot Cockpit 🚀 · Autonomous GPU Fleet & Spot Broker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     body {
       background-color: var(--bg-ground);
       color: var(--text-main);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Geist', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
       overflow-y: auto;
@@ -125,7 +125,7 @@
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       padding: 4px 12px;
       border-radius: 9999px;
       background: var(--bg-card);
@@ -192,7 +192,7 @@
     .metric-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 24px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -215,7 +215,7 @@
     }
 
     .badge-status {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       font-size: 11px;
       font-weight: 600;
       padding: 3px 8px;
@@ -238,7 +238,7 @@
     .metric-value-lg {
       font-size: 24px;
       font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       letter-spacing: -0.02em;
       color: var(--text-main);
     }
@@ -251,7 +251,7 @@
     }
 
     .metric-detail-val {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       color: var(--text-main);
       font-weight: 500;
     }
@@ -275,7 +275,7 @@
     .actions-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 24px;
       padding: 16px 20px;
       display: flex;
       align-items: center;
@@ -297,7 +297,7 @@
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: 24px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -348,7 +348,7 @@
     .terminal-card {
       background: var(--bg-root);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 24px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -412,7 +412,7 @@
       height: 320px;
       overflow-y: auto;
       padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       font-size: 12px;
       line-height: 1.6;
       color: var(--text-main);
@@ -440,7 +440,7 @@
     .config-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 24px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -482,7 +482,7 @@
       right: 24px;
       background: var(--bg-raised);
       border: 1px solid var(--border-medium);
-      border-radius: 8px;
+      border-radius: 24px;
       padding: 12px 18px;
       font-size: 13px;
       color: var(--text-main);
@@ -526,7 +526,7 @@
     .mv-modal-card {
       background: var(--bg-panel);
       border: 1px solid var(--border-medium);
-      border-radius: 14px;
+      border-radius: 24px;
       width: 100%;
       max-width: 460px;
       padding: 24px;
@@ -551,7 +551,7 @@
     .mv-modal-icon-wrap {
       width: 36px;
       height: 36px;
-      border-radius: 8px;
+      border-radius: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -595,12 +595,12 @@
     .mv-modal-info-box {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      border-radius: 24px;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       font-size: 12px;
     }
 
@@ -636,7 +636,7 @@
       border-radius: 6px;
       padding: 8px 12px;
       color: var(--text-main);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Geist Mono', 'JetBrains Mono', monospace;
       font-size: 13px;
       outline: none;
     }
@@ -729,7 +729,7 @@
             <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
           </g>
         </svg>
-        <span class="brand-text">PLUTO <span class="brand-sub">STUDIO</span></span>
+        <span class="brand-text">SPACEPILOT <span class="brand-sub">COCKPIT</span></span>
       </a>
 
       <div class="nav-breadcrumbs">
@@ -921,7 +921,7 @@
            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
              <h4 style="font-size: 14px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                <span>☁️ SkyPilot Multi-Cloud Spot Arbitrage Matrix</span>
-               <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">12+ Clouds Active</span>
+               <span style="font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 11px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">12+ Clouds Active</span>
              </h4>
              <div style="display: flex; gap: 8px;">
                <button id="btn-sky-failover" class="btn-action" style="font-size: 11px; padding: 4px 10px; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--accent-amber);" title="Simulate / Trigger Zero-Data-Loss Spot Preemption Failover">
@@ -933,7 +933,7 @@
              </div>
            </div>
            
-           <div id="sky-cluster-banner" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+           <div id="sky-cluster-banner" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 24px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 12px;">
              <div>
                <span style="color: var(--text-dim);">SkyPilot Cluster: </span>
                <strong id="sky-active-name" style="color: var(--text-main);">Auto-Arbitrage Mode</strong>
@@ -946,7 +946,7 @@
            </div>
 
            <div style="overflow-x: auto;">
-             <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'JetBrains Mono', monospace;">
+             <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'Geist Mono', 'JetBrains Mono', monospace;">
                <thead>
                  <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted);">
                    <th style="padding: 8px;">Cloud Provider</th>
@@ -1072,28 +1072,28 @@
     <div class="mv-modal-card" style="max-width: 800px; width: 90%;">
       <div class="mv-modal-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
         <div>
-          <h2 class="mv-modal-title" style="font-size: 24px; margin-bottom: 8px;">Welcome to Pluto Studio</h2>
+          <h2 class="mv-modal-title" style="font-size: 24px; margin-bottom: 8px;">Welcome to SpacePilot</h2>
           <p class="mv-modal-subtitle">Choose your compute provider to get started</p>
         </div>
       </div>
       <div class="mv-modal-body" style="display: flex; gap: 16px; padding: 24px 0;">
         
         <!-- Card 1: Shadeform -->
-        <div class="provider-card" data-provider="shadeform" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+        <div class="provider-card" data-provider="shadeform" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
           <h3 style="margin-bottom: 8px;">🌐 Shadeform Multi-Cloud <span style="font-size: 12px; background: var(--accent-blue); color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle;">⭐ Recommended</span></h3>
           <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">1 Key to access 20+ Clouds (AWS, Lambda, RunPod, Nebius). Auto-finds cheapest spot GPU in seconds.</p>
           <input type="text" id="onboard-shadeform-key" class="form-input" placeholder="Paste Shadeform API Key" style="display: none;" autocomplete="off">
         </div>
 
         <!-- Card 2: AWS -->
-        <div class="provider-card" data-provider="aws" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+        <div class="provider-card" data-provider="aws" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
           <h3 style="margin-bottom: 8px;">☁️ AWS Direct Spot</h3>
           <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Connect your existing AWS account directly. Pure spot pricing ($0.75/hr for L40S).</p>
           <input type="text" id="onboard-aws-profile" class="form-input" placeholder="AWS Profile (e.g. default)" style="display: none;" autocomplete="off">
         </div>
 
         <!-- Card 3: Local -->
-        <div class="provider-card" data-provider="local" style="flex: 1; border: 2px solid var(--border-light); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s;">
+        <div class="provider-card" data-provider="local" style="flex: 1; border: 2px solid var(--border-light); border-radius: 24px; padding: 16px; cursor: pointer; transition: 0.2s;">
           <h3 style="margin-bottom: 8px;">💻 Local Homelab / Free</h3>
           <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Zero setup. Connects to local Mac Studio or local RTX rig ($0.00/hr).</p>
           <p id="onboard-local-msg" style="display: none; font-size: 14px; color: var(--text-main);">Will use local endpoints.</p>
@@ -1206,27 +1206,27 @@
         
         <!-- Tab 1: SSH -->
         <div id="tab-ssh" class="tab-pane" style="display: block; height: 100%;">
-          <div id="terminal-container" style="width: 100%; height: 100%; background: #000; border-radius: 8px; overflow: hidden; padding: 8px;"></div>
+          <div id="terminal-container" style="width: 100%; height: 100%; background: #000; border-radius: 24px; overflow: hidden; padding: 8px;"></div>
         </div>
 
         <!-- Tab 2: Metrics -->
         <div id="tab-metrics" class="tab-pane" style="display: none;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px;">
               <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">GPU Temp</div>
               <div id="metric-gpu-temp" style="font-size: 24px; font-weight: 600;">-- °C</div>
             </div>
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px;">
               <div style="font-size: 12px; color: var(--text-faint); margin-bottom: 4px;">VRAM Used</div>
               <div id="metric-vram" style="font-size: 24px; font-weight: 600;">-- / --</div>
             </div>
           </div>
           
           <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">Scratch Disk Space</h3>
-          <pre id="metric-disk" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
+          <pre id="metric-disk" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
 
           <h3 style="font-size: 14px; margin-bottom: 12px; margin-top: 24px;">System RAM</h3>
-          <pre id="metric-ram" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
+          <pre id="metric-ram" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);">Loading...</pre>
           
           <button id="btn-refresh-metrics" class="btn-action" style="margin-top: 16px;">Refresh Metrics</button>
         </div>
@@ -1234,14 +1234,14 @@
         <!-- Tab 3: Actions -->
         <div id="tab-actions" class="tab-pane" style="display: none;">
           <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <div style="font-weight: 600; margin-bottom: 4px;">Restart LTX Worker</div>
                 <div style="font-size: 12px; color: var(--text-faint);">Restarts the systemd worker service.</div>
               </div>
               <button class="btn-action action-btn" data-action="restart_worker">Restart</button>
             </div>
-            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border: 1px solid var(--border-light); padding: 16px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <div style="font-weight: 600; margin-bottom: 4px;">Clear Tmp Space</div>
                 <div style="font-size: 12px; color: var(--text-faint);">Deletes everything in /scratch/tmp/</div>
@@ -1251,7 +1251,7 @@
           </div>
           <div id="action-output" style="margin-top: 24px; display: none;">
             <h3 style="font-size: 14px; margin-bottom: 8px;">Action Result</h3>
-            <pre id="action-output-text" style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: var(--text-muted);"></pre>
+            <pre id="action-output-text" style="background: var(--bg-surface); padding: 12px; border-radius: 24px; font-size: 12px; overflow-x: auto; color: var(--text-muted);"></pre>
           </div>
         </div>
 

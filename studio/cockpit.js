@@ -390,13 +390,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         const cfg = data.config || {};
         
-        if (!cfg.provider && !localStorage.getItem('pluto_onboarded')) {
+        if (!cfg.provider && !localStorage.getItem('spacepilot_onboarded')) {
           showOnboardingModal();
         }
         
         if (cfg.provider) {
           cfgProvider.value = cfg.provider;
-          localStorage.setItem('pluto_onboarded', 'true');
+          localStorage.setItem('spacepilot_onboarded', 'true');
         }
         if (cfg.shadeform_api_key) cfgShadeformKey.value = cfg.shadeform_api_key;
         if (cfg.runpod_api_key) cfgRunpodKey.value = cfg.runpod_api_key;
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
           body: JSON.stringify({ config: keyData })
         });
-        localStorage.setItem('pluto_onboarded', 'true');
+        localStorage.setItem('spacepilot_onboarded', 'true');
         modalOnboarding.style.display = 'none';
         loadConfig();
         showToast('Provider connected successfully');
