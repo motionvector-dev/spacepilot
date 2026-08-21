@@ -111,3 +111,8 @@ def test_cockpit_syntax():
     cockpit_js = PLUTO_ROOT / "studio" / "cockpit.js"
     result = subprocess.run([shutil.which("node"), "--check", str(cockpit_js)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+def test_create_js_syntax():
+    create_js = PLUTO_ROOT / "studio" / "create.js"
+    result = subprocess.run([shutil.which("node"), "--check", str(create_js)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

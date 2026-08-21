@@ -729,7 +729,6 @@ def test_generate_with_image_path():
     assert disk_meta["image_path"] == sample_image
 
 
-
 def test_inspect_metrics_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
     import src.studio_api as studio_api
@@ -766,26 +765,26 @@ def test_inspect_action_endpoint(monkeypatch):
     def mock_run(cmd, *args, **kwargs):
         class MockCompletedProcess:
             returncode = 0
-            stdout = "Worker restarted"
+            stdout = "Service restarted successfully"
             stderr = ""
         return MockCompletedProcess()
     monkeypatch.setattr(subprocess, "run", mock_run)
     
-    res = client.post("/api/gpu/inspect/action", json={"action": "restart_worker"}, headers=AUTH)
+    res = client.post("/api/gpu/inspect/action", headers=AUTH, json={"action": "restart_worker"})
     assert res.status_code == 200
-    assert res.json()["ok"] is True
+    data = res.json()
+    assert data["ok"] is True
     
-    res_bad = client.post("/api/gpu/inspect/action", json={"action": "rm_rf_slash"}, headers=AUTH)
+    # Test unwhitelisted action
+    res_bad = client.post("/api/gpu/inspect/action", headers=AUTH, json={"action": "rm_rf"})
     assert res_bad.status_code == 400
-
-
-
+    
 def test_inspect_shell_ws_valid_auth(monkeypatch):
     from fastapi.testclient import TestClient
     import src.studio_api as studio_api
     import asyncio
     
-    # Mock subprocess.create_subprocess_exec
+    # Mock async subprocess
     class MockProcess:
         returncode = None
         def __init__(self):
@@ -794,9 +793,6 @@ def test_inspect_shell_ws_valid_auth(monkeypatch):
                 def write(self, *args): pass
                 async def drain(self, *args): pass
             self.stdin = MockStreamWriter()
-            # monkeypatch stdin.write and drain
-            
-            
             
         def terminate(self):
             self.returncode = 0
@@ -816,12 +812,8 @@ def test_inspect_shell_ws_valid_auth(monkeypatch):
     client = TestClient(studio_api.app)
     
     with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
-        # Valid auth
         websocket.send_json({"type": "auth", "token": studio_api.STUDIO_TOKEN})
-        # Wait a tiny bit to ensure it processes
-        # we can't easily wait, but we can send a resize frame to see if it processes without closing
         websocket.send_json({"type": "resize", "cols": 80, "rows": 24})
-        # If it didn't disconnect, we're good.
         
 def test_inspect_shell_ws_invalid_auth(monkeypatch):
     from fastapi.testclient import TestClient
@@ -850,6 +842,49 @@ def test_inspect_shell_ws_null_auth(monkeypatch):
             assert False, "Should have disconnected"
         except WebSocketDisconnect as e:
             assert e.code == 1008
+
+
+def test_generate_dual_keyframe():
+    """Verify dual keyframe paths are preserved in metadata."""
+    start_image = str(OUTPUTS_DIR / "uploads" / "start.png")
+    end_image = str(OUTPUTS_DIR / "uploads" / "end.png")
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Morph from start to end",
+            "image_path": start_image,
+            "last_image_path": end_image,
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code == 200, f"Generate with dual keyframes failed: {res.text}"
+    data = res.json()
+    job_id = data["job_id"]
+
+    assert data["meta"]["image_path"] == start_image
+    assert data["meta"]["last_image_path"] == end_image
+
+    # Verify metadata persisted on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["image_path"] == start_image
+    assert disk_meta["last_image_path"] == end_image
+
+def test_generate_dual_keyframe_validation():
+    """Verify validation error when last_image_path is sent without image_path."""
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Morph from nowhere to end",
+            "last_image_path": "end.png",
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code in [400, 422], "Should reject last_image_path without image_path"
+
 
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")

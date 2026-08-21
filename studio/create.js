@@ -30,6 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAutoAspect = document.getElementById('btn-auto-aspect');
   const btnRemoveImage = document.getElementById('btn-remove-image');
 
+  const keyframeModeBtns = document.querySelectorAll('#group-keyframe-mode .mv-seg-btn');
+  const endDropzoneBlock = document.getElementById('end-dropzone-block');
+  const startDropzoneTitle = document.getElementById('start-dropzone-title');
+  const dropzoneEnd = document.getElementById('dropzone-end');
+  const fileInputEnd = document.getElementById('file-input-end');
+  const dropzonePromptEnd = document.getElementById('dropzone-prompt-end');
+  const dropzonePreviewBoxEnd = document.getElementById('dropzone-preview-box-end');
+  const dropPreviewEnd = document.getElementById('dropzone-preview-end');
+  const dropzoneDimsEnd = document.getElementById('dropzone-dims-end');
+  const dropzoneAspectTagEnd = document.getElementById('dropzone-aspect-tag-end');
+  const btnRemoveImageEnd = document.getElementById('btn-remove-image-end');
+
   const btnGenerate = document.getElementById('btn-generate');
   const btnToggleDiff = document.getElementById('btn-toggle-diff');
   const diffOpsList = document.getElementById('diff-ops-list');
@@ -106,12 +118,19 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraRoll: 'none',
     cameraIntensity: 3,
     gpuOnline: false,
+    keyframeMode: 'single',
     imageFile: null,
     imagePath: null,
     imageWidth: null,
     imageHeight: null,
     detectedAspect: null,
-    detectedLabel: null
+    detectedLabel: null,
+    endImageFile: null,
+    endImagePath: null,
+    endImageWidth: null,
+    endImageHeight: null,
+    detectedAspectEnd: null,
+    detectedLabelEnd: null
   };
 
   function updatePatchCardDiff() {
@@ -153,7 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (diffImageRow && diffImageVal) {
-      if (config.imageFile || config.imagePath) {
+      if (config.keyframeMode === 'dual' && (config.imagePath || config.endImagePath)) {
+        diffImageRow.style.display = 'flex';
+        const nameStart = config.imageFile ? config.imageFile.name : (config.imagePath || 'Keyframe');
+        const nameEnd = config.endImageFile ? config.endImageFile.name : (config.endImagePath || 'Keyframe');
+        diffImageVal.textContent = `${nameStart} → ${nameEnd}`;
+      } else if (config.imageFile || config.imagePath) {
         diffImageRow.style.display = 'flex';
         const name = config.imageFile ? config.imageFile.name : (config.imagePath || 'Keyframe');
         const dims = (config.imageWidth && config.imageHeight) ? ` (${config.imageWidth}×${config.imageHeight})` : '';
@@ -323,6 +347,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Keyframe Mode Switcher
+  keyframeModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      keyframeModeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      config.keyframeMode = btn.dataset.mode;
+      
+      if (config.keyframeMode === 'dual') {
+        startDropzoneTitle.textContent = 'Start Keyframe (Frame 0)';
+        endDropzoneBlock.style.display = 'flex';
+      } else {
+        startDropzoneTitle.textContent = 'Reference Keyframe (I2V)';
+        endDropzoneBlock.style.display = 'none';
+      }
+      checkAspectMismatch();
+      updatePatchCardDiff();
+    });
+  });
+
   // Motion Guidance (STG) Slider
   inputStg.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value).toFixed(1);
@@ -417,6 +460,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePatchCardDiff();
   }
 
+  function checkAspectMismatch() {
+    if (config.keyframeMode === 'dual' && config.imageFile && config.endImageFile) {
+      if (config.detectedAspect && config.detectedAspectEnd && config.detectedAspect !== config.detectedAspectEnd) {
+        if (dropzone) dropzone.style.borderColor = 'red';
+        if (dropzoneEnd) dropzoneEnd.style.borderColor = 'red';
+        if (btnGenerate) {
+            btnGenerate.disabled = true;
+            btnGenerate.title = 'Aspect ratio mismatch between start and end keyframes.';
+        }
+        return true;
+      }
+    }
+    
+    if (dropzone) dropzone.style.borderColor = '';
+    if (dropzoneEnd) dropzoneEnd.style.borderColor = '';
+    if (btnGenerate) {
+        btnGenerate.disabled = false;
+        btnGenerate.title = '';
+    }
+    return false;
+  }
+
   function handleImage(file) {
     if (!file || !file.type.startsWith('image/')) return;
     config.imageFile = file;
@@ -450,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
           btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-match Aspect Ratio</span>`;
         }
 
+        checkAspectMismatch();
         updatePatchCardDiff();
       };
       img.src = dataUrl;
@@ -458,6 +524,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Upload image to backend
     uploadImageFile(file);
+  }
+
+  async function uploadImageFileEnd(file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      let token = null;
+      try {
+        const tokenRes = await fetch('/api/token');
+        if (tokenRes.ok) token = (await tokenRes.json()).token;
+      } catch (e) {}
+
+      const headers = {};
+      if (token) headers['X-Pluto-Token'] = token;
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        config.endImagePath = data.image_path || data.path || data.file_path || file.name;
+        if (data.width) config.endImageWidth = data.width;
+        if (data.height) config.endImageHeight = data.height;
+      } else {
+        config.endImagePath = file.name;
+      }
+    } catch (err) {
+      console.warn('Image upload fallback to local reference (end):', err);
+      config.endImagePath = file.name;
+    }
+    updatePatchCardDiff();
+  }
+
+  function handleImageEnd(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    config.endImageFile = file;
+    config.endImagePath = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      dropPreviewEnd.src = dataUrl;
+
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth || dropPreviewEnd.naturalWidth || 1024;
+        const h = img.naturalHeight || dropPreviewEnd.naturalHeight || 576;
+        config.endImageWidth = w;
+        config.endImageHeight = h;
+
+        const match = getClosestAspect(w, h);
+        config.detectedAspectEnd = match.aspect;
+        config.detectedLabelEnd = match.label;
+
+        if (dropzoneDimsEnd) dropzoneDimsEnd.textContent = `${w}×${h}`;
+        if (dropzoneAspectTagEnd) dropzoneAspectTagEnd.textContent = match.label;
+
+        if (dropzonePreviewBoxEnd) dropzonePreviewBoxEnd.style.display = 'flex';
+        if (dropzonePromptEnd) dropzonePromptEnd.style.display = 'none';
+        if (dropzoneEnd) dropzoneEnd.classList.add('has-image');
+
+        checkAspectMismatch();
+        updatePatchCardDiff();
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+
+    uploadImageFileEnd(file);
   }
 
   // Auto-match Aspect Ratio button click
@@ -505,6 +644,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dropzone) dropzone.classList.remove('has-image');
       if (btnAutoAspect) btnAutoAspect.classList.remove('matched');
 
+      checkAspectMismatch();
+      updatePatchCardDiff();
+    });
+  }
+
+  if (btnRemoveImageEnd) {
+    btnRemoveImageEnd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      config.endImageFile = null;
+      config.endImagePath = null;
+      config.endImageWidth = null;
+      config.endImageHeight = null;
+      config.detectedAspectEnd = null;
+      config.detectedLabelEnd = null;
+      if (fileInputEnd) fileInputEnd.value = '';
+
+      if (dropPreviewEnd) dropPreviewEnd.src = '';
+      if (dropzonePreviewBoxEnd) dropzonePreviewBoxEnd.style.display = 'none';
+      if (dropzonePromptEnd) dropzonePromptEnd.style.display = 'flex';
+      if (dropzoneEnd) dropzoneEnd.classList.remove('has-image');
+
+      checkAspectMismatch();
       updatePatchCardDiff();
     });
   }
@@ -540,6 +701,40 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files.length > 0) {
         handleImage(e.target.files[0]);
+      }
+    });
+  }
+
+  if (dropzoneEnd && fileInputEnd) {
+    dropzoneEnd.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-remove-image-end')) {
+        return;
+      }
+      if (!dropzoneEnd.classList.contains('has-image')) {
+        fileInputEnd.click();
+      }
+    });
+
+    dropzoneEnd.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzoneEnd.style.borderColor = 'var(--border-focus)';
+    });
+
+    dropzoneEnd.addEventListener('dragleave', () => {
+      dropzoneEnd.style.borderColor = '';
+    });
+
+    dropzoneEnd.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneEnd.style.borderColor = '';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleImageEnd(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInputEnd.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleImageEnd(e.target.files[0]);
       }
     });
   }
@@ -621,6 +816,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (config.imagePath) {
       payload.image_path = config.imagePath;
+    }
+    if (config.keyframeMode === 'dual' && config.endImagePath) {
+      payload.last_image_path = config.endImagePath;
     }
 
     try {
