@@ -1216,8 +1216,84 @@
             </tr>
           </tbody>
         </table>
+      <!-- SECTION 6.1: LIVE AUTONOMOUS SWARM KANBAN BOARD -->
+      <div style="margin-top: 36px;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-heading); margin-bottom: 16px;">6.1 Live Autonomous Swarm Kanban Board (ADLC / SDLC Mesh)</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+          <!-- Column 1: Backlog -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">📋 Backlog / Planned</div>
+            <div style="background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p1" style="font-size: 9px; margin-bottom: 4px;">P1 · Wave 4</span>
+              <div style="font-weight: 700; margin-top: 4px;">💳 Global Payment Mesh</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Polar.sh MoR + x402 Agent USDC settlement.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p2" style="font-size: 9px; margin-bottom: 4px;">P2 · Wave 4</span>
+              <div style="font-weight: 700; margin-top: 4px;">🎭 Script-to-Storyboard</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Gemini Flash 6-8 scene decomposer.</p>
+            </div>
+          </div>
+
+          <!-- Column 2: In Progress -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent-amber); text-transform: uppercase;">⚡ In Flight (Swarm Lanes)</div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p0" style="font-size: 9px; margin-bottom: 4px;">P0 · Lane 1</span>
+              <div style="font-weight: 700; margin-top: 4px;">🔍 Cockpit Inspect Mode</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Web SSH PTY + xterm.js + VRAM/Disk metrics.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p1" style="font-size: 9px; margin-bottom: 4px;">P1 · Lane 3</span>
+              <div style="font-weight: 700; margin-top: 4px;">🖼️ FLF2V Dual Keyframes</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Start/End dropzones + cross-dissolve plates.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p1" style="font-size: 9px; margin-bottom: 4px;">P1 · Lane 4</span>
+              <div style="font-weight: 700; margin-top: 4px;">🎲 4-Take Director Grid</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">2×2 synchronized exploration canvas.</p>
+            </div>
+          </div>
+
+          <!-- Column 3: Review & Audit -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase;">🔍 In Principal Review</div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <span class="spec-badge badge-p0" style="font-size: 9px; margin-bottom: 4px;">P0 · Review Gate</span>
+              <div style="font-weight: 700; margin-top: 4px;">🛡️ Inspect Auth Handshake</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Auditing non-blocking PTY & token boundary.</p>
+            </div>
+          </div>
+
+          <!-- Column 4: Done / Released -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase;">✅ Merged to Main (v2.2.0)</div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <div style="font-weight: 700;">🔄 +4s Video Extension</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Frame-1 chaining + path traversal guard.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <div style="font-weight: 700;">🔌 Native MCP Server & Skills</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">FastMCP tools + open SKILL.md standard.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <div style="font-weight: 700;">🌐 Multi-Cloud Provider Hub</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Shadeform + AWS + Homelab 3-card onboarding.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <div style="font-weight: 700;">🎥 3D Camera Compass</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Pan/Tilt/Zoom/Roll dials with STG scale.</p>
+            </div>
+            <div style="background: var(--bg-panel); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; font-size: 13px;">
+              <div style="font-weight: 700;">🛡️ Dead Man's Watchdog</div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">20m auto-idle termination daemon.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
+
 
 <!-- SECTION 7: SYSTEM CHANGELOG & VERSION LEDGER -->
     <section id="sec-changelog" class="report-section">
