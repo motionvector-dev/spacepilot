@@ -80,6 +80,112 @@
   --height-tl-footer: 160px;
 }
 
+/* ── Light / Dark / System Theme Definitions ───────────────── */
+[data-theme="light"],
+body.light-theme {
+  --bg-root: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --bg-raised: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --bg-glass-card: rgba(255, 255, 255, 0.95);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.14);
+  --border-highlight: rgba(0, 0, 0, 0.22);
+  --border-focus: rgba(99, 102, 241, 0.6);
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  --text-faint: #94a3b8;
+
+  --mv-bg: #f8fafc;
+  --mv-surface: #ffffff;
+  --mv-card: #f8fafc;
+  --mv-card-hover: #f1f5f9;
+  --mv-border: rgba(0, 0, 0, 0.08);
+  --mv-border-focus: rgba(99, 102, 241, 0.5);
+  --mv-text: #0f172a;
+  --mv-text-muted: #475569;
+  --mv-text-dim: #64748b;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --bg-root: #f8fafc;
+    --bg-panel: #ffffff;
+    --bg-card: #ffffff;
+    --bg-raised: #f1f5f9;
+    --bg-glass: rgba(255, 255, 255, 0.88);
+    --bg-glass-card: rgba(255, 255, 255, 0.95);
+
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-medium: rgba(0, 0, 0, 0.14);
+    --border-highlight: rgba(0, 0, 0, 0.22);
+    --border-focus: rgba(99, 102, 241, 0.6);
+
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+    --text-faint: #94a3b8;
+
+    --mv-bg: #f8fafc;
+    --mv-surface: #ffffff;
+    --mv-card: #f8fafc;
+    --mv-card-hover: #f1f5f9;
+    --mv-border: rgba(0, 0, 0, 0.08);
+    --mv-border-focus: rgba(99, 102, 241, 0.5);
+    --mv-text: #0f172a;
+    --mv-text-muted: #475569;
+    --mv-text-dim: #64748b;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* Theme Switcher Capsule */
+.theme-switch-capsule {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  color: var(--text-main);
+}
+
+.theme-toggle-btn.active {
+  background: var(--bg-raised);
+  color: var(--text-main);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* ── Reset & Base ───────────────────────────────────────────── */
 * {
   box-sizing: border-box;
@@ -88,10 +194,14 @@
   -webkit-font-smoothing: antialiased;
 }
 
-body.obsidian-theme {
+body {
   background-color: var(--bg-root);
   color: var(--text-main);
   font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.obsidian-theme {
   height: 100vh;
   overflow: hidden;
   user-select: none;

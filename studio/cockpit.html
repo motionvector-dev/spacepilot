@@ -555,6 +555,11 @@
       <a href="/create" class="nav-tab">Create</a>
       <a href="/studio" class="nav-tab">Editor</a>
       <a href="/cockpit" class="nav-tab active">Cockpit</a>
+      <div class="theme-switch-capsule" title="Theme Mode">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">☀️</button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">🌙</button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">💻</button>
+      </div>
       <div class="gpu-pill">
         <span id="nav-gpu-dot" class="gpu-dot"></span>
         <span id="nav-gpu-text">Checking GPU...</span>
@@ -728,6 +733,7 @@
     <span id="toast-msg">Notification</span>
   </div>
 
+  <script src="theme.js"></script>
   <script src="cockpit.js"></script>
 </body>
 </html>

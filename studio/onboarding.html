@@ -288,6 +288,11 @@
       <a href="/create" class="nav-link">Create Video</a>
       <a href="/studio" class="nav-link">Pro Studio</a>
       <a href="/cockpit" class="nav-link">Cockpit</a>
+      <div class="theme-switch-capsule" title="Theme Mode">
+        <button class="theme-toggle-btn" data-theme-mode="light" title="Light Mode">☀️</button>
+        <button class="theme-toggle-btn" data-theme-mode="dark" title="Dark Mode">🌙</button>
+        <button class="theme-toggle-btn" data-theme-mode="system" title="System Match">💻</button>
+      </div>
       <div class="gpu-status">
         <div class="status-dot" id="gpu-dot"></div>
         <span id="gpu-text">Checking GPU...</span>
@@ -444,5 +449,6 @@
       };
     } catch (e) {}
   </script>
+  <script src="theme.js"></script>
 </body>
 </html>
