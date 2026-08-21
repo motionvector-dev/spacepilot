@@ -324,3 +324,52 @@ def get_voice_catalogue() -> str:
 if __name__ == "__main__":
     mcp.run()
 
+
+@mcp.tool()
+def pluto_list_lora_adapters(base_model: str = None) -> Dict[str, Any]:
+    """List trained LoRA adapters.
+    
+    Args:
+        base_model (str, optional): Filter by base model.
+        
+    Returns:
+        Dict[str, Any]: List of available adapters.
+    """
+    try:
+        from src.pluto.services.lora import lora_manager
+        import dataclasses
+        adapters = lora_manager.list_adapters(base_model)
+        return {"adapters": [dataclasses.asdict(a) for a in adapters]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_train_lora(name: str, base_model: str, image_paths: list[str], trigger_word: str, rank: int = 16, steps: int = 500, lr: float = 1e-4) -> Dict[str, Any]:
+    """Queue a LoRA training job.
+    
+    Args:
+        name (str): The name of the adapter.
+        base_model (str): Base model ID.
+        image_paths (list[str]): List of image paths for training.
+        trigger_word (str): Trigger word.
+        rank (int, optional): LoRA rank. Defaults to 16.
+        steps (int, optional): Training steps. Defaults to 500.
+        lr (float, optional): Learning rate. Defaults to 1e-4.
+        
+    Returns:
+        Dict[str, Any]: Job details.
+    """
+    try:
+        from src.pluto.services.lora import lora_manager
+        job = lora_manager.create_training_job(
+            name=name,
+            base_model=base_model,
+            image_paths=image_paths,
+            trigger_word=trigger_word,
+            rank=rank,
+            steps=steps,
+            lr=lr
+        )
+        return {"status": "success", "job": job}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
