@@ -286,6 +286,22 @@
 
   // ── Mount ────────────────────────────────────────────────────────────────
   function mount() {
+
+  // Inject CSS for pulse animation if missing
+  if (!document.getElementById('gpu-pulse-style')) {
+    const style = document.createElement('style');
+    style.id = 'gpu-pulse-style';
+    style.textContent = `
+      @keyframes pulse-online {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      }
+      .gpu-dot.online { animation: pulse-online 2s infinite; background: #10b981; }
+    `;
+    document.head.appendChild(style);
+  }
+
     // Inject CSS if not already loaded
     if (!document.querySelector('link[href*="sidebar.css"]')) {
       const link = document.createElement('link');
@@ -409,6 +425,55 @@
     const gpuDot   = document.getElementById('sbGpuDot');
     const gpuLabel = document.getElementById('sbGpuLabel');
 
+    // Ticker state
+    let liveTickerInterval = null;
+    let currentLaunchTime = null;
+    let currentSpotRate = 0.75;
+    let currentInstanceType = '';
+
+    function formatTime(totalSeconds) {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = Math.floor(totalSeconds % 60);
+      if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function tickLiveOdometer() {
+      if (!currentLaunchTime) return;
+      const launchDate = new Date(currentLaunchTime);
+      const elapsedSecs = Math.max(0, (Date.now() - launchDate.getTime()) / 1000);
+      const cost = (elapsedSecs / 3600) * currentSpotRate;
+      
+      const timeStr = formatTime(elapsedSecs);
+      
+      const h = Math.floor(elapsedSecs / 3600);
+      const m = Math.floor((elapsedSecs % 3600) / 60);
+      const s = Math.floor(elapsedSecs % 60);
+      let timeStrFriendly = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+      const costStr = `$${cost.toFixed(4).replace(/0+$/, '').padEnd(4, '0')}`;
+      const shortCostStr = `$${cost.toFixed(2)}`;
+      
+      // Sidebar
+      if (gpuLabel && gpuDot.classList.contains('online')) {
+         gpuLabel.textContent = `${shortCostStr} · ${timeStrFriendly}`;
+      }
+      
+      // Top navbar pill
+      const navGpuText = document.getElementById('nav-gpu-text');
+      const navGpuDot = document.getElementById('nav-gpu-dot');
+      if (navGpuText && gpuDot.classList.contains('online')) {
+         navGpuText.textContent = `${currentInstanceType} · ${shortCostStr} (${timeStr})`;
+         if (navGpuDot) navGpuDot.className = 'gpu-dot online';
+      }
+      
+      // Cockpit Odometer
+      const valCost = document.getElementById('val-cost');
+      const valUptime = document.getElementById('val-uptime');
+      if (valCost && gpuDot.classList.contains('online')) valCost.textContent = costStr;
+      if (valUptime && gpuDot.classList.contains('online')) valUptime.textContent = timeStrFriendly;
+    }
+
     async function pollGpu() {
       try {
         const res = await fetch('/api/cockpit/status');
@@ -416,24 +481,48 @@
         const data = await res.json();
         const inst  = data.instance || {};
         const state = inst.state || 'offline';
+        
         gpuDot.className = 'sidebar-gpu-dot';
         if (state === 'running') {
           gpuDot.classList.add('online');
-          gpuLabel.textContent = `${inst.type || sbInstance.value} · ${inst.ip || 'booting'}`;
           sbLaunch.disabled = true;
           sbTerminate.disabled = false;
-        } else if (state === 'pending' || state === 'launching') {
-          gpuDot.classList.add('busy');
-          gpuLabel.textContent = 'Launching…';
-          sbLaunch.disabled = true;
-          sbTerminate.disabled = true;
+          
+          if (inst.launch_time) {
+            currentLaunchTime = inst.launch_time;
+            currentInstanceType = inst.type || sbInstance.value;
+            currentSpotRate = data.config?.spot_hourly_rate || 0.75;
+            if (!liveTickerInterval) {
+               tickLiveOdometer();
+               liveTickerInterval = setInterval(tickLiveOdometer, 1000);
+            }
+          } else {
+            gpuLabel.textContent = `${inst.type || sbInstance.value} · ${inst.ip || 'booting'}`;
+          }
         } else {
-          gpuDot.classList.add('offline');
-          gpuLabel.textContent = 'No GPU · Offline';
-          sbLaunch.disabled = false;
-          sbTerminate.disabled = true;
+          if (liveTickerInterval) {
+             clearInterval(liveTickerInterval);
+             liveTickerInterval = null;
+          }
+          currentLaunchTime = null;
+          
+          if (state === 'pending' || state === 'launching') {
+            gpuDot.classList.add('busy');
+            gpuLabel.textContent = 'Launching…';
+            sbLaunch.disabled = true;
+            sbTerminate.disabled = true;
+          } else {
+            gpuDot.classList.add('offline');
+            gpuLabel.textContent = 'No GPU · Offline';
+            sbLaunch.disabled = false;
+            sbTerminate.disabled = true;
+          }
         }
       } catch (_) {
+        if (liveTickerInterval) {
+           clearInterval(liveTickerInterval);
+           liveTickerInterval = null;
+        }
         gpuDot.className = 'sidebar-gpu-dot offline';
         gpuLabel.textContent = 'Status unavailable';
       }

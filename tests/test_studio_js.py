@@ -72,3 +72,31 @@ def test_server_data_is_never_interpolated_raw_into_innerhtml():
 def test_syntax_is_valid():
     result = subprocess.run([shutil.which("node"), "--check", str(STUDIO_JS)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+def test_sidebar_format_time():
+    """Verify the formatTime logic added to sidebar.js"""
+    import re
+    sidebar = PLUTO_ROOT / "studio" / "sidebar.js"
+    source = sidebar.read_text()
+    match = re.search(r"^    function formatTime\(totalSeconds\) \{.*?^\s*\}", source, re.S | re.M)
+    assert match, "formatTime() helper is missing from sidebar.js"
+    script = match.group(0) + r"""
+const cases = [
+  [0, '00:00'],
+  [14, '00:14'],
+  [614, '10:14'],
+  [3614, '1:00:14'],
+  [7214, '2:00:14'],
+];
+for (const [input, expected] of cases) {
+  const got = formatTime(input);
+  if (got !== expected) {
+    console.error(`FAIL ${input}: got ${got} want ${expected}`);
+    process.exit(1);
+  }
+}
+console.log('ok');
+"""
+    result = subprocess.run([shutil.which("node"), "-e", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "ok" in result.stdout

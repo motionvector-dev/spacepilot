@@ -759,3 +759,30 @@ if __name__ == "__main__":
     print("✓ 4K Super-Resolution chain test passed")
     test_studio_full_pipeline()
     print("🎉 ALL PLUTO STUDIO + MOTIONVECTOR TESTS PASSED (100% SUCCESS)!")
+
+def test_cockpit_status_includes_launch_time(monkeypatch):
+    """Verify that instance.launch_time propagates up through the status endpoint."""
+    import src.studio_api as studio_api
+    from fastapi.testclient import TestClient
+    
+    monkeypatch.setattr(studio_api, "_status_cache", None)
+    
+    def fake_instance_info(_cfg):
+        return {
+            "id": "i-123",
+            "state": "running",
+            "ip": "1.2.3.4",
+            "type": "g6e.xlarge",
+            "launch_time": "2026-08-21T10:00:00Z"
+        }
+        
+    monkeypatch.setattr(studio_api, "get_instance_info", fake_instance_info)
+    monkeypatch.setattr(studio_api, "fetch_worker_health", lambda ip: {"ok": True})
+    
+    client = TestClient(studio_api.app)
+    res = client.get("/api/cockpit/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["instance"]["launch_time"] == "2026-08-21T10:00:00Z"
+    assert "uptime_minutes" in data
+    assert "estimated_cost_usd" in data

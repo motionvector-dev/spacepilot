@@ -82,13 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Header Pill
       if (isRunning && data.worker_ready) {
         navGpuDot.className = 'gpu-dot online';
-        navGpuText.textContent = `GPU Online · ${data.uptime_minutes}m`;
+        /* navGpuText handled by global ticker */
       } else if (isRunning) {
         navGpuDot.className = 'gpu-dot busy';
-        navGpuText.textContent = 'GPU Booting...';
+        /* navGpuText handled by global ticker */
       } else {
         navGpuDot.className = 'gpu-dot';
-        navGpuText.textContent = 'GPU Offline';
+        /* navGpuText handled by global ticker */
       }
 
       // Instance Card
@@ -137,8 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Billing Card
-      valCost.textContent = `$${(data.estimated_cost_usd || 0.0).toFixed(2)}`;
-      valUptime.textContent = `${(data.uptime_minutes || 0.0).toFixed(1)} mins`;
+      /* valCost handled by global ticker */
+      /* valUptime handled by global ticker */
       valRate.textContent = `$${(data.config?.spot_hourly_rate || 0.75).toFixed(2)} / hr`;
 
       currentSshCmd = data.ssh_command;
@@ -429,3 +429,4 @@ document.addEventListener('DOMContentLoaded', () => {
   startLogStream();
   setInterval(fetchCockpitStatus, 5000);
 });
+
