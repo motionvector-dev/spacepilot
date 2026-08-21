@@ -375,7 +375,70 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePatchCardDiff();
   });
 
-  
+  // 3D Camera Compass Widget Listeners
+  const compassDirBtns = document.querySelectorAll('.compass-direction-btn');
+  const compassGimbalDot = document.getElementById('compass-gimbal-dot');
+  const compassVectorPreview = document.getElementById('compass-vector-preview');
+  const camVectorBadge = document.getElementById('cam-vector-badge');
+
+  function updateCameraCompassVisuals() {
+    let dx = 0;
+    let dy = 0;
+    if (config.cameraPan === 'left') dx = -12;
+    else if (config.cameraPan === 'right') dx = 12;
+
+    if (config.cameraTilt === 'up') dy = -12;
+    else if (config.cameraTilt === 'down') dy = 12;
+
+    if (compassGimbalDot) {
+      compassGimbalDot.style.transform = `translate(${dx}px, ${dy}px)`;
+    }
+
+    const descriptors = [];
+    if (config.cameraPan !== 'static') descriptors.push(`Pan ${config.cameraPan.toUpperCase()}`);
+    if (config.cameraTilt !== 'static') descriptors.push(`Tilt ${config.cameraTilt.toUpperCase()}`);
+    if (config.cameraZoom !== 'static') descriptors.push(`Zoom ${config.cameraZoom.toUpperCase()}`);
+    if (config.cameraRoll !== 'none') descriptors.push(config.cameraRoll === 'orbit' ? 'Orbit 360°' : `Roll ${config.cameraRoll.toUpperCase()}`);
+
+    const label = descriptors.length ? descriptors.join(' + ') : 'Static 3D Camera';
+    if (compassVectorPreview) {
+      compassVectorPreview.textContent = `${label} · Intensity ${config.cameraIntensity}/5`;
+    }
+    if (camVectorBadge) {
+      camVectorBadge.textContent = descriptors.length ? label : 'Static';
+    }
+  }
+
+  if (compassDirBtns.length) {
+    compassDirBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dir = btn.dataset.dir;
+        if (dir === 'tilt_up') {
+          config.cameraTilt = config.cameraTilt === 'up' ? 'static' : 'up';
+        } else if (dir === 'tilt_down') {
+          config.cameraTilt = config.cameraTilt === 'down' ? 'static' : 'down';
+        } else if (dir === 'pan_left') {
+          config.cameraPan = config.cameraPan === 'left' ? 'static' : 'left';
+        } else if (dir === 'pan_right') {
+          config.cameraPan = config.cameraPan === 'right' ? 'static' : 'right';
+        }
+
+        compassDirBtns.forEach(b => {
+          const d = b.dataset.dir;
+          let active = false;
+          if (d === 'tilt_up' && config.cameraTilt === 'up') active = true;
+          if (d === 'tilt_down' && config.cameraTilt === 'down') active = true;
+          if (d === 'pan_left' && config.cameraPan === 'left') active = true;
+          if (d === 'pan_right' && config.cameraPan === 'right') active = true;
+          b.classList.toggle('active', active);
+        });
+
+        updateCameraCompassVisuals();
+        updatePatchCardDiff();
+      });
+    });
+  }
+
   function setupCamGroup(btns, configKey) {
     if (!btns) return;
     btns.forEach(btn => {
@@ -383,19 +446,19 @@ document.addEventListener('DOMContentLoaded', () => {
         btns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config[configKey] = btn.dataset.val;
+        updateCameraCompassVisuals();
         updatePatchCardDiff();
       });
     });
   }
-  setupCamGroup(camPanBtns, 'cameraPan');
-  setupCamGroup(camTiltBtns, 'cameraTilt');
   setupCamGroup(camZoomBtns, 'cameraZoom');
   setupCamGroup(camRollBtns, 'cameraRoll');
 
   if (inputCamIntensity) {
     inputCamIntensity.addEventListener('input', (e) => {
       config.cameraIntensity = parseInt(e.target.value, 10);
-      camIntensityDisplay.textContent = config.cameraIntensity;
+      camIntensityDisplay.textContent = `${config.cameraIntensity}/5`;
+      updateCameraCompassVisuals();
       updatePatchCardDiff();
     });
   }
@@ -418,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const diff11 = Math.abs(Math.log(r / 1));
     if (diff169 <= diff916 && diff169 <= diff11) {
       return { aspect: '16:9', label: '16:9 Wide' };
-    } else if (diff916 <= diff169 && diff916 <= diff11) {
+    } else if (diff916 <= diff11) {
       return { aspect: '9:16', label: '9:16 Reel' };
     } else {
       return { aspect: '1:1', label: '1:1 Square' };
@@ -429,13 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
-      let token = null;
-      try {
-        const tokenRes = await fetch('/api/token');
-        if (tokenRes.ok) token = (await tokenRes.json()).token;
-      } catch (e) {}
-
+      const token = await getAuthToken();
       const headers = {};
       if (token) headers['X-Pluto-Token'] = token;
 
@@ -463,8 +520,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function checkAspectMismatch() {
     if (config.keyframeMode === 'dual' && config.imageFile && config.endImageFile) {
       if (config.detectedAspect && config.detectedAspectEnd && config.detectedAspect !== config.detectedAspectEnd) {
-        if (dropzone) dropzone.style.borderColor = 'red';
-        if (dropzoneEnd) dropzoneEnd.style.borderColor = 'red';
+        if (dropzone) dropzone.classList.add('aspect-mismatch');
+        if (dropzoneEnd) dropzoneEnd.classList.add('aspect-mismatch');
         if (btnGenerate) {
             btnGenerate.disabled = true;
             btnGenerate.title = 'Aspect ratio mismatch between start and end keyframes.';
@@ -473,8 +530,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    if (dropzone) dropzone.style.borderColor = '';
-    if (dropzoneEnd) dropzoneEnd.style.borderColor = '';
+    if (dropzone) dropzone.classList.remove('aspect-mismatch');
+    if (dropzoneEnd) dropzoneEnd.classList.remove('aspect-mismatch');
     if (btnGenerate) {
         btnGenerate.disabled = false;
         btnGenerate.title = '';
@@ -1097,16 +1154,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
           card.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase;">Scene ${sc.scene_idx || (idx + 1)} · ${sc.duration_sec}s</span>
-              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(59,130,246,0.15); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px;">${sc.camera_motion || 'Dolly In'}</span>
+              <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-main); text-transform: uppercase;">Scene ${sc.scene_idx || (idx + 1)} · ${sc.duration_sec}s</span>
+              <span style="font-family: var(--font-mono); font-size: 10px; background: var(--bg-raised); color: var(--text-muted); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle);">${sc.camera_motion || 'Dolly In'}</span>
             </div>
             <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${sc.title || `Shot ${idx+1}`}</div>
             <p style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45; max-height: 72px; overflow-y: auto;">${sc.prompt}</p>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); border-top: 1px solid var(--border-subtle); padding-top: 6px; margin-top: 4px;">
-              <div>🎬 ${sc.shot_type || 'Tracking'} · 💡 ${sc.lighting ? sc.lighting.split(' ')[0] : 'Cinematic'}</div>
+            <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); border-top: 1px solid var(--border-subtle); padding-top: 6px; margin-top: 4px;">
+              <div>Shot: ${sc.shot_type || 'Tracking'} · Light: ${sc.lighting ? sc.lighting.split(' ')[0] : 'Cinematic'}</div>
             </div>
-            <button class="btn-secondary btn-apply-scene" style="margin-top: 6px; width: 100%; padding: 4px 8px; font-size: 11px;" data-prompt="${sc.prompt.replace(/"/g, '&quot;')}" data-seed="${sc.character_seed}">
-              ✨ Use Scene in Prompt
+            <button class="btn-secondary btn-apply-scene" style="margin-top: 6px; width: 100%; padding: 5px 8px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;" data-prompt="${sc.prompt.replace(/"/g, '&quot;')}" data-seed="${sc.character_seed}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Use Scene in Prompt</span>
             </button>
           `;
           storyboardScenesGrid.appendChild(card);
