@@ -26,6 +26,9 @@ GATED_POSTS = [
     ("/api/composite-motionvector", {"asset_id": "x"}),
     ("/api/gpu/launch", {}),
     ("/api/gpu/terminate", {}),
+    ("/api/gpu/deploy", {}),
+    ("/api/gpu/sync", {}),
+    ("/api/cockpit/config", {"config": {}}),
     ("/api/generate/music", {"prompt": "x", "lyrics": "[Intro]"}),
     ("/api/generate/voice", {"text": "x"}),
 ]
@@ -411,10 +414,53 @@ def test_static_asset_routing():
         assert len(res.text) > 0
 
 
+def test_cockpit_view_routes():
+    """Verify /cockpit and /settings return 200 and HTML."""
+    for path in ["/cockpit", "/settings"]:
+        res = client.get(path)
+        assert res.status_code == 200, f"Route {path} failed with {res.status_code}"
+        assert "text/html" in res.headers.get("content-type", "")
+
+
+def test_cockpit_status_endpoint():
+    """Verify /api/cockpit/status returns unified instance, worker, and cost telemetry."""
+    res = client.get("/api/cockpit/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "instance" in data
+    assert "worker" in data
+    assert "config" in data
+    assert "estimated_cost_usd" in data
+
+
+def test_cockpit_config_endpoints():
+    """Verify reading and updating config via cockpit API."""
+    # GET config
+    res = client.get("/api/cockpit/config")
+    assert res.status_code == 200
+    data = res.json()
+    assert "config" in data
+
+    # POST config with auth
+    res_update = client.post(
+        "/api/cockpit/config",
+        json={"config": {"default_duration": 4.0}},
+        headers=AUTH
+    )
+    assert res_update.status_code == 200
+    assert res_update.json().get("ok") is True
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()
     print("✓ Multi-view routes test passed")
+    test_cockpit_view_routes()
+    print("✓ Cockpit view routes test passed")
+    test_cockpit_status_endpoint()
+    print("✓ Cockpit status telemetry test passed")
+    test_cockpit_config_endpoints()
+    print("✓ Cockpit config test passed")
     test_generate_request_supports_ltx25_fields()
     print("✓ LTX-2.5 generate parameters test passed")
     test_static_asset_routing()

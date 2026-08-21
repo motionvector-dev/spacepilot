@@ -42,7 +42,7 @@ STUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import CLI helpers
 sys.path.append(str(PLUTO_ROOT / "src"))
-from cli import get_instance_info, load_config, fetch_worker_health, run_cmd
+from cli import get_instance_info, load_config, save_config, fetch_worker_health, run_cmd
 
 app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
 
@@ -248,6 +248,7 @@ def get_status():
             "instance": None,
             "gpu_online": False,
             "worker_ready": False,
+            "worker": None,
             "uptime_minutes": 0.0,
             "estimated_cost_usd": 0.0,
             "message": "GPU box is stopped. Click 'Launch GPU' to start.",
@@ -317,6 +318,139 @@ def terminate_gpu(_: None = Depends(require_token)):
         return {"status": "terminated", "message": "GPU box terminated cleanly. Billing stopped."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/gpu/deploy")
+def deploy_worker_api(background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    """Hot-deploy latest ltx_worker.py to the running box and restart worker."""
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+    if not inst or inst.get("state") != "running":
+        raise HTTPException(status_code=400, detail="No running GPU instance found to deploy to.")
+
+    infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
+
+    def _run_deploy():
+        try:
+            run_cmd(["bash", str(infra_script), "deploy"])
+        except Exception as e:
+            print(f"[Studio] Deploy failed: {e}", file=sys.stderr)
+
+    background_tasks.add_task(_run_deploy)
+    return {"status": "deploying", "message": "Worker deployment initiated in background."}
+
+
+@app.post("/api/gpu/sync")
+def sync_outputs_api(_: None = Depends(require_token)):
+    """Rsync all rendered video outputs from remote /scratch/out/ to local outputs/."""
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+    if not inst or not inst.get("ip"):
+        raise HTTPException(status_code=400, detail="No running instance found to sync from.")
+
+    key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+    ip = inst["ip"]
+    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            ["rsync", "-avz", "-e", f"ssh -i {key} -o StrictHostKeyChecking=no", f"ubuntu@{ip}:/scratch/out/", f"{OUTPUTS_DIR}/"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        return {"ok": True, "message": "Sync complete. All videos downloaded."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
+
+
+@app.get("/api/cockpit/status")
+def get_cockpit_status():
+    """Unified telemetry for the Cockpit infrastructure dashboard."""
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+    base_status = get_status()
+
+    ssh_cmd = None
+    if inst and inst.get("ip") and inst.get("state") == "running":
+        key = cfg.get("key_file", "~/.ssh/pluto-gpu-key-2026-07-26.pem")
+        ssh_cmd = f"ssh -i {key} ubuntu@{inst['ip']}"
+
+    return {
+        **base_status,
+        "config": {
+            "region": cfg.get("region", "us-east-1"),
+            "instance_type": cfg.get("instance_type", "g6e.xlarge"),
+            "spot_hourly_rate": cfg.get("spot_hourly_rate", 0.75),
+            "key_file": cfg.get("key_file"),
+        },
+        "ssh_command": ssh_cmd,
+    }
+
+
+@app.get("/api/cockpit/config")
+def get_cockpit_config():
+    """Get current configuration."""
+    cfg = load_config()
+    safe_cfg = {k: v for k, v in cfg.items() if "secret" not in k.lower() and "token" not in k.lower()}
+    return {"config": safe_cfg}
+
+
+@app.post("/api/cockpit/config")
+def update_cockpit_config(body: dict, _: None = Depends(require_token)):
+    """Update configuration settings."""
+    cfg = load_config()
+    new_data = body.get("config", {})
+    for k, v in new_data.items():
+        cfg[k] = v
+    save_config(cfg)
+    return {"ok": True, "config": cfg}
+
+
+@app.get("/api/gpu/logs/stream")
+async def stream_gpu_logs():
+    """SSE stream of worker logs from the remote GPU box or local fallback."""
+    cfg = load_config()
+    inst = get_instance_info(cfg)
+
+    async def log_generator():
+        if not inst or inst.get("state") != "running" or not inst.get("ip"):
+            yield f"data: {json.dumps({'line': '[Cockpit] GPU instance is offline. No remote logs to stream.', 'type': 'info'})}\n\n"
+            return
+
+        key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+        ip = inst["ip"]
+        yield f"data: {json.dumps({'line': f'[Cockpit] Connected to {ip}. Streaming /scratch/worker/worker.log...', 'type': 'system'})}\n\n"
+
+        cmd = [
+            "ssh", "-i", key,
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "ConnectTimeout=5",
+            f"ubuntu@{ip}",
+            "tail -n 50 -f /scratch/worker/worker.log 2>/dev/null || true"
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+
+        try:
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                text = line.decode(errors="replace").rstrip()
+                if text:
+                    yield f"data: {json.dumps({'line': text, 'type': 'log'})}\n\n"
+        except asyncio.CancelledError:
+            proc.terminate()
+            raise
+
+    return StreamingResponse(
+        log_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1232,6 +1366,14 @@ def read_create():
 @app.get("/studio")
 @app.get("/editor")
 def read_studio():
+    return FileResponse(STUDIO_DIR / "index.html")
+
+@app.get("/cockpit")
+@app.get("/settings")
+def read_cockpit():
+    cockpit_file = STUDIO_DIR / "cockpit.html"
+    if cockpit_file.exists():
+        return FileResponse(cockpit_file)
     return FileResponse(STUDIO_DIR / "index.html")
 
 # Mount Static Frontend

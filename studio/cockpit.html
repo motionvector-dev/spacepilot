@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cockpit · MotionVector Pluto Cloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+  <style>
+    :root {
+      --mv-bg: #09090b;
+      --mv-surface: #121215;
+      --mv-card: #18181b;
+      --mv-card-hover: #202024;
+      --mv-border: rgba(255, 255, 255, 0.08);
+      --mv-border-focus: rgba(99, 102, 241, 0.5);
+      --mv-text: #fafafa;
+      --mv-text-muted: #a1a1aa;
+      --mv-text-dim: #71717a;
+      --mv-accent-indigo: #6366f1;
+      --mv-accent-cyan: #38bdf8;
+      --mv-accent-emerald: #10b981;
+      --mv-accent-amber: #f59e0b;
+      --mv-accent-rose: #f43f5e;
+    }
+
+    body {
+      background-color: var(--mv-bg);
+      color: var(--mv-text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--mv-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--mv-text);
+    }
+
+    .brand-mark-svg {
+      height: 22px;
+      width: auto;
+    }
+
+    .brand-text {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--mv-text);
+    }
+
+    .brand-sub {
+      color: var(--mv-text-dim);
+      font-weight: 500;
+    }
+
+    .nav-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--mv-text-dim);
+    }
+
+    .nav-breadcrumb-link {
+      color: var(--mv-text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-breadcrumb-link:hover {
+      color: var(--mv-text);
+    }
+
+    .nav-breadcrumb-sep {
+      color: var(--mv-text-dim);
+      font-size: 11px;
+    }
+
+    .nav-breadcrumb-active {
+      color: var(--mv-text);
+      font-weight: 600;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-tab {
+      color: var(--mv-text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-tab:hover {
+      color: var(--mv-text);
+    }
+
+    .nav-tab.active {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .gpu-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--mv-border);
+      color: var(--mv-text-muted);
+    }
+
+    .gpu-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #71717a;
+    }
+
+    .gpu-dot.online {
+      background: var(--mv-accent-emerald);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .gpu-dot.busy {
+      background: var(--mv-accent-amber);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+
+    /* Main Cockpit Layout */
+    .cockpit-main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px 0;
+      background: linear-gradient(to right, #fafafa 40%, #a1a1aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--mv-text-dim);
+      margin: 0;
+    }
+
+    /* Telemetry Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mv-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-online {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--mv-accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-offline {
+      background: rgba(113, 113, 122, 0.15);
+      color: var(--mv-text-dim);
+      border: 1px solid rgba(113, 113, 122, 0.3);
+    }
+
+    .metric-value-lg {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--mv-text-muted);
+    }
+
+    .metric-detail-val {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--mv-text);
+      font-weight: 500;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #27272a;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #38bdf8);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    /* Actions Toolbar */
+    .actions-card {
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .actions-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      border: 1px solid var(--mv-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--mv-text);
+    }
+
+    .btn-action:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-action:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-launch {
+      background: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+      border: none;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-launch:hover:not(:disabled) {
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-terminate {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.3);
+      color: var(--mv-accent-rose);
+    }
+
+    .btn-terminate:hover:not(:disabled) {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--mv-accent-rose);
+    }
+
+    /* Terminal Console */
+    .terminal-card {
+      background: #0d0d10;
+      border: 1px solid var(--mv-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .terminal-header {
+      background: #141418;
+      border-bottom: 1px solid var(--mv-border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .terminal-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mv-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mv-accent-emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .terminal-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-terminal-ctrl {
+      background: transparent;
+      border: 1px solid var(--mv-border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: var(--mv-text-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-terminal-ctrl:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--mv-text);
+    }
+
+    .terminal-body {
+      height: 320px;
+      overflow-y: auto;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #e4e4e7;
+      background: #09090b;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .terminal-line {
+      margin-bottom: 2px;
+    }
+
+    .terminal-line.info { color: #a1a1aa; }
+    .terminal-line.system { color: #38bdf8; font-weight: 600; }
+    .terminal-line.success { color: #10b981; }
+    .terminal-line.error { color: #f43f5e; }
+
+    /* Configuration Panel */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .config-card {
+      background: var(--mv-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mv-text-muted);
+    }
+
+    .form-input, .form-select {
+      background: var(--mv-card);
+      border: 1px solid var(--mv-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--mv-text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--mv-accent-indigo);
+    }
+
+    /* Toast */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #18181b;
+      border: 1px solid var(--mv-border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 200;
+    }
+
+    .toast-popup.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <div class="brand-group">
+      <a href="/" class="brand-link">
+        <svg class="brand-mark-svg" viewBox="0 0 52 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g fill="#a1a1aa">
+            <rect x="0" y="0" width="4.11" height="44"></rect>
+            <rect x="4.73" y="0" width="4.11" height="44"></rect>
+            <rect x="9.45" y="0" width="4.11" height="44"></rect>
+            <rect x="37.82" y="0" width="4.11" height="44"></rect>
+            <rect x="42.55" y="0" width="4.11" height="44"></rect>
+            <rect x="47.27" y="0" width="4.11" height="44"></rect>
+          </g>
+          <g fill="#fafafa">
+            <rect x="14.18" y="7.84" width="4.11" height="22.21"></rect>
+            <rect x="18.91" y="16.7" width="4.11" height="23.98"></rect>
+            <rect x="23.64" y="25.57" width="4.11" height="20.43"></rect>
+            <rect x="28.36" y="16.7" width="4.11" height="23.98"></rect>
+            <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
+          </g>
+        </svg>
+        <span class="brand-text">PLUTO <span class="brand-sub">STUDIO</span></span>
+      </a>
+
+      <div class="nav-breadcrumbs">
+        <span class="nav-breadcrumb-sep">/</span>
+        <a href="/" class="nav-breadcrumb-link">Hub</a>
+        <span class="nav-breadcrumb-sep">/</span>
+        <span class="nav-breadcrumb-active">Cockpit</span>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <a href="/" class="nav-tab">Hub</a>
+      <a href="/create" class="nav-tab">Create</a>
+      <a href="/studio" class="nav-tab">Editor</a>
+      <a href="/cockpit" class="nav-tab active">Cockpit</a>
+      <div class="gpu-pill">
+        <span id="nav-gpu-dot" class="gpu-dot"></span>
+        <span id="nav-gpu-text">Checking GPU...</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Cockpit Area -->
+  <main class="cockpit-main">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">GPU Cloud Cockpit</h1>
+        <p class="page-subtitle">Manage AWS Spot GPU compute, live worker telemetry, rsync transfers, and worker logs.</p>
+      </div>
+      <button id="btn-refresh" class="btn-action">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        <span>Refresh State</span>
+      </button>
+    </div>
+
+    <!-- 1. Telemetry Cards -->
+    <div class="telemetry-grid">
+      <!-- Instance Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">AWS EC2 Spot Compute</span>
+          <span id="badge-instance" class="badge-status badge-offline">Offline</span>
+        </div>
+        <div id="val-instance-id" class="metric-value-lg">No Active Box</div>
+        <div class="metric-detail-row">
+          <span>Public IP:</span>
+          <span id="val-instance-ip" class="metric-detail-val">--</span>
+        </div>
+        <div class="metric-detail-row">
+          <span>Type & Region:</span>
+          <span id="val-instance-type" class="metric-detail-val">g6e.xlarge · us-east-1</span>
+        </div>
+      </div>
+
+      <!-- VRAM Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">GPU & VRAM Resident</span>
+          <span id="badge-worker" class="badge-status badge-offline">Offline</span>
+        </div>
+        <div id="val-vram" class="metric-value-lg">0.0 / 48.0 GiB</div>
+        <div class="progress-bar-bg">
+          <div id="bar-vram-fill" class="progress-bar-fill"></div>
+        </div>
+        <div class="metric-detail-row">
+          <span>Device:</span>
+          <span id="val-device" class="metric-detail-val">NVIDIA L40S</span>
+        </div>
+      </div>
+
+      <!-- Cost & Billing Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Session Billing Odometer</span>
+          <span class="metric-title">Spot Rate</span>
+        </div>
+        <div id="val-cost" class="metric-value-lg">$0.00</div>
+        <div class="metric-detail-row">
+          <span>Session Uptime:</span>
+          <span id="val-uptime" class="metric-detail-val">0.0 mins</span>
+        </div>
+        <div class="metric-detail-row">
+          <span>Effective Rate:</span>
+          <span id="val-rate" class="metric-detail-val">$0.75 / hr</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. One-Click Command Center -->
+    <div class="actions-card">
+      <div class="actions-group">
+        <button id="btn-launch-box" class="btn-action btn-launch">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Launch Spot GPU</span>
+        </button>
+
+        <button id="btn-deploy-worker" class="btn-action" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          <span>Deploy Worker</span>
+        </button>
+
+        <button id="btn-sync-outputs" class="btn-action" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Sync Outputs</span>
+        </button>
+
+        <button id="btn-copy-ssh" class="btn-action" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>Copy SSH</span>
+        </button>
+      </div>
+
+      <button id="btn-terminate-box" class="btn-action btn-terminate" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        <span>Terminate & Stop Billing</span>
+      </button>
+    </div>
+
+    <!-- 3. Remote Streaming Terminal -->
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <div class="terminal-title">
+          <div class="terminal-led"></div>
+          <span>Remote Worker Stream (/scratch/worker/worker.log)</span>
+        </div>
+        <div class="terminal-controls">
+          <button id="btn-clear-term" class="btn-terminal-ctrl">Clear</button>
+          <button id="btn-pause-term" class="btn-terminal-ctrl">Pause</button>
+        </div>
+      </div>
+      <div id="terminal-body" class="terminal-body">
+        <div class="terminal-line info">[Cockpit] Initializing live telemetry and log stream...</div>
+      </div>
+    </div>
+
+    <!-- 4. Cloud & Hardware Settings -->
+    <div class="config-grid">
+      <div class="config-card">
+        <div class="metric-title">AWS Spot Configuration</div>
+        <div class="form-group">
+          <label class="form-label">AWS Region</label>
+          <select id="cfg-region" class="form-select">
+            <option value="us-east-1">us-east-1 (N. Virginia)</option>
+            <option value="us-west-2">us-west-2 (Oregon)</option>
+            <option value="eu-west-1">eu-west-1 (Ireland)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Instance Type</label>
+          <select id="cfg-instance-type" class="form-select">
+            <option value="g6e.xlarge">g6e.xlarge (1x L40S 48GB · ~$0.75/hr)</option>
+            <option value="g6e.2xlarge">g6e.2xlarge (1x L40S 48GB, 8 vCPU · ~$1.10/hr)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">SSH Key Path</label>
+          <input type="text" id="cfg-key-file" class="form-input" placeholder="~/.ssh/pluto-gpu-key-2026-07-26.pem">
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="metric-title">Generation Defaults</div>
+        <div class="form-group">
+          <label class="form-label">Default Duration</label>
+          <select id="cfg-duration" class="form-select">
+            <option value="4.0">4.0 Seconds</option>
+            <option value="6.0">6.0 Seconds</option>
+            <option value="8.0">8.0 Seconds</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Motion Guidance (STG)</label>
+          <input type="number" id="cfg-stg" class="form-input" min="0" max="2" step="0.1" value="0.8">
+        </div>
+        <button id="btn-save-cfg" class="btn-action" style="margin-top: 8px;">
+          <span>Save Settings</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-popup">
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <script src="cockpit.js"></script>
+</body>
+</html>
