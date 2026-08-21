@@ -10,7 +10,9 @@
   <style>
     :root {
       --bg-oven: #090a0f;
+      --bg-header: rgba(15, 17, 26, 0.9);
       --bg-column: rgba(18, 20, 29, 0.85);
+      --bg-card: rgba(255, 255, 255, 0.03);
       --bg-card-hover: rgba(28, 32, 48, 0.95);
       --border-oven: rgba(255, 255, 255, 0.08);
       --border-oven-highlight: rgba(16, 185, 129, 0.4);
@@ -26,13 +28,31 @@
     }
 
     [data-theme="light"] {
-      --bg-oven: #f8fafc;
-      --bg-column: rgba(241, 245, 249, 0.9);
-      --bg-card-hover: rgba(255, 255, 255, 1);
+      --bg-oven: #f1f5f9;
+      --bg-header: rgba(255, 255, 255, 0.95);
+      --bg-column: rgba(255, 255, 255, 0.85);
+      --bg-card: rgba(241, 245, 249, 0.7);
+      --bg-card-hover: #ffffff;
       --border-oven: rgba(0, 0, 0, 0.08);
+      --border-oven-highlight: rgba(16, 185, 129, 0.6);
       --text-main: #0f172a;
       --text-muted: #475569;
       --text-dim: #94a3b8;
+    }
+
+    @media (prefers-color-scheme: light) {
+      [data-theme="system"] {
+        --bg-oven: #f1f5f9;
+        --bg-header: rgba(255, 255, 255, 0.95);
+        --bg-column: rgba(255, 255, 255, 0.85);
+        --bg-card: rgba(241, 245, 249, 0.7);
+        --bg-card-hover: #ffffff;
+        --border-oven: rgba(0, 0, 0, 0.08);
+        --border-oven-highlight: rgba(16, 185, 129, 0.6);
+        --text-main: #0f172a;
+        --text-muted: #475569;
+        --text-dim: #94a3b8;
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,12 +65,13 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     /* Top Control Bar */
     .oven-header {
       height: 64px;
-      background: rgba(15, 17, 26, 0.9);
+      background: var(--bg-header);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-oven);
       display: flex;
@@ -60,6 +81,7 @@
       flex-shrink: 0;
       z-index: 10;
     }
+
 
     .oven-brand {
       display: flex;
@@ -320,11 +342,16 @@
 
     <!-- Action Shortcuts -->
     <div class="oven-actions">
+      <button id="btn-oven-theme" class="btn-oven" type="button" title="Toggle Theme (Dark / Light / System)">
+        <span id="oven-theme-icon">☀️</span>
+        <span id="oven-theme-text">Theme</span>
+      </button>
       <a href="/create" class="btn-oven">🎬 Create Studio</a>
       <a href="/cockpit" class="btn-oven">🎛️ Cockpit</a>
       <a href="/blueprint.html" class="btn-oven primary">📑 Blueprint Memo</a>
     </div>
   </header>
+
 
   <!-- Full-Viewport 5-Lane Matrix -->
   <main class="kanban-viewport">
@@ -545,5 +572,59 @@
     </section>
 
   </main>
+
+
+  <script src="/sidebar.js"></script>
+  <script>
+    // 3-way Theme Controller: 'dark' -> 'light' -> 'system' -> 'dark'
+    (function () {
+      const htmlEl = document.documentElement;
+      const themeBtn = document.getElementById('btn-oven-theme');
+      const themeIcon = document.getElementById('oven-theme-icon');
+      const themeText = document.getElementById('oven-theme-text');
+
+      const THEMES = ['dark', 'light', 'system'];
+
+      function getSystemTheme() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+
+      function applyTheme(theme) {
+        if (theme === 'system') {
+          htmlEl.setAttribute('data-theme', getSystemTheme());
+          themeIcon.textContent = '💻';
+          themeText.textContent = 'System';
+        } else {
+          htmlEl.setAttribute('data-theme', theme);
+          themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
+          themeText.textContent = theme === 'dark' ? 'Dark' : 'Light';
+        }
+        localStorage.setItem('spacepilot_oven_theme', theme);
+        localStorage.setItem('pluto_memo_theme', theme === 'system' ? getSystemTheme() : theme);
+      }
+
+      if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+          const current = localStorage.getItem('spacepilot_oven_theme') || 'dark';
+          const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
+          applyTheme(THEMES[nextIdx]);
+        });
+      }
+
+      // Listen to OS system color scheme changes if set to system
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+          const current = localStorage.getItem('spacepilot_oven_theme');
+          if (current === 'system') {
+            applyTheme('system');
+          }
+        });
+      }
+
+      const initial = localStorage.getItem('spacepilot_oven_theme') || localStorage.getItem('pluto_memo_theme') || 'dark';
+      applyTheme(initial);
+    })();
+  </script>
 </body>
 </html>
+
