@@ -278,10 +278,11 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-body.obsidian-theme {
+/* overflow:hidden + height lock only applies to the NLE Studio layout (.app-root).
+   Scrollable pages (cockpit, create, onboarding) must NOT be caged by this rule. */
+body.obsidian-theme:has(.app-root) {
   height: 100vh;
   overflow: hidden;
-  user-select: none;
 }
 
 .app-root {
@@ -290,6 +291,7 @@ body.obsidian-theme {
   height: 100vh;
   width: 100vw;
   background: var(--bg-root);
+  user-select: none; /* NLE-specific: prevents text selection during J-K-L scrub */
 }
 
 /* Custom Scrollbar */
