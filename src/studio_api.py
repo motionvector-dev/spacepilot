@@ -8,7 +8,10 @@ Powers the Pluto Studio Web UI:
 - Manages asset library and timeline projects
 """
 
+import base64
 import os
+import re
+import struct
 import sys
 import asyncio
 import hashlib
@@ -27,7 +30,7 @@ from pathlib import Path
 from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Header, Depends, Request, UploadFile, File, Form
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -36,8 +39,10 @@ from fastapi.staticfiles import StaticFiles
 # Add Pluto root to sys.path
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
+UPLOADS_DIR = OUTPUTS_DIR / "uploads"
 STUDIO_DIR = PLUTO_ROOT / "studio"
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 STUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import CLI helpers
@@ -174,16 +179,17 @@ class GenerateRequest(BaseModel):
     prompt: str = Field(max_length=4000)
     negative_prompt: Optional[str] = Field("worst quality, blurry, distorted, jittery", max_length=4000)
     seconds: float = Field(4.0, gt=0, le=600, allow_inf_nan=False)
-    width: int = Field(1024, ge=64, le=4096)
-    height: int = Field(576, ge=64, le=4096)
+    width: Optional[int] = Field(None, ge=64, le=4096)
+    height: Optional[int] = Field(None, ge=64, le=4096)
     seed: Optional[int] = Field(None, ge=0, le=2**31 - 1)
-    steps: int = Field(30, ge=1, le=200)
+    steps: Optional[int] = Field(None, ge=1, le=200)
     enhance: bool = False
     takes: int = Field(1, ge=1, le=16)
-    stg_scale: float = Field(1.0, ge=0.0, le=5.0)
+    stg_scale: Optional[float] = Field(None, ge=0.0, le=5.0)
     modality_scale: float = Field(1.0, ge=0.0, le=5.0)
     fps: int = Field(24, ge=1, le=60)
     image_path: Optional[str] = None
+    draft_mode: bool = False
 
 
 class MusicRequest(BaseModel):
@@ -495,8 +501,324 @@ async def live_reload_events():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROMPT ENHANCEMENT & GENERATION ROUTES
+# PROMPT ENHANCEMENT, IMAGE UPLOAD & GENERATION ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
+
+MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB limit
+ALLOWED_IMAGE_MIMES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+
+
+def sanitize_upload_filename(filename: str, fallback_ext: str = ".png") -> str:
+    """Sanitize filename to prevent directory traversal and remove unsafe chars."""
+    if not filename:
+        clean = "upload"
+    else:
+        normalized = filename.replace("\\", "/").replace("\x00", "")
+        clean = normalized.split("/")[-1]
+        clean = clean.replace("..", "")
+        clean = re.sub(r"[^A-Za-z0-9_.-]", "_", clean)
+        while ".." in clean:
+            clean = clean.replace("..", "_")
+        clean = clean.strip(". _-")
+        if not clean:
+            clean = "upload"
+    ext = Path(clean).suffix.lower()
+    if not ext:
+        ext = fallback_ext
+        clean = f"{clean}{ext}"
+    return clean
+
+
+def parse_image_dimensions_fallback(content: bytes) -> tuple[Optional[int], Optional[int], Optional[str]]:
+    """Header parsing fallback for PNG, JPEG, GIF, WEBP."""
+    if len(content) < 16:
+        return None, None, None
+
+    # PNG: 89 50 4E 47 0D 0A 1A 0A
+    if content.startswith(b"\x89PNG\r\n\x1a\n") and len(content) >= 24:
+        w, h = struct.unpack(">II", content[16:24])
+        return w, h, "image/png"
+
+    # GIF: GIF87a or GIF89a
+    if content.startswith((b"GIF87a", b"GIF89a")) and len(content) >= 10:
+        w, h = struct.unpack("<HH", content[6:10])
+        return w, h, "image/gif"
+
+    # WEBP: RIFF....WEBP
+    if content.startswith(b"RIFF") and len(content) >= 30 and content[8:12] == b"WEBP":
+        vp8 = content[12:16]
+        if vp8 == b"VP8 " and len(content) >= 30:
+            w = struct.unpack("<H", content[26:28])[0] & 0x3FFF
+            h = struct.unpack("<H", content[28:30])[0] & 0x3FFF
+            return w, h, "image/webp"
+        elif vp8 == b"VP8L" and len(content) >= 25:
+            b0, b1, b2, b3 = content[21:25]
+            w = 1 + (((b1 & 0x3F) << 8) | b0)
+            h = 1 + (((content[25] & 0x0F) << 10) | (b3 << 2) | ((b2 & 0xC0) >> 6))
+            return w, h, "image/webp"
+        elif vp8 == b"VP8X" and len(content) >= 30:
+            w = 1 + struct.unpack("<I", content[24:27] + b"\x00")[0]
+            h = 1 + struct.unpack("<I", content[27:30] + b"\x00")[0]
+            return w, h, "image/webp"
+        return None, None, "image/webp"
+
+    # JPEG: FF D8 FF
+    if content.startswith(b"\xff\xd8\xff"):
+        idx = 2
+        while idx < len(content) - 8:
+            if content[idx] != 0xFF:
+                idx += 1
+                continue
+            marker = content[idx + 1]
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                h, w = struct.unpack(">HH", content[idx + 5:idx + 9])
+                return w, h, "image/jpeg"
+            else:
+                length = struct.unpack(">H", content[idx + 2:idx + 4])[0]
+                idx += 2 + length
+        return None, None, "image/jpeg"
+
+    return None, None, None
+
+
+def get_image_info(content: bytes) -> tuple[Optional[int], Optional[int], Optional[str]]:
+    """Get dimensions and MIME type using PIL, falling back to header parsing."""
+    width, height, mime = None, None, None
+    try:
+        from PIL import Image
+        import io
+        with Image.open(io.BytesIO(content)) as img:
+            width, height = img.size
+            fmt = (img.format or "").upper()
+            fmt_map = {
+                "PNG": "image/png",
+                "JPEG": "image/jpeg",
+                "JPG": "image/jpeg",
+                "WEBP": "image/webp",
+                "GIF": "image/gif",
+            }
+            mime = fmt_map.get(fmt)
+    except Exception:
+        pass
+
+    if width is None or height is None or mime is None:
+        fb_w, fb_h, fb_mime = parse_image_dimensions_fallback(content)
+        width = width or fb_w
+        height = height or fb_h
+        mime = mime or fb_mime
+
+    return width, height, mime
+
+
+def get_aspect_ratio_str(width: int, height: int) -> str:
+    """Determine aspect ratio string ('16:9', '9:16', '1:1', '4:3', etc.)."""
+    if not width or not height or width <= 0 or height <= 0:
+        return "16:9"
+    ratio = width / height
+    known = [
+        ("16:9", 16 / 9),
+        ("9:16", 9 / 16),
+        ("1:1", 1.0),
+        ("4:3", 4 / 3),
+        ("3:4", 3 / 4),
+        ("3:2", 3 / 2),
+        ("2:3", 2 / 3),
+        ("21:9", 21 / 9),
+        ("9:21", 9 / 21),
+        ("4:5", 4 / 5),
+        ("5:4", 5 / 4),
+    ]
+    best_name, best_val = min(known, key=lambda x: abs(ratio - x[1]))
+    if abs(ratio - best_val) / best_val < 0.05:
+        return best_name
+    g = math.gcd(width, height)
+    sw, sh = width // g, height // g
+    if sw <= 32 and sh <= 32:
+        return f"{sw}:{sh}"
+    return f"{width}:{height}"
+
+
+def parse_multipart_form_data(body: bytes, content_type_header: str) -> tuple[Optional[bytes], str, Optional[str]]:
+    """Parse multipart/form-data using standard library without external dependencies."""
+    boundary = None
+    for part in content_type_header.split(";"):
+        part = part.strip()
+        if part.startswith("boundary="):
+            boundary = part.split("boundary=", 1)[1].strip('"\'')
+            break
+
+    if not boundary:
+        if body.startswith(b"--"):
+            first_line = body.split(b"\r\n", 1)[0] if b"\r\n" in body else body.split(b"\n", 1)[0]
+            boundary = first_line.lstrip(b"-").decode("utf-8", errors="replace").strip()
+        else:
+            return None, "upload.png", None
+
+    boundary_bytes = f"--{boundary}".encode()
+    sections = body.split(boundary_bytes)
+
+    for section in sections:
+        if not section or section in (b"--", b"--\r\n", b"\r\n", b"--\n", b"\n"):
+            continue
+        if section.startswith(b"\r\n"):
+            section = section[2:]
+        elif section.startswith(b"\n"):
+            section = section[1:]
+
+        if section.endswith(b"\r\n--"):
+            section = section[:-4]
+        elif section.endswith(b"\r\n"):
+            section = section[:-2]
+        elif section.endswith(b"\n--"):
+            section = section[:-3]
+        elif section.endswith(b"\n"):
+            section = section[:-1]
+
+        if b"\r\n\r\n" in section:
+            headers_raw, content_part = section.split(b"\r\n\r\n", 1)
+        elif b"\n\n" in section:
+            headers_raw, content_part = section.split(b"\n\n", 1)
+        else:
+            continue
+
+        headers_text = headers_raw.decode("utf-8", errors="replace")
+        filename = "upload.png"
+        content_type = None
+
+        for line in headers_text.splitlines():
+            line_lower = line.lower()
+            if line_lower.startswith("content-disposition:"):
+                fn_match = re.search(r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';\r\n]+)["\']?', line, re.IGNORECASE)
+                if fn_match:
+                    filename = fn_match.group(1).strip()
+            elif line_lower.startswith("content-type:"):
+                content_type = line.split(":", 1)[1].strip()
+
+        if content_part:
+            return content_part, filename, content_type
+
+    return None, "upload.png", None
+
+
+@app.post("/api/upload-image")
+async def upload_image_api(request: Request):
+    """Upload and validate an image for Image-to-Video generation."""
+    content_type = request.headers.get("content-type", "")
+    content: Optional[bytes] = None
+    raw_filename: str = "upload.png"
+    declared_mime: Optional[str] = None
+
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+        has_multipart_lib = False
+        try:
+            import multipart
+            has_multipart_lib = True
+        except ImportError:
+            pass
+
+        if has_multipart_lib:
+            try:
+                form = await request.form()
+                upload_file = form.get("file") or form.get("image")
+                if upload_file is None:
+                    for v in form.values():
+                        if hasattr(v, "filename") and hasattr(v, "read"):
+                            upload_file = v
+                            break
+
+                if upload_file is not None and hasattr(upload_file, "filename"):
+                    raw_filename = upload_file.filename or "upload.png"
+                    declared_mime = upload_file.content_type
+                    content = await upload_file.read()
+            except Exception:
+                pass
+
+        if content is None:
+            raw_body = await request.body()
+            content, raw_filename, declared_mime = parse_multipart_form_data(raw_body, content_type)
+
+        if content is None:
+            raise HTTPException(status_code=400, detail="No image file provided in form data")
+
+    elif "application/json" in content_type:
+        try:
+            body = await request.json()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON body: {e}")
+
+        b64_data = body.get("image_base64") or body.get("image") or body.get("data") or body.get("file")
+        if not b64_data or not isinstance(b64_data, str):
+            raise HTTPException(status_code=400, detail="Missing image base64 data in JSON body")
+
+        raw_filename = body.get("filename", "upload.png")
+        declared_mime = body.get("content_type")
+
+        if "," in b64_data and b64_data.startswith("data:"):
+            header_part, b64_part = b64_data.split(",", 1)
+            if not declared_mime and ";" in header_part:
+                declared_mime = header_part.split(";")[0].replace("data:", "")
+            b64_data = b64_part
+
+        try:
+            content = base64.b64decode(b64_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid base64 payload: {e}")
+
+    elif any(content_type.startswith(m) for m in ALLOWED_IMAGE_MIMES):
+        raw_filename = "upload.png"
+        declared_mime = content_type.split(";")[0]
+        content = await request.body()
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported Content-Type. Expected multipart/form-data or application/json",
+        )
+
+    if not content or len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty image payload")
+
+    if len(content) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=413, detail="File size exceeds maximum allowed 25MB")
+
+    width, height, detected_mime = get_image_info(content)
+    effective_mime = detected_mime or declared_mime
+    if effective_mime == "image/jpg":
+        effective_mime = "image/jpeg"
+
+    if not effective_mime or effective_mime not in ALLOWED_IMAGE_MIMES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported image type '{effective_mime}'. Allowed: image/png, image/jpeg, image/webp, image/gif",
+        )
+
+    if not width or not height or width <= 0 or height <= 0:
+        raise HTTPException(status_code=400, detail="Could not determine valid image dimensions")
+
+    mime_to_ext = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+    fallback_ext = mime_to_ext.get(effective_mime, ".png")
+    clean_name = sanitize_upload_filename(raw_filename, fallback_ext)
+
+    unique_id = uuid.uuid4().hex[:10]
+    safe_name = f"{unique_id}_{clean_name}"
+    dest_path = (UPLOADS_DIR / safe_name).resolve()
+
+    # Verify path containment inside UPLOADS_DIR
+    if not dest_path.is_relative_to(UPLOADS_DIR.resolve()):
+        raise HTTPException(status_code=400, detail="Invalid target filename")
+
+    dest_path.write_bytes(content)
+    aspect_str = get_aspect_ratio_str(width, height)
+
+    return {
+        "image_path": str(dest_path),
+        "url": f"/api/media/uploads/{safe_name}",
+        "width": width,
+        "height": height,
+        "aspect_ratio": aspect_str,
+        "filename": clean_name,
+    }
+
 
 @app.post("/api/enhance")
 def enhance_prompt_api(body: dict):
@@ -531,9 +853,31 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         enh_res = enhance_prompt_api({"prompt": req.prompt})
         target_prompt = enh_res["enhanced_prompt"]
 
+    # Resolution & step defaults based on draft_mode
+    if req.draft_mode:
+        default_w, default_h = 768, 432
+        steps = req.steps if req.steps is not None else 15
+        stg_scale = req.stg_scale if req.stg_scale is not None else 0.5
+        cost_usd = 0.01
+        compute_quote = "Estimated Spot compute: ~$0.01 (Draft)"
+    else:
+        default_w, default_h = 1024, 576
+        steps = req.steps if req.steps is not None else 30
+        stg_scale = req.stg_scale if req.stg_scale is not None else 1.0
+        cost_usd = 0.04
+        compute_quote = "Estimated Spot compute: ~$0.04 (No charge on failure)"
+
+    raw_w = req.width if req.width is not None else default_w
+    raw_h = req.height if req.height is not None else default_h
+
     # Enforce resolution and frame rules
-    width = (req.width // 64) * 64
-    height = (req.height // 64) * 64
+    if req.draft_mode and req.width is None and req.height is None:
+        width = 768
+        height = 432
+    else:
+        width = (raw_w // 64) * 64 if raw_w % 64 == 0 else (raw_w // 16) * 16
+        height = (raw_h // 64) * 64 if raw_h % 64 == 0 else (raw_h // 16) * 16
+
     raw_frames = int(req.seconds * 24)
     num_frames = ((raw_frames - 1) // 8) * 8 + 1
     seed = req.seed if req.seed is not None else int(time.time() * 1000) % 2147483647
@@ -545,14 +889,15 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
             "fps": f"{req.fps}fps",
             "duration": f"{req.seconds:.1f}s",
             "frames": num_frames,
-            "steps": req.steps,
-            "stg_scale": req.stg_scale,
+            "steps": steps,
+            "stg_scale": stg_scale,
             "seed": seed,
+            "draft_mode": req.draft_mode,
         },
-        "compute_quote": "Estimated Spot compute: ~$0.04 (No charge on failure)",
+        "compute_quote": compute_quote,
         "diff": {
             "prompt": {"before": None, "after": req.prompt},
-            "stg_scale": {"before": 1.0, "after": req.stg_scale},
+            "stg_scale": {"before": 1.0, "after": stg_scale},
             "aspect": {"before": "16:9 (1024x576)", "after": f"{width}x{height}"},
             "duration": {"before": "4.0s", "after": f"{req.seconds:.1f}s"},
             "seed": {"before": "random", "after": seed},
@@ -570,13 +915,14 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                     "units": req.seconds,
                     "resolution": f"{width}x{height}",
                     "fps": req.fps,
-                    "stg_scale": req.stg_scale,
+                    "stg_scale": stg_scale,
                     "seed": seed,
+                    "draft_mode": req.draft_mode,
                 },
                 "quote": {
                     "estimated": True,
-                    "compute_text": "Estimated Spot compute: ~$0.04 (No charge on failure)",
-                    "cost_usd": 0.04,
+                    "compute_text": compute_quote,
+                    "cost_usd": cost_usd,
                 },
             }
         ],
@@ -591,7 +937,10 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         "seconds": req.seconds,
         "num_frames": num_frames,
         "seed": seed,
-        "steps": req.steps,
+        "steps": steps,
+        "stg_scale": stg_scale,
+        "draft_mode": req.draft_mode,
+        "image_path": req.image_path,
         "status": "queued",
         "created_at": time.time(),
         "is_upscaled": False,
@@ -616,10 +965,11 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                     "height": height,
                     "seconds": req.seconds,
                     "seed": seed,
-                    "steps": req.steps,
-                    "stg_scale": req.stg_scale,
+                    "steps": steps,
+                    "stg_scale": stg_scale,
                     "modality_scale": req.modality_scale,
                     "fps": req.fps,
+                    "draft_mode": req.draft_mode,
                 }
                 if req.image_path:
                     payload["image_path"] = req.image_path
@@ -674,14 +1024,22 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         def _mock_gen():
             out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4"
             thumb_png = OUTPUTS_DIR / f"{job_id}.png"
-            
+
             # Generate test video pattern with ffmpeg
             meta["is_mock"] = True
-            gen_res = run_ffmpeg([
-                "-f", "lavfi",
-                "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
-                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-            ])
+            if req.image_path and Path(req.image_path).exists():
+                gen_res = run_ffmpeg([
+                    "-loop", "1", "-i", str(req.image_path),
+                    "-t", f"{req.seconds}",
+                    "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+                ])
+            else:
+                gen_res = run_ffmpeg([
+                    "-f", "lavfi",
+                    "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
+                ])
             if gen_res.returncode != 0:
                 meta["status"] = "failed"
                 meta["error"] = ffmpeg_error(gen_res)
@@ -690,6 +1048,8 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                 return
 
             thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
+            if thumb_res.returncode != 0:
+                thumb_res = run_ffmpeg(["-ss", "00:00:00", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
             meta["status"] = "completed"
             meta["file_path"] = str(out_mp4)
             if thumb_res.returncode == 0:
@@ -1357,15 +1717,38 @@ def get_job(job_id: str):
         return json.load(f)
 
 
+@app.api_route("/api/media/uploads/{filename}", methods=["GET", "HEAD"])
+def get_uploaded_media_file(filename: str):
+    """Stream uploaded image file from outputs/uploads directory safely."""
+    file_path = resolve_output(f"uploads/{filename}")
+    lower = filename.lower()
+    if lower.endswith(".png"):
+        return FileResponse(file_path, media_type="image/png")
+    elif lower.endswith((".jpg", ".jpeg")):
+        return FileResponse(file_path, media_type="image/jpeg")
+    elif lower.endswith(".webp"):
+        return FileResponse(file_path, media_type="image/webp")
+    elif lower.endswith(".gif"):
+        return FileResponse(file_path, media_type="image/gif")
+    return FileResponse(file_path)
+
+
 @app.api_route("/api/media/{filename}", methods=["GET", "HEAD"])
 def get_media_file(filename: str):
     """Stream video or thumbnail file from outputs directory."""
     file_path = resolve_output(filename)
-    if filename.endswith(".mp4"):
+    lower = filename.lower()
+    if lower.endswith(".mp4"):
         return FileResponse(file_path, media_type="video/mp4")
-    elif filename.endswith(".png"):
+    elif lower.endswith(".png"):
         return FileResponse(file_path, media_type="image/png")
-    elif filename.endswith(".wav"):
+    elif lower.endswith((".jpg", ".jpeg")):
+        return FileResponse(file_path, media_type="image/jpeg")
+    elif lower.endswith(".webp"):
+        return FileResponse(file_path, media_type="image/webp")
+    elif lower.endswith(".gif"):
+        return FileResponse(file_path, media_type="image/gif")
+    elif lower.endswith(".wav"):
         return FileResponse(file_path, media_type="audio/wav")
     return FileResponse(file_path)
 

@@ -5,17 +5,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnEnhance = document.getElementById('btn-enhance');
   const styleChips = document.querySelectorAll('.style-chip');
 
+  const engineBtns = document.querySelectorAll('#group-engine .mv-seg-btn');
+  const engineBadge = document.getElementById('engine-badge');
   const aspectBtns = document.querySelectorAll('#group-aspect .mv-seg-btn');
   const durationBtns = document.querySelectorAll('#group-duration .mv-seg-btn');
   const inputStg = document.getElementById('input-stg');
   const stgVal = document.getElementById('stg-val');
   const stgDisplay = document.getElementById('stg-display');
 
+  // Dropzone Elements
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('file-input');
+  const dropzonePrompt = document.getElementById('dropzone-prompt');
+  const dropzonePreviewBox = document.getElementById('dropzone-preview-box');
   const dropPreview = document.getElementById('dropzone-preview');
-  const dropIcon = document.getElementById('dropzone-icon');
-  const dropLabel = document.getElementById('dropzone-label');
+  const dropzoneDims = document.getElementById('dropzone-dims');
+  const dropzoneAspectTag = document.getElementById('dropzone-aspect-tag');
+  const btnAutoAspect = document.getElementById('btn-auto-aspect');
+  const btnRemoveImage = document.getElementById('btn-remove-image');
 
   const btnGenerate = document.getElementById('btn-generate');
   const btnToggleDiff = document.getElementById('btn-toggle-diff');
@@ -23,15 +30,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Patch Card Diff Values
   const diffPromptVal = document.getElementById('diff-prompt-val');
+  const diffEngineVal = document.getElementById('diff-engine-val');
   const diffStgVal = document.getElementById('diff-stg-val');
   const diffAspectVal = document.getElementById('diff-aspect-val');
   const diffDurationVal = document.getElementById('diff-duration-val');
   const diffSeedVal = document.getElementById('diff-seed-val');
+  const diffImageRow = document.getElementById('diff-image-row');
+  const diffImageVal = document.getElementById('diff-image-val');
 
-  // Fact Specs Badges
+  // Fact Specs & Quotes
+  const patchCostBadge = document.getElementById('patch-cost-badge');
   const patchFactSpecs = document.getElementById('patch-fact-specs');
+  const patchComputeQuote = document.getElementById('patch-compute-quote');
+  const factEngineName = document.getElementById('fact-engine-name');
+
   const genFactSpecs = document.getElementById('gen-fact-specs');
+  const genEngineName = document.getElementById('gen-engine-name');
+  const genComputeQuote = document.getElementById('gen-compute-quote');
+
   const compFactSpecs = document.getElementById('comp-fact-specs');
+  const compReceipt = document.getElementById('comp-receipt');
 
   // Panels
   const panelEditor = document.getElementById('panel-editor');
@@ -46,10 +64,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRestart = document.getElementById('btn-restart');
   const btnDownload = document.getElementById('btn-download');
   const btnOpenStudio = document.getElementById('btn-open-studio');
-  const compReceipt = document.getElementById('comp-receipt');
 
   const navGpuDot = document.getElementById('nav-gpu-dot');
   const navGpuText = document.getElementById('nav-gpu-text');
+
+  // Resolution presets for Draft vs Pro
+  const RESOLUTIONS = {
+    pro: {
+      '16:9': { w: 1024, h: 576 },
+      '9:16': { w: 576, h: 1024 },
+      '1:1': { w: 768, h: 768 }
+    },
+    draft: {
+      '16:9': { w: 768, h: 432 },
+      '9:16': { w: 432, h: 768 },
+      '1:1': { w: 576, h: 576 }
+    }
+  };
 
   // Config State
   const config = {
@@ -58,15 +89,24 @@ document.addEventListener('DOMContentLoaded', () => {
     aspectName: '16:9',
     seconds: 4.0,
     stg: 0.8,
-    steps: 25,
+    steps: 30,
     fps: 24,
-    imageFile: null
+    draftMode: false,
+    imageFile: null,
+    imagePath: null,
+    imageWidth: null,
+    imageHeight: null,
+    detectedAspect: null,
+    detectedLabel: null
   };
 
   function updatePatchCardDiff() {
     const rawPrompt = promptInput.value.trim();
     if (diffPromptVal) {
       diffPromptVal.textContent = rawPrompt ? `“${rawPrompt.slice(0, 80)}${rawPrompt.length > 80 ? '…' : ''}”` : 'empty';
+    }
+    if (diffEngineVal) {
+      diffEngineVal.textContent = config.draftMode ? 'Engine: Draft (15 steps)' : 'Engine: Pro Cinema (30 steps)';
     }
     if (diffStgVal) {
       diffStgVal.textContent = config.stg.toFixed(1);
@@ -82,10 +122,40 @@ document.addEventListener('DOMContentLoaded', () => {
       diffSeedVal.textContent = 'Dynamic (Auto)';
     }
 
+    if (diffImageRow && diffImageVal) {
+      if (config.imageFile || config.imagePath) {
+        diffImageRow.style.display = 'flex';
+        const name = config.imageFile ? config.imageFile.name : (config.imagePath || 'Keyframe');
+        const dims = (config.imageWidth && config.imageHeight) ? ` (${config.imageWidth}×${config.imageHeight})` : '';
+        diffImageVal.textContent = `${name}${dims}`;
+      } else {
+        diffImageRow.style.display = 'none';
+      }
+    }
+
+    const costBadgeText = config.draftMode ? '~$0.01 · Spot Compute' : '~$0.04 · Spot Compute';
+    const computeQuoteText = config.draftMode
+      ? 'Estimated Spot compute: ~$0.01 (No charge on failure)'
+      : 'Estimated Spot compute: ~$0.04 (No charge on failure)';
+
+    if (patchCostBadge) patchCostBadge.textContent = costBadgeText;
+    if (patchComputeQuote) patchComputeQuote.textContent = computeQuoteText;
+    if (genComputeQuote) genComputeQuote.textContent = computeQuoteText;
+
+    const engineNameText = config.draftMode ? 'LTX-2.5 Draft Generation' : 'LTX-2.5 Video Generation';
+    if (factEngineName) factEngineName.textContent = engineNameText;
+    if (genEngineName) genEngineName.textContent = engineNameText;
+
     const specsText = `${config.width}x${config.height} · ${config.fps}fps · ${config.seconds.toFixed(1)}s`;
     if (patchFactSpecs) patchFactSpecs.textContent = specsText;
     if (genFactSpecs) genFactSpecs.textContent = specsText;
     if (compFactSpecs) compFactSpecs.textContent = specsText;
+
+    if (compReceipt) {
+      const cost = config.draftMode ? '~$0.01' : '~$0.04';
+      const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
+      compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
+    }
   }
 
   // 1. Live Telemetry Polling
@@ -159,17 +229,56 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 3. Segment Controls
-  aspectBtns.forEach(btn => {
+  // Engine Quality Switcher (Draft vs Pro)
+  engineBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      aspectBtns.forEach(b => b.classList.remove('active'));
+      engineBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      config.width = parseInt(btn.dataset.w, 10);
-      config.height = parseInt(btn.dataset.h, 10);
-      config.aspectName = btn.dataset.aspect || '16:9';
+      const isDraft = btn.dataset.mode === 'draft';
+      config.draftMode = isDraft;
+      config.steps = isDraft ? 15 : 30;
+
+      if (engineBadge) {
+        engineBadge.textContent = isDraft ? 'Draft (15s)' : 'Pro Cinema';
+      }
+
+      // Update resolution based on current aspect & mode
+      const modeKey = config.draftMode ? 'draft' : 'pro';
+      const res = RESOLUTIONS[modeKey][config.aspectName] || RESOLUTIONS[modeKey]['16:9'];
+      config.width = res.w;
+      config.height = res.h;
+
       updatePatchCardDiff();
     });
   });
 
+  // Aspect Ratio Switcher
+  aspectBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      aspectBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      config.aspectName = btn.dataset.aspect || '16:9';
+
+      const modeKey = config.draftMode ? 'draft' : 'pro';
+      const res = RESOLUTIONS[modeKey][config.aspectName] || RESOLUTIONS[modeKey]['16:9'];
+      config.width = res.w;
+      config.height = res.h;
+
+      if (btnAutoAspect && config.detectedAspect) {
+        if (config.aspectName === config.detectedAspect) {
+          btnAutoAspect.classList.add('matched');
+          btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Matched ${config.detectedLabel || config.aspectName}</span>`;
+        } else {
+          btnAutoAspect.classList.remove('matched');
+          btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-match Aspect Ratio</span>`;
+        }
+      }
+
+      updatePatchCardDiff();
+    });
+  });
+
+  // Duration Switcher
   durationBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       durationBtns.forEach(b => b.classList.remove('active'));
@@ -179,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Motion Guidance (STG) Slider
   inputStg.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value).toFixed(1);
     stgVal.textContent = val;
@@ -196,43 +306,182 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. Reference Image Dropzone
-  dropzone.addEventListener('click', () => fileInput.click());
-
-  dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzone.style.borderColor = 'var(--border-focus)';
-  });
-
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.style.borderColor = 'var(--border-medium)';
-  });
-
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzone.style.borderColor = 'var(--border-medium)';
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleImage(e.dataTransfer.files[0]);
+  // 4. Reference Image Dropzone & Dynamic Aspect Matching
+  function getClosestAspect(w, h) {
+    if (!w || !h) return { aspect: '16:9', label: '16:9 Wide' };
+    const r = w / h;
+    const diff169 = Math.abs(Math.log(r / (16 / 9)));
+    const diff916 = Math.abs(Math.log(r / (9 / 16)));
+    const diff11 = Math.abs(Math.log(r / 1));
+    if (diff169 <= diff916 && diff169 <= diff11) {
+      return { aspect: '16:9', label: '16:9 Wide' };
+    } else if (diff916 <= diff169 && diff916 <= diff11) {
+      return { aspect: '9:16', label: '9:16 Reel' };
+    } else {
+      return { aspect: '1:1', label: '1:1 Square' };
     }
-  });
+  }
 
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleImage(e.target.files[0]);
+  async function uploadImageFile(file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      let token = null;
+      try {
+        const tokenRes = await fetch('/api/token');
+        if (tokenRes.ok) token = (await tokenRes.json()).token;
+      } catch (e) {}
+
+      const headers = {};
+      if (token) headers['X-Pluto-Token'] = token;
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        config.imagePath = data.image_path || data.path || data.file_path || file.name;
+        if (data.width) config.imageWidth = data.width;
+        if (data.height) config.imageHeight = data.height;
+      } else {
+        config.imagePath = file.name;
+      }
+    } catch (err) {
+      console.warn('Image upload fallback to local reference:', err);
+      config.imagePath = file.name;
     }
-  });
+    updatePatchCardDiff();
+  }
 
   function handleImage(file) {
-    if (!file.type.startsWith('image/')) return;
+    if (!file || !file.type.startsWith('image/')) return;
     config.imageFile = file;
+    config.imagePath = file.name;
+
     const reader = new FileReader();
     reader.onload = (e) => {
-      dropPreview.src = e.target.result;
-      dropPreview.style.display = 'block';
-      dropIcon.style.display = 'none';
-      dropLabel.style.display = 'none';
+      const dataUrl = e.target.result;
+      dropPreview.src = dataUrl;
+
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth || dropPreview.naturalWidth || 1024;
+        const h = img.naturalHeight || dropPreview.naturalHeight || 576;
+        config.imageWidth = w;
+        config.imageHeight = h;
+
+        const match = getClosestAspect(w, h);
+        config.detectedAspect = match.aspect;
+        config.detectedLabel = match.label;
+
+        if (dropzoneDims) dropzoneDims.textContent = `${w}×${h}`;
+        if (dropzoneAspectTag) dropzoneAspectTag.textContent = match.label;
+
+        if (dropzonePreviewBox) dropzonePreviewBox.style.display = 'flex';
+        if (dropzonePrompt) dropzonePrompt.style.display = 'none';
+        if (dropzone) dropzone.classList.add('has-image');
+
+        if (btnAutoAspect) {
+          btnAutoAspect.classList.remove('matched');
+          btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-match Aspect Ratio</span>`;
+        }
+
+        updatePatchCardDiff();
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
+
+    // Upload image to backend
+    uploadImageFile(file);
+  }
+
+  // Auto-match Aspect Ratio button click
+  if (btnAutoAspect) {
+    btnAutoAspect.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!config.detectedAspect) return;
+
+      aspectBtns.forEach(btn => {
+        if (btn.dataset.aspect === config.detectedAspect) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      config.aspectName = config.detectedAspect;
+      const modeKey = config.draftMode ? 'draft' : 'pro';
+      const res = RESOLUTIONS[modeKey][config.aspectName] || RESOLUTIONS[modeKey]['16:9'];
+      config.width = res.w;
+      config.height = res.h;
+
+      btnAutoAspect.classList.add('matched');
+      btnAutoAspect.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Matched ${config.detectedLabel || config.aspectName}</span>`;
+
+      updatePatchCardDiff();
+    });
+  }
+
+  // Remove Image button click
+  if (btnRemoveImage) {
+    btnRemoveImage.addEventListener('click', (e) => {
+      e.stopPropagation();
+      config.imageFile = null;
+      config.imagePath = null;
+      config.imageWidth = null;
+      config.imageHeight = null;
+      config.detectedAspect = null;
+      config.detectedLabel = null;
+      if (fileInput) fileInput.value = '';
+
+      if (dropPreview) dropPreview.src = '';
+      if (dropzonePreviewBox) dropzonePreviewBox.style.display = 'none';
+      if (dropzonePrompt) dropzonePrompt.style.display = 'flex';
+      if (dropzone) dropzone.classList.remove('has-image');
+      if (btnAutoAspect) btnAutoAspect.classList.remove('matched');
+
+      updatePatchCardDiff();
+    });
+  }
+
+  // Dropzone click & drag-drop handling
+  if (dropzone && fileInput) {
+    dropzone.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-auto-aspect') || e.target.closest('#btn-remove-image')) {
+        return;
+      }
+      if (!dropzone.classList.contains('has-image')) {
+        fileInput.click();
+      }
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--border-focus)';
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.style.borderColor = '';
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = '';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleImage(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleImage(e.target.files[0]);
+      }
+    });
   }
 
   // Initialize initial diff values
@@ -241,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Video Generation & Multi-Phase Pipeline
   btnGenerate.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();
-    if (!prompt && !config.imageFile) {
+    if (!prompt && !config.imageFile && !config.imagePath) {
       alert('Please enter a scene description or upload an image keyframe.');
       promptInput.focus();
       return;
@@ -266,8 +515,13 @@ document.addEventListener('DOMContentLoaded', () => {
       stg_scale: config.stg,
       steps: config.steps,
       fps: config.fps,
-      enhance: false
+      enhance: false,
+      draft_mode: config.draftMode
     };
+
+    if (config.imagePath) {
+      payload.image_path = config.imagePath;
+    }
 
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -323,6 +577,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function runGenerationTracker(jobId, patchData) {
+    const totalSteps = config.steps || (config.draftMode ? 15 : 30);
+    const tierName = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5 Resident';
+    const genPhaseTag = document.getElementById('gen-phase-tag');
+    if (genPhaseTag) genPhaseTag.textContent = tierName;
+
     // Phase 1: Queued (0%)
     setStage(
       1,
@@ -331,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
       0
     );
 
-    // Phase 2: Staging VRAM & Weights (15%) after 1.5s
+    // Phase 2: Staging VRAM & Weights (15%) after 1.2s
     setTimeout(() => {
       setStage(
         2,
@@ -339,12 +598,11 @@ document.addEventListener('DOMContentLoaded', () => {
         'Model resident in GPU VRAM (48GB L40S)... (15%)',
         15
       );
-    }, 1500);
+    }, 1200);
 
-    // Phase 3: DiT Sampling (Step X/25) (20% - 85%) across 25 steps
-    const totalSteps = 25;
-    const samplingStartTime = 3000;
-    const samplingDuration = 5500;
+    // Phase 3: DiT Sampling (Step X/totalSteps) (20% - 85%) across totalSteps
+    const samplingStartTime = 2400;
+    const samplingDuration = config.draftMode ? 3600 : 5500;
     const stepInterval = samplingDuration / totalSteps;
 
     for (let step = 1; step <= totalSteps; step++) {
@@ -372,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, vaeTime);
 
     // Phase 5: Plate Ready (100%)
-    const completeTime = vaeTime + 2200;
+    const completeTime = vaeTime + (config.draftMode ? 1400 : 2200);
     setTimeout(() => {
       setStage(
         5,
@@ -399,7 +657,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (compReceipt) {
-      compReceipt.textContent = '1 op applied · ~$0.04 — LTX-2.5 · undo byte-exact';
+      const cost = config.draftMode ? '~$0.01' : '~$0.04';
+      const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
+      compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
     }
   }
 

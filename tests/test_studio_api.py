@@ -37,7 +37,7 @@ GATED_POSTS = [
 # computation: /api/enhance appends adjectives to a string, and
 # /api/director/auto-script returns a hardcoded storyboard. A route belongs
 # here only if it cannot cost money or GPU time.
-UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script"}
+UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script", "/api/upload-image"}
 
 
 def _requires_token(route: APIRoute) -> bool:
@@ -507,6 +507,156 @@ def test_cockpit_config_endpoints():
     assert res_update.json().get("ok") is True
 
 
+def test_upload_image_valid():
+    """Verify successful image upload returns dimensions, aspect ratio, and safe path."""
+    import base64
+    import io
+    from PIL import Image
+
+    # 1. Create a 16:9 test image (1024x576)
+    img_16_9 = Image.new("RGB", (1024, 576), color=(40, 60, 120))
+    buf_16_9 = io.BytesIO()
+    img_16_9.save(buf_16_9, format="PNG")
+    png_bytes = buf_16_9.getvalue()
+
+    # Upload via multipart/form-data
+    files = {"file": ("cinematic_plate.png", png_bytes, "image/png")}
+    res = client.post("/api/upload-image", files=files)
+    assert res.status_code == 200, f"Upload failed: {res.text}"
+    data = res.json()
+
+    assert data["width"] == 1024
+    assert data["height"] == 576
+    assert data["aspect_ratio"] == "16:9"
+    assert data["filename"] == "cinematic_plate.png"
+    assert data["url"].startswith("/api/media/uploads/")
+    assert "image_path" in data
+    uploaded_path = Path(data["image_path"])
+    assert uploaded_path.exists()
+
+    # Verify serving uploaded image from media route
+    media_res = client.get(data["url"])
+    assert media_res.status_code == 200
+    assert media_res.headers.get("content-type") == "image/png"
+    assert len(media_res.content) == len(png_bytes)
+
+    # 2. Create a 9:16 portrait image (576x1024) and upload via base64 JSON
+    img_9_16 = Image.new("RGB", (576, 1024), color=(120, 40, 60))
+    buf_9_16 = io.BytesIO()
+    img_9_16.save(buf_9_16, format="JPEG")
+    jpeg_bytes = buf_9_16.getvalue()
+    b64_str = base64.b64encode(jpeg_bytes).decode("utf-8")
+
+    res_b64 = client.post(
+        "/api/upload-image",
+        json={"image_base64": b64_str, "filename": "portrait_frame.jpg", "content_type": "image/jpeg"},
+    )
+    assert res_b64.status_code == 200, f"Base64 upload failed: {res_b64.text}"
+    data_b64 = res_b64.json()
+    assert data_b64["width"] == 576
+    assert data_b64["height"] == 1024
+    assert data_b64["aspect_ratio"] == "9:16"
+    assert data_b64["filename"] == "portrait_frame.jpg"
+    assert Path(data_b64["image_path"]).exists()
+
+    # Clean up test files
+    uploaded_path.unlink(missing_ok=True)
+    Path(data_b64["image_path"]).unlink(missing_ok=True)
+
+
+def test_upload_image_traversal_blocked():
+    """Verify path traversal filenames are sanitized and blocked."""
+    import io
+    from PIL import Image
+
+    img = Image.new("RGB", (256, 256), color=(10, 10, 10))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    for bad_name in ["../../../../etc/passwd.png", "../../../evil.png", "..\\..\\evil.png"]:
+        files = {"file": (bad_name, png_bytes, "image/png")}
+        res = client.post("/api/upload-image", files=files)
+        assert res.status_code == 200
+        data = res.json()
+        assert ".." not in data["filename"]
+        assert "/" not in data["filename"]
+        assert "\\" not in data["filename"]
+        dest = Path(data["image_path"])
+        assert dest.is_relative_to((OUTPUTS_DIR / "uploads").resolve())
+        assert dest.exists()
+        dest.unlink(missing_ok=True)
+
+    # Verify media route blocks traversal
+    assert client.get("/api/media/uploads/..%2F..%2Fetc%2Fhosts").status_code == 404
+    assert client.get("/api/media/uploads/../secrets.txt").status_code == 404
+
+
+def test_generate_draft_mode():
+    """Verify draft_mode=True sets default steps=15, 768x432, and ~$0.01 compute quote."""
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={"prompt": "Draft mode fast motion test", "draft_mode": True},
+    )
+    assert res.status_code == 200, f"Draft generation failed: {res.text}"
+    data = res.json()
+    assert data["status"] == "queued"
+    job_id = data["job_id"]
+
+    # Verify response meta and patch specs
+    meta = data["meta"]
+    patch = data["patch"]
+    assert meta["steps"] == 15
+    assert meta["width"] == 768
+    assert meta["height"] == 432
+    assert meta["stg_scale"] == 0.5
+    assert meta["draft_mode"] is True
+
+    assert patch["specs"]["steps"] == 15
+    assert patch["specs"]["resolution"] == "768x432"
+    assert patch["specs"]["stg_scale"] == 0.5
+    assert patch["specs"]["draft_mode"] is True
+    assert "~$0.01" in patch["compute_quote"]
+    assert "Draft" in patch["compute_quote"]
+    assert patch["ops"][0]["quote"]["cost_usd"] == 0.01
+
+    # Verify metadata saved on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["steps"] == 15
+    assert disk_meta["width"] == 768
+    assert disk_meta["height"] == 432
+    assert disk_meta["stg_scale"] == 0.5
+    assert disk_meta["draft_mode"] is True
+
+
+def test_generate_with_image_path():
+    """Verify image_path is preserved and persisted in job metadata."""
+    sample_image = str(OUTPUTS_DIR / "uploads" / "sample_keyframe.png")
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Animate camera moving past statue",
+            "image_path": sample_image,
+            "seconds": 2.0,
+        },
+    )
+    assert res.status_code == 200, f"Generate with image_path failed: {res.text}"
+    data = res.json()
+    job_id = data["job_id"]
+
+    assert data["meta"]["image_path"] == sample_image
+
+    # Verify metadata persisted on disk
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    assert meta_file.exists()
+    disk_meta = json.loads(meta_file.read_text())
+    assert disk_meta["image_path"] == sample_image
+
+
 if __name__ == "__main__":
     print("Running Pluto Studio API integration tests...")
     test_multi_view_routes()
@@ -517,6 +667,14 @@ if __name__ == "__main__":
     print("✓ Cockpit status telemetry test passed")
     test_cockpit_config_endpoints()
     print("✓ Cockpit config test passed")
+    test_upload_image_valid()
+    print("✓ Upload image valid test passed")
+    test_upload_image_traversal_blocked()
+    print("✓ Upload image traversal blocked test passed")
+    test_generate_draft_mode()
+    print("✓ Generate draft mode test passed")
+    test_generate_with_image_path()
+    print("✓ Generate with image path test passed")
     test_generate_request_supports_ltx25_fields()
     print("✓ LTX-2.5 generate parameters test passed")
     test_static_asset_routing()

@@ -30,6 +30,11 @@ let state = {
   width: 1024,
   height: 576,
   takesCount: 1,
+  engineMode: 'pro', // 'draft' | 'pro'
+  draftMode: false,
+  imageKeyframePath: null,
+  imageKeyframeUrl: null,
+  imageKeyframeName: null,
   isGenerating: false,
   activeMode: 'director', // 'director' | 'vibe'
   storyboard: null,
@@ -94,6 +99,8 @@ const elements = {
 
   // Viewport & Player
   mainVideoPlayer: document.getElementById('mainVideoPlayer'),
+  playerWrapper: document.querySelector('.player-wrapper'),
+  viewportCanvasContainer: document.querySelector('.viewport-canvas-container'),
   resolutionTag: document.getElementById('resolutionTag'),
   loadingOverlay: document.getElementById('loadingOverlay'),
   loadingText: document.getElementById('loadingText'),
@@ -126,7 +133,15 @@ const elements = {
   btnFullscreen: document.getElementById('btnFullscreen'),
 
   // Prompt Bar
+  promptBarContainer: document.getElementById('promptBarContainer') || document.querySelector('.prompt-bar-container'),
   promptInput: document.getElementById('promptInput'),
+  btnAttachImage: document.getElementById('btnAttachImage'),
+  imageKeyframeInput: document.getElementById('imageKeyframeInput'),
+  imageKeyframeChip: document.getElementById('imageKeyframeChip'),
+  imageKeyframeThumb: document.getElementById('imageKeyframeThumb'),
+  imageKeyframeName: document.getElementById('imageKeyframeName'),
+  btnRemoveKeyframe: document.getElementById('btnRemoveKeyframe'),
+  engineModeSelector: document.getElementById('engineModeSelector'),
   btnEnhance: document.getElementById('btnEnhance'),
   btnGenerate: document.getElementById('btnGenerate'),
   durationSelector: document.getElementById('durationSelector'),
@@ -623,14 +638,71 @@ function setupEventListeners() {
     });
   });
 
-  // Takes Selector
-  elements.takesSelector.querySelectorAll('.pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      elements.takesSelector.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.takesCount = parseInt(btn.dataset.takes);
+  // Engine Mode Selector (Draft / Pro)
+  if (elements.engineModeSelector) {
+    elements.engineModeSelector.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.engineModeSelector.querySelectorAll('.pill-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-checked', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+        state.engineMode = btn.dataset.mode || 'pro';
+        state.draftMode = (state.engineMode === 'draft');
+        showToast(state.draftMode ? '⚡ Switched to Draft Mode (15s fast preview)' : '🎬 Switched to Pro Mode (30s high quality)');
+      });
+    });
+  }
+
+  // Image Keyframe Attachment (I2V)
+  if (elements.btnAttachImage && elements.imageKeyframeInput) {
+    elements.btnAttachImage.addEventListener('click', () => elements.imageKeyframeInput.click());
+    elements.imageKeyframeInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        attachImageKeyframe(e.target.files[0]);
+      }
+    });
+  }
+  if (elements.btnRemoveKeyframe) {
+    elements.btnRemoveKeyframe.addEventListener('click', removeImageKeyframe);
+  }
+
+  // Drag and Drop Image Keyframe onto Prompt Bar, Canvas, or Player
+  const dropTargets = [elements.promptBarContainer, elements.viewportCanvasContainer, elements.playerWrapper];
+  dropTargets.forEach(target => {
+    if (!target) return;
+    target.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      target.classList.add('drag-over');
+    });
+    target.addEventListener('dragleave', (e) => {
+      if (!target.contains(e.relatedTarget)) {
+        target.classList.remove('drag-over');
+      }
+    });
+    target.addEventListener('drop', (e) => {
+      e.preventDefault();
+      target.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          attachImageKeyframe(file);
+        }
+      }
     });
   });
+
+  // Takes Selector
+  if (elements.takesSelector) {
+    elements.takesSelector.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.takesSelector.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.takesCount = parseInt(btn.dataset.takes);
+      });
+    });
+  }
 
   // Generate Plate
   elements.btnGenerate.addEventListener('click', triggerGenerate);
@@ -1059,24 +1131,89 @@ function renderTakesFilmstrip(assets) {
   });
 }
 
+// ── Image Keyframe Attachment (I2V) ───────────────────────────
+function attachImageKeyframe(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('⚠️ Please drop or select a valid image file (PNG, JPG, WebP)');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    state.imageKeyframeUrl = dataUrl;
+    state.imageKeyframeName = file.name || 'keyframe.png';
+
+    if (elements.imageKeyframeThumb) elements.imageKeyframeThumb.src = dataUrl;
+    if (elements.imageKeyframeName) elements.imageKeyframeName.textContent = esc(file.name || 'keyframe.png');
+    if (elements.imageKeyframeChip) elements.imageKeyframeChip.style.display = 'inline-flex';
+    if (elements.btnAttachImage) elements.btnAttachImage.classList.add('has-image');
+
+    showToast(`🖼️ Attached keyframe: ${file.name} (I2V active)`);
+
+    // Upload to server for permanent path if available
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: formData,
+      });
+      if (res.ok) {
+        const upData = await res.json();
+        if (upData.image_path) {
+          state.imageKeyframePath = upData.image_path;
+        }
+      }
+    } catch (err) {
+      console.warn('Upload image to /api/upload-image failed, using dataUrl fallback', err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImageKeyframe() {
+  state.imageKeyframePath = null;
+  state.imageKeyframeUrl = null;
+  state.imageKeyframeName = null;
+  if (elements.imageKeyframeChip) elements.imageKeyframeChip.style.display = 'none';
+  if (elements.imageKeyframeInput) elements.imageKeyframeInput.value = '';
+  if (elements.btnAttachImage) elements.btnAttachImage.classList.remove('has-image');
+  showToast('Keyframe removed');
+}
+
 // ── Vibe Editor Generation & Compositor ────────────────────────
 async function triggerGenerate() {
   const prompt = elements.promptInput.value.trim();
-  if (!prompt || state.isGenerating) return;
+  if ((!prompt && !state.imageKeyframePath && !state.imageKeyframeUrl) || state.isGenerating) return;
 
-  setGenerating(true, 'Generating video plate on Spot GPU...');
+  const isDraft = Boolean(state.draftMode || state.engineMode === 'draft');
+  const statusMsg = isDraft
+    ? '⚡ Generating draft plate (15s preview)...'
+    : '🎬 Generating pro plate on Spot GPU (30s)...';
+
+  setGenerating(true, statusMsg);
 
   try {
+    const payload = {
+      prompt: prompt || 'Cinematic video animation from keyframe',
+      seconds: state.duration,
+      width: state.width,
+      height: state.height,
+      takes: state.takesCount,
+      draft_mode: isDraft,
+    };
+    if (state.imageKeyframePath) {
+      payload.image_path = state.imageKeyframePath;
+    } else if (state.imageKeyframeUrl) {
+      payload.image_path = state.imageKeyframeUrl;
+    }
+
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: await authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        prompt: prompt,
-        seconds: state.duration,
-        width: state.width,
-        height: state.height,
-        takes: state.takesCount
-      })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     

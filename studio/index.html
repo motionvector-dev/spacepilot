@@ -356,7 +356,7 @@
           </section>
 
           <!-- Hero Prompt Input Bar (Vibe Generation Engine) -->
-          <div class="prompt-bar-container">
+          <div class="prompt-bar-container" id="promptBarContainer">
             <div class="prompt-input-row">
               <textarea 
                 id="promptInput" 
@@ -364,10 +364,25 @@
                 rows="2"
                 placeholder="Describe the motion and scene plate you want to generate (e.g. Microscopic Brownian motion of particles diffusing through dark viscous fluid, illuminated sparks, 4k)..."
               ></textarea>
+              <button id="btnAttachImage" class="btn-attach-image" title="Attach image keyframe for Image-to-Video (I2V)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>Image (I2V)</span>
+              </button>
+              <input type="file" id="imageKeyframeInput" accept="image/*" style="display: none;" />
               <button id="btnEnhance" class="btn-enhance-prompt" title="Enhance prompt with cinematic camera tokens">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
                 <span>Enhance</span>
               </button>
+            </div>
+
+            <!-- Attached Image Keyframe Chip (shown when keyframe attached) -->
+            <div id="imageKeyframeChip" class="image-keyframe-chip" style="display: none;">
+              <img id="imageKeyframeThumb" class="keyframe-thumb" src="" alt="Keyframe preview" />
+              <div class="keyframe-meta">
+                <span class="keyframe-tag">I2V KEYFRAME</span>
+                <span id="imageKeyframeName" class="keyframe-title">image.png</span>
+              </div>
+              <button id="btnRemoveKeyframe" class="btn-remove-keyframe" title="Remove attached keyframe" aria-label="Remove image keyframe">✕</button>
             </div>
 
             <div class="prompt-controls-row">
@@ -380,6 +395,15 @@
               </div>
 
               <div class="controls-right-group">
+                <!-- Engine Mode: Draft / Pro -->
+                <div class="control-group">
+                  <span class="group-label">Mode</span>
+                  <div class="pill-selector" id="engineModeSelector" role="radiogroup" aria-label="Engine Mode">
+                    <button class="pill-btn" data-mode="draft" title="Draft Mode (15s fast generation)" role="radio" aria-checked="false">⚡ Draft (15s)</button>
+                    <button class="pill-btn active" data-mode="pro" title="Pro Mode (30s high quality)" role="radio" aria-checked="true">🎬 Pro (30s)</button>
+                  </div>
+                </div>
+
                 <!-- Duration -->
                 <div class="control-group">
                   <span class="group-label">Duration</span>

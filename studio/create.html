@@ -620,26 +620,47 @@
       text-align: right;
     }
 
-    /* Image Dropzone */
+    /* Image Dropzone & Dynamic Preview Box */
     .dropzone-i2v {
       background: var(--bg-ground);
       border: 1.5px dashed var(--border-medium);
       border-radius: 8px;
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       position: relative;
-      min-height: 90px;
+      min-height: 100px;
+      box-sizing: border-box;
+      width: 100%;
     }
 
     .dropzone-i2v:hover {
       background: var(--bg-card);
       border-color: var(--border-focus);
+    }
+
+    .dropzone-i2v.has-image {
+      cursor: default;
+      border-style: solid;
+      border-color: var(--border-subtle);
+      background: var(--bg-card);
+      padding: 12px;
+    }
+
+    .dropzone-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
     }
 
     .dropzone-icon {
@@ -650,14 +671,118 @@
       font-size: 12px;
       color: var(--text-muted);
       text-align: center;
+      line-height: 1.4;
+    }
+
+    .dropzone-preview-box {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dropzone-preview-container {
+      width: 100%;
+      max-height: 180px;
+      background: var(--bg-ground);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-subtle);
     }
 
     .dropzone-preview {
-      display: none;
+      display: block;
       width: 100%;
-      height: 90px;
-      object-fit: cover;
+      max-height: 180px;
+      object-fit: contain;
       border-radius: 6px;
+    }
+
+    .dropzone-meta-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dropzone-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .dropzone-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .btn-dropzone-action {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 10px;
+      background: var(--bg-ground);
+      border: 1px solid var(--border-medium);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-dropzone-action:hover {
+      background: var(--bg-raised);
+      border-color: var(--border-highlight);
+    }
+
+    .btn-dropzone-action.matched {
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .btn-dropzone-remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--accent-rose);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-dropzone-remove:hover {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: var(--accent-rose);
     }
 
     /* Primary Generate Button */
@@ -1078,7 +1203,7 @@
         <div id="patch-card-proposed" class="patch-card" data-status="proposed" data-role="agent" aria-label="Proposed generation patch">
           <div class="patch-header">
             <span class="patch-kicker">Proposed Generation</span>
-            <span class="patch-cost-badge">~$0.04 · Spot Compute</span>
+            <span id="patch-cost-badge" class="patch-cost-badge">~$0.04 · Spot Compute</span>
           </div>
 
           <!-- a. Upfront Fact Block -->
@@ -1086,13 +1211,13 @@
             <div class="fact-row-primary">
               <span class="fact-subject">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span>LTX-2.5 Video Generation</span>
+                <span id="fact-engine-name">LTX-2.5 Video Generation</span>
               </span>
               <span id="patch-fact-specs" class="fact-specs-badge">1024x576 · 24fps · 4.0s</span>
             </div>
             <div class="fact-quote-row">
               <svg class="fact-quote-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
-              <span class="fact-quote-text">Estimated Spot compute: ~$0.04 (No charge on failure)</span>
+              <span id="patch-compute-quote" class="fact-quote-text">Estimated Spot compute: ~$0.04 (No charge on failure)</span>
             </div>
           </div>
 
@@ -1109,6 +1234,14 @@
                   <span class="diff-before">empty</span>
                   <span class="diff-arrow" aria-hidden="true">→</span>
                   <span id="diff-prompt-val" class="diff-after">“Cinematic wide tracking shot...”</span>
+                </div>
+              </div>
+              <div class="diff-op-row">
+                <span class="diff-op-subject">Engine Quality</span>
+                <div class="diff-op-change">
+                  <span class="diff-before" id="diff-engine-before">Pro (30 steps)</span>
+                  <span class="diff-arrow" aria-hidden="true">→</span>
+                  <span id="diff-engine-val" class="diff-after">Pro Cinema (30 steps)</span>
                 </div>
               </div>
               <div class="diff-op-row">
@@ -1143,6 +1276,14 @@
                   <span id="diff-seed-val" class="diff-after">Dynamic (Auto)</span>
                 </div>
               </div>
+              <div class="diff-op-row" id="diff-image-row" style="display: none;">
+                <span class="diff-op-subject">Reference Keyframe (I2V)</span>
+                <div class="diff-op-change">
+                  <span class="diff-before">none (T2V)</span>
+                  <span class="diff-arrow" aria-hidden="true">→</span>
+                  <span id="diff-image-val" class="diff-after">Staged Keyframe</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1154,6 +1295,18 @@
 
       <!-- Right Column: Generation Controls -->
       <div class="card-sidebar">
+
+        <!-- Engine Quality Mode -->
+        <div class="control-block">
+          <div class="control-header">
+            <span class="control-title">Engine Quality</span>
+            <span id="engine-badge" class="control-badge">Pro Cinema</span>
+          </div>
+          <div class="mv-seg-group" id="group-engine">
+            <button class="mv-seg-btn" data-mode="draft" id="btn-mode-draft" type="button">⚡ Draft Mode (15s · ~$0.01)</button>
+            <button class="mv-seg-btn active" data-mode="pro" id="btn-mode-pro" type="button">🎬 Pro Cinema (30s · ~$0.04)</button>
+          </div>
+        </div>
 
         <!-- Aspect Ratio -->
         <div class="control-block">
@@ -1198,9 +1351,27 @@
           </div>
           <div id="dropzone" class="dropzone-i2v">
             <input type="file" id="file-input" accept="image/*" style="display: none;">
-            <svg id="dropzone-icon" class="dropzone-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            <span id="dropzone-label" class="dropzone-text">Drop image or click to upload</span>
-            <img id="dropzone-preview" class="dropzone-preview" alt="Preview">
+            <div id="dropzone-prompt" class="dropzone-prompt">
+              <svg id="dropzone-icon" class="dropzone-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span id="dropzone-label" class="dropzone-text">Drop reference image or click to upload</span>
+            </div>
+            <div id="dropzone-preview-box" class="dropzone-preview-box">
+              <div class="dropzone-preview-container">
+                <img id="dropzone-preview" class="dropzone-preview" alt="Keyframe Preview">
+              </div>
+              <div class="dropzone-meta-bar">
+                <span id="dropzone-chip" class="dropzone-chip">
+                  <span id="dropzone-dims">1080×1920</span> · <span id="dropzone-aspect-tag">9:16 Reel</span>
+                </span>
+                <button id="btn-remove-image" class="btn-dropzone-remove" type="button" title="Remove reference keyframe">✕ Remove Image</button>
+              </div>
+              <div class="dropzone-actions">
+                <button id="btn-auto-aspect" class="btn-dropzone-action" type="button" title="Auto-match aspect ratio to image">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  <span>Auto-match Aspect Ratio</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

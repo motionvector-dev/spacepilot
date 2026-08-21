@@ -106,7 +106,7 @@
   --height-lg: 36px;
   --height-xl: 40px;
   --height-2xl: 48px;
-  --height-header: 52px;
+  --height-header: 46px;
   --height-tl-toolbar: 28px;
   --height-tl-track: 36px;
   --height-tl-ruler: 20px;
@@ -310,7 +310,7 @@ body.obsidian-theme {
 
 /* ── Top Header Navigation ──────────────────────────────────── */
 .studio-header {
-  height: 52px;
+  height: 46px;
   background-color: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -560,9 +560,10 @@ body.obsidian-theme {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px 24px;
+  padding: 16px 20px;
   overflow-y: auto;
-  gap: 20px;
+  scroll-behavior: smooth;
+  gap: 16px;
 }
 
 .storyboard-hero-bar {
@@ -1061,14 +1062,16 @@ body.obsidian-theme {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 8px 16px;
   position: relative;
   overflow: hidden;
 }
 
 .player-wrapper {
-  width: 100%;
-  max-width: 820px;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 330px);
+  min-height: 180px;
   aspect-ratio: 16 / 9;
   background-color: #000;
   border-radius: var(--radius-lg);
@@ -1363,7 +1366,7 @@ body.obsidian-theme {
 .prompt-bar-container {
   background-color: var(--bg-panel);
   border-top: 1px solid var(--border-subtle);
-  padding: 12px 16px;
+  padding: 8px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2277,7 +2280,7 @@ body.obsidian-theme {
   background: var(--bg-panel);
   border-top: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 8px 16px;
+  padding: 6px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3042,5 +3045,109 @@ body.obsidian-theme {
   padding: 14px 20px;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-card);
+}
+
+/* ============================================================
+   RESPONSIVE SCROLL FALLBACK (HEIGHT < 720PX)
+   ============================================================ */
+@media (max-height: 720px) {
+  .panel-main-viewport {
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+   DRAFT MODE & IMAGE KEYFRAME DROPZONE (PRO STUDIO)
+   ============================================================ */
+.prompt-bar-container.drag-over,
+.viewport-canvas-container.drag-over,
+.player-wrapper.drag-over {
+  border-color: var(--accent-emerald, #10b981) !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35) !important;
+}
+
+.btn-attach-image {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  color: var(--text-muted);
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-attach-image:hover {
+  background: var(--bg-raised);
+  color: var(--text-main);
+  border-color: var(--border-highlight);
+}
+.btn-attach-image.has-image {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--accent-emerald, #10b981);
+}
+
+.image-keyframe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 4px 10px 4px 6px;
+  border-radius: var(--radius-md);
+  max-width: 340px;
+  width: fit-content;
+  box-shadow: var(--shadow-sm);
+  margin-top: 2px;
+}
+.image-keyframe-chip .keyframe-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+  background: #000;
+}
+.image-keyframe-chip .keyframe-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+.image-keyframe-chip .keyframe-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.image-keyframe-chip .keyframe-tag {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--accent-emerald, #10b981);
+  font-weight: 700;
+}
+.image-keyframe-chip .btn-remove-keyframe {
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.image-keyframe-chip .btn-remove-keyframe:hover {
+  color: var(--accent-rose, #f43f5e);
+  background: rgba(244, 63, 94, 0.12);
 }
 
