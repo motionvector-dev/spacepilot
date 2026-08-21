@@ -361,42 +361,45 @@
   </header>
 
 
-  <!-- Full-Viewport 5-Lane Matrix -->
+  <!-- Full-Viewport 5-Lane Kanban Matrix -->
   <main class="kanban-viewport">
 
     <!-- Column 1: Backburner -->
     <section class="kanban-column">
       <div class="col-header">
-        <div class="col-title" style="color: var(--text-dim);">🧊 Backburner</div>
+        <div class="col-title" style="color: var(--text-dim); display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Backburner
+        </div>
         <span class="col-count">3</span>
       </div>
       <div class="col-body">
         <div class="k-card">
           <span class="k-badge badge-p2">P2 · Horizon 4</span>
-          <div class="k-title">🪐 4D Gaussian Splatting</div>
-          <div class="k-desc">Volumetric light fields & spatial video rendering for Apple Vision Pro / Meta Quest 3.</div>
+          <div class="k-title">4D Gaussian Splatting</div>
+          <div class="k-desc">Volumetric light fields &amp; spatial video rendering for Apple Vision Pro / Meta Quest 3.</div>
           <div class="k-footer">
-            <span class="k-persona">🔮 Research</span>
+            <span class="k-persona">Research</span>
             <span>Est: Wave 6</span>
           </div>
         </div>
 
         <div class="k-card">
           <span class="k-badge badge-p2">P2 · Horizon 5</span>
-          <div class="k-title">⚡ 60 FPS StreamDiffusion</div>
+          <div class="k-title">60 FPS StreamDiffusion</div>
           <div class="k-desc">Sub-50ms WebRTC interactive latent streaming with real-time 3D camera joystick.</div>
           <div class="k-footer">
-            <span class="k-persona">⚡ Realtime</span>
+            <span class="k-persona">Realtime</span>
             <span>Est: Wave 6</span>
           </div>
         </div>
 
         <div class="k-card">
           <span class="k-badge badge-p2">P2 · Horizon 5</span>
-          <div class="k-title">🧬 Bio & Protein Surrogates</div>
+          <div class="k-title">Bio &amp; Protein Surrogates</div>
           <div class="k-desc">AlphaFold / ESMFold ONNX CUDA execution pipelines on spot GPU hardware.</div>
           <div class="k-footer">
-            <span class="k-persona">🔬 Science</span>
+            <span class="k-persona">Science</span>
             <span>Est: Wave 6</span>
           </div>
         </div>
@@ -406,36 +409,39 @@
     <!-- Column 2: Planned / Todo -->
     <section class="kanban-column">
       <div class="col-header">
-        <div class="col-title" style="color: var(--accent-purple);">📋 Planned / Todo</div>
+        <div class="col-title" style="color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Planned
+        </div>
         <span class="col-count">3</span>
       </div>
       <div class="col-body">
         <div class="k-card">
           <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">🎨 1-Click LoRA Studio</div>
+          <div class="k-title">1-Click LoRA Studio</div>
           <div class="k-desc">Upload 10-20 reference images directly in Cockpit, run spot PEFT training ($0.40), hot-swap adapter.</div>
           <div class="k-footer">
-            <span class="k-persona">🎨 LoRA Agent</span>
+            <span class="k-persona">LoRA Agent</span>
             <span>Est: 2h</span>
           </div>
         </div>
 
         <div class="k-card">
           <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">🏋️ Spot Training & R2 Sync</div>
+          <div class="k-title">Spot Training &amp; R2 Sync</div>
           <div class="k-desc">Multi-node training recipes with preemption recovery and loss curve telemetry streaming.</div>
           <div class="k-footer">
-            <span class="k-persona">🏋️ MLOps</span>
+            <span class="k-persona">MLOps</span>
             <span>Est: 3h</span>
           </div>
         </div>
 
         <div class="k-card">
           <span class="k-badge badge-p1">P1 · Wave 4/5</span>
-          <div class="k-title">🏆 Top Model Leaderboard Recipes</div>
+          <div class="k-title">Top Model Leaderboard Recipes</div>
           <div class="k-desc">1-click hardware allocation recipes for Wan2.1, HunyuanVideo, DeepSeek-R1, and Qwen2.5-VL.</div>
           <div class="k-footer">
-            <span class="k-persona">📦 Catalog</span>
+            <span class="k-persona">Catalog</span>
             <span>Est: 1.5h</span>
           </div>
         </div>
@@ -445,55 +451,61 @@
     <!-- Column 3: Cooking / In-Flight -->
     <section class="kanban-column">
       <div class="col-header">
-        <div class="col-title" style="color: var(--accent-amber);">🍳 Cooking / In-Flight</div>
+        <div class="col-title" style="color: var(--accent-amber); display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+          In-Flight
+        </div>
         <span class="col-count">2</span>
       </div>
       <div class="col-body">
         <div class="k-card" style="border-color: rgba(245, 158, 11, 0.4);">
           <span class="k-badge badge-p1">P1 · Wave 5</span>
-          <div class="k-title">🎨 1-Click LoRA Studio</div>
+          <div class="k-title">1-Click LoRA Studio</div>
           <div class="k-desc">Upload 10-20 reference images in Cockpit, run spot PEFT training ($0.40), hot-swap adapter.</div>
           <div class="k-footer">
-            <span class="k-persona">🎨 LoRA Agent</span>
-            <span style="color: var(--accent-amber);">Cooking ⏳</span>
+            <span class="k-persona">LoRA Agent</span>
+            <span style="color: var(--accent-amber);">In Progress</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(245, 158, 11, 0.4);">
           <span class="k-badge badge-p1">P1 · Wave 5</span>
-          <div class="k-title">🏋️ Spot Training & R2 Checkpoints</div>
+          <div class="k-title">Spot Training &amp; R2 Checkpoints</div>
           <div class="k-desc">Multi-node training recipes with preemption recovery and loss curve telemetry streaming.</div>
           <div class="k-footer">
-            <span class="k-persona">🏋️ MLOps</span>
-            <span style="color: var(--accent-amber);">Cooking ⏳</span>
+            <span class="k-persona">MLOps</span>
+            <span style="color: var(--accent-amber);">In Progress</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Column 4: Review & Audit Gate -->
+    <!-- Column 4: Review Gate -->
     <section class="kanban-column">
       <div class="col-header">
-        <div class="col-title" style="color: var(--accent-blue);">🔍 Review Gate (Opus 4.6)</div>
+        <div class="col-title" style="color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Review Gate
+        </div>
         <span class="col-count">2</span>
       </div>
       <div class="col-body">
         <div class="k-card" style="border-color: rgba(59, 130, 246, 0.4);">
           <span class="k-badge badge-p0">P0 · Review Gate</span>
-          <div class="k-title">🛡️ Zero-Leniency Audit SLA</div>
+          <div class="k-title">Zero-Leniency Audit SLA</div>
           <div class="k-desc">Rigorous review of WebSocket PTY bridge, thread safety locks, and path traversal confinement.</div>
           <div class="k-footer">
-            <span class="k-persona">🛡️ Opus 4.6</span>
+            <span class="k-persona">Opus 4.6</span>
             <span style="color: var(--accent-blue);">Passed (100/100)</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(59, 130, 246, 0.4);">
           <span class="k-badge badge-p1">P1 · Review Gate</span>
-          <div class="k-title">💳 Polar.sh + x402 Header</div>
+          <div class="k-title">Polar.sh + x402 Header</div>
           <div class="k-desc">Autonomous agent USDC micropayment verification and MoR webhook reconciliation.</div>
           <div class="k-footer">
-            <span class="k-persona">💳 Settlement</span>
+            <span class="k-persona">Settlement</span>
             <span style="color: var(--accent-blue);">Pending</span>
           </div>
         </div>
@@ -503,97 +515,100 @@
     <!-- Column 5: Shipped -->
     <section class="kanban-column">
       <div class="col-header">
-        <div class="col-title" style="color: var(--accent-emerald);">✅ Shipped (v2.4.0)</div>
+        <div class="col-title" style="color: var(--accent-emerald); display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Shipped (v2.4.0)
+        </div>
         <span class="col-count">9</span>
       </div>
       <div class="col-body">
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.4.0 Wave 4</span>
-          <div class="k-title">🎙️ In-Studio Voice & BGM Ducking</div>
+          <div class="k-title">In-Studio Voice &amp; BGM Ducking</div>
           <div class="k-desc">Kokoro voiceover recording canvas in `/create` with real-time -16 LUFS sidechain auto-ducking.</div>
           <div class="k-footer">
             <span>Commit: Wave 4</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.4.0 Wave 4</span>
-          <div class="k-title">☁️ SkyPilot Spot Orchestrator</div>
+          <div class="k-title">SkyPilot Spot Orchestrator</div>
           <div class="k-desc">Multi-cloud declarative YAML spot scheduling, 12+ cloud arbitrage, and zero-data-loss preemption failover.</div>
           <div class="k-footer">
             <span>Commit: Wave 4</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.4.0 Wave 4</span>
-          <div class="k-title">🎭 Gemini Script Decomposer</div>
+          <div class="k-title">Gemini Script Decomposer</div>
           <div class="k-desc">Deconstructs 60s narrative prompts into 6-8 cinematic storyboard scenes with 3D camera trajectory vectors.</div>
           <div class="k-footer">
             <span>Commit: Wave 4</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🖼️ FLF2V Dual Keyframes</div>
+          <div class="k-title">FLF2V Dual Keyframes</div>
           <div class="k-desc">Start/End image dropzones with aspect mismatch guards and cross-dissolve plates.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🎲 4-Take 2×2 Grid</div>
+          <div class="k-title">4-Take 2x2 Grid</div>
           <div class="k-desc">Deterministic sequential seed stepping with synchronized hover-play comparison.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🔍 Cockpit Web SSH</div>
+          <div class="k-title">Cockpit Web SSH</div>
           <div class="k-desc">xterm.js WebSocket PTY bridge + real-time `nvidia-smi` hardware diagnostics.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🔄 +4s Clip Extension</div>
+          <div class="k-title">+4s Clip Extension</div>
           <div class="k-desc">Lossless Frame-1 extraction with path-traversal sandboxed scene continuation.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🔌 FastMCP & Skills</div>
-          <div class="k-desc">FastMCP tool suite + open `SKILL.md` directing standard for Claude & Cursor.</div>
+          <div class="k-title">FastMCP &amp; Skills</div>
+          <div class="k-desc">FastMCP tool suite + open `SKILL.md` directing standard for Claude &amp; Cursor.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
 
         <div class="k-card" style="border-color: rgba(16, 185, 129, 0.3);">
           <span class="k-badge badge-done">v2.3.0 Release</span>
-          <div class="k-title">🎥 3D Camera Compass</div>
+          <div class="k-title">3D Camera Compass</div>
           <div class="k-desc">Pan, Tilt, Zoom, Roll, Orbit dials injecting dynamic STG guidance vectors.</div>
           <div class="k-footer">
             <span>Commit: 230e943</span>
-            <span style="color: var(--accent-emerald);">Merged ✅</span>
+            <span style="color: var(--accent-emerald);">Merged</span>
           </div>
         </div>
       </div>
@@ -601,58 +616,7 @@
 
   </main>
 
-
   <script src="/sidebar.js"></script>
-  <script>
-    // 3-way Theme Controller: 'dark' -> 'light' -> 'system' -> 'dark'
-    (function () {
-      const htmlEl = document.documentElement;
-      const themeBtn = document.getElementById('btn-oven-theme');
-      const themeIcon = document.getElementById('oven-theme-icon');
-      const themeText = document.getElementById('oven-theme-text');
-
-      const THEMES = ['dark', 'light', 'system'];
-
-      function getSystemTheme() {
-        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      }
-
-      function applyTheme(theme) {
-        if (theme === 'system') {
-          htmlEl.setAttribute('data-theme', getSystemTheme());
-          themeIcon.textContent = '💻';
-          themeText.textContent = 'System';
-        } else {
-          htmlEl.setAttribute('data-theme', theme);
-          themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
-          themeText.textContent = theme === 'dark' ? 'Dark' : 'Light';
-        }
-        localStorage.setItem('spacepilot_oven_theme', theme);
-        localStorage.setItem('pluto_memo_theme', theme === 'system' ? getSystemTheme() : theme);
-      }
-
-      if (themeBtn) {
-        themeBtn.addEventListener('click', () => {
-          const current = localStorage.getItem('spacepilot_oven_theme') || 'dark';
-          const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
-          applyTheme(THEMES[nextIdx]);
-        });
-      }
-
-      // Listen to OS system color scheme changes if set to system
-      if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-          const current = localStorage.getItem('spacepilot_oven_theme');
-          if (current === 'system') {
-            applyTheme('system');
-          }
-        });
-      }
-
-      const initial = localStorage.getItem('spacepilot_oven_theme') || localStorage.getItem('pluto_memo_theme') || 'dark';
-      applyTheme(initial);
-    })();
-  </script>
+  <script src="/theme.js"></script>
 </body>
 </html>
-
