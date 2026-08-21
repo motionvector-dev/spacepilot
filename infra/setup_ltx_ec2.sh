@@ -40,6 +40,9 @@ echo "  Target Scratch Disk : $SCRATCH_BASE"
 # Ensure target subdirectories exist
 sudo mkdir -p "$SCRATCH_BASE/hf" "$SCRATCH_BASE/out" "$SCRATCH_BASE/worker" "$SCRATCH_BASE/tmp"
 sudo chown -R ubuntu:ubuntu "$SCRATCH_BASE"
+if [ ! -L /scratch ] && [ -d /scratch ]; then
+  sudo rm -rf /scratch
+fi
 sudo ln -sfn "$SCRATCH_BASE" /scratch
 
 # Check available disk space (require >= 80 GB)

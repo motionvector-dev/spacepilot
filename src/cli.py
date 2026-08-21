@@ -228,7 +228,7 @@ def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
     print(f"  Syncing worker files to {ip}...")
     run_cmd(["ssh", "-o", "StrictHostKeyChecking=accept-new", "-i", key, f"ubuntu@{ip}",
-             "sudo mkdir -p /scratch/worker && sudo chown -R ubuntu:ubuntu /scratch"])
+             "sudo mkdir -p /opt/dlami/nvme/worker && ([ -L /scratch ] || sudo rm -rf /scratch) && sudo ln -sfn /opt/dlami/nvme /scratch && sudo chown -R ubuntu:ubuntu /opt/dlami/nvme /scratch"])
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/src/ltx_worker.py", f"ubuntu@{ip}:/scratch/worker/ltx_worker.py"])
     run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/infra/setup_ltx_ec2.sh", f"ubuntu@{ip}:/scratch/worker/setup.sh"])
     print("  Starting setup & warmup in background...")
