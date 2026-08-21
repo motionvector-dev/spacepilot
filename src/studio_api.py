@@ -50,7 +50,7 @@ STUDIO_DIR.mkdir(parents=True, exist_ok=True)
 sys.path.append(str(PLUTO_ROOT / "src"))
 from cli import get_instance_info, load_config, save_config, fetch_worker_health, run_cmd
 
-app = FastAPI(title="Pluto Studio Video API", version="2.0.0")
+app = FastAPI(title="Pluto Studio Video API", version="2.2.0")
 
 
 @app.get("/healthz")

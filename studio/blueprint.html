@@ -502,7 +502,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">Status</span>
-          <span class="meta-val" style="color: var(--accent-emerald);">Post-GA Consolidated (55/55 Tests Passing)</span>
+          <span class="meta-val" style="color: var(--accent-emerald);">v2.2.0 Production Release (63/63 Tests Passing)</span>
         </div>
       </div>
 
@@ -527,8 +527,8 @@
           <span class="num-label">Resident VRAM Cold Start</span>
         </div>
         <div class="num-card">
-          <span class="num-val">55 / 55</span>
-          <span class="num-label">Verified Test Suite</span>
+          <span class="num-val">63 / 63</span>
+          <span class="num-label">Verified Test Suite (100%)</span>
         </div>
       </div>
     </div>
@@ -543,8 +543,10 @@
         <a href="#sec-swot" class="toc-link">4. 39-Rival Competitive Topology & Market Matrix</a>
         <a href="#sec-arch" class="toc-link">5. Fleet, Security & Infrastructure Blueprint</a>
         <a href="#sec-roadmap" class="toc-link">6. 4-Sprint Execution Roadmap & Delivery Gantt</a>
+        <a href="#sec-changelog" class="toc-link">7. System Changelog & Version Ledger</a>
       </div>
     </nav>
+
 
 <!-- SECTION 1: THE CORE PRODUCT VISION & 4-LAYER OPEN-WEIGHT ARCHITECTURE -->
     <section id="sec-vision" class="report-section">
@@ -1211,6 +1213,66 @@
                 • Cloudflare R2 / S3 project sync & shareable web links
               </td>
               <td>Global checkout in 135+ currencies with automated VAT; instant USDC micropayments for autonomous agent swarms.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+<!-- SECTION 7: SYSTEM CHANGELOG & VERSION LEDGER -->
+    <section id="sec-changelog" class="report-section">
+      <div class="section-header">
+        <span class="section-num">Section 7.0</span>
+        <h2 class="section-title">System Changelog & Version Ledger</h2>
+      </div>
+
+      <p class="section-p">
+        Chronological audit log of all major architectural additions, safety protocols, and full-stack merges pushed to <code>origin/main</code>:
+      </p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Version & Date</th>
+              <th>Category</th>
+              <th>Summary of Changes</th>
+              <th>Git Commit & Test SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>v2.2.0</strong><br><small style="color:var(--text-dim);">Aug 21, 2026</small></td>
+              <td><span class="spec-badge badge-p0">Enterprise Fleet</span></td>
+              <td>
+                • <strong>Unified Compute Provider Hub & 3-Card Onboarding:</strong> Seamless switching between Shadeform (20+ clouds), AWS Direct Spot ($0.75/hr), and Local Homelab ($0.00/hr).<br>
+                • <strong>Automatic Secret Redaction:</strong> Masks API keys (<code>********</code>) on GET requests to prevent credential leaks.<br>
+                • <strong>Fleet Availability Matrix:</strong> Live pricing comparison table in Cockpit with <code>⭐ g6e.xlarge (L40S 48GB)</code> gold standard badge.<br>
+                • <strong>Section 2.2 Universal AI Distribution Mesh:</strong> Integration specifications for LiteLLM, FastMCP, and open Agent Skills (<code>SKILL.md</code>).
+              </td>
+              <td><code>e7098cf</code><br><span style="color:var(--accent-emerald);">63/63 Tests Passing</span></td>
+            </tr>
+            <tr>
+              <td><strong>v2.1.0</strong><br><small style="color:var(--text-dim);">Aug 21, 2026</small></td>
+              <td><span class="spec-badge badge-p0">Creator & Safety</span></td>
+              <td>
+                • <strong>3D Camera Trajectory Compass:</strong> Interactive Pan, Tilt, Zoom, Roll dials with dynamic STG guidance scaling.<br>
+                • <strong>Dead Man's Switch (Auto-Shutdown):</strong> Non-blocking background watchdog terminating idle GPU instances after configurable threshold (10m–60m).<br>
+                • <strong>Dynamic Compute Quote:</strong> Real-time quoting switching between <code>$0.00 Local Mock</code> and <code>~$0.04 AWS Spot</code> based on fleet state.<br>
+                • <strong>Live 1s Cost Odometer:</strong> Absolute AWS <code>LaunchTime</code> odometer ticker in sidebar and cockpit.
+              </td>
+              <td><code>ccbbb6a</code><br><span style="color:var(--accent-emerald);">61/61 Tests Passing</span></td>
+            </tr>
+            <tr>
+              <td><strong>v2.0.0</strong><br><small style="color:var(--text-dim);">Aug 20, 2026</small></td>
+              <td><span class="spec-badge badge-p1">GA Release</span></td>
+              <td>
+                • <strong>Resident LTX-2.5 Quantized Float8 Daemon:</strong> 0.0s cold start on 48GB VRAM.<br>
+                • <strong>In-Process Kokoro-82M TTS Engine:</strong> Broadcast voice generation with LUFS normalization.<br>
+                • <strong>Path Traversal & Security Boundary:</strong> <code>resolve_output()</code> regex sandboxing and 50MB binary limits.<br>
+                • <strong>Zero-Build Frontend Architecture:</strong> Vanilla ES6 modules + native CSS variables.
+              </td>
+              <td><code>55fa43b</code><br><span style="color:var(--accent-emerald);">55/55 Tests Passing</span></td>
             </tr>
           </tbody>
         </table>
