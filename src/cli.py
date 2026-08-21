@@ -518,6 +518,93 @@ def cmd_terminate(args, cfg):
     print("  Instance terminated cleanly. Zero ongoing billing.")
 
 
+def cmd_doctor(args, cfg):
+    sys.path.insert(0, str(PLUTO_ROOT))
+    from src.device_probe import probe_local_device
+    print("┌─────────────────────────────────────────────────────────────────┐")
+    print("│                     PLUTO CLI DOCTOR                            │")
+    print("└─────────────────────────────────────────────────────────────────┘")
+    
+    # 1. Device Profile
+    profile = probe_local_device()
+    print("  [Hardware]")
+    print(f"  OS/Arch  : {profile.os_type} / {profile.architecture}")
+    print(f"  Backend  : {profile.backend.upper()}")
+    if profile.device_name:
+        print(f"  Device   : {profile.device_name}")
+    print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total (Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
+    print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")
+    print("")
+
+    # 2. FFmpeg check
+    print("  [Dependencies]")
+    try:
+        ffmpeg_res = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        ffmpeg_ver = ffmpeg_res.stdout.split('\n')[0].replace('ffmpeg version ', '').split(' ')[0]
+        print(f"  FFmpeg   : ✅ Installed (v{ffmpeg_ver})")
+    except Exception:
+        print("  FFmpeg   : ❌ NOT FOUND (Required for video assembly)")
+
+    # 3. Kokoro weights check
+    kokoro_paths = [
+        PLUTO_ROOT / "models" / "kokoro" / "kokoro-v0_19.onnx",
+        PLUTO_ROOT / "models" / "kokoro" / "kokoro-v1_0.onnx",
+        Path.home() / ".pluto" / "models" / "kokoro" / "kokoro-v0_19.onnx",
+    ]
+    kokoro_found = False
+    for path in kokoro_paths:
+        if path.exists():
+            kokoro_found = True
+            print(f"  Kokoro   : ✅ Found ONNX weights ({path.name})")
+            break
+    if not kokoro_found:
+        print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
+        print("             Download with: pluto recipes download kokoro-82m")
+        
+    print("")
+
+    # 4. AWS CLI check
+    print("  [Cloud & Auth]")
+    try:
+        aws_res = subprocess.run(["aws", "sts", "get-caller-identity", "--profile", cfg.get("aws_profile", "default")], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        aws_data = json.loads(aws_res.stdout)
+        print(f"  AWS Auth : ✅ Valid (Profile: {cfg.get('aws_profile', 'default')})")
+        print(f"  Identity : {aws_data.get('Arn')}")
+    except Exception as e:
+        print("  AWS Auth : ❌ NOT AUTHENTICATED or AWS CLI not installed")
+        print("             Run 'aws configure' or check credentials")
+
+    # 5. Studio Token check
+    token_path = PLUTO_ROOT / ".studio_token"
+    if token_path.exists():
+        print(f"  Session  : ✅ Token found (.studio_token)")
+    else:
+        print(f"  Session  : ⚠️ No local session token found")
+
+    print("─────────────────────────────────────────────────────────────────")
+
+
+def cmd_serve(args, cfg):
+    import uvicorn
+    print(f"Starting Pluto server on {args.host}:{args.port}")
+    sys.path.insert(0, str(PLUTO_ROOT))
+    uvicorn.run("src.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
+
+
+def cmd_lora(args, cfg):
+    if args.lora_action == "list":
+        print("Listing LoRA models...")
+    elif args.lora_action == "train":
+        print("Training LoRA model...")
+
+
+def cmd_recipes(args, cfg):
+    if args.recipes_action == "list":
+        print("Listing recipes...")
+    elif args.recipes_action == "download":
+        print(f"Downloading recipe {args.recipe_name}...")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CLI ENTRYPOINT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -526,6 +613,28 @@ def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(prog="pluto", description="Pluto Remote GPU Box & Video Generation Tool")
     subparsers = parser.add_subparsers(dest="command")
+
+    # doctor
+    subparsers.add_parser("doctor", help="Check local environment and capabilities")
+
+    # serve
+    serve_p = subparsers.add_parser("serve", help="Start FastAPI app")
+    serve_p.add_argument("--host", type=str, default="0.0.0.0", help="Host (default: 0.0.0.0)")
+    serve_p.add_argument("--port", type=int, default=8088, help="Port (default: 8088)")
+    serve_p.add_argument("--reload", action="store_true", help="Enable reload")
+
+    # lora
+    lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
+    lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
+    lora_subparsers.add_parser("list", help="List LoRA models")
+    lora_subparsers.add_parser("train", help="Train a new LoRA model")
+
+    # recipes
+    recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
+    recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
+    recipes_subparsers.add_parser("list", help="List recipes")
+    recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
+    recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
 
     # studio
     studio_p = subparsers.add_parser("studio", help="Launch interactive Pluto Studio Web UI")
@@ -580,6 +689,10 @@ def main():
     args = parser.parse_args()
 
     dispatch = {
+        "doctor": cmd_doctor,
+        "serve": cmd_serve,
+        "lora": cmd_lora,
+        "recipes": cmd_recipes,
         "studio": cmd_studio,
         "status": cmd_status,
         "launch": cmd_launch,
