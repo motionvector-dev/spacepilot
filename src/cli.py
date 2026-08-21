@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import json
+import logging
 import uuid
 import argparse
 import shutil
@@ -17,12 +18,15 @@ import subprocess
 import urllib.request
 import urllib.error
 from pathlib import Path
+from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
 
 # Paths
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
 CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
-KEY_FILE_DEFAULT = Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"
+KEY_FILE_DEFAULT = Path(os.environ.get("PLUTO_SSH_KEY", Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
 
 DEFAULT_CONFIG = {
     "aws_profile": "default",
@@ -60,7 +64,7 @@ def load_config():
                 cfg = json.load(f)
                 return {**DEFAULT_CONFIG, **cfg}
         except Exception:
-            pass
+            logger.debug("Failed to load config", exc_info=True)
     return DEFAULT_CONFIG.copy()
 
 
@@ -108,8 +112,8 @@ def get_instance_info(cfg):
                 "type": item[3] if len(item) > 3 else cfg["instance_type"],
                 "launch_time": item[4] if len(item) > 4 else None,
             }
-    except Exception as e:
-        pass
+    except Exception:
+        logger.warning("Failed to get instance info", exc_info=True)
     return None
 
 
@@ -127,6 +131,7 @@ def fetch_worker_health(ip):
         except Exception:
             return {"ok": False, "status": "http_error", "code": e.code}
     except Exception:
+        logger.warning("Failed to fetch worker health", exc_info=True)
         return None
 
 
@@ -134,7 +139,7 @@ def fetch_worker_health(ip):
 # COMMAND HANDLERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def cmd_status(args, cfg):
+def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
     print("  PLUTO GPU BOX & WORKER STATUS")
     print("──────────────────────────────────────────────────────────────────────────")
@@ -159,7 +164,7 @@ def cmd_status(args, cfg):
             cost = (uptime_min / 60.0) * cfg["spot_hourly_rate"]
             print(f"  Uptime       : {uptime_min:.1f} mins (Estimated Cost: ${cost:.2f})")
         except Exception:
-            pass
+            logger.debug("Failed to calculate uptime/cost", exc_info=True)
 
     print("──────────────────────────────────────────────────────────────────────────")
     if inst["ip"] and inst["state"] == "running":
@@ -178,7 +183,7 @@ def cmd_status(args, cfg):
     print("──────────────────────────────────────────────────────────────────────────")
 
 
-def cmd_launch(args, cfg):
+def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
     print("  LAUNCHING PLUTO GPU BOX (AWS SPOT L40S)")
     print("──────────────────────────────────────────────────────────────────────────")
@@ -208,7 +213,7 @@ def cmd_launch(args, cfg):
         cmd_deploy(args, cfg)
 
 
-def cmd_deploy(args, cfg):
+def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
         print("  Error: No running instance found to deploy to.")
@@ -233,7 +238,7 @@ def cmd_deploy(args, cfg):
     print("\n  Deployment complete! Check status with: pluto status")
 
 
-def cmd_ssh(args, cfg):
+def cmd_ssh(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
         print("  Error: No running instance found.")
@@ -244,7 +249,7 @@ def cmd_ssh(args, cfg):
     subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}"])
 
 
-def cmd_logs(args, cfg):
+def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
         print("  Error: No running instance found.")
@@ -256,7 +261,7 @@ def cmd_logs(args, cfg):
                     "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"])
 
 
-def cmd_generate(args, cfg):
+def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
         print("  Error: No running GPU box. Run 'pluto launch' first.")
@@ -409,13 +414,14 @@ def cmd_generate(args, cfg):
                     print(f"\n  Error: Job failed: {st_data.get('error')}")
                     break
         except Exception:
+            logger.warning("Failed during worker status polling", exc_info=True)
             retries += 1
             if retries > 20:
                 print(f"\n  Error: Connection lost while polling worker status.")
                 break
 
 
-def cmd_sync(args, cfg):
+def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
         print("  Error: No running instance found.")
@@ -477,7 +483,7 @@ def studio_python(cfg):
     return None
 
 
-def cmd_studio(args, cfg):
+def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     port = args.port or 8088
     studio_script = PLUTO_ROOT / "src" / "studio_api.py"
 
@@ -498,7 +504,7 @@ def cmd_studio(args, cfg):
     subprocess.run([python_bin, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
 
 
-def cmd_terminate(args, cfg):
+def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst:
         print("  No active instance found to terminate.")
@@ -518,7 +524,7 @@ def cmd_terminate(args, cfg):
     print("  Instance terminated cleanly. Zero ongoing billing.")
 
 
-def cmd_doctor(args, cfg):
+def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     sys.path.insert(0, str(PLUTO_ROOT))
     from src.device_probe import probe_local_device
     print("┌─────────────────────────────────────────────────────────────────┐")
@@ -584,25 +590,19 @@ def cmd_doctor(args, cfg):
     print("─────────────────────────────────────────────────────────────────")
 
 
-def cmd_serve(args, cfg):
+def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     import uvicorn
     print(f"Starting Pluto server on {args.host}:{args.port}")
     sys.path.insert(0, str(PLUTO_ROOT))
     uvicorn.run("src.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
 
 
-def cmd_lora(args, cfg):
-    if args.lora_action == "list":
-        print("Listing LoRA models...")
-    elif args.lora_action == "train":
-        print("Training LoRA model...")
+def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+    raise NotImplementedError("LoRA CLI coming in a follow-up PR")
 
 
-def cmd_recipes(args, cfg):
-    if args.recipes_action == "list":
-        print("Listing recipes...")
-    elif args.recipes_action == "download":
-        print(f"Downloading recipe {args.recipe_name}...")
+def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+    raise NotImplementedError("Recipes CLI coming in a follow-up PR")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
