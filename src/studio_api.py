@@ -107,6 +107,66 @@ async def validation_error_handler(request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": detail})
 
 
+
+
+# --- WATCHDOG ---
+_last_activity_time = time.time()
+_watchdog_event = None
+
+def update_activity():
+    global _last_activity_time
+    _last_activity_time = time.time()
+
+def has_active_jobs():
+    try:
+        if not OUTPUTS_DIR.exists():
+            return False
+        import json
+        for path in OUTPUTS_DIR.glob("*.json"):
+            try:
+                with open(path) as f:
+                    meta = json.load(f)
+                    if meta.get("status") in ("queued", "running"):
+                        return True
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return False
+
+async def idle_watchdog_loop():
+    global _watchdog_event
+    while True:
+        await asyncio.sleep(30)
+        
+        if has_active_jobs():
+            update_activity()
+            
+        cfg = load_config()
+        idle_mins = cfg.get("idle_shutdown_minutes", 20)
+        if idle_mins <= 0:
+            continue
+            
+        now = time.time()
+        elapsed = now - _last_activity_time
+        if elapsed > (idle_mins * 60):
+            inst = get_instance_info(cfg)
+            if inst and inst.get("state") == "running":
+                print(f"[Watchdog] Auto-terminating GPU instance {inst.get('id')} after {idle_mins}m of inactivity to save cost.")
+                _watchdog_event = {"event": "auto_shutdown", "time": now, "idle_mins": idle_mins}
+                infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
+                if infra_script.exists():
+                    try:
+                        run_cmd(["bash", str(infra_script), "terminate"])
+                    except Exception as e:
+                        print(f"[Watchdog] Failed to auto-terminate: {e}")
+                update_activity()
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(idle_watchdog_loop())
+# -----------------
+
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
 
 
@@ -298,6 +358,10 @@ def _build_status(cfg):
         "estimated_cost_usd": cost,
         "worker": worker_health,
         "worker_ready": worker_health.get("ok", False) if worker_health else False,
+        "watchdog": {
+            "elapsed_mins": round((time.time() - _last_activity_time) / 60.0, 1),
+            "last_event": _watchdog_event
+        }
     }
 
 @app.get("/api/status")
@@ -899,6 +963,7 @@ def enhance_prompt_api(body: dict):
 
 @app.post("/api/generate")
 def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    update_activity()
     """Queue video generation job to remote resident GPU or local mock."""
     cfg = load_config()
     inst = get_instance_info(cfg)
@@ -1126,6 +1191,7 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 
 @app.post("/api/upscale-4k")
 def upscale_4k_api(req: UpscaleRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    update_activity()
     """Run local Mac Apple Silicon CoreML / Lanczos 4K Super-Resolution export."""
     meta_file = OUTPUTS_DIR / f"{req.asset_id}.json"
     source_mp4 = OUTPUTS_DIR / f"{req.asset_id}.mp4"
@@ -1625,6 +1691,7 @@ def queued_audio_job(meta: dict) -> dict:
 
 @app.post("/api/generate/music")
 def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    update_activity()
     """Queue a music cue on the local MLX server, normalized to -16 LUFS."""
     if req.backend == "cloud":
         raise HTTPException(status_code=501, detail=CLOUD_NOT_READY)
@@ -1695,6 +1762,7 @@ def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: 
 
 @app.post("/api/generate/voice")
 def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    update_activity()
     """Queue a voiceover on the local MLX server, peak-limited to -1 dBFS.
 
     No loudnorm: VO gets mixed later, so program loudness is the mixer's call.

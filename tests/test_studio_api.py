@@ -1,3 +1,6 @@
+import pytest
+import asyncio
+
 #!/usr/bin/env python3
 """Integration tests for Pluto Studio Backend API."""
 
@@ -786,3 +789,87 @@ def test_cockpit_status_includes_launch_time(monkeypatch):
     assert data["instance"]["launch_time"] == "2026-08-21T10:00:00Z"
     assert "uptime_minutes" in data
     assert "estimated_cost_usd" in data
+
+
+def test_watchdog_update_config():
+    """Verify idle_shutdown_minutes can be updated via /api/cockpit/config."""
+    res = client.post("/api/cockpit/config", headers=AUTH, json={"config": {"idle_shutdown_minutes": 15}})
+    assert res.status_code == 200
+    assert res.json()["config"]["idle_shutdown_minutes"] == 15
+
+    res_get = client.get("/api/cockpit/config")
+    assert res_get.status_code == 200
+    assert res_get.json()["config"]["idle_shutdown_minutes"] == 15
+
+def test_watchdog_logic_trigger(monkeypatch):
+    """Verify watchdog triggers auto-termination when idle exceeds threshold."""
+    async def run_test():
+        import src.studio_api as studio_api
+        fake_time = [1000.0]
+        monkeypatch.setattr(studio_api.time, "time", lambda: fake_time[0])
+        studio_api._last_activity_time = 1000.0
+        monkeypatch.setattr(studio_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
+        monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
+        
+        term_calls = []
+        monkeypatch.setattr(studio_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
+        
+        sleep_calls = [0]
+        async def mock_sleep(secs):
+            sleep_calls[0] += 1
+            if sleep_calls[0] > 1:
+                raise asyncio.CancelledError()
+            
+        monkeypatch.setattr(studio_api.asyncio, "sleep", mock_sleep)
+        
+        # 10 mins idle -> no termination
+        fake_time[0] = 1000.0 + (10 * 60)
+        try:
+            await studio_api.idle_watchdog_loop()
+        except asyncio.CancelledError:
+            pass
+        assert len(term_calls) == 0
+        
+        # 21 mins idle -> triggers termination
+        sleep_calls[0] = 0
+        fake_time[0] = 1000.0 + (21 * 60)
+        try:
+            await studio_api.idle_watchdog_loop()
+        except asyncio.CancelledError:
+            pass
+        assert len(term_calls) == 1
+        assert studio_api._watchdog_event["event"] == "auto_shutdown"
+
+    asyncio.run(run_test())
+
+def test_watchdog_activity_reset(monkeypatch):
+    """Verify activity updates reset the watchdog timer."""
+    async def run_test():
+        import src.studio_api as studio_api
+        studio_api._last_activity_time = 1000.0
+        monkeypatch.setattr(studio_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
+        monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
+        
+        term_calls = []
+        monkeypatch.setattr(studio_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
+        sleep_calls = [0]
+        async def mock_sleep(secs):
+            sleep_calls[0] += 1
+            if sleep_calls[0] > 1:
+                raise asyncio.CancelledError()
+        monkeypatch.setattr(studio_api.asyncio, "sleep", mock_sleep)
+        
+        fake_time = [2000.0]
+        monkeypatch.setattr(studio_api.time, "time", lambda: fake_time[0])
+        studio_api.update_activity()
+        assert studio_api._last_activity_time == fake_time[0]
+        
+        fake_time[0] = 2000.0 + (10 * 60)
+        try:
+            await studio_api.idle_watchdog_loop()
+        except asyncio.CancelledError:
+            pass
+        
+        assert len(term_calls) == 0
+
+    asyncio.run(run_test())
