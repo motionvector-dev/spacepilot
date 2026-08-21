@@ -44,6 +44,7 @@ GATED_POSTS = [
     ("/api/sky/failover", {"reason": "preemption"}),
     ("/api/sky/terminate", {}),
     ("/api/storyboard/decompose", {"script": "astronaut on moon"}),
+    ("/api/audio/mix-ducked", {"voice_job_id": "test_voice"}),
 ]
 
 # POST routes that spend nothing and so need no token. Both are pure local

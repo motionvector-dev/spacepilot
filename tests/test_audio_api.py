@@ -217,3 +217,34 @@ def test_voice_mlx_backend_payload_matches_the_contract(monkeypatch):
     assert seen["payload"]["input"] == VOICE_BODY["text"]
     assert seen["payload"]["voice"] == "af_heart"
     assert seen["payload"]["response_format"] == "wav"
+
+
+def test_audio_mix_ducked_endpoint_requires_auth():
+    res = client.post("/api/audio/mix-ducked", json={"voice_job_id": "nonexistent"})
+    assert res.status_code == 401
+
+
+def test_audio_mix_ducked_missing_voice_returns_404():
+    res = client.post("/api/audio/mix-ducked", json={"voice_job_id": "missing_voice_123"}, headers=AUTH)
+    assert res.status_code == 404
+
+
+def test_audio_mix_ducked_success_with_silent_voice(monkeypatch):
+    # Create mock voice file in OUTPUTS_DIR
+    voice_id = "test_voice_duck_fixture"
+    voice_wav = OUTPUTS_DIR / f"{voice_id}.wav"
+    voice_wav.write_bytes(silent_wav(2))
+
+    res = client.post(
+        "/api/audio/mix-ducked",
+        json={"voice_job_id": voice_id, "target_lufs": -16.0},
+        headers=AUTH,
+    )
+    assert res.status_code == 200
+    job_id = res.json()["job_id"]
+    meta = wait_for_job(job_id)
+    assert meta["status"] == "completed"
+    assert (OUTPUTS_DIR / f"{job_id}.wav").exists()
+    assert meta["target_lufs"] == -16.0
+    voice_wav.unlink(missing_ok=True)
+

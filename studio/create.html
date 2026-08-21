@@ -1573,6 +1573,51 @@
           </div>
         </div>
 
+        <!-- Voiceover & BGM Ducking Canvas -->
+        <div class="control-block" style="border: 1px solid rgba(168, 85, 247, 0.25); background: rgba(168, 85, 247, 0.03); border-radius: 8px; padding: 12px;">
+          <div class="control-header" style="margin-bottom: 8px;">
+            <span class="control-title" style="display: flex; align-items: center; gap: 6px; color: var(--accent-purple);">
+              <span>🎙️ Voiceover & BGM Ducking</span>
+            </span>
+            <span class="control-badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">-16 LUFS EBU R128</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <textarea id="vo-text-input" class="prompt-textarea" style="height: 60px; font-size: 12px;" placeholder="Optional speech / voiceover text (synthesized via Kokoro TTS and dynamic sidechain-ducked over BGM)..."></textarea>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Voice Profile</label>
+                <select id="vo-voice-select" class="form-select" style="font-size: 11px; padding: 4px 6px;">
+                  <option value="af_heart" selected>Heart (Warm Female)</option>
+                  <option value="af_bella">Bella (Expressive Female)</option>
+                  <option value="af_alloy">Alloy (Clear Female)</option>
+                  <option value="am_michael">Michael (Narrator Male)</option>
+                  <option value="am_fenrir">Fenrir (Cinematic Deep Male)</option>
+                  <option value="am_echo">Echo (Authoritative Male)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">BGM Sidechain Bed</label>
+                <select id="vo-bgm-select" class="form-select" style="font-size: 11px; padding: 4px 6px;">
+                  <option value="ambient-cinematic" selected>Ambient Cinematic Pad</option>
+                  <option value="synth-pop-electronic">Sci-Fi Synth Pulse</option>
+                  <option value="deep-house-chill">Deep Chill Atmosphere</option>
+                  <option value="none">No BGM (Dry VO Only)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2px;">
+              <button id="btn-preview-vo" class="btn-secondary" type="button" style="font-size: 11px; padding: 4px 10px;" title="Render and test voiceover sidechain ducking preview">
+                <span>🔊 Preview Ducked VO</span>
+              </button>
+              <audio id="audio-vo-preview" controls style="display: none; height: 28px; width: 170px;"></audio>
+            </div>
+          </div>
+        </div>
+
         <!-- Submit Button -->
         <button id="btn-generate" class="btn-generate-main">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>

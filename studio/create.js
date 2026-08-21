@@ -1140,7 +1140,118 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 7. Action Handlers
+  // ─────────────────────────────────────────────────────────────────────────
+  // 7. Voiceover & BGM Ducking Handlers
+  // ─────────────────────────────────────────────────────────────────────────
+  const voTextInput = document.getElementById('vo-text-input');
+  const voVoiceSelect = document.getElementById('vo-voice-select');
+  const voBgmSelect = document.getElementById('vo-bgm-select');
+  const btnPreviewVo = document.getElementById('btn-preview-vo');
+  const audioVoPreview = document.getElementById('audio-vo-preview');
+
+  if (btnPreviewVo) {
+    btnPreviewVo.addEventListener('click', async () => {
+      const text = (voTextInput?.value || '').trim();
+      if (!text) {
+        showToast('Please enter voiceover text to preview');
+        return;
+      }
+
+      btnPreviewVo.disabled = true;
+      btnPreviewVo.innerHTML = '<span>⏳ Synthesizing & Ducking...</span>';
+
+      const token = await getAuthToken();
+      try {
+        // 1. Generate Voice Track
+        const voiceRes = await fetch('/api/generate/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          body: JSON.stringify({
+            text: text,
+            voice: voVoiceSelect?.value || 'af_heart',
+            speed: 1.0,
+            backend: 'kokoro'
+          })
+        });
+
+        if (!voiceRes.ok) {
+          const err = await voiceRes.json().catch(() => ({}));
+          throw new Error(err.detail || 'Voice generation failed');
+        }
+
+        const voiceData = await voiceRes.json();
+        const voiceJobId = voiceData.job_id;
+
+        // Poll voice settlement
+        let settled = false;
+        let voiceMeta = null;
+        for (let i = 0; i < 20; i++) {
+          await new Promise(r => setTimeout(r, 300));
+          const jobRes = await fetch(`/api/jobs/${voiceJobId}`);
+          if (jobRes.ok) {
+            voiceMeta = await jobRes.json();
+            if (voiceMeta.status === 'completed' || voiceMeta.status === 'failed') {
+              settled = true;
+              break;
+            }
+          }
+        }
+
+        if (!settled || voiceMeta?.status === 'failed') {
+          throw new Error(voiceMeta?.error || 'Voice rendering timed out');
+        }
+
+        let finalAudioUrl = `/api/media/${voiceJobId}.wav`;
+
+        // 2. If BGM selected, apply -16 LUFS Sidechain Ducking
+        const bgmChoice = voBgmSelect?.value || 'ambient-cinematic';
+        if (bgmChoice !== 'none') {
+          const duckRes = await fetch('/api/audio/mix-ducked', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+            body: JSON.stringify({
+              voice_job_id: voiceJobId,
+              bgm_preset: bgmChoice,
+              target_lufs: -16.0
+            })
+          });
+
+          if (duckRes.ok) {
+            const duckData = await duckRes.json();
+            const duckJobId = duckData.job_id;
+
+            // Poll ducked settlement
+            for (let i = 0; i < 20; i++) {
+              await new Promise(r => setTimeout(r, 250));
+              const dJobRes = await fetch(`/api/jobs/${duckJobId}`);
+              if (dJobRes.ok) {
+                const dMeta = await dJobRes.json();
+                if (dMeta.status === 'completed') {
+                  finalAudioUrl = `/api/media/${duckJobId}.wav`;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (audioVoPreview) {
+          audioVoPreview.src = finalAudioUrl;
+          audioVoPreview.style.display = 'inline-block';
+          audioVoPreview.play().catch(() => {});
+        }
+        showToast('Ducked voiceover ready! (EBU R128 -16 LUFS)');
+
+      } catch (err) {
+        showToast(`Voiceover error: ${err.message}`);
+      } finally {
+        btnPreviewVo.disabled = false;
+        btnPreviewVo.innerHTML = '<span>🔊 Preview Ducked VO</span>';
+      }
+    });
+  }
+
+  // 8. Action Handlers
   btnRestart.addEventListener('click', () => {
     panelCompleted.style.display = 'none';
     panelGenerating.style.display = 'none';

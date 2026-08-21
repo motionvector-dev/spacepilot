@@ -2038,6 +2038,128 @@ def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: 
     return queued_audio_job(meta)
 
 
+class MixDuckedAudioRequest(BaseModel):
+    voice_job_id: str
+    bgm_job_id: Optional[str] = None
+    bgm_preset: Optional[str] = "ambient-cinematic"
+    target_lufs: float = Field(default=-16.0, ge=-24.0, le=-10.0)
+    video_job_id: Optional[str] = None
+
+
+@app.post("/api/audio/mix-ducked")
+def mix_ducked_audio_api(req: MixDuckedAudioRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    """Mix voiceover and BGM with dynamic -16 LUFS sidechain compression ducking."""
+    update_activity()
+    voice_id = req.voice_job_id.strip()
+    voice_wav = OUTPUTS_DIR / f"{voice_id}.wav"
+    if not voice_wav.exists():
+        voice_wav = OUTPUTS_DIR / voice_id
+        if not voice_wav.exists():
+            raise HTTPException(status_code=404, detail=f"Voice track {req.voice_job_id} not found")
+
+    job_id = f"ducked_{uuid.uuid4().hex[:10]}"
+    meta_file = OUTPUTS_DIR / f"{job_id}.json"
+    out_wav = OUTPUTS_DIR / f"{job_id}.wav"
+    out_mp4 = OUTPUTS_DIR / f"{job_id}.mp4" if req.video_job_id else None
+
+    # Resolve BGM path
+    bgm_wav = None
+    if req.bgm_job_id:
+        cand = OUTPUTS_DIR / f"{req.bgm_job_id}.wav"
+        if not cand.exists():
+            cand = OUTPUTS_DIR / req.bgm_job_id
+        if cand.exists():
+            bgm_wav = cand
+
+    meta = {
+        "id": job_id,
+        "kind": "ducked_mix",
+        "voice_job_id": req.voice_job_id,
+        "bgm_job_id": req.bgm_job_id,
+        "bgm_preset": req.bgm_preset,
+        "target_lufs": req.target_lufs,
+        "video_job_id": req.video_job_id,
+        "status": "queued",
+        "created_at": time.time(),
+    }
+
+    def _run_ducking():
+        meta["status"] = "running"
+        write_meta(meta_file, meta)
+        nonlocal bgm_wav
+        temp_bgm_created = False
+        if not bgm_wav or not bgm_wav.exists():
+            bgm_wav = OUTPUTS_DIR / f"{job_id}_bgm_bed.wav"
+            temp_bgm_created = True
+            tone_res = run_ffmpeg([
+                "-f", "lavfi",
+                "-i", "anoisesrc=d=60:c=pink:r=44100:a=0.08",
+                "-af", "lowpass=f=400,volume=-12dB",
+                "-t", "60",
+                str(bgm_wav)
+            ])
+            if tone_res.returncode != 0:
+                run_ffmpeg([
+                    "-f", "lavfi",
+                    "-i", "anullsrc=r=44100:cl=stereo",
+                    "-t", "60",
+                    str(bgm_wav)
+                ])
+
+        filter_str = (
+            f"[1:a]volume=0.85[bgm_in];"
+            f"[bgm_in][0:a]sidechaincompress=threshold=0.08:ratio=4:attack=15:release=350[bgm_ducked];"
+            f"[bgm_ducked][0:a]amix=inputs=2:duration=first:dropout_transition=2[mixed];"
+            f"[mixed]loudnorm=I={req.target_lufs}:TP=-1.5:LRA=11[out]"
+        )
+        cmd = [
+            "-i", str(voice_wav),
+            "-i", str(bgm_wav),
+            "-filter_complex", filter_str,
+            "-map", "[out]",
+            "-c:a", "pcm_s16le",
+            "-ar", "44100",
+            str(out_wav)
+        ]
+        res = run_ffmpeg(cmd)
+        if temp_bgm_created:
+            discard_partial(bgm_wav)
+
+        if res.returncode != 0:
+            meta["status"] = "failed"
+            meta["error"] = ffmpeg_error(res)
+            discard_partial(out_wav)
+            write_meta(meta_file, meta)
+            return
+
+        meta["status"] = "completed"
+        meta["file_path"] = str(out_wav)
+        meta["audio_url"] = f"/api/media/{job_id}.wav"
+        meta["target_lufs"] = req.target_lufs
+
+        if req.video_job_id and out_mp4:
+            vid_path = OUTPUTS_DIR / f"{req.video_job_id}.mp4"
+            if not vid_path.exists():
+                vid_path = OUTPUTS_DIR / req.video_job_id
+            if vid_path.exists():
+                mux_res = run_ffmpeg([
+                    "-i", str(vid_path),
+                    "-i", str(out_wav),
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+                    "-shortest",
+                    str(out_mp4)
+                ])
+                if mux_res.returncode == 0:
+                    meta["video_url"] = f"/api/media/{job_id}.mp4"
+
+        write_meta(meta_file, meta)
+
+    background_tasks.add_task(_run_ducking)
+    return queued_audio_job(meta)
+
+
 @app.get("/api/jobs/{job_id}")
 def get_job(job_id: str):
     """Job metadata. A failed render has no video, so it is invisible in /api/assets."""
