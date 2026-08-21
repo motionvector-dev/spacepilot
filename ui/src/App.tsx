@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
 import StudioPage from './pages/StudioPage';
+import CreatePage from './pages/CreatePage';
 import CockpitPage from './pages/CockpitPage';
 import DocsPage from './pages/DocsPage';
 import BlueprintPage from './pages/BlueprintPage';
@@ -16,6 +17,10 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  if (currentPath === '/create') {
+    return <CreatePage />;
+  }
 
   if (currentPath === '/studio') {
     return <StudioPage />;
