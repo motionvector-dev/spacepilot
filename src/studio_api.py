@@ -334,9 +334,18 @@ def get_token():
     return {"token": STUDIO_TOKEN}
 
 
+class GpuActionRequest(BaseModel):
+    confirm: bool = False
+
+
 @app.post("/api/gpu/launch")
-def launch_gpu(background_tasks: BackgroundTasks, _: None = Depends(require_token)):
-    """Trigger 1-click Spot GPU launch and resident model warmup."""
+def launch_gpu(req: GpuActionRequest, background_tasks: BackgroundTasks, _: None = Depends(require_token)):
+    """Trigger 1-click Spot GPU launch and resident model warmup (requires confirm=True)."""
+    if not req.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Confirmation required. Pass {'confirm': true} to authorize AWS spot instance billing."
+        )
     cfg = load_config()
     inst = get_instance_info(cfg)
     if inst and inst.get("state") in ("running", "pending"):
@@ -357,8 +366,13 @@ def launch_gpu(background_tasks: BackgroundTasks, _: None = Depends(require_toke
 
 
 @app.post("/api/gpu/terminate")
-def terminate_gpu(_: None = Depends(require_token)):
-    """Safely terminate GPU box to stop billing immediately."""
+def terminate_gpu(req: GpuActionRequest, _: None = Depends(require_token)):
+    """Safely terminate GPU box to stop billing immediately (requires confirm=True)."""
+    if not req.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Confirmation required. Pass {'confirm': true} to authorize instance termination."
+        )
     infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
     if not infra_script.exists():
         raise HTTPException(status_code=500, detail="gpu-box.sh not found")

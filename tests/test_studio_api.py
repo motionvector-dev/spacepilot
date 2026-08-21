@@ -554,6 +554,25 @@ def test_cockpit_config_endpoints():
     assert res_update.json().get("ok") is True
 
 
+def test_gpu_launch_and_terminate_require_confirmation():
+    """Verify launch and terminate endpoints reject requests without explicit confirmation."""
+    # Launch without confirmation payload -> 422 or 400
+    res_launch_no_body = client.post("/api/gpu/launch", headers=AUTH)
+    assert res_launch_no_body.status_code in [400, 422]
+
+    res_launch_unconfirmed = client.post("/api/gpu/launch", json={"confirm": False}, headers=AUTH)
+    assert res_launch_unconfirmed.status_code == 400
+    assert "Confirmation required" in res_launch_unconfirmed.json().get("detail", "")
+
+    # Terminate without confirmation payload -> 422 or 400
+    res_term_no_body = client.post("/api/gpu/terminate", headers=AUTH)
+    assert res_term_no_body.status_code in [400, 422]
+
+    res_term_unconfirmed = client.post("/api/gpu/terminate", json={"confirm": False}, headers=AUTH)
+    assert res_term_unconfirmed.status_code == 400
+    assert "Confirmation required" in res_term_unconfirmed.json().get("detail", "")
+
+
 def test_upload_image_valid():
     """Verify successful image upload returns dimensions, aspect ratio, and safe path."""
     import base64

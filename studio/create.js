@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnEnhance = document.getElementById('btn-enhance');
   const styleChips = document.querySelectorAll('.style-chip');
 
-  const engineBtns = document.querySelectorAll('#group-engine .mv-seg-btn');
+  const selectEngine = document.getElementById('select-engine');
   const engineBadge = document.getElementById('engine-badge');
   const aspectBtns = document.querySelectorAll('#group-aspect .mv-seg-btn');
   const durationBtns = document.querySelectorAll('#group-duration .mv-seg-btn');
@@ -228,13 +228,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 3. Segment Controls
-  // Engine Quality Switcher (Draft vs Pro)
-  engineBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      engineBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const isDraft = btn.dataset.mode === 'draft';
+  // 3. Controls
+  // Engine Quality Dropdown Switcher (Draft vs Pro)
+  if (selectEngine) {
+    selectEngine.addEventListener('change', () => {
+      const mode = selectEngine.value;
+      const isDraft = mode === 'draft';
       config.draftMode = isDraft;
       config.steps = isDraft ? 15 : 30;
 
@@ -250,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       updatePatchCardDiff();
     });
-  });
+  }
 
   // Aspect Ratio Switcher
   aspectBtns.forEach(btn => {

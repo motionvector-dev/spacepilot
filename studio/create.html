@@ -601,6 +601,40 @@
       gap: 12px;
     }
 
+    /* Form Select Dropdown */
+    .mv-select {
+      background: var(--bg-ground);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      outline: none;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .mv-select:focus {
+      border-color: var(--border-focus);
+      background-color: var(--bg-card);
+    }
+
+    .mv-select option {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      padding: 8px;
+    }
+
     .mv-slider {
       flex: 1;
       height: 5px;
@@ -1302,10 +1336,10 @@
             <span class="control-title">Engine Quality</span>
             <span id="engine-badge" class="control-badge">Pro Cinema</span>
           </div>
-          <div class="mv-seg-group" id="group-engine">
-            <button class="mv-seg-btn" data-mode="draft" id="btn-mode-draft" type="button">⚡ Draft Mode (15s · ~$0.01)</button>
-            <button class="mv-seg-btn active" data-mode="pro" id="btn-mode-pro" type="button">🎬 Pro Cinema (30s · ~$0.04)</button>
-          </div>
+          <select id="select-engine" class="mv-select">
+            <option value="pro" selected>🎬 Pro Cinema (30s · ~$0.04)</option>
+            <option value="draft">⚡ Draft Mode (15s · ~$0.01)</option>
+          </select>
         </div>
 
         <!-- Aspect Ratio -->

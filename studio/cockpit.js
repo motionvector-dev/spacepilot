@@ -159,22 +159,97 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  // Modal Elements
+  const modalLaunch = document.getElementById('modal-launch');
+  const modalLaunchType = document.getElementById('modal-launch-type');
+  const modalLaunchRegion = document.getElementById('modal-launch-region');
+  const modalLaunchRate = document.getElementById('modal-launch-rate');
+  const modalLaunchCancel = document.getElementById('modal-launch-cancel');
+  const modalLaunchConfirm = document.getElementById('modal-launch-confirm');
+
+  const modalTerminate = document.getElementById('modal-terminate');
+  const modalTerminateId = document.getElementById('modal-terminate-id');
+  const modalTerminateUptime = document.getElementById('modal-terminate-uptime');
+  const modalTerminateInput = document.getElementById('modal-terminate-input');
+  const modalTerminateCancel = document.getElementById('modal-terminate-cancel');
+  const modalTerminateConfirm = document.getElementById('modal-terminate-confirm');
+
+  // Modal Helpers
+  function openLaunchModal() {
+    const selectedType = cfgInstanceType?.value || 'g6e.xlarge';
+    const selectedRegion = cfgRegion?.value || 'us-east-1';
+    const rate = SPOT_RATES[selectedType] || 0.75;
+
+    if (modalLaunchType) modalLaunchType.textContent = `${selectedType}`;
+    if (modalLaunchRegion) modalLaunchRegion.textContent = selectedRegion;
+    if (modalLaunchRate) modalLaunchRate.textContent = `~$${rate.toFixed(2)} / hr`;
+
+    modalLaunch.classList.add('open');
+  }
+
+  function closeLaunchModal() {
+    modalLaunch.classList.remove('open');
+  }
+
+  function openTerminateModal() {
+    if (modalTerminateId) modalTerminateId.textContent = valInstanceId.textContent;
+    if (modalTerminateUptime) modalTerminateUptime.textContent = valUptime.textContent;
+    if (modalTerminateInput) {
+      modalTerminateInput.value = '';
+      modalTerminateConfirm.disabled = true;
+    }
+    modalTerminate.classList.add('open');
+    setTimeout(() => modalTerminateInput?.focus(), 50);
+  }
+
+  function closeTerminateModal() {
+    modalTerminate.classList.remove('open');
+  }
+
+  modalTerminateInput?.addEventListener('input', (e) => {
+    const val = e.target.value.trim().toUpperCase();
+    modalTerminateConfirm.disabled = val !== 'TERMINATE';
+  });
+
+  modalLaunchCancel?.addEventListener('click', closeLaunchModal);
+  modalTerminateCancel?.addEventListener('click', closeTerminateModal);
+
+  // Close modals on backdrop click
+  modalLaunch?.addEventListener('click', (e) => {
+    if (e.target === modalLaunch) closeLaunchModal();
+  });
+  modalTerminate?.addEventListener('click', (e) => {
+    if (e.target === modalTerminate) closeTerminateModal();
+  });
+
   // 3. Actions
-  btnLaunchBox.addEventListener('click', async () => {
+  btnLaunchBox.addEventListener('click', () => {
+    openLaunchModal();
+  });
+
+  modalLaunchConfirm.addEventListener('click', async () => {
+    closeLaunchModal();
     btnLaunchBox.disabled = true;
-    appendLog('[Cockpit] Dispatching Spot GPU Launch (g6e.xlarge)...', 'system');
+    appendLog('[Cockpit] Dispatching Spot GPU Launch with explicit confirmation...', 'system');
     showToast('Launching AWS Spot GPU box...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/launch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || 'Launch failed');
+      }
       appendLog(`[Cockpit] ${data.message || data.status}`, 'success');
+      showToast('GPU box launching (billing started)');
       setTimeout(fetchCockpitStatus, 2000);
     } catch (err) {
       appendLog(`[Cockpit] Launch error: ${err.message}`, 'error');
+      showToast(`Launch error: ${err.message}`);
+      btnLaunchBox.disabled = false;
     }
   });
 
@@ -226,25 +301,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  btnTerminateBox.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to terminate this instance? This will halt billing immediately.')) {
-      return;
-    }
+  btnTerminateBox.addEventListener('click', () => {
+    openTerminateModal();
+  });
+
+  modalTerminateConfirm.addEventListener('click', async () => {
+    closeTerminateModal();
     btnTerminateBox.disabled = true;
-    appendLog('[Cockpit] Terminating GPU box...', 'system');
+    appendLog('[Cockpit] Terminating GPU box with explicit confirmation...', 'system');
     showToast('Terminating instance...');
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/terminate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || 'Termination failed');
+      }
       appendLog(`[Cockpit] ${data.message}`, 'success');
       showToast('GPU box terminated. Billing stopped.');
       fetchCockpitStatus();
     } catch (err) {
       appendLog(`[Cockpit] Terminate error: ${err.message}`, 'error');
+      showToast(`Terminate error: ${err.message}`);
+      btnTerminateBox.disabled = false;
     }
   });
 
