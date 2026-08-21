@@ -24,10 +24,20 @@ import tempfile
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file
 
+# Ensure HuggingFace cache and temp directories point to the 230GB NVMe scratch drive
+if "HF_HOME" not in os.environ:
+    os.environ["HF_HOME"] = "/scratch/hf"
+if "TMPDIR" not in os.environ:
+    os.environ["TMPDIR"] = "/scratch/tmp"
+
 # Enforce expandable segments before torch is imported to prevent fragmentation OOM
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 import torch
+import torch.nn.functional as F
+if not hasattr(F, "ScalingType") and hasattr(torch._C, "_ScalingType"):
+    F.ScalingType = torch._C._ScalingType
+
 from diffusers import LTX2Pipeline, LTX2ImageToVideoPipeline, PipelineQuantizationConfig
 from diffusers import TorchAoConfig as DTAO
 from transformers import TorchAoConfig as TTAO
@@ -47,7 +57,7 @@ _lock = threading.Lock()
 _active = 0
 _model_ready = False
 _pipe = None               # t2v pipeline (always loaded)
-_pipe_i2v = None           # i2v pipeline (loaded lazily on first i2v request)
+_pipe_i2v = None           # i2v pipeline (loaded lazily on first i2v request sharing resident weights)
 _jobs = {}
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,30 +104,27 @@ def load_model():
 
 
 def load_i2v_model():
-    """Lazily load the LTX-2.5 image-to-video pipeline. Called on first i2v request."""
-    global _pipe_i2v
+    """Lazily instantiate the LTX-2.5 image-to-video pipeline by sharing resident VRAM weights."""
+    global _pipe_i2v, _pipe
     if _pipe_i2v is not None:
         return
-    print("[ltx_worker] Loading LTX-2.5 image-to-video pipeline...", flush=True)
+    if _pipe is None:
+        load_model()
+    print("[ltx_worker] Instantiating LTX-2.5 i2v pipeline sharing resident VRAM weights...", flush=True)
     start_t = time.time()
 
-    quant_config = PipelineQuantizationConfig(
-        quant_mapping={
-            "transformer": DTAO(F8()),
-            "text_encoder": TTAO(F8()),
-        }
+    # Reuse the exact resident quantized transformer, text encoder, VAE, and vocoder
+    _pipe_i2v = LTX2ImageToVideoPipeline(
+        transformer=_pipe.transformer,
+        text_encoder=_pipe.text_encoder,
+        tokenizer=_pipe.tokenizer,
+        vae=_pipe.vae,
+        scheduler=_pipe.scheduler,
+        vocoder=getattr(_pipe, "vocoder", None),
     )
-
-    _pipe_i2v = LTX2ImageToVideoPipeline.from_pretrained(
-        "Lightricks/LTX-2.5-Diffusers",
-        token=HF_TOKEN or True,
-        torch_dtype=torch.bfloat16,
-        quantization_config=quant_config,
-    ).to("cuda")
-
     _pipe_i2v.vae.enable_tiling()
     load_dur = time.time() - start_t
-    print(f"[ltx_worker] LTX-2.5 i2v model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
+    print(f"[ltx_worker] LTX-2.5 i2v pipeline READY in {load_dur:.2f}s (zero duplicate VRAM overhead)!", flush=True)
 
 
 def _generate_thread(job_id, params):
@@ -129,8 +136,21 @@ def _generate_thread(job_id, params):
         width = int(params.get("width", 1024))
         height = int(params.get("height", 576))
         seconds = float(params.get("seconds", 4.0))
+        fps = int(params.get("fps", 24))
         seed = int(params.get("seed", int(time.time() * 1000) % 2147483647))
         steps = int(params.get("steps", 30))
+
+        # Advanced Guidance & Multi-Modal Controls
+        guidance_scale = float(params.get("guidance_scale", 1.0))
+        audio_guidance_scale = float(params.get("audio_guidance_scale", 1.0))
+        stg_scale = float(params.get("stg_scale", 0.0))
+        audio_stg_scale = float(params.get("audio_stg_scale", 0.0))
+        modality_scale = float(params.get("modality_scale", 1.0))
+        audio_modality_scale = float(params.get("audio_modality_scale", 1.0))
+        guidance_rescale = float(params.get("guidance_rescale", 0.0))
+        audio_guidance_rescale = float(params.get("audio_guidance_rescale", 0.0))
+        conditioning_scale = float(params.get("conditioning_scale", 1.0))
+        image_noise_scale = float(params.get("image_noise_scale", 0.0))
 
         # Image-to-video: if an image path is provided, load it and use the i2v pipeline
         image_path = params.get("image_path", "")
@@ -138,7 +158,7 @@ def _generate_thread(job_id, params):
 
         # Enforce mechanical constraints
         # 1. num_frames % 8 == 1
-        raw_frames = int(seconds * 24)
+        raw_frames = int(seconds * fps)
         num_frames = ((raw_frames - 1) // 8) * 8 + 1
         if num_frames < 9:
             num_frames = 9
@@ -152,8 +172,9 @@ def _generate_thread(job_id, params):
         _jobs[job_id]["num_frames"] = num_frames
         _jobs[job_id]["seed"] = seed
         _jobs[job_id]["resolution"] = f"{width}x{height}"
+        _jobs[job_id]["fps"] = fps
 
-        print(f"[ltx_worker] Executing {job_id}: '{prompt[:60]}...' ({width}x{height}, {num_frames} frames, seed={seed})", flush=True)
+        print(f"[ltx_worker] Executing {job_id}: '{prompt[:60]}...' ({width}x{height}, {num_frames}f @ {fps}fps, stg={stg_scale}, mod={modality_scale}, seed={seed})", flush=True)
 
         generator = torch.Generator("cuda").manual_seed(seed)
 
@@ -164,49 +185,36 @@ def _generate_thread(job_id, params):
             print(f"[ltx_worker] Loading source image from: {image_path}", flush=True)
             source_image = load_image(image_path)
 
-        # Distilled recipe invariants: zero guidance scales to prevent blended pass slowdowns
+        pipe_kwargs = {
+            "prompt": prompt,
+            "negative_prompt": negative_prompt,
+            "width": width,
+            "height": height,
+            "num_frames": num_frames,
+            "num_inference_steps": steps,
+            "guidance_scale": guidance_scale,
+            "audio_guidance_scale": audio_guidance_scale,
+            "stg_scale": stg_scale,
+            "audio_stg_scale": audio_stg_scale,
+            "modality_scale": modality_scale,
+            "audio_modality_scale": audio_modality_scale,
+            "guidance_rescale": guidance_rescale,
+            "audio_guidance_rescale": audio_guidance_rescale,
+            "generator": generator,
+            "output_type": "np",
+            "return_dict": False,
+        }
+        if stg_scale > 0:
+            pipe_kwargs["spatio_temporal_guidance_blocks"] = [28]
+
         with torch.inference_mode():
             if use_i2v:
-                video, audio = _pipe_i2v(
-                    image=source_image,
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    width=width,
-                    height=height,
-                    num_frames=num_frames,
-                    num_inference_steps=steps,
-                    guidance_scale=1.0,
-                    audio_guidance_scale=1.0,
-                    stg_scale=0.0,
-                    audio_stg_scale=0.0,
-                    modality_scale=1.0,
-                    audio_modality_scale=1.0,
-                    guidance_rescale=0.0,
-                    audio_guidance_rescale=0.0,
-                    generator=generator,
-                    output_type="np",
-                    return_dict=False,
-                )
+                pipe_kwargs["image"] = source_image
+                if hasattr(_pipe_i2v, "conditioning_scale"):
+                    pipe_kwargs["conditioning_scale"] = conditioning_scale
+                video, audio = _pipe_i2v(**pipe_kwargs)
             else:
-                video, audio = _pipe(
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    width=width,
-                    height=height,
-                    num_frames=num_frames,
-                    num_inference_steps=steps,
-                    guidance_scale=1.0,
-                    audio_guidance_scale=1.0,
-                    stg_scale=0.0,
-                    audio_stg_scale=0.0,
-                    modality_scale=1.0,
-                    audio_modality_scale=1.0,
-                    guidance_rescale=0.0,
-                    audio_guidance_rescale=0.0,
-                    generator=generator,
-                    output_type="np",
-                    return_dict=False,
-                )
+                video, audio = _pipe(**pipe_kwargs)
 
             frames = video[0]
             audio_tensor = audio[0].float().cpu()
@@ -214,7 +222,7 @@ def _generate_thread(job_id, params):
             encode_video(
                 frames,
                 str(out_file),
-                fps=24,
+                fps=fps,
                 audio=audio_tensor,
                 audio_sample_rate=audio_sr,
             )
@@ -222,7 +230,7 @@ def _generate_thread(job_id, params):
         _jobs[job_id]["status"] = "completed"
         _jobs[job_id]["output_path"] = str(out_file)
         _jobs[job_id]["download_url"] = f"/download/{job_id}"
-        _jobs[job_id]["duration_sec"] = num_frames / 24.0
+        _jobs[job_id]["duration_sec"] = num_frames / float(fps)
         print(f"[ltx_worker] Completed {job_id} -> {out_file}", flush=True)
 
     except Exception as e:

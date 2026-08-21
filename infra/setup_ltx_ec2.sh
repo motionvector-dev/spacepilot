@@ -3,7 +3,7 @@
 set -euo pipefail
 
 echo "==> [1/4] Preparing NVMe instance store..."
-sudo mkdir -p /opt/dlami/nvme/hf /opt/dlami/nvme/out /opt/dlami/nvme/worker
+sudo mkdir -p /opt/dlami/nvme/hf /opt/dlami/nvme/out /opt/dlami/nvme/worker /opt/dlami/nvme/tmp
 sudo chown -R ubuntu:ubuntu /opt/dlami/nvme
 sudo ln -sfn /opt/dlami/nvme /scratch
 
@@ -12,13 +12,16 @@ echo "==> [2/4] Installing PyTorch, Diffusers, and TorchAO dependencies..."
   "git+https://github.com/huggingface/diffusers@7564fb016dabda0c943416190fc92398c50b1b20" \
   "huggingface_hub[hf_transfer]>=1.23.0,<2.0" transformers==5.14.1 accelerate \
   safetensors sentencepiece protobuf av imageio imageio-ffmpeg Pillow numpy scipy \
-  kernels torchao flask
+  kernels flask
+# Upgrade torch to >=2.12 (diffusers 0.40.0.dev0 needs ScalingType from torch>=2.12)
+# The DLAMI ships torch 2.7 which lacks ScalingType. Upgrade torch+torchvision+torchaudio together.
+/opt/pytorch/bin/python -m pip install -q --upgrade "torch>=2.12" torchvision torchaudio 2>&1 | tail -3
 
 echo "==> [3/4] Parallel downloading LTX-2.5 FP8 weights (78 GB)..."
-HF_HOME=/scratch/hf HF_ENABLE_PARALLEL_LOADING=YES /opt/pytorch/bin/python - <<'PY'
+HF_HOME=/scratch/hf TMPDIR=/scratch/tmp HF_ENABLE_PARALLEL_LOADING=YES /opt/pytorch/bin/python - <<'PY'
 import os
 from huggingface_hub import snapshot_download
-token = os.environ.get("HF_TOKEN", True)
+token = os.environ.get("HF_TOKEN", None)
 print("Downloading snapshot...")
 snapshot_download(
     "Lightricks/LTX-2.5-Diffusers",
@@ -35,7 +38,7 @@ if [ -z "${LOCAL_WORKER_TOKEN:-}" ]; then
   exit 1
 fi
 cd /scratch/worker
-LOCAL_WORKER_TOKEN="$LOCAL_WORKER_TOKEN" nohup /opt/pytorch/bin/python ltx_worker.py > /scratch/worker/worker.log 2>&1 &
+HF_HOME=/scratch/hf TMPDIR=/scratch/tmp LOCAL_WORKER_TOKEN="$LOCAL_WORKER_TOKEN" nohup /opt/pytorch/bin/python ltx_worker.py > /scratch/worker/worker.log 2>&1 &
 
 echo "==> LTX Worker launched! Monitor logs with: tail -f /scratch/worker/worker.log"
 echo "==> Waiting for /health check..."

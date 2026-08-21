@@ -151,15 +151,81 @@ async function init() {
   await refreshStatus();
   await refreshAssets();
 
-  // Check URL query for mode
+  // Check URL query for mode or deep-linked asset
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('mode') === 'vibe') {
+  const deepLinkId = urlParams.get('asset_id') || urlParams.get('job_id');
+  
+  if (deepLinkId) {
+    const cleanId = deepLinkId.replace(/\.mp4$/i, '');
+    let clip = state.assets.find(a => a.id === cleanId);
+    
+    if (!clip) {
+      try {
+        const res = await fetch(`/api/jobs/${encodeURIComponent(cleanId)}`);
+        if (res.ok) clip = await res.json();
+      } catch (e) {
+        console.warn('Could not fetch deep-linked asset', e);
+      }
+    }
+    
+    // Fallback if not found in API but ID is provided
+    if (!clip) {
+      clip = { id: cleanId, prompt: cleanId, width: 1024, height: 576, seconds: 4 };
+    }
+    
+    selectAsset(clip);
+    setMode('vibe');
+    
+    // Highlight in Asset Bin if it exists there
+    setTimeout(() => {
+      const cards = document.querySelectorAll('.asset-card');
+      const targetCard = Array.from(cards).find(c => c.innerHTML.includes(cleanId));
+      if (targetCard) targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+
+    showToast('🎬 Loaded video into Studio Workspace');
+  } else if (urlParams.get('mode') === 'vibe') {
     setMode('vibe');
   } else {
     await triggerAutoStoryboard();
   }
 
   setInterval(refreshStatus, 4000);
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
+  `;
+  document.body.appendChild(toast);
+  
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  });
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
 }
 
 // ── Live Hot Reload (CSS HMR & Graceful Live Update) ─────────

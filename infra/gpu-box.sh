@@ -13,7 +13,7 @@
 # The box bills by the second while it exists. `terminate` is not optional.
 set -euo pipefail
 
-PROFILE="${AWS_PROFILE:-antigravity-dev-user}"
+PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_REGION:-us-east-1}"
 TYPE="${INSTANCE_TYPE:-g6e.xlarge}"        # L40S, matching modal_app.py's gpu="L40S"
 KEY="${KEY_NAME:-pluto-gpu-key-2026-07-26}"

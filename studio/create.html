@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Video · Pluto Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+  <style>
+    body {
+      overflow-y: auto;
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--height-header);
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      z-index: 100;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      text-decoration: none;
+    }
+    
+    .brand-logo {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      border-radius: 4px;
+    }
+
+    .create-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      padding-top: calc(var(--height-header) + var(--space-10));
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+    
+    /* Layout */
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: var(--space-6);
+    }
+    
+    @media (max-width: 768px) {
+      .editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Prompt Box */
+    .prompt-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .prompt-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .btn-enhance {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--accent-purple);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    
+    .btn-enhance:hover {
+      background: rgba(139, 92, 246, 0.2);
+    }
+
+    .prompt-textarea {
+      width: 100%;
+      height: 120px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .prompt-textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 1px var(--border-focus);
+    }
+
+    .prompt-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    /* Preset Chips */
+    .presets-scroll {
+      display: flex;
+      gap: var(--space-2);
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .presets-scroll::-webkit-scrollbar { display: none; }
+    
+    .preset-chip {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    
+    .preset-chip:hover {
+      background: var(--bg-raised);
+      color: var(--text-main);
+      border-color: var(--border-medium);
+    }
+
+    /* Controls Sidebar */
+    .controls-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    
+    .control-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .toggle-group {
+      display: flex;
+      background: var(--bg-panel);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      padding: 2px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+      background: var(--bg-raised);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .slider-input {
+      flex: 1;
+      accent-color: var(--accent-cyan);
+    }
+    
+    .slider-value {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-main);
+      width: 30px;
+      text-align: right;
+    }
+
+    /* Image Dropzone */
+    .dropzone {
+      background: var(--bg-panel);
+      border: 2px dashed var(--border-medium);
+      border-radius: var(--radius-md);
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dropzone:hover {
+      border-color: var(--border-highlight);
+      background: var(--bg-raised);
+    }
+    
+    .dropzone.drag-active {
+      border-color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.05);
+    }
+    
+    .dropzone-icon {
+      font-size: 24px;
+    }
+    
+    .dropzone-text {
+      font-size: 13px;
+    }
+    
+    .dropzone-preview {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    /* Generate Button */
+    .btn-generate {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: var(--shadow-glow-cyan);
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-generate:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 24px rgba(56, 189, 248, 0.4);
+    }
+    
+    .btn-generate:active {
+      transform: translateY(0);
+    }
+
+    /* State Panels */
+    .panel {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+      text-align: center;
+    }
+
+    /* Generation State */
+    .job-info {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: var(--space-4);
+    }
+
+    .eta-display {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: var(--space-6);
+    }
+
+    .progress-stages {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: var(--space-4);
+    }
+    
+    .progress-line {
+      position: absolute;
+      top: 12px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: var(--bg-panel);
+      z-index: 0;
+    }
+    
+    .progress-line-active {
+      position: absolute;
+      top: 12px;
+      left: 10%;
+      height: 2px;
+      background: var(--accent-cyan);
+      z-index: 1;
+      width: 0%;
+      transition: width 0.5s;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      z-index: 2;
+      width: 20%;
+    }
+
+    .stage-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-panel);
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      transition: all 0.3s;
+    }
+
+    .stage.active .stage-dot {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      background: var(--bg-raised);
+    }
+
+    .stage.done .stage-dot {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      color: var(--bg-root);
+    }
+
+    .stage-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .stage.active .stage-label {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Completion State */
+    .video-container {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: var(--space-6);
+    }
+    
+    .video-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .actions-row {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-raised);
+      border-color: var(--border-highlight);
+    }
+    
+    .btn-primary {
+      background: var(--text-main);
+      color: var(--bg-root);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+      background: #fff;
+      transform: translateY(-1px);
+    }
+
+  </style>
+</head>
+<body class="obsidian-theme">
+
+  <nav class="top-nav">
+    <a href="onboarding.html" class="brand">
+      <div class="brand-logo"></div>
+      PLUTO STUDIO 2.5
+    </a>
+  </nav>
+
+  <main class="create-container">
+    
+    <!-- EDITOR PANEL -->
+    <div id="panel-editor" class="editor-grid">
+      <div class="main-column">
+        <div class="prompt-section">
+          <div class="prompt-header">
+            <span class="prompt-title">Prompt Definition</span>
+            <button class="btn-enhance" id="btn-enhance">✨ Enhance</button>
+          </div>
+          
+          <textarea id="prompt-input" class="prompt-textarea" placeholder="Describe the scene in high detail... (e.g. Cinematic wide shot of a neon-lit cyberpunk city alley, rain falling softly, slow pan)"></textarea>
+          
+          <div class="prompt-footer">
+            <div class="presets-scroll">
+              <div class="preset-chip">Cinematic 35mm</div>
+              <div class="preset-chip">Dark Sci-Fi Noir</div>
+              <div class="preset-chip">80s Retro Anime</div>
+              <div class="preset-chip">Hyperrealistic Nature</div>
+              <div class="preset-chip">Macro Close-Up</div>
+            </div>
+            <span id="char-count">0/500</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-section">
+        
+        <div class="control-group">
+          <span class="control-label">Aspect Ratio</span>
+          <div class="toggle-group" id="aspect-ratio-group">
+            <button class="toggle-btn active" data-val="16:9">16:9</button>
+            <button class="toggle-btn" data-val="9:16">9:16</button>
+            <button class="toggle-btn" data-val="1:1">1:1</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Duration</span>
+          <div class="toggle-group" id="duration-group">
+            <button class="toggle-btn" data-val="4s">4s</button>
+            <button class="toggle-btn active" data-val="6s">6s</button>
+            <button class="toggle-btn" data-val="8s">8s</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Motion Guidance (STG)</span>
+          <div class="slider-container">
+            <input type="range" id="stg-slider" class="slider-input" min="0.0" max="1.5" step="0.1" value="0.8">
+            <span class="slider-value" id="stg-val">0.8</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <span class="control-label">Reference Keyframe (I2V)</span>
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">🖼️</div>
+            <div class="dropzone-text">Drop image or click</div>
+            <img id="dropzone-preview" class="dropzone-preview" alt="Preview">
+            <input type="file" id="file-input" accept="image/*" style="display:none">
+          </div>
+        </div>
+
+        <button id="btn-generate" class="btn-generate">
+          ✨ Generate Video
+        </button>
+
+      </div>
+    </div>
+
+    <!-- GENERATING PANEL -->
+    <div id="panel-generating" class="panel">
+      <div class="job-info">Job ID: <span id="job-id">--</span></div>
+      <div class="eta-display">ETA: <span id="job-eta">45s</span></div>
+      
+      <div class="progress-stages">
+        <div class="progress-line"></div>
+        <div class="progress-line-active" id="progress-fill"></div>
+        
+        <div class="stage" id="stage-1">
+          <div class="stage-dot">1</div>
+          <div class="stage-label">Queued</div>
+        </div>
+        <div class="stage" id="stage-2">
+          <div class="stage-dot">2</div>
+          <div class="stage-label">Staging VRAM</div>
+        </div>
+        <div class="stage" id="stage-3">
+          <div class="stage-dot">3</div>
+          <div class="stage-label">DiT Sampling</div>
+        </div>
+        <div class="stage" id="stage-4">
+          <div class="stage-dot">4</div>
+          <div class="stage-label">VAE Decode</div>
+        </div>
+        <div class="stage" id="stage-5">
+          <div class="stage-dot">5</div>
+          <div class="stage-label">Video Ready</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLETED PANEL -->
+    <div id="panel-completed" class="panel">
+      <div class="video-container">
+        <video id="result-video" controls autoplay loop playsinline></video>
+      </div>
+      <div class="actions-row">
+        <button class="btn-secondary" id="btn-download">⬇️ Download MP4</button>
+        <button class="btn-secondary" id="btn-restart">🔄 Generate Another</button>
+        <a href="index.html" class="btn-primary" id="btn-studio">🎬 Open in Pro Studio</a>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="create.js"></script>
+</body>
+</html>

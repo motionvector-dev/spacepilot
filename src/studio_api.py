@@ -180,6 +180,10 @@ class GenerateRequest(BaseModel):
     steps: int = Field(30, ge=1, le=200)
     enhance: bool = False
     takes: int = Field(1, ge=1, le=16)
+    stg_scale: float = Field(1.0, ge=0.0, le=5.0)
+    modality_scale: float = Field(1.0, ge=0.0, le=5.0)
+    fps: int = Field(24, ge=1, le=60)
+    image_path: Optional[str] = None
 
 
 class MusicRequest(BaseModel):
@@ -435,7 +439,12 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                     "seconds": req.seconds,
                     "seed": seed,
                     "steps": req.steps,
+                    "stg_scale": req.stg_scale,
+                    "modality_scale": req.modality_scale,
+                    "fps": req.fps,
                 }
+                if req.image_path:
+                    payload["image_path"] = req.image_path
                 data = json.dumps(payload).encode()
                 remote_req = urllib.request.Request(
                     f"http://{ip}:5000/generate",
@@ -1201,6 +1210,30 @@ def get_asset_thumbnail_file(asset_id: str):
 
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HTML VIEWS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/")
+def read_root():
+    onboarding_file = STUDIO_DIR / "onboarding.html"
+    if onboarding_file.exists():
+        return FileResponse(onboarding_file)
+    return FileResponse(STUDIO_DIR / "index.html")
+
+@app.get("/onboarding")
+def read_onboarding():
+    return FileResponse(STUDIO_DIR / "onboarding.html")
+
+@app.get("/create")
+def read_create():
+    return FileResponse(STUDIO_DIR / "create.html")
+
+@app.get("/studio")
+@app.get("/editor")
+def read_studio():
+    return FileResponse(STUDIO_DIR / "index.html")
 
 # Mount Static Frontend
 if STUDIO_DIR.exists():

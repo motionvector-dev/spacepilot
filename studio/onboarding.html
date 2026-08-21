@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pluto Studio · Minimal AI Video Workstation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+  <style>
+    body {
+      overflow-y: auto; /* Allow scrolling on onboarding */
+    }
+    
+    .onboarding-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      padding-top: var(--space-10);
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--height-header);
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      z-index: 100;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .brand-logo {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      border-radius: 4px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-6);
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .gpu-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-raised);
+      padding: 4px var(--space-3);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      box-shadow: 0 0 0 rgba(0,0,0,0);
+      transition: all 0.3s;
+    }
+
+    .status-dot.active {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .hero-section {
+      text-align: center;
+      padding: var(--space-12) 0 var(--space-10);
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-4);
+      background: linear-gradient(to right, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .action-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-12);
+    }
+
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .action-card:hover {
+      background: var(--bg-raised);
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .action-card.highlight {
+      border-color: rgba(99, 102, 241, 0.3);
+      background: linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, var(--bg-card) 100%);
+    }
+    
+    .action-card.highlight:hover {
+      border-color: var(--accent-indigo);
+    }
+
+    .card-icon {
+      font-size: 24px;
+      margin-bottom: var(--space-2);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-6);
+    }
+
+    .gallery-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+    }
+
+    .item-thumbnail {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: var(--bg-panel);
+      position: relative;
+    }
+
+    .item-thumbnail img, .item-thumbnail video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .item-thumbnail video {
+      display: none;
+    }
+    
+    .gallery-item:hover video {
+      display: block;
+    }
+    
+    .gallery-item:hover img {
+      display: none;
+    }
+
+    .item-meta {
+      padding: var(--space-3);
+    }
+
+    .item-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-date {
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+    
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: var(--space-10);
+      text-align: center;
+      color: var(--text-dim);
+      background: var(--bg-card);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-md);
+    }
+  </style>
+</head>
+<body class="obsidian-theme">
+
+  <nav class="top-nav">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      PLUTO STUDIO 2.5
+    </div>
+    <div class="nav-links">
+      <a href="create.html" class="nav-link">Create Video</a>
+      <a href="index.html" class="nav-link">Pro Studio</a>
+      <div class="gpu-status">
+        <div class="status-dot" id="gpu-dot"></div>
+        <span id="gpu-text">Checking GPU...</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="onboarding-container">
+    <section class="hero-section">
+      <h1 class="hero-title">Welcome to Pluto Studio</h1>
+      <p class="hero-subtitle">
+        ComfyUI power without the node graph. Direct LTX-2.5 prompt-to-video with instant timeline export.
+      </p>
+    </section>
+
+    <div class="action-cards">
+      <a href="create.html" class="action-card highlight">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Quick Prompt-to-Video</div>
+        <div class="card-desc">Create cinematic video from text in seconds. Powered by LTX-2.5.</div>
+      </a>
+      <a href="create.html?mode=i2v" class="action-card">
+        <div class="card-icon">🖼️</div>
+        <div class="card-title">Character Animator (I2V)</div>
+        <div class="card-desc">Animate reference keyframes from shelf with robust motion controls.</div>
+      </a>
+      <a href="index.html" class="action-card">
+        <div class="card-icon">🎬</div>
+        <div class="card-title">Pro Multi-Track Studio</div>
+        <div class="card-desc">Open full DaVinci-style timeline with 4K upscaling and audio sync.</div>
+      </a>
+    </div>
+
+    <section>
+      <h2 class="section-title">
+        Recent Projects & Generations
+      </h2>
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- Fetched dynamically -->
+        <div class="empty-state" id="loading-state">Loading recent assets...</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // GPU Polling
+    async function pollGPUStatus() {
+      const dot = document.getElementById('gpu-dot');
+      const text = document.getElementById('gpu-text');
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          dot.classList.add('active');
+          text.textContent = data.status || 'Spot GPU: Active';
+          text.style.color = 'var(--accent-emerald)';
+        } else {
+          throw new Error('Non-OK response');
+        }
+      } catch (err) {
+        dot.classList.remove('active');
+        text.textContent = 'Spot GPU: Offline';
+        text.style.color = 'var(--text-faint)';
+      }
+      setTimeout(pollGPUStatus, 10000);
+    }
+    pollGPUStatus();
+
+    // Fetch Recent Assets
+    async function fetchAssets() {
+      const grid = document.getElementById('gallery-grid');
+      try {
+        const res = await fetch('/api/assets');
+        if (!res.ok) throw new Error('Failed to fetch assets');
+        const assets = await res.json();
+        
+        if (!assets || assets.length === 0) {
+          grid.innerHTML = '<div class="empty-state">No recent generations found. Click "Quick Prompt-to-Video" to start.</div>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        assets.forEach(asset => {
+          const a = document.createElement('a');
+          a.href = `index.html?asset_id=${asset.id}`;
+          a.className = 'gallery-item';
+          a.innerHTML = \`
+            <div class="item-thumbnail">
+              <img src="/api/media/\${asset.id}.jpg" alt="\${asset.prompt}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxNDE3MjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iIzk0YTNiOCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBUaHVtYm5haWw8L3RleHQ+PC9zdmc+'">
+              <video src="/api/media/\${asset.id}.mp4" loop muted playsinline></video>
+            </div>
+            <div class="item-meta">
+              <div class="item-title">\${asset.prompt || 'Untitled Generation'}</div>
+              <div class="item-date">\${new Date(asset.created_at).toLocaleString()}</div>
+            </div>
+          \`;
+          
+          // Hover to play
+          const video = a.querySelector('video');
+          a.addEventListener('mouseenter', () => video.play().catch(e=>e));
+          a.addEventListener('mouseleave', () => {
+            video.pause();
+            video.currentTime = 0;
+          });
+          
+          grid.appendChild(a);
+        });
+      } catch (err) {
+        // Mock fallback for UI demo purposes if API isn't live
+        grid.innerHTML = \`
+          <a href="index.html?asset_id=mock-1" class="gallery-item">
+            <div class="item-thumbnail">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMyMzJhMzUiLz48L3N2Zz4=" alt="Mock">
+            </div>
+            <div class="item-meta">
+              <div class="item-title">Cyberpunk Cityscape Sweep</div>
+              <div class="item-date">Just now</div>
+            </div>
+          </a>
+          <a href="index.html?asset_id=mock-2" class="gallery-item">
+            <div class="item-thumbnail">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZTI5M2IiLz48L3N2Zz4=" alt="Mock">
+            </div>
+            <div class="item-meta">
+              <div class="item-title">Macro Flower Blooming</div>
+              <div class="item-date">2 hours ago</div>
+            </div>
+          </a>
+        \`;
+      }
+    }
+    fetchAssets();
+  </script>
+</body>
+</html>

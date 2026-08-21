@@ -25,7 +25,7 @@ CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"
 
 DEFAULT_CONFIG = {
-    "aws_profile": "antigravity-dev-user",
+    "aws_profile": "default",
     "aws_region": "us-east-1",
     "instance_type": "g6e.2xlarge",
     "key_name": "pluto-gpu-key-2026-07-26",
@@ -263,14 +263,25 @@ def cmd_generate(args, cfg):
     seed = args.seed
     steps = args.steps or cfg["default_steps"]
     image_path = getattr(args, "image", None)
+    fps = getattr(args, "fps", 24) or 24
+    negative_prompt = getattr(args, "negative_prompt", None)
+    stg = getattr(args, "stg", 0.0)
+    modality_scale = getattr(args, "modality_scale", 1.0)
+    guidance_scale = getattr(args, "guidance_scale", 1.0)
+    audio_guidance_scale = getattr(args, "audio_guidance_scale", 1.0)
+    guidance_rescale = getattr(args, "guidance_rescale", 0.0)
+    conditioning_scale = getattr(args, "conditioning_scale", 1.0)
+    image_noise_scale = getattr(args, "image_noise_scale", 0.0)
 
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  PLUTO VIDEO GENERATION")
+    print("  PLUTO VIDEO GENERATION (LTX-2.5)")
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  Prompt     : \"{prompt}\"")
-    print(f"  Resolution : {width}x{height} | Duration: {seconds}s | Steps: {steps}")
+    print(f"  Resolution : {width}x{height} | Duration: {seconds}s ({fps} fps) | Steps: {steps}")
+    if stg > 0:
+        print(f"  Guidance   : CFG={guidance_scale} | STG={stg} (blocks=[28]) | ModalitySync={modality_scale}")
     if image_path:
-        print(f"  Image      : {image_path} (image-to-video mode)")
+        print(f"  Image      : {image_path} (I2V mode, cond={conditioning_scale}, noise={image_noise_scale})")
     print(f"  Target Box : http://{ip}:5000")
     print("──────────────────────────────────────────────────────────────────────────")
 
@@ -291,11 +302,6 @@ def cmd_generate(args, cfg):
         print(f"  Uploading image to worker...")
         with open(image_path, "rb") as f:
             files = {"file": (filename, f, mime)}
-            req = urllib.request.Request(
-                f"http://{ip}:5000/upload",
-                method="POST",
-            )
-            # urllib doesn't handle multipart easily; use http.client
             import http.client
             import io
             boundary = f"----pluto{uuid.uuid4().hex}"
@@ -324,10 +330,20 @@ def cmd_generate(args, cfg):
     payload = {
         "prompt": prompt,
         "seconds": seconds,
+        "fps": fps,
         "width": width,
         "height": height,
         "steps": steps,
+        "guidance_scale": guidance_scale,
+        "audio_guidance_scale": audio_guidance_scale,
+        "stg_scale": stg,
+        "modality_scale": modality_scale,
+        "guidance_rescale": guidance_rescale,
+        "conditioning_scale": conditioning_scale,
+        "image_noise_scale": image_noise_scale,
     }
+    if negative_prompt:
+        payload["negative_prompt"] = negative_prompt
     if seed is not None:
         payload["seed"] = seed
     if remote_image_path:
@@ -347,10 +363,10 @@ def cmd_generate(args, cfg):
     )
 
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             res = json.loads(resp.read().decode())
             job_id = res.get("job_id")
-            print(f"  Job Queued : {job_id} (ETA: {res.get('eta_seconds', 12)}s)")
+            print(f"  Job Queued : {job_id} (ETA: {res.get('eta_seconds', 15)}s)")
     except Exception as e:
         print(f"  Error submitting job: {e}")
         return
@@ -360,13 +376,15 @@ def cmd_generate(args, cfg):
     start_t = time.time()
     print("  Rendering  : [", end="", flush=True)
 
+    retries = 0
     while True:
         time.sleep(1.5)
         print("█", end="", flush=True)
         try:
             st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
-            with urllib.request.urlopen(st_req) as st_resp:
+            with urllib.request.urlopen(st_req, timeout=10) as st_resp:
                 st_data = json.loads(st_resp.read().decode())
+                retries = 0
                 if st_data.get("status") == "completed":
                     dur = time.time() - start_t
                     print(f"] Done in {dur:.1f}s!")
@@ -374,7 +392,7 @@ def cmd_generate(args, cfg):
                     # Download MP4
                     dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
                     out_path = OUTPUTS_DIR / f"{job_id}.mp4"
-                    with urllib.request.urlopen(dl_req) as dl_resp, open(out_path, "wb") as out_f:
+                    with urllib.request.urlopen(dl_req, timeout=60) as dl_resp, open(out_path, "wb") as out_f:
                         shutil.copyfileobj(dl_resp, out_f)
                     print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
                     
@@ -384,8 +402,11 @@ def cmd_generate(args, cfg):
                 elif st_data.get("status") == "failed":
                     print(f"\n  Error: Job failed: {st_data.get('error')}")
                     break
-        except Exception as e:
-            pass
+        except Exception:
+            retries += 1
+            if retries > 20:
+                print(f"\n  Error: Connection lost while polling worker status.")
+                break
 
 
 def cmd_sync(args, cfg):
@@ -404,18 +425,49 @@ def cmd_sync(args, cfg):
 def studio_python(cfg):
     """Interpreter that can serve the studio.
 
-    bin/pluto runs this CLI under bare `python3`, which needs only the stdlib
-    but usually lacks fastapi, so sys.executable alone is not enough.
+    Scans configured interpreter, active sys.executable, Conda envs, and virtualenvs
+    for a Python environment with fastapi and uvicorn installed.
     """
-    for candidate in (os.environ.get("PLUTO_PYTHON"), cfg.get("python_bin"), sys.executable):
+    candidates = [
+        os.environ.get("PLUTO_PYTHON"),
+        cfg.get("python_bin"),
+        sys.executable,
+        str(Path.home() / "miniconda3" / "envs" / "py312" / "bin" / "python"),
+        str(Path.home() / "miniconda3" / "envs" / "local-ml-py311" / "bin" / "python"),
+    ]
+
+    # Dynamically scan user Conda environments
+    conda_envs_dir = Path.home() / "miniconda3" / "envs"
+    if conda_envs_dir.exists():
+        for env_dir in conda_envs_dir.iterdir():
+            py_bin = env_dir / "bin" / "python"
+            if py_bin.exists():
+                candidates.append(str(py_bin))
+
+    # Scan local project virtualenvs
+    for venv_name in (".venv", "venv", "env"):
+        py_bin = PLUTO_ROOT / venv_name / "bin" / "python"
+        if py_bin.exists():
+            candidates.append(str(py_bin))
+
+    # Standard Homebrew and system paths
+    candidates.extend(["/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3"])
+
+    for candidate in candidates:
         if not candidate:
             continue
-        probe = subprocess.run(
-            [candidate, "-c", "import fastapi, uvicorn"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        if probe.returncode == 0:
-            return candidate
+        try:
+            probe = subprocess.run(
+                [candidate, "-c", "import fastapi, uvicorn"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            if probe.returncode == 0:
+                if cfg.get("python_bin") != candidate:
+                    cfg["python_bin"] = candidate
+                    save_config(cfg)
+                return candidate
+        except Exception:
+            continue
     return None
 
 
@@ -466,8 +518,8 @@ def cmd_terminate(args, cfg):
 
 def main():
     cfg = load_config()
-    parser = argparse.ArgumentParser(description="Pluto Remote GPU Box & Video Generation Tool")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(prog="pluto", description="Pluto Remote GPU Box & Video Generation Tool")
+    subparsers = parser.add_subparsers(dest="command")
 
     # studio
     studio_p = subparsers.add_parser("studio", help="Launch interactive Pluto Studio Web UI")
@@ -493,10 +545,19 @@ def main():
     gen_p = subparsers.add_parser("generate", help="Generate a video from prompt")
     gen_p.add_argument("prompt", type=str, help="Text description of the scene")
     gen_p.add_argument("--seconds", type=float, default=4.0, help="Duration in seconds (default: 4.0)")
+    gen_p.add_argument("--fps", type=int, default=24, help="Frame rate (default: 24)")
     gen_p.add_argument("--resolution", type=int, nargs=2, default=[1024, 576], help="Width Height (e.g. 1024 576)")
     gen_p.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     gen_p.add_argument("--steps", type=int, default=30, help="Inference steps (default: 30)")
     gen_p.add_argument("--image", type=str, default=None, help="Path to local image for image-to-video generation")
+    gen_p.add_argument("--negative-prompt", type=str, default=None, help="Negative prompt")
+    gen_p.add_argument("--stg", type=float, default=0.0, help="Spatio-Temporal Guidance scale (0.0 - 2.0, default: 0.0)")
+    gen_p.add_argument("--modality-scale", type=float, default=1.0, help="Audio-Visual synchronization scale (default: 1.0)")
+    gen_p.add_argument("--guidance-scale", type=float, default=1.0, help="Classifier-Free Guidance scale (default: 1.0)")
+    gen_p.add_argument("--audio-guidance-scale", type=float, default=1.0, help="Audio CFG scale (default: 1.0)")
+    gen_p.add_argument("--guidance-rescale", type=float, default=0.0, help="Guidance rescale factor (default: 0.0)")
+    gen_p.add_argument("--conditioning-scale", type=float, default=1.0, help="I2V anchor scale (default: 1.0)")
+    gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
     gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
 
     # sync
@@ -505,6 +566,10 @@ def main():
     # terminate
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args()
 
@@ -523,6 +588,8 @@ def main():
     handler = dispatch.get(args.command)
     if handler:
         handler(args, cfg)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
