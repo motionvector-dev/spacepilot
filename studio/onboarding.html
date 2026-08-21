@@ -261,13 +261,32 @@
 <body class="obsidian-theme">
 
   <nav class="top-nav">
-    <div class="brand">
-      <div class="brand-logo"></div>
-      PLUTO STUDIO 2.5
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- MotionVector Brand Mark -->
+      <svg style="height: 20px; width: auto;" viewBox="0 0 52 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g fill="#a1a1aa">
+          <rect x="0" y="0" width="4.11" height="44"></rect>
+          <rect x="4.73" y="0" width="4.11" height="44"></rect>
+          <rect x="9.45" y="0" width="4.11" height="44"></rect>
+          <rect x="37.82" y="0" width="4.11" height="44"></rect>
+          <rect x="42.55" y="0" width="4.11" height="44"></rect>
+          <rect x="47.27" y="0" width="4.11" height="44"></rect>
+        </g>
+        <g fill="#fafafa">
+          <rect x="14.18" y="7.84" width="4.11" height="22.21"></rect>
+          <rect x="18.91" y="16.7" width="4.11" height="23.98"></rect>
+          <rect x="23.64" y="25.57" width="4.11" height="20.43"></rect>
+          <rect x="28.36" y="16.7" width="4.11" height="23.98"></rect>
+          <rect x="33.09" y="7.84" width="4.11" height="22.21"></rect>
+        </g>
+      </svg>
+      <div class="brand">
+        PLUTO <span style="color: var(--text-dim); font-weight: 500;">STUDIO 2.5</span>
+      </div>
     </div>
     <div class="nav-links">
-      <a href="create.html" class="nav-link">Create Video</a>
-      <a href="index.html" class="nav-link">Pro Studio</a>
+      <a href="/create" class="nav-link">Create Video</a>
+      <a href="/studio" class="nav-link">Pro Studio</a>
       <div class="gpu-status">
         <div class="status-dot" id="gpu-dot"></div>
         <span id="gpu-text">Checking GPU...</span>
@@ -284,17 +303,17 @@
     </section>
 
     <div class="action-cards">
-      <a href="create.html" class="action-card highlight">
+      <a href="/create" class="action-card highlight">
         <div class="card-icon">⚡</div>
         <div class="card-title">Quick Prompt-to-Video</div>
-        <div class="card-desc">Create cinematic video from text in seconds. Powered by LTX-2.5.</div>
+        <div class="card-desc">Create cinematic video from text in seconds. Powered by resident LTX-2.5.</div>
       </a>
-      <a href="create.html?mode=i2v" class="action-card">
+      <a href="/create?mode=i2v" class="action-card">
         <div class="card-icon">🖼️</div>
         <div class="card-title">Character Animator (I2V)</div>
         <div class="card-desc">Animate reference keyframes from shelf with robust motion controls.</div>
       </a>
-      <a href="index.html" class="action-card">
+      <a href="/studio" class="action-card">
         <div class="card-icon">🎬</div>
         <div class="card-title">Pro Multi-Track Studio</div>
         <div class="card-desc">Open full DaVinci-style timeline with 4K upscaling and audio sync.</div>
