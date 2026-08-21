@@ -87,6 +87,11 @@ const cases = [
   [614, '10:14'],
   [3614, '1:00:14'],
   [7214, '2:00:14'],
+  [NaN, '00:00'],
+  [-10, '00:00'],
+  ['invalid', '00:00'],
+  [null, '00:00'],
+  [undefined, '00:00']
 ];
 for (const [input, expected] of cases) {
   const got = formatTime(input);

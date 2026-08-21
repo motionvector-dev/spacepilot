@@ -432,6 +432,7 @@
     let currentInstanceType = '';
 
     function formatTime(totalSeconds) {
+      if (typeof totalSeconds !== 'number' || isNaN(totalSeconds) || totalSeconds < 0) return '00:00';
       const h = Math.floor(totalSeconds / 3600);
       const m = Math.floor((totalSeconds % 3600) / 60);
       const s = Math.floor(totalSeconds % 60);
@@ -442,7 +443,10 @@
     function tickLiveOdometer() {
       if (!currentLaunchTime) return;
       const launchDate = new Date(currentLaunchTime);
-      const elapsedSecs = Math.max(0, (Date.now() - launchDate.getTime()) / 1000);
+      const launchMs = launchDate.getTime();
+      if (isNaN(launchMs)) return;
+      
+      const elapsedSecs = Math.max(0, (Date.now() - launchMs) / 1000);
       const cost = (elapsedSecs / 3600) * currentSpotRate;
       
       const timeStr = formatTime(elapsedSecs);
