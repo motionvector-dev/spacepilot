@@ -13,26 +13,30 @@ This skill dictates the autonomous lifecycle execution for Pluto Studio when the
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🎖️ THE SWARM COUNCIL (MULTI-MODEL FRONTIER AGENT ROLES)                      │
+│ 🎖️ THE SWARM COUNCIL (2026 FRONTIER MODEL ROSTER)                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ 1. 🧭 CTO & SWARM ORCHESTRATOR [Gemini 2.0 Pro / Antigravity Lead]          │
+│ 1. 🧭 CTO & SWARM ORCHESTRATOR [Gemini 3.7 Flash / Low-Latency Swarm Lead]  │
 │    • Decomposes roadmap into discrete, orthogonal feature lanes.            │
 │    • Provisions isolated git worktrees (`git worktree add ...`).            │
 │    • Manages PR review gates, resolves conflicts, and fast-forwards `main`. │
 │    • Maintains the live Kanban Board & Version Changelog.                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ 2. ⚡ CREATIVE & DIFFUSION ENGINEER [Claude 3.5 Sonnet / High Precision]     │
+│ 2. ⚡ CREATIVE & DIFFUSION ENGINEER [Claude Sonnet 4.6 (Thinking)]          │
 │    • Focus: LTX-2.5 guidance, 3D Camera Trajectories, FLF2V, Video Extension.│
 │    • Standards: Strict Pydantic `Literal` schemas, bounded math scales.     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ 3. 🛡️ FLEET, CLOUD & SECURITY ENGINEER [Gemini Pro / Systems Infra]         │
+│ 3. 🛡️ FLEET, CLOUD & SECURITY ENGINEER [Gemini 3.1 Pro / Systems Infra]     │
 │    • Focus: AWS Spot lifecycle, Shadeform multi-cloud, Watchdogs, Web SSH.  │
 │    • Standards: `asyncio.to_thread` non-blocking I/O, secret redaction.     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ 4. 🧠 PRINCIPAL ARCHITECT & DEEP AUDITOR [Claude 3 Opus / Deep Reasoning]   │
-│    • Focus: Zero-leniency audits, concurrency models, cryptographic safety. │
+│ 4. 🧠 PRINCIPAL ARCHITECT & DEEP AUDITOR [Claude Opus 4.6 (Thinking)]       │
+│    • Focus: Deep reasoning, zero-leniency audits, concurrency safety.       │
 │    • Checklist: Concurrency, path traversal, auth verification, test SLA.   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 5. 🤖 OPEN-SOURCE LOCAL INFERENCE [GPT-OSS 120B (Medium)]                   │
+│    • Focus: Offline homelab execution, local script validation, JSON schema.│
 └─────────────────────────────────────────────────────────────────────────────┘
+
 
 ```
 
