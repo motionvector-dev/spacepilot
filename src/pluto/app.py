@@ -20,6 +20,7 @@ from src.pluto.api.routes import (
     gpu_router,
     generate_router,
     audio_router,
+    billing_router,
 )
 
 
@@ -71,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(gpu_router)
     app.include_router(generate_router)
     app.include_router(audio_router)
+    app.include_router(billing_router)
     app.include_router(assets_router)
     app.include_router(views_router)
 

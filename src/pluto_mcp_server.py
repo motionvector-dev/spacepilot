@@ -284,6 +284,41 @@ def pluto_get_local_status() -> Dict[str, Any]:
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@mcp.tool()
+def pluto_get_billing_usage(customer_id: str) -> Dict[str, Any]:
+    """Get billing usage, active tier, and remaining credits for a customer.
+    
+    Args:
+        customer_id (str): Customer ID.
+        
+    Returns:
+        Dict[str, Any]: Usage and tier information.
+    """
+    try:
+        from src.pluto.services.polar_billing import PolarBillingManager
+        manager = PolarBillingManager()
+        return manager.get_usage_and_tier(customer_id)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_verify_agent_payment(signature: str, payload: dict) -> Dict[str, Any]:
+    """Validate cryptographic payment proofs for autonomous AI agents paying in USDC.
+    
+    Args:
+        signature (str): Agent x402 signature.
+        payload (dict): Payment payload containing agent_id and amount.
+        
+    Returns:
+        Dict[str, Any]: Verification status and amount credited.
+    """
+    try:
+        from src.pluto.services.polar_billing import PolarBillingManager
+        manager = PolarBillingManager()
+        return manager.verify_x402_micropayment(signature, payload)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @mcp.resource("pluto://models/ltx25")
 def get_ltx25_model_info() -> str:
     """Get information about the LTX25 model.
