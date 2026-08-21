@@ -221,9 +221,9 @@ def _generate_thread(job_id, params):
             audio_tensor = audio[0].float().cpu()
             audio_sr = _pipe.vocoder.config.output_sampling_rate if _pipe_i2v is None else _pipe_i2v.vocoder.config.output_sampling_rate
             encode_video(
-                frames,
-                str(out_file),
+                video=frames,
                 fps=fps,
+                output_path=str(out_file),
                 audio=audio_tensor,
                 audio_sample_rate=audio_sr,
             )
