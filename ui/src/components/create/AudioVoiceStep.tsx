@@ -1,12 +1,62 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSynthesizeAudio } from '../../hooks/useGenerate';
-import { Mic, Loader2, Play, Check } from 'lucide-react';
+import { 
+  Mic, 
+  Loader2, 
+  Play, 
+  Pause, 
+  Volume2, 
+  Check, 
+  Music,
+  Radio
+} from 'lucide-react';
 
-export function AudioVoiceStep() {
-  const [ducking, setDucking] = useState(true);
-  const [voice, setVoice] = useState('af_bella');
-  const [dialogue, setDialogue] = useState('');
+interface AudioVoiceStepProps {
+  dialogue?: string;
+  setDialogue?: (d: string) => void;
+  voice?: string;
+  setVoice?: (v: string) => void;
+  bgmBed?: string;
+  setBgmBed?: (b: string) => void;
+  ducking?: boolean;
+  setDucking?: (d: boolean) => void;
+}
+
+export function AudioVoiceStep({
+  dialogue: propDialogue,
+  setDialogue: propSetDialogue,
+  voice: propVoice,
+  setVoice: propSetVoice,
+  bgmBed: propBgmBed,
+  setBgmBed: propSetBgmBed,
+  ducking: propDucking,
+  setDucking: propSetDucking,
+}: AudioVoiceStepProps = {}) {
+  const [internalDialogue, setInternalDialogue] = useState('');
+  const [internalVoice, setInternalVoice] = useState('af_heart');
+  const [internalBgm, setInternalBgm] = useState('ambient-cinematic');
+  const [internalDucking, setInternalDucking] = useState(true);
+
+  const dialogue = propDialogue !== undefined ? propDialogue : internalDialogue;
+  const setDialogue = propSetDialogue || setInternalDialogue;
+  const voice = propVoice !== undefined ? propVoice : internalVoice;
+  const setVoice = propSetVoice || setInternalVoice;
+  const bgmBed = propBgmBed !== undefined ? propBgmBed : internalBgm;
+  const setBgmBed = propSetBgmBed || setInternalBgm;
+  const ducking = propDucking !== undefined ? propDucking : internalDucking;
+  const setDucking = propSetDucking || setInternalDucking;
+
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackTime, setPlaybackTime] = useState('0:00');
+  const [durationText, setDurationText] = useState('0:00');
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const synthMutation = useSynthesizeAudio();
 
@@ -16,89 +66,284 @@ export function AudioVoiceStep() {
       const res = await synthMutation.mutateAsync({
         text: dialogue,
         voice,
-        target_lufs: -16.0,
+        target_lufs: ducking ? -16.0 : undefined,
+        bgm_preset: bgmBed !== 'none' ? bgmBed : undefined,
       });
+
       if (res.audio_url) {
         setAudioUrl(res.audio_url);
+        setIsPlaying(false);
       }
     } catch {
       // Handled by synthMutation.isError
     }
   };
 
+  const drawWaveform = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    if (analyserRef.current && isPlaying) {
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyserRef.current.getByteFrequencyData(dataArray);
+
+      const barWidth = (width / bufferLength) * 2.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * height * 0.85;
+
+        // Dynamic gradient for waveform bars
+        const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
+        gradient.addColorStop(0, '#06b6d4');
+        gradient.addColorStop(1, '#a855f7');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, height - barHeight, barWidth - 1, barHeight);
+
+        x += barWidth + 1;
+      }
+    } else {
+      // Oscillating smooth dynamic idle/preview waveform bars
+      const numBars = 48;
+      const barWidth = width / numBars;
+      const time = Date.now() * 0.003;
+
+      for (let i = 0; i < numBars; i++) {
+        const factor = Math.sin(time + i * 0.3) * 0.5 + 0.5;
+        const baseHeight = isPlaying ? 10 + factor * (height - 16) : 4 + Math.sin(i * 0.2) * 8 + 6;
+        
+        ctx.fillStyle = isPlaying ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.18)';
+        const x = i * barWidth + 1;
+        const y = (height - baseHeight) / 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth - 2, baseHeight, 2);
+        ctx.fill();
+      }
+    }
+
+    animationFrameRef.current = requestAnimationFrame(drawWaveform);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    animationFrameRef.current = requestAnimationFrame(drawWaveform);
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [drawWaveform]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      // Initialize Web Audio Context if not already done
+      if (!audioCtxRef.current) {
+        try {
+          const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          audioCtxRef.current = new AudioContextClass();
+          analyserRef.current = audioCtxRef.current.createAnalyser();
+          analyserRef.current.fftSize = 64;
+          sourceRef.current = audioCtxRef.current.createMediaElementSource(audioRef.current);
+          sourceRef.current.connect(analyserRef.current);
+          analyserRef.current.connect(audioCtxRef.current.destination);
+        } catch {
+          // Web Audio setup fallback
+        }
+      }
+
+      if (audioCtxRef.current?.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const cur = audioRef.current.currentTime;
+    const dur = audioRef.current.duration || 0;
+    const curM = Math.floor(cur / 60);
+    const curS = Math.floor(cur % 60).toString().padStart(2, '0');
+    setPlaybackTime(`${curM}:${curS}`);
+
+    if (dur > 0) {
+      const durM = Math.floor(dur / 60);
+      const durS = Math.floor(dur % 60).toString().padStart(2, '0');
+      setDurationText(`${durM}:${durS}`);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setPlaybackTime('0:00');
+  };
+
   return (
-    <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl hover:bg-[#111114] transition-colors">
-      <div className="flex justify-between items-center">
+    <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
+      <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
         <div className="flex items-center gap-2">
-          <Mic className="w-4 h-4 text-white/60" />
-          <h2 className="text-[13px] font-semibold text-white/60 uppercase tracking-wider">Audio & Voiceover</h2>
+          <Mic className="w-4 h-4 text-cyan-400" />
+          <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+            Voiceover &amp; BGM Ducking
+          </h2>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-white/40 bg-black px-1.5 py-0.5 rounded border border-white/[0.08]">Sidechain: -16.0 LUFS</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            -16 LUFS (EBU R128)
+          </span>
           <button 
+            type="button"
             onClick={() => setDucking(!ducking)}
-            className={`w-8 h-4 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer ${ducking ? 'bg-emerald-500' : 'bg-[#222226]'}`}
+            className={`w-8 h-4 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer ${
+              ducking ? 'bg-emerald-500' : 'bg-[#222226]'
+            }`}
+            title="Auto-duck BGM under voiceover"
           >
-            <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${ducking ? 'translate-x-4' : 'translate-x-0'}`} />
+            <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
+              ducking ? 'translate-x-4' : 'translate-x-0'
+            }`} />
           </button>
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1 flex flex-col gap-2">
-          <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Kokoro Profile</label>
-          <div className="relative">
-            <select 
-              value={voice}
-              onChange={(e) => setVoice(e.target.value)}
-              className="w-full appearance-none bg-black border border-white/[0.14] rounded-md px-3 py-2 text-[13px] font-medium text-white focus:outline-none focus:border-white/30 cursor-pointer"
-            >
-              <option value="af_bella">Bella (Expressive Female)</option>
-              <option value="am_adam">Adam (Deep Male)</option>
-              <option value="af_heart">Heart (Warm Female)</option>
-              <option value="bf_alice">Alice (British Female)</option>
-            </select>
-            <div className="absolute right-3 top-[10px] pointer-events-none text-white/30">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-          </div>
+      {/* Voiceover Script Input */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+          Dialogue / Narration Script
+        </label>
+        <textarea
+          value={dialogue}
+          onChange={(e) => setDialogue(e.target.value)}
+          rows={2}
+          className="w-full p-3 bg-black border border-white/[0.14] rounded-lg text-[13px] text-white focus:outline-none focus:border-white/30 placeholder-white/30 font-sans"
+          placeholder="Optional narrator / dialogue speech (Kokoro TTS auto-ducked over BGM track)..."
+        />
+      </div>
+
+      {/* Controls Grid: Voice Profile & BGM Bed */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-white/60 flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5 text-purple-400" />
+            <span>Kokoro Voice Profile</span>
+          </label>
+          <select 
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+            className="w-full bg-black border border-white/[0.14] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+          >
+            <option value="af_heart">Heart (Warm Female · Recommended)</option>
+            <option value="af_bella">Bella (Expressive Female)</option>
+            <option value="af_alloy">Alloy (Clear Female)</option>
+            <option value="am_michael">Michael (Narrator Male)</option>
+            <option value="am_fenrir">Fenrir (Deep Male)</option>
+            <option value="am_echo">Echo (Authoritative Male)</option>
+            <option value="am_adam">Adam (Cinematic Male)</option>
+            <option value="bf_alice">Alice (British Female)</option>
+          </select>
         </div>
 
-        <div className="flex-[2] flex flex-col gap-2">
-          <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Dialogue Script</label>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              value={dialogue}
-              onChange={(e) => setDialogue(e.target.value)}
-              className="flex-1 bg-black border border-white/[0.14] rounded-md px-3 py-2 text-[13px] text-white focus:outline-none focus:border-white/30 placeholder-white/30"
-              placeholder="Type narration here to synthesize... (auto-ducked over BGM)"
-            />
-            <button
-              onClick={handleSynthesize}
-              disabled={synthMutation.isPending || !dialogue.trim()}
-              className="px-3 py-2 bg-[#18181b] hover:bg-[#222226] border border-white/[0.14] rounded-md text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              {synthMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
-              )}
-              <span>Synth</span>
-            </button>
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-white/60 flex items-center gap-1.5">
+            <Music className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Background Music (BGM Bed)</span>
+          </label>
+          <select 
+            value={bgmBed}
+            onChange={(e) => setBgmBed(e.target.value)}
+            className="w-full bg-black border border-white/[0.14] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+          >
+            <option value="ambient-cinematic">Ambient Pad (Cinematic Float)</option>
+            <option value="synth-pop-electronic">Sci-Fi Pulse (Electronic Beat)</option>
+            <option value="deep-house-chill">Deep Chill (Lo-Fi Atmospheric)</option>
+            <option value="synthwave">Retro Synthwave 80s</option>
+            <option value="none">No BGM (Dry Voice Track)</option>
+          </select>
         </div>
       </div>
 
-      {audioUrl && (
-        <div className="flex items-center justify-between p-3 bg-black/60 border border-emerald-500/30 rounded-lg">
-          <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono">
-            <Check className="w-4 h-4 text-emerald-400" />
-            <span>Kokoro Audio Synthesized (-16.0 LUFS)</span>
+      {/* Dynamic Audio Waveform Visualizer Canvas */}
+      <div className="flex flex-col gap-2 p-3.5 bg-black/70 border border-white/[0.08] rounded-xl">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-white/50" />
+            <span className="text-[11px] font-mono text-white/60">Waveform Spectral Canvas</span>
           </div>
-          <audio controls src={audioUrl} className="h-7 max-w-[200px]" />
+          {audioUrl && (
+            <span className="text-[11px] font-mono text-cyan-400">
+              {playbackTime} / {durationText}
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Real Canvas Waveform */}
+        <canvas 
+          ref={canvasRef} 
+          width={440} 
+          height={48} 
+          className="w-full h-12 rounded-lg bg-[#0e0e11] border border-white/[0.06]"
+        />
+
+        <div className="flex items-center justify-between pt-1 gap-2">
+          <button
+            type="button"
+            onClick={handleSynthesize}
+            disabled={synthMutation.isPending || !dialogue.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#18181b] hover:bg-[#222226] border border-white/[0.12] rounded-lg text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+          >
+            {synthMutation.isPending ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                <span>Synthesizing &amp; Ducking...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Preview Ducked VO</span>
+              </>
+            )}
+          </button>
+
+          {audioUrl && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="p-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                title={isPlaying ? 'Pause Preview' : 'Play Preview'}
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-black" />}
+              </button>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+                <Check className="w-3 h-3 text-emerald-400" />
+                <span>Ready</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {audioUrl && (
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={handleEnded}
+            className="hidden"
+          />
+        )}
+      </div>
     </div>
   );
 }
