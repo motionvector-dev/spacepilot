@@ -201,6 +201,11 @@ class GenerateRequest(BaseModel):
     fps: int = Field(24, ge=1, le=60)
     image_path: Optional[str] = None
     draft_mode: bool = False
+    camera_pan: Optional[str] = None
+    camera_tilt: Optional[str] = None
+    camera_zoom: Optional[str] = None
+    camera_roll: Optional[str] = None
+    camera_intensity: Optional[int] = Field(None, ge=1, le=5)
 
 
 class MusicRequest(BaseModel):
@@ -910,19 +915,49 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
         enh_res = enhance_prompt_api({"prompt": req.prompt})
         target_prompt = enh_res["enhanced_prompt"]
 
+
+    # Camera Tokens
+    cam_tokens = []
+    intensity = req.camera_intensity or 3
+    if req.camera_pan == "right": cam_tokens.append("cinematic slow pan right")
+    elif req.camera_pan == "left": cam_tokens.append("cinematic slow pan left")
+    
+    if req.camera_tilt == "up": cam_tokens.append("smooth tilt up")
+    elif req.camera_tilt == "down": cam_tokens.append("smooth tilt down")
+    
+    if req.camera_zoom == "in": cam_tokens.append("smooth dolly zoom in")
+    elif req.camera_zoom == "out": cam_tokens.append("smooth dolly zoom out")
+    
+    if req.camera_roll == "left": cam_tokens.append("roll left")
+    elif req.camera_roll == "right": cam_tokens.append("roll right")
+    elif req.camera_roll == "orbit": cam_tokens.append("stable orbit 360")
+    
+    if cam_tokens:
+        cam_tokens.append("stable camera track")
+        target_prompt = f"{target_prompt}, {', '.join(cam_tokens)}"
+        
+    stg_scale_base = req.stg_scale if req.stg_scale is not None else (0.5 if req.draft_mode else 1.0)
+    # Adjust STG dynamically
+    if cam_tokens:
+        stg_scale = min(5.0, stg_scale_base + (intensity * 0.1)) # scale dynamic
+    else:
+        stg_scale = stg_scale_base
+
     # Resolution & step defaults based on draft_mode
+    is_online = inst and inst.get("ip") and inst.get("state") == "running"
+    
     if req.draft_mode:
         default_w, default_h = 768, 432
         steps = req.steps if req.steps is not None else 15
-        stg_scale = req.stg_scale if req.stg_scale is not None else 0.5
-        cost_usd = 0.01
-        compute_quote = "Estimated Spot compute: ~$0.01 (Draft)"
+        
+        cost_usd = 0.01 if is_online else 0.00
+        compute_quote = "Estimated Spot compute: ~$0.01 (No charge on failure)" if is_online else "Local Mode (Free FFmpeg Preview)"
     else:
         default_w, default_h = 1024, 576
         steps = req.steps if req.steps is not None else 30
-        stg_scale = req.stg_scale if req.stg_scale is not None else 1.0
-        cost_usd = 0.04
-        compute_quote = "Estimated Spot compute: ~$0.04 (No charge on failure)"
+        
+        cost_usd = 0.04 if is_online else 0.00
+        compute_quote = "Estimated Spot compute: ~$0.04 (No charge on failure)" if is_online else "Local Mode (Free FFmpeg Preview)"
 
     raw_w = req.width if req.width is not None else default_w
     raw_h = req.height if req.height is not None else default_h

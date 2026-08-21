@@ -1302,6 +1302,16 @@
                   <span id="diff-duration-val" class="diff-after">4.0s (97 frames)</span>
                 </div>
               </div>
+              
+              <div class="diff-op-row" id="diff-camera-row" style="display: none;">
+                <span class="diff-op-subject">Camera Motion</span>
+                <div class="diff-op-change">
+                  <span class="diff-before">Static</span>
+                  <span class="diff-arrow" aria-hidden="true">→</span>
+                  <span id="diff-camera-val" class="diff-after">Pan Right</span>
+                </div>
+              </div>
+
               <div class="diff-op-row">
                 <span class="diff-op-subject">Seed</span>
                 <div class="diff-op-change">
@@ -1363,6 +1373,54 @@
             <button class="mv-seg-btn active" data-sec="4.0">4.0s</button>
             <button class="mv-seg-btn" data-sec="6.0">6.0s</button>
             <button class="mv-seg-btn" data-sec="8.0">8.0s</button>
+          </div>
+        </div>
+
+        
+        <!-- Camera Motion Compass -->
+        <div class="control-block">
+          <div class="control-header">
+            <span class="control-title">Camera Motion Compass</span>
+          </div>
+          
+          <!-- Pan -->
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom: 2px;">Pan Dials</div>
+          <div class="mv-seg-group" id="group-cam-pan">
+            <button class="mv-seg-btn" data-val="left">Left (←)</button>
+            <button class="mv-seg-btn active" data-val="static">Static</button>
+            <button class="mv-seg-btn" data-val="right">Right (→)</button>
+          </div>
+
+          <!-- Tilt -->
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom: 2px; margin-top: 8px;">Tilt Dials</div>
+          <div class="mv-seg-group" id="group-cam-tilt">
+            <button class="mv-seg-btn" data-val="up">Up (↑)</button>
+            <button class="mv-seg-btn active" data-val="static">Static</button>
+            <button class="mv-seg-btn" data-val="down">Down (↓)</button>
+          </div>
+
+          <!-- Zoom -->
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom: 2px; margin-top: 8px;">Dolly Zoom Dials</div>
+          <div class="mv-seg-group" id="group-cam-zoom">
+            <button class="mv-seg-btn" data-val="in">Zoom In (🔍+)</button>
+            <button class="mv-seg-btn active" data-val="static">Static</button>
+            <button class="mv-seg-btn" data-val="out">Zoom Out (🔍-)</button>
+          </div>
+
+          <!-- Roll & Orbit -->
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom: 2px; margin-top: 8px;">Roll &amp; Orbit</div>
+          <div class="mv-seg-group" id="group-cam-roll">
+            <button class="mv-seg-btn" data-val="left">Roll Left</button>
+            <button class="mv-seg-btn active" data-val="none">None</button>
+            <button class="mv-seg-btn" data-val="right">Roll Right</button>
+            <button class="mv-seg-btn" data-val="orbit">Orbit 360</button>
+          </div>
+
+          <!-- Motion Intensity -->
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom: 2px; margin-top: 8px;">Motion Intensity</div>
+          <div class="mv-slider-row">
+            <input type="range" id="input-cam-intensity" class="mv-slider" min="1" max="5" step="1" value="3">
+            <span id="cam-intensity-display" class="mv-slider-val">3</span>
           </div>
         </div>
 

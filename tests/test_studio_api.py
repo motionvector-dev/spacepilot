@@ -211,7 +211,7 @@ def test_generate_patch_card_metadata():
     assert patch["specs"]["steps"] == 25
     assert patch["specs"]["stg_scale"] == 0.8
     assert patch["specs"]["seed"] == 1337
-    assert "Estimated Spot compute: ~$0.04 (No charge on failure)" in patch["compute_quote"]
+    assert "Local Mode (Free FFmpeg Preview)" in patch["compute_quote"]
 
     # b. Parameter Diff Inspector
     assert "diff" in patch
@@ -229,7 +229,7 @@ def test_generate_patch_card_metadata():
     assert op["subject"] == "LTX-2.5 Video Generation"
     assert op["generate"]["kind"] == "video"
     assert op["generate"]["tier"] == "LTX-2.5"
-    assert op["quote"]["cost_usd"] == 0.04
+    assert op["quote"]["cost_usd"] == 0.00
 
 
 def test_studio_assets_list():
@@ -683,9 +683,9 @@ def test_generate_draft_mode():
     assert patch["specs"]["resolution"] == "768x432"
     assert patch["specs"]["stg_scale"] == 0.5
     assert patch["specs"]["draft_mode"] is True
-    assert "~$0.01" in patch["compute_quote"]
-    assert "Draft" in patch["compute_quote"]
-    assert patch["ops"][0]["quote"]["cost_usd"] == 0.01
+    assert "Local Mode" in patch["compute_quote"]
+    assert "Free FFmpeg" in patch["compute_quote"]
+    assert patch["ops"][0]["quote"]["cost_usd"] == 0.00
 
     # Verify metadata saved on disk
     meta_file = OUTPUTS_DIR / f"{job_id}.json"
@@ -786,3 +786,32 @@ def test_cockpit_status_includes_launch_time(monkeypatch):
     assert data["instance"]["launch_time"] == "2026-08-21T10:00:00Z"
     assert "uptime_minutes" in data
     assert "estimated_cost_usd" in data
+
+def test_generate_with_camera_motion():
+    """Verify camera parameters are compiled into prompt and STG."""
+    res = client.post(
+        "/api/generate",
+        headers=AUTH,
+        json={
+            "prompt": "Cybernetic tiger in neon jungle",
+            "seconds": 2.0,
+            "camera_pan": "right",
+            "camera_tilt": "up",
+            "camera_zoom": "in",
+            "camera_intensity": 3,
+            "stg_scale": 1.0,
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "job_id" in data
+    
+    meta = data["meta"]
+    enhanced = meta["enhanced_prompt"]
+    assert "cinematic slow pan right" in enhanced
+    assert "smooth tilt up" in enhanced
+    assert "smooth dolly zoom in" in enhanced
+    assert "stable camera track" in enhanced
+    
+    # stg should be scaled: base 1.0 + (3 * 0.1) = 1.3
+    assert abs(meta["stg_scale"] - 1.3) < 0.001

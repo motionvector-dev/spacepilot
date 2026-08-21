@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const aspectBtns = document.querySelectorAll('#group-aspect .mv-seg-btn');
   const durationBtns = document.querySelectorAll('#group-duration .mv-seg-btn');
   const inputStg = document.getElementById('input-stg');
+  const camPanBtns = document.querySelectorAll('#group-cam-pan .mv-seg-btn');
+  const camTiltBtns = document.querySelectorAll('#group-cam-tilt .mv-seg-btn');
+  const camZoomBtns = document.querySelectorAll('#group-cam-zoom .mv-seg-btn');
+  const camRollBtns = document.querySelectorAll('#group-cam-roll .mv-seg-btn');
+  const inputCamIntensity = document.getElementById('input-cam-intensity');
+  const camIntensityDisplay = document.getElementById('cam-intensity-display');
   const stgVal = document.getElementById('stg-val');
   const stgDisplay = document.getElementById('stg-display');
 
@@ -32,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const diffPromptVal = document.getElementById('diff-prompt-val');
   const diffEngineVal = document.getElementById('diff-engine-val');
   const diffStgVal = document.getElementById('diff-stg-val');
+  const diffCameraRow = document.getElementById('diff-camera-row');
+  const diffCameraVal = document.getElementById('diff-camera-val');
   const diffAspectVal = document.getElementById('diff-aspect-val');
   const diffDurationVal = document.getElementById('diff-duration-val');
   const diffSeedVal = document.getElementById('diff-seed-val');
@@ -92,6 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
     steps: 30,
     fps: 24,
     draftMode: false,
+    cameraPan: 'static',
+    cameraTilt: 'static',
+    cameraZoom: 'static',
+    cameraRoll: 'none',
+    cameraIntensity: 3,
+    gpuOnline: false,
     imageFile: null,
     imagePath: null,
     imageWidth: null,
@@ -118,6 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const frames = Math.floor((config.seconds * config.fps - 1) / 8) * 8 + 1;
       diffDurationVal.textContent = `${config.seconds.toFixed(1)}s (${frames} frames)`;
     }
+    
+    if (diffCameraRow && diffCameraVal) {
+      let motions = [];
+      if (config.cameraPan !== 'static') motions.push(`Pan ${config.cameraPan}`);
+      if (config.cameraTilt !== 'static') motions.push(`Tilt ${config.cameraTilt}`);
+      if (config.cameraZoom !== 'static') motions.push(`Zoom ${config.cameraZoom}`);
+      if (config.cameraRoll !== 'none') motions.push(config.cameraRoll === 'orbit' ? 'Orbit 360' : `Roll ${config.cameraRoll}`);
+
+      if (motions.length > 0) {
+        diffCameraRow.style.display = 'flex';
+        diffCameraVal.textContent = `${motions.join(', ')} (Intensity ${config.cameraIntensity})`;
+      } else {
+        diffCameraRow.style.display = 'none';
+      }
+    }
+
     if (diffSeedVal) {
       diffSeedVal.textContent = 'Dynamic (Auto)';
     }
@@ -133,10 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const costBadgeText = config.draftMode ? '~$0.01 · Spot Compute' : '~$0.04 · Spot Compute';
-    const computeQuoteText = config.draftMode
-      ? 'Estimated Spot compute: ~$0.01 (No charge on failure)'
-      : 'Estimated Spot compute: ~$0.04 (No charge on failure)';
+    let costBadgeText, computeQuoteText;
+    if (config.gpuOnline) {
+      costBadgeText = config.draftMode ? '~$0.01 · Spot Draft' : '~$0.04 · Spot Compute (L40S)';
+      computeQuoteText = config.draftMode
+        ? 'Estimated Spot compute: ~$0.01 (No charge on failure)'
+        : 'Estimated Spot compute: ~$0.04 (No charge on failure)';
+    } else {
+      costBadgeText = '$0.00 · Local Mock Mode';
+      computeQuoteText = 'Local Mode (Free FFmpeg Preview)';
+    }
 
     if (patchCostBadge) patchCostBadge.textContent = costBadgeText;
     if (patchComputeQuote) patchComputeQuote.textContent = computeQuoteText;
@@ -295,6 +331,31 @@ document.addEventListener('DOMContentLoaded', () => {
     config.stg = parseFloat(val);
     updatePatchCardDiff();
   });
+
+  
+  function setupCamGroup(btns, configKey) {
+    if (!btns) return;
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        config[configKey] = btn.dataset.val;
+        updatePatchCardDiff();
+      });
+    });
+  }
+  setupCamGroup(camPanBtns, 'cameraPan');
+  setupCamGroup(camTiltBtns, 'cameraTilt');
+  setupCamGroup(camZoomBtns, 'cameraZoom');
+  setupCamGroup(camRollBtns, 'cameraRoll');
+
+  if (inputCamIntensity) {
+    inputCamIntensity.addEventListener('input', (e) => {
+      config.cameraIntensity = parseInt(e.target.value, 10);
+      camIntensityDisplay.textContent = config.cameraIntensity;
+      updatePatchCardDiff();
+    });
+  }
 
   // Toggle Diff Inspector
   if (btnToggleDiff && diffOpsList) {
@@ -519,7 +580,14 @@ document.addEventListener('DOMContentLoaded', () => {
       steps: config.steps,
       fps: config.fps,
       enhance: false,
-      draft_mode: config.draftMode
+      draft_mode: config.draftMode,
+
+      camera_pan: config.cameraPan !== 'static' ? config.cameraPan : null,
+      camera_tilt: config.cameraTilt !== 'static' ? config.cameraTilt : null,
+      camera_zoom: config.cameraZoom !== 'static' ? config.cameraZoom : null,
+      camera_roll: config.cameraRoll !== 'none' ? config.cameraRoll : null,
+      camera_intensity: config.cameraIntensity,
+
     };
 
     if (config.imagePath) {
