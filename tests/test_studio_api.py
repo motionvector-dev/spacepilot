@@ -39,6 +39,11 @@ GATED_POSTS = [
     ("/api/cockpit/config", {"config": {}}),
     ("/api/generate/music", {"prompt": "x", "lyrics": "[Intro]"}),
     ("/api/generate/voice", {"text": "x"}),
+    ("/api/gpu/inspect/action", {"action": "clear_tmp"}),
+    ("/api/sky/schedule", {"task_name": "worker"}),
+    ("/api/sky/failover", {"reason": "preemption"}),
+    ("/api/sky/terminate", {}),
+    ("/api/storyboard/decompose", {"script": "astronaut on moon"}),
 ]
 
 # POST routes that spend nothing and so need no token. Both are pure local
@@ -1169,3 +1174,130 @@ def test_generate_video_4take_batch():
     for i, job in enumerate(data["jobs"]):
         assert job["meta"]["take_index"] == i + 1
         assert job["meta"]["take_group_id"] == data["take_group_id"]
+
+
+def test_sky_arbitrage_clouds_endpoint():
+    """Verify /api/sky/clouds returns 12+ cloud arbitrage matrix with pricing and preemption rates."""
+    response = client.get("/api/sky/clouds")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["providers_count"] >= 12
+    matrix = data["arbitrage_matrix"]
+    assert len(matrix) >= 12
+    # Verify fields in matrix items
+    for item in matrix:
+        assert "provider" in item
+        assert "spot_price_usd" in item
+        assert "ondemand_price_usd" in item
+        assert "preemption_risk" in item
+        assert "vram_gb" in item
+        assert "savings_vs_ondemand_pct" in item
+
+
+def test_sky_status_and_yaml_endpoint():
+    """Verify /api/sky/status and /api/sky/yaml return valid telemetry and declarative YAML."""
+    res_status = client.get("/api/sky/status")
+    assert res_status.status_code == 200
+    st = res_status.json()
+    assert "active" in st
+    assert "arbitrage_best_option" in st
+    assert "multi_cloud_providers_tracked" in st
+    assert st["multi_cloud_providers_tracked"] >= 12
+
+    res_yaml = client.get("/api/sky/yaml?cloud=lambda&accelerators=L40S:1")
+    assert res_yaml.status_code == 200
+    yaml_data = res_yaml.json()
+    assert yaml_data["status"] == "ok"
+    assert "spacepilot-ltx-worker" in yaml_data["yaml"]
+    assert "L40S:1" in yaml_data["yaml"]
+    assert "use_spot: true" in yaml_data["yaml"]
+
+
+def test_sky_schedule_and_failover_lifecycle():
+    """Verify /api/sky/schedule launches spot cluster and /api/sky/failover triggers recovery."""
+    # 1. Schedule on Lambda Spot
+    req = {
+        "task_name": "spacepilot-cinematic-prod",
+        "provider": "lambda",
+        "accelerator": "L40S:1",
+        "use_spot": True,
+        "auto_failover": True,
+    }
+    sched_res = client.post("/api/sky/schedule", json=req, headers=AUTH)
+    assert sched_res.status_code == 200
+    sched_data = sched_res.json()
+    assert sched_data["status"] == "scheduled"
+    assert sched_data["provider"] == "lambda"
+    assert "yaml_spec" in sched_data
+
+    # 2. Check live status
+    status_res = client.get("/api/sky/status")
+    assert status_res.status_code == 200
+    assert status_res.json()["active"] is True
+    assert status_res.json()["provider"] == "lambda"
+
+    # 3. Trigger spot preemption failover
+    failover_res = client.post("/api/sky/failover", json={"reason": "Spot 2-minute preemption signal"}, headers=AUTH)
+    assert failover_res.status_code == 200
+    f_data = failover_res.json()
+    assert f_data["status"] == "recovered"
+    assert f_data["failover"]["source_provider"] == "lambda"
+    assert f_data["failover"]["downtime_seconds"] <= 2.0
+    assert "data_loss" in f_data["failover"]
+
+    # 4. Terminate cluster
+    term_res = client.post("/api/sky/terminate", headers=AUTH)
+    assert term_res.status_code == 200
+    assert term_res.json()["status"] == "terminated"
+
+
+def test_storyboard_decompose_endpoint():
+    """Verify /api/storyboard/decompose parses a prompt into structured scenes with 3D camera vectors."""
+    payload = {
+        "script": "A lone cybernetic samurai wanders through neo-Tokyo in the rain, discovers an ancient glowing temple, and enters a parallel dimension.",
+        "target_duration_sec": 60.0,
+        "scene_count": 6,
+        "style": "cyberpunk cinematic",
+    }
+    res = client.post("/api/storyboard/decompose", json=payload, headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["scene_count"] == 6
+    assert "scenes" in data
+    assert len(data["scenes"]) == 6
+
+    # Verify each scene structure
+    for idx, scene in enumerate(data["scenes"]):
+        assert "scene_id" in scene
+        assert "scene_idx" in scene
+        assert "prompt" in scene
+        assert "camera_motion" in scene
+        assert "camera_vector" in scene
+        assert "pan" in scene["camera_vector"]
+        assert "tilt" in scene["camera_vector"]
+        assert "zoom" in scene["camera_vector"]
+        assert "orbit" in scene["camera_vector"]
+        assert "shot_type" in scene
+        assert "lighting" in scene
+        assert "transition" in scene
+        assert "character_seed" in scene
+        assert scene["character_seed"] == data["character_seed"]
+
+
+def test_storyboard_decompose_custom_scene_count_and_vectors():
+    """Verify Storyboard Decomposer enforces 8 scenes and duration summation."""
+    payload = {
+        "script": "Cosmic voyage from the core of the sun to the edge of the known universe.",
+        "target_duration_sec": 48.0,
+        "scene_count": 8,
+        "style": "interstellar sci-fi",
+    }
+    res = client.post("/api/storyboard/decompose", json=payload, headers=AUTH)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["scene_count"] == 8
+    assert len(data["scenes"]) == 8
+    assert abs(data["total_duration_sec"] - 48.0) < 0.5
+

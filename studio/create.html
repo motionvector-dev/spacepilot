@@ -1273,10 +1273,16 @@
         <div class="card-prompt">
           <div class="prompt-header">
             <span class="section-label">Prompt Definition</span>
-            <button id="btn-enhance" class="btn-enhance" title="AI Prompt Expansion">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <span>Enhance</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-decompose-modal" class="btn-enhance" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); color: #c084fc;" title="Gemini Storyboard Decomposer (60s -> 6-8 Scenes)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+                <span>🎭 Decompose Script</span>
+              </button>
+              <button id="btn-enhance" class="btn-enhance" title="AI Prompt Expansion">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span>Enhance</span>
+              </button>
+            </div>
           </div>
 
           <textarea 
@@ -1679,7 +1685,81 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             <span>Open in Pro Studio Editor</span>
           </a>
+    </div>
+
+    <!-- Gemini Storyboard Decomposer Modal -->
+    <div id="modal-storyboard" class="diff-dialog-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 24px;">
+      <div style="background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 16px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.7);">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 22px;">🎭</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main);">Gemini Storyboard & Script Decomposer</h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Deconstruct full scripts or 60s narratives into 6–8 cinematic shots with locked character seeds and 3D camera trajectory tokens.</p>
+            </div>
+          </div>
+          <button id="btn-close-storyboard" class="btn-secondary" style="padding: 4px 10px; font-size: 12px;">✕ Close</button>
         </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">Full Narrative / Screenplay Prompt</label>
+          <textarea id="storyboard-script-input" class="prompt-textarea" style="height: 110px;" placeholder="Paste a 60-second narrative story or script here... (e.g. A solitary cybernetic samurai wanders through rain-drenched Neo-Tokyo, discovers an ancient glowing temple hidden beneath skyscrapers, and steps through a portal of pure starlight into hyperspace.)"></textarea>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" style="font-size: 11px;">Target Duration</label>
+              <select id="storyboard-duration" class="form-select" style="font-size: 12px;">
+                <option value="60.0" selected>60s (Standard Storyboard)</option>
+                <option value="45.0">45s (Fast Narrative)</option>
+                <option value="30.0">30s (Short Promo)</option>
+                <option value="90.0">90s (Extended Short)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-size: 11px;">Scene Count</label>
+              <select id="storyboard-scenes" class="form-select" style="font-size: 12px;">
+                <option value="6" selected>6 Scenes (Recommended)</option>
+                <option value="4">4 Scenes</option>
+                <option value="8">8 Scenes (Deep Directing)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-size: 11px;">Directing Style</label>
+              <select id="storyboard-style" class="form-select" style="font-size: 12px;">
+                <option value="Cinematic 35mm Hollywood" selected>Cinematic 35mm</option>
+                <option value="Sci-Fi Cyberpunk Noir">Sci-Fi Cyberpunk Noir</option>
+                <option value="Bioluminescent Nature Documentary">Nature Documentary</option>
+                <option value="Anime Masterpiece Studio Ghibli">Anime Masterpiece</option>
+              </select>
+            </div>
+
+            <div style="display: flex; align-items: flex-end;">
+              <button id="btn-run-storyboard" class="btn-generate-main" style="width: 100%; height: 38px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>🎭 Deconstruct Narrative</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decomposed Scenes Output Grid -->
+        <div id="storyboard-output-area" style="display: none; flex-direction: column; gap: 12px; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-purple); font-weight: 700;">
+              ✨ Generated Storyboard (<span id="storyboard-scene-count-badge">6</span> Scenes · <span id="storyboard-total-dur-badge">60.0s</span> Total)
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);">
+              Locked Character Seed: <span id="storyboard-seed-badge" style="color: var(--accent-emerald);">#482910</span>
+            </div>
+          </div>
+
+          <div id="storyboard-scenes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+            <!-- Rendered by create.js -->
+          </div>
+        </div>
+
       </div>
     </div>
 

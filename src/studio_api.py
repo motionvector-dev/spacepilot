@@ -49,8 +49,10 @@ STUDIO_DIR.mkdir(parents=True, exist_ok=True)
 # Import CLI helpers
 sys.path.append(str(PLUTO_ROOT / "src"))
 from cli import get_instance_info, load_config, save_config, fetch_worker_health, run_cmd
+from skypilot_orchestrator import sky_orchestrator, generate_skypilot_yaml
+from storyboard_decomposer import decompose_storyboard
 
-app = FastAPI(title="Pluto Studio Video API", version="2.2.0")
+app = FastAPI(title="Pluto Studio Video API", version="2.4.0")
 
 
 @app.get("/healthz")
@@ -2298,6 +2300,111 @@ def post_inspect_action(req: InspectActionRequest, _: None = Depends(require_tok
         return {"ok": True, "message": f"Action {req.action} executed successfully", "output": res.stdout}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SKYPILOT SPOT ORCHESTRATOR & MULTI-CLOUD ARBITRAGE ROUTES
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SkyScheduleRequest(BaseModel):
+    task_name: str = "spacepilot-ltx-worker"
+    provider: Optional[str] = None
+    accelerator: Optional[str] = None
+    use_spot: bool = True
+    auto_failover: bool = True
+    checkpoint_sync: bool = True
+
+class SkyFailoverRequest(BaseModel):
+    reason: str = "Manual preemption trigger / cloud arbitrage rebalance"
+
+@app.get("/api/sky/clouds")
+def get_sky_clouds_api(sort_by: str = "spot_price"):
+    """Return live 12+ multi-cloud spot arbitrage matrix."""
+    return {
+        "status": "ok",
+        "providers_count": len(sky_orchestrator.catalog),
+        "arbitrage_matrix": sky_orchestrator.get_arbitrage_matrix(sort_by=sort_by),
+    }
+
+@app.get("/api/sky/status")
+def get_sky_status_api():
+    """Return SkyPilot orchestrator cluster status and preemption failover metrics."""
+    return sky_orchestrator.get_status()
+
+@app.get("/api/sky/yaml")
+def get_sky_yaml_api(
+    task_name: str = "spacepilot-ltx-worker",
+    accelerators: str = "L40S:1",
+    cloud: Optional[str] = None,
+    use_spot: bool = True,
+):
+    """Return declarative SkyPilot YAML specification."""
+    yaml_content = generate_skypilot_yaml(
+        task_name=task_name,
+        accelerators=accelerators,
+        cloud=cloud,
+        use_spot=use_spot,
+    )
+    return {"status": "ok", "yaml": yaml_content}
+
+@app.post("/api/sky/schedule")
+def post_sky_schedule_api(req: SkyScheduleRequest, _: None = Depends(require_token)):
+    """Schedule and launch spot task across multi-cloud cluster."""
+    update_activity()
+    res = sky_orchestrator.schedule_spot_task(
+        task_name=req.task_name,
+        provider=req.provider,
+        accelerator=req.accelerator,
+        use_spot=req.use_spot,
+        auto_failover=req.auto_failover,
+        checkpoint_sync=req.checkpoint_sync,
+    )
+    return res
+
+@app.post("/api/sky/failover")
+def post_sky_failover_api(req: SkyFailoverRequest, _: None = Depends(require_token)):
+    """Trigger instantaneous preemption failover with zero data loss."""
+    update_activity()
+    res = sky_orchestrator.trigger_preemption_failover(reason=req.reason)
+    return res
+
+@app.post("/api/sky/terminate")
+def post_sky_terminate_api(_: None = Depends(require_token)):
+    """Terminate active SkyPilot spot cluster."""
+    update_activity()
+    res = sky_orchestrator.terminate_cluster()
+    return res
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GEMINI STORYBOARD & SCRIPT DECOMPOSER ROUTES
+# ─────────────────────────────────────────────────────────────────────────────
+
+class StoryboardDecomposeRequest(BaseModel):
+    script: str
+    target_duration_sec: float = Field(default=60.0, ge=10.0, le=300.0)
+    scene_count: int = Field(default=6, ge=4, le=10)
+    style: str = "cinematic"
+    model: str = "gemini-3.7-flash"
+    character_seed: Optional[int] = None
+
+@app.post("/api/storyboard/decompose")
+def post_storyboard_decompose_api(req: StoryboardDecomposeRequest, _: None = Depends(require_token)):
+    """Deconstructs narrative into 6-8 cinematic storyboard scenes with 3D camera trajectory vectors."""
+    script_text = req.script.strip()
+    if not script_text:
+        raise HTTPException(status_code=400, detail="Script or prompt text is required")
+    
+    update_activity()
+    result = decompose_storyboard(
+        script=script_text,
+        target_duration_sec=req.target_duration_sec,
+        scene_count=req.scene_count,
+        style=req.style,
+        model=req.model,
+        character_seed=req.character_seed,
+    )
+    return result
 
 
 @app.get("/")

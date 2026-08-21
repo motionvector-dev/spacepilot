@@ -10,6 +10,8 @@ from src.pluto_mcp_server import (
     pluto_generate_music,
     pluto_get_render_status,
     pluto_get_fleet_status,
+    pluto_skypilot_arbitrage,
+    pluto_decompose_storyboard,
     get_ltx25_model_info,
     get_voice_catalogue
 )
@@ -45,6 +47,17 @@ def test_pluto_get_fleet_status():
     assert "instances" in result
     assert result["status"] == "healthy"
 
+def test_pluto_skypilot_arbitrage():
+    result = pluto_skypilot_arbitrage()
+    assert result["status"] == "ok"
+    assert "arbitrage_matrix" in result
+    assert len(result["arbitrage_matrix"]) >= 12
+
+def test_pluto_decompose_storyboard():
+    result = pluto_decompose_storyboard(script="Cosmic voyage across the multiverse", scene_count=6)
+    assert result["status"] == "success"
+    assert len(result["scenes"]) == 6
+
 def test_get_ltx25_model_info():
     result = get_ltx25_model_info()
     assert "Float8" in result
@@ -57,3 +70,4 @@ def test_get_voice_catalogue():
     import json
     data = json.loads(result)
     assert len(data) == 10
+

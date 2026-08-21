@@ -1016,7 +1016,131 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 6. Action Handlers
+  // ─────────────────────────────────────────────────────────────────────────
+  // 6. Gemini Storyboard Decomposer
+  // ─────────────────────────────────────────────────────────────────────────
+  const btnDecomposeModal = document.getElementById('btn-decompose-modal');
+  const modalStoryboard = document.getElementById('modal-storyboard');
+  const btnCloseStoryboard = document.getElementById('btn-close-storyboard');
+  const btnRunStoryboard = document.getElementById('btn-run-storyboard');
+  const storyboardScriptInput = document.getElementById('storyboard-script-input');
+  const storyboardDuration = document.getElementById('storyboard-duration');
+  const storyboardScenes = document.getElementById('storyboard-scenes');
+  const storyboardStyle = document.getElementById('storyboard-style');
+  const storyboardOutputArea = document.getElementById('storyboard-output-area');
+  const storyboardScenesGrid = document.getElementById('storyboard-scenes-grid');
+  const storyboardSceneCountBadge = document.getElementById('storyboard-scene-count-badge');
+  const storyboardTotalDurBadge = document.getElementById('storyboard-total-dur-badge');
+  const storyboardSeedBadge = document.getElementById('storyboard-seed-badge');
+
+  if (btnDecomposeModal && modalStoryboard) {
+    btnDecomposeModal.addEventListener('click', () => {
+      // Pre-fill script input if current prompt has text
+      if (promptInput.value.trim() && !storyboardScriptInput.value.trim()) {
+        storyboardScriptInput.value = promptInput.value.trim();
+      }
+      modalStoryboard.style.display = 'flex';
+    });
+  }
+
+  if (btnCloseStoryboard && modalStoryboard) {
+    btnCloseStoryboard.addEventListener('click', () => {
+      modalStoryboard.style.display = 'none';
+    });
+  }
+
+  if (btnRunStoryboard) {
+    btnRunStoryboard.addEventListener('click', async () => {
+      const scriptText = (storyboardScriptInput.value || '').trim() || promptInput.value.trim();
+      if (!scriptText) {
+        showToast('Please enter a story or script to decompose');
+        return;
+      }
+
+      btnRunStoryboard.disabled = true;
+      btnRunStoryboard.innerHTML = '<span>⏳ Deconstructing narrative...</span>';
+
+      const token = await getAuthToken();
+      try {
+        const payload = {
+          script: scriptText,
+          target_duration_sec: parseFloat(storyboardDuration.value || 60.0),
+          scene_count: parseInt(storyboardScenes.value || 6, 10),
+          style: storyboardStyle.value || 'Cinematic 35mm Hollywood',
+        };
+
+        const res = await fetch('/api/storyboard/decompose', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Pluto-Token': token,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server error (${res.status})`);
+        }
+
+        const data = await res.json();
+        const scenes = data.scenes || [];
+
+        storyboardSceneCountBadge.textContent = scenes.length;
+        storyboardTotalDurBadge.textContent = `${data.total_duration_sec || 60}s`;
+        storyboardSeedBadge.textContent = `#${data.character_seed || 482910}`;
+
+        storyboardScenesGrid.innerHTML = '';
+        scenes.forEach((sc, idx) => {
+          const card = document.createElement('div');
+          card.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative;';
+
+          card.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase;">Scene ${sc.scene_idx || (idx + 1)} · ${sc.duration_sec}s</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; background: rgba(59,130,246,0.15); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px;">${sc.camera_motion || 'Dolly In'}</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${sc.title || `Shot ${idx+1}`}</div>
+            <p style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45; max-height: 72px; overflow-y: auto;">${sc.prompt}</p>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); border-top: 1px solid var(--border-subtle); padding-top: 6px; margin-top: 4px;">
+              <div>🎬 ${sc.shot_type || 'Tracking'} · 💡 ${sc.lighting ? sc.lighting.split(' ')[0] : 'Cinematic'}</div>
+            </div>
+            <button class="btn-secondary btn-apply-scene" style="margin-top: 6px; width: 100%; padding: 4px 8px; font-size: 11px;" data-prompt="${sc.prompt.replace(/"/g, '&quot;')}" data-seed="${sc.character_seed}">
+              ✨ Use Scene in Prompt
+            </button>
+          `;
+          storyboardScenesGrid.appendChild(card);
+        });
+
+        // Attach apply scene buttons
+        document.querySelectorAll('.btn-apply-scene').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const p = e.currentTarget.getAttribute('data-prompt');
+            const s = e.currentTarget.getAttribute('data-seed');
+            promptInput.value = p;
+            if (s && seedInput) {
+              seedInput.value = s;
+            }
+            updateCharCounter();
+            updatePatchCardDiff();
+            modalStoryboard.style.display = 'none';
+            showToast('Loaded decomposed scene into prompt editor!');
+          });
+        });
+
+        storyboardOutputArea.style.display = 'flex';
+        showToast(`Decomposed into ${scenes.length} cinematic scenes!`);
+
+      } catch (err) {
+        showToast(`Decomposition error: ${err.message}`);
+      } finally {
+        btnRunStoryboard.disabled = false;
+        btnRunStoryboard.innerHTML = '<span>🎭 Deconstruct Narrative</span>';
+      }
+    });
+  }
+
+  // 7. Action Handlers
   btnRestart.addEventListener('click', () => {
     panelCompleted.style.display = 'none';
     panelGenerating.style.display = 'none';
@@ -1034,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 7. Hot Reload Listener
+  // 8. Hot Reload Listener
   try {
     const evtSource = new EventSource('/api/live-reload');
     evtSource.onmessage = (e) => {

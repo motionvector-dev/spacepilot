@@ -918,43 +918,51 @@
         </div>
 
         <div style="margin-top: 24px;">
-           <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-main);">Live Regional Price & GPU Fleet Availability Matrix</h4>
-           <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-             <thead>
-               <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted);">
-                 <th style="padding: 8px;">Provider</th>
-                 <th style="padding: 8px;">GPU Type</th>
-                 <th style="padding: 8px;">Spot Rate / Hr</th>
-                 <th style="padding: 8px;">Availability</th>
-               </tr>
-             </thead>
-             <tbody>
-               <tr style="border-bottom: 1px solid var(--border-light);">
-                 <td style="padding: 8px;">AWS Direct</td>
-                 <td style="padding: 8px;">g6e.xlarge (L40S)</td>
-                 <td style="padding: 8px;">$0.75</td>
-                 <td style="padding: 8px; color: var(--accent-emerald);">High</td>
-               </tr>
-               <tr style="border-bottom: 1px solid var(--border-light);">
-                 <td style="padding: 8px;">RunPod</td>
-                 <td style="padding: 8px;">1x RTX 4090</td>
-                 <td style="padding: 8px;">$0.69</td>
-                 <td style="padding: 8px; color: var(--accent-emerald);">Medium</td>
-               </tr>
-               <tr style="border-bottom: 1px solid var(--border-light);">
-                 <td style="padding: 8px;">Lambda Labs</td>
-                 <td style="padding: 8px;">1x A100</td>
-                 <td style="padding: 8px;">$0.79</td>
-                 <td style="padding: 8px; color: var(--accent-rose);">Low</td>
-               </tr>
-               <tr>
-                 <td style="padding: 8px;">Local Homelab</td>
-                 <td style="padding: 8px;">Mac / RTX Rig</td>
-                 <td style="padding: 8px;">$0.00</td>
-                 <td style="padding: 8px; color: var(--accent-emerald);">Ready</td>
-               </tr>
-             </tbody>
-           </table>
+           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+             <h4 style="font-size: 14px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+               <span>☁️ SkyPilot Multi-Cloud Spot Arbitrage Matrix</span>
+               <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">12+ Clouds Active</span>
+             </h4>
+             <div style="display: flex; gap: 8px;">
+               <button id="btn-sky-failover" class="btn-action" style="font-size: 11px; padding: 4px 10px; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--accent-amber);" title="Simulate / Trigger Zero-Data-Loss Spot Preemption Failover">
+                 ⚡ Trigger Preemption Failover
+               </button>
+               <button id="btn-sky-yaml" class="btn-action" style="font-size: 11px; padding: 4px 10px;" title="View Declarative SkyPilot YAML">
+                 📄 SkyPilot YAML
+               </button>
+             </div>
+           </div>
+           
+           <div id="sky-cluster-banner" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+             <div>
+               <span style="color: var(--text-dim);">SkyPilot Cluster: </span>
+               <strong id="sky-active-name" style="color: var(--text-main);">Auto-Arbitrage Mode</strong>
+               <span id="sky-active-badge" style="margin-left: 8px; color: var(--accent-emerald);">● R2 Checkpoint Synced</span>
+             </div>
+             <div>
+               <span style="color: var(--text-dim);">Preemption Failovers: </span>
+               <strong id="sky-failover-count" style="color: var(--accent-amber);">0</strong>
+             </div>
+           </div>
+
+           <div style="overflow-x: auto;">
+             <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'JetBrains Mono', monospace;">
+               <thead>
+                 <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted);">
+                   <th style="padding: 8px;">Cloud Provider</th>
+                   <th style="padding: 8px;">GPU Accelerator</th>
+                   <th style="padding: 8px;">VRAM</th>
+                   <th style="padding: 8px;">Spot / Hr</th>
+                   <th style="padding: 8px;">On-Demand</th>
+                   <th style="padding: 8px;">Preemption Risk</th>
+                   <th style="padding: 8px;">Action</th>
+                 </tr>
+               </thead>
+               <tbody id="sky-arbitrage-tbody">
+                 <!-- Populated dynamically by cockpit.js from /api/sky/clouds -->
+               </tbody>
+             </table>
+           </div>
         </div>
       </div>
 

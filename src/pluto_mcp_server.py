@@ -96,6 +96,50 @@ def pluto_get_fleet_status() -> Dict[str, Any]:
     """
     return {"vram_usage": 0.5, "instances": 10, "status": "healthy"}
 
+@mcp.tool()
+def pluto_skypilot_arbitrage(sort_by: str = "spot_price") -> Dict[str, Any]:
+    """Query real-time spot GPU prices and preemption rates across 12+ cloud providers via SkyPilot.
+    
+    Args:
+        sort_by (str, optional): Metric to sort by ("spot_price", "preemption_rate", "vram"). Defaults to "spot_price".
+        
+    Returns:
+        Dict[str, Any]: 12+ cloud arbitrage rankings and recommended spot instance.
+    """
+    try:
+        from src.skypilot_orchestrator import sky_orchestrator
+        return {
+            "status": "ok",
+            "arbitrage_matrix": sky_orchestrator.get_arbitrage_matrix(sort_by=sort_by),
+            "best_option": sky_orchestrator.get_cheapest_cloud(),
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@mcp.tool()
+def pluto_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
+    """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
+    
+    Args:
+        script (str): The narrative story or high-level video prompt.
+        scene_count (int, optional): Number of scenes (4-10). Defaults to 6.
+        target_duration_sec (float, optional): Total duration in seconds. Defaults to 60.0.
+        style (str, optional): Visual directing style. Defaults to "cinematic".
+        
+    Returns:
+        Dict[str, Any]: Structured scenes with locked character seed and 3D camera trajectory tokens.
+    """
+    try:
+        from src.storyboard_decomposer import decompose_storyboard
+        return decompose_storyboard(
+            script=script,
+            target_duration_sec=target_duration_sec,
+            scene_count=scene_count,
+            style=style,
+        )
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @mcp.resource("pluto://models/ltx25")
 def get_ltx25_model_info() -> str:
     """Get information about the LTX25 model.

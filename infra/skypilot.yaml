@@ -1,0 +1,75 @@
+# SpacePilot SkyPilot Multi-Cloud Spot Specification (v2.4.0)
+# Declarative multi-cloud spot orchestrator with automated preemption recovery & R2 checkpoint sync.
+name: spacepilot-ltx-worker
+
+resources:
+  accelerators: {L40S:1, A100:1, H100:1, RTX4090:1, L4:1}
+  any_of:
+    - cloud: lambda
+      accelerators: L40S:1
+      use_spot: true
+    - cloud: runpod
+      accelerators: RTX4090:1
+      use_spot: true
+    - cloud: aws
+      instance_type: g6e.2xlarge
+      use_spot: true
+    - cloud: gcp
+      instance_type: g2-standard-8
+      accelerators: L4:1
+      use_spot: true
+    - cloud: shadeform
+      accelerators: L40S:1
+      use_spot: true
+    - cloud: nebius
+      accelerators: L40S:1
+      use_spot: true
+    - cloud: oci
+      accelerators: A100:1
+      use_spot: true
+    - cloud: coreweave
+      accelerators: A100:1
+      use_spot: true
+    - cloud: scaleway
+      accelerators: L40S:1
+      use_spot: true
+    - cloud: fluidstack
+      accelerators: RTX4090:1
+      use_spot: true
+    - cloud: crusoe
+      accelerators: L40S:1
+      use_spot: true
+    - cloud: together
+      accelerators: H100:1
+      use_spot: true
+  spot_recovery: failover
+  disk_size: 150
+  disk_tier: high
+
+file_mounts:
+  /workspace/checkpoints:
+    source: r2://spacepilot-checkpoints
+    mode: MOUNT
+  /workspace/outputs:
+    source: s3://spacepilot-outputs
+    mode: MOUNT
+
+envs:
+  MODEL_ID: "Lightricks/LTX-Video"
+  PRECISION: "bfloat16"
+  MAX_IDLE_MINUTES: "20"
+  LOCAL_WORKER_PORT: "8000"
+
+setup: |
+  echo "[SpacePilot] Initializing resident worker environment..."
+  conda create -n spacepilot python=3.11 -y || true
+  conda activate spacepilot
+  pip install --upgrade pip torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+  pip install fastapi uvicorn pydantic diffusers transformers accelerate safetensors sentencepiece protobuf
+  echo "[SpacePilot] Pre-caching LTX-2.5 weights to NVMe..."
+  python -c "from diffusers import LTXPipeline; import torch; pipe = LTXPipeline.from_pretrained('Lightricks/LTX-Video', torch_dtype=torch.bfloat16)" || true
+
+run: |
+  echo "[SpacePilot] Starting high-performance LTX-2.5 inference server with dead-man auto-shutdown..."
+  conda activate spacepilot
+  python -m uvicorn src.ltx_worker:app --host 0.0.0.0 --port 8000
