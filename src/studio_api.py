@@ -52,7 +52,7 @@ from cli import get_instance_info, load_config, save_config, fetch_worker_health
 from skypilot_orchestrator import sky_orchestrator, generate_skypilot_yaml
 from storyboard_decomposer import decompose_storyboard
 
-app = FastAPI(title="Pluto Studio Video API", version="2.4.0")
+app = FastAPI(title="SpacePilot Studio API", version="2.8.0", docs_url="/api/docs", redoc_url="/api/redoc")
 
 
 @app.get("/healthz")
@@ -2900,6 +2900,14 @@ def read_cockpit():
     cockpit_file = STUDIO_DIR / "cockpit.html"
     if cockpit_file.exists():
         return FileResponse(cockpit_file)
+    return FileResponse(STUDIO_DIR / "index.html")
+
+@app.get("/docs")
+@app.get("/documentation")
+def read_docs():
+    docs_file = STUDIO_DIR / "docs.html"
+    if docs_file.exists():
+        return FileResponse(docs_file)
     return FileResponse(STUDIO_DIR / "index.html")
 
 # Mount Static Frontend

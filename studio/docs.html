@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpacePilot Developer Portal</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f4f4f5;
+            --bg-tertiary: #e4e4e7;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --border: #e4e4e7;
+            --code-bg: #f4f4f5;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-secondary: #09090b;
+            --bg-tertiary: #18181b;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border: #27272a;
+            --code-bg: #18181b;
+            --success: #34d399;
+            --error: #f87171;
+            --warning: #fbbf24;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        /* Layout */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 100;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 3rem 4rem;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* Search */
+        .search-container {
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem 0.5rem 2rem;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .search-icon {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            fill: var(--text-muted);
+        }
+
+        /* Navigation */
+        .nav-group {
+            margin-bottom: 1.5rem;
+        }
+        .nav-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .nav-list {
+            list-style: none;
+        }
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: block;
+            padding: 0.375rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.1s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+
+        /* Controls */
+        .theme-switcher {
+            margin-top: auto;
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 2px;
+        }
+        .theme-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.25rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .theme-btn.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Typography & Content */
+        h1, h2, h3, h4 {
+            color: var(--text-primary);
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        h1 { font-size: 2.5rem; margin-top: 0; }
+        h2 { font-size: 1.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.25rem; }
+        p { margin-bottom: 1.25rem; color: var(--text-secondary); }
+        
+        .hardware-probe {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        .probe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .probe-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            display: inline-block;
+        }
+        .probe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .probe-card {
+            background-color: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .probe-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        .probe-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+        }
+        .code-header {
+            display: flex;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0;
+        }
+        .code-lang-btn {
+            background: none;
+            border: none;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            border-right: 1px solid var(--border);
+        }
+        .code-lang-btn.active {
+            background-color: var(--code-bg);
+            color: var(--text-primary);
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            margin-bottom: -1px;
+        }
+        .copy-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .copy-btn:hover { color: var(--text-primary); }
+        pre {
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        /* Diagrams */
+        .diagram-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+        }
+        .diagram-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .svg-text { fill: var(--text-primary); }
+        .svg-sub { fill: var(--text-secondary); }
+        .svg-bg { fill: var(--bg-primary); stroke: var(--border); }
+        .svg-accent { stroke: var(--accent); fill: none; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+        }
+        code {
+            background-color: var(--bg-tertiary);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.875em;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .main-content { margin-left: 0; padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            SpacePilot Docs
+        </div>
+        
+        <div class="search-container">
+            <svg class="search-icon" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="text" id="doc-search" class="search-input" placeholder="Search documentation...">
+        </div>
+
+        <nav id="doc-nav">
+            <div class="nav-group">
+                <div class="nav-title">Getting Started</div>
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="#quickstart" class="nav-link active">Quickstart</a></li>
+                    <li class="nav-item"><a href="#architecture" class="nav-link">Platform Architecture</a></li>
+                </ul>
+            </div>
+            <div class="nav-group">
+                <div class="nav-title">Core Engine</div>
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="#models" class="nav-link">Model Zoo & DiT Engines</a></li>
+                    <li class="nav-item"><a href="#audio" class="nav-link">Audio Sidechain</a></li>
+                </ul>
+            </div>
+            <div class="nav-group">
+                <div class="nav-title">Integration</div>
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="#fastmcp" class="nav-link">Agentic FastMCP</a></li>
+                    <li class="nav-item"><a href="#rest-api" class="nav-link">REST API & Auth</a></li>
+                    <li class="nav-item"><a href="#economics" class="nav-link">SkyPilot Economics</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="theme-switcher" id="theme-switcher">
+            <button class="theme-btn" data-theme-val="light">Light</button>
+            <button class="theme-btn active" data-theme-val="dark">Dark</button>
+            <button class="theme-btn" data-theme-val="system">System</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <section id="intro">
+            <h1>SpacePilot Developer Reference</h1>
+            <p>The definitive technical reference for the SpacePilot high-performance video engine, local hardware bridging, and FastMCP agentic integration.</p>
+        </section>
+
+        <!-- LIVE PROBE WIDGET -->
+        <div class="hardware-probe" id="hardware-probe">
+            <div class="probe-header">
+                <div class="probe-title"><span class="status-dot" id="probe-status"></span> Local Compute Probe Active</div>
+                <div class="probe-label" style="margin:0">Polling localhost:8080/api/compute</div>
+            </div>
+            <div class="probe-grid">
+                <div class="probe-card">
+                    <div class="probe-label">Detected VRAM</div>
+                    <div class="probe-value" id="probe-vram">-- GB</div>
+                </div>
+                <div class="probe-card">
+                    <div class="probe-label">Active GPU</div>
+                    <div class="probe-value" id="probe-gpu">Scanning...</div>
+                </div>
+                <div class="probe-card">
+                    <div class="probe-label">Recommended Engine</div>
+                    <div class="probe-value" id="probe-engine">--</div>
+                </div>
+            </div>
+        </div>
+
+        <section id="quickstart" class="doc-section">
+            <h2>1. Quickstart</h2>
+            <p>Zero-configuration local setup. We rely on Doppler for secrets management. Bypass the $0.30 SaaS markup and run your first $0.00 local inference in under 60 seconds.</p>
+            
+            <div class="code-block" data-snippet-id="quickstart">
+                <div class="code-header">
+                    <button class="code-lang-btn active" data-lang="bash">Terminal</button>
+                    <button class="copy-btn">Copy</button>
+                </div>
+                <pre><code class="language-bash"># Install CLI and pull config
+npm i -g @spacepilot/cli
+doppler setup -p spacepilot -c dev_personal
+
+# Run local hardware diagnostics and start daemon
+doppler run -- spacepilot daemon start --port 8080</code></pre>
+            </div>
+        </section>
+
+        <section id="architecture" class="doc-section">
+            <h2>2. Platform Architecture</h2>
+            <p>SpacePilot utilizes a 4-Layer Composable Stack connecting your local editor via FastMCP to either a local Metal/CUDA runtime or a dynamically provisioned Spot Cloud instance based on the Headroom formula.</p>
+            <p><strong>Headroom Formula:</strong> <code>H = VRAM_Total - (OS_Reserve + Model_Weights + KV_Cache + KV_Grad)</code></p>
+            
+            <div class="diagram-container">
+                <svg width="600" height="300" viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="50" y="20" width="500" height="260" rx="4" class="svg-bg" />
+                    
+                    <!-- Layer 1 -->
+                    <rect x="80" y="50" width="120" height="60" rx="4" class="svg-bg" />
+                    <text x="140" y="80" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">Editor/IDE</text>
+                    <text x="140" y="95" text-anchor="middle" class="svg-sub" font-size="10">Cursor / Claude</text>
+                    
+                    <path d="M 200 80 L 260 80" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    
+                    <!-- Layer 2 -->
+                    <rect x="260" y="50" width="120" height="60" rx="4" class="svg-bg" />
+                    <text x="320" y="80" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">FastMCP Server</text>
+                    <text x="320" y="95" text-anchor="middle" class="svg-sub" font-size="10">stdio / HTTP</text>
+                    
+                    <path d="M 320 110 L 320 160" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    
+                    <!-- Layer 3 -->
+                    <rect x="220" y="160" width="200" height="40" rx="4" class="svg-bg" />
+                    <text x="320" y="185" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">Arbitrage Router</text>
+                    
+                    <path d="M 260 200 L 160 230" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    <path d="M 380 200 L 480 230" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    
+                    <!-- Layer 4 Local -->
+                    <rect x="100" y="220" width="120" height="40" rx="4" class="svg-bg" />
+                    <text x="160" y="245" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">Local GPU (H > 0)</text>
+                    
+                    <!-- Layer 4 Cloud -->
+                    <rect x="420" y="220" width="120" height="40" rx="4" class="svg-bg" />
+                    <text x="480" y="245" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">Spot Cloud (H < 0)</text>
+
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" class="svg-text" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </section>
+
+        <section id="models" class="doc-section">
+            <h2>3. Model Zoo & DiT Engines</h2>
+            <p>Our tensor compilation targets the optimal precision for each underlying DiT architecture. Below is the engine capability matrix.</p>
+
+            <div class="diagram-container">
+                <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Matrix Grid -->
+                    <line x1="150" y1="40" x2="150" y2="180" stroke="var(--border)" stroke-width="1"/>
+                    <line x1="300" y1="40" x2="300" y2="180" stroke="var(--border)" stroke-width="1"/>
+                    <line x1="450" y1="40" x2="450" y2="180" stroke="var(--border)" stroke-width="1"/>
+                    
+                    <line x1="20" y1="80" x2="580" y2="80" stroke="var(--border)" stroke-width="1"/>
+                    <line x1="20" y1="130" x2="580" y2="130" stroke="var(--border)" stroke-width="1"/>
+
+                    <!-- Headers -->
+                    <text x="85" y="65" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">Engine</text>
+                    <text x="225" y="65" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">Architecture</text>
+                    <text x="375" y="65" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">VRAM (bfloat16)</text>
+                    <text x="515" y="65" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">Topology</text>
+
+                    <!-- Row 1 -->
+                    <text x="85" y="110" text-anchor="middle" class="svg-text" font-size="12">LTX-Video 2.5</text>
+                    <text x="225" y="110" text-anchor="middle" class="svg-sub" font-size="12">13B DiT</text>
+                    <text x="375" y="110" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">24 GB</text>
+                    <text x="515" y="110" text-anchor="middle" class="svg-sub" font-size="12">3D Causal VAE</text>
+
+                    <!-- Row 2 -->
+                    <text x="85" y="160" text-anchor="middle" class="svg-text" font-size="12">HunyuanVideo</text>
+                    <text x="225" y="160" text-anchor="middle" class="svg-sub" font-size="12">Dual-Stream DiT</text>
+                    <text x="375" y="160" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">40 GB+</text>
+                    <text x="515" y="160" text-anchor="middle" class="svg-sub" font-size="12">Flow Matching</text>
+                </svg>
+            </div>
+        </section>
+
+        <section id="audio" class="doc-section">
+            <h2>4. In-Process Audio Sidechain</h2>
+            <p>Our pipeline features zero-latency in-memory audio sidechaining. We utilize an exact -16 LUFS integrated target, automatically ducking ambient tracks underneath voice (e.g., Kokoro TTS) using a fast lookahead compressor.</p>
+
+            <div class="diagram-container">
+                <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="50" y="40" width="100" height="40" rx="4" class="svg-bg" />
+                    <text x="100" y="65" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">TTS / Voice</text>
+
+                    <rect x="50" y="120" width="100" height="40" rx="4" class="svg-bg" />
+                    <text x="100" y="145" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">SFX / Music</text>
+
+                    <path d="M 150 60 L 250 60" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    <path d="M 150 140 L 200 140 L 200 110 L 250 110" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+                    <path d="M 200 60 L 200 90 L 250 90" stroke="var(--warning)" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" />
+
+                    <rect x="250" y="50" width="120" height="80" rx="4" class="svg-bg" />
+                    <text x="310" y="85" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">Sidechain</text>
+                    <text x="310" y="105" text-anchor="middle" class="svg-sub" font-size="10">Ducker & LUFS Calc</text>
+
+                    <path d="M 370 90 L 450 90" class="svg-accent" marker-end="url(#arrow)" stroke-width="2" />
+
+                    <rect x="450" y="70" width="100" height="40" rx="4" class="svg-bg" />
+                    <text x="500" y="95" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">Mixed (-16 LUFS)</text>
+                </svg>
+            </div>
+        </section>
+        
+        <section id="fastmcp" class="doc-section">
+            <h2>5. Agentic FastMCP Reference</h2>
+            <p>Expose SpacePilot capabilities to your agent via FastMCP. The server provides robust schema validation for rendering DocIR 2.0 specs.</p>
+
+            <div class="code-block" data-snippet-id="fastmcp">
+                <div class="code-header">
+                    <button class="code-lang-btn active" data-lang="json">JSON Schema</button>
+                    <button class="code-lang-btn" data-lang="python">Python Config</button>
+                    <button class="copy-btn">Copy</button>
+                </div>
+                <pre class="snippet-content" data-lang="json"><code class="language-json">{
+  "name": "render_video",
+  "description": "Submits a DocIR 2.0 payload to the rendering queue.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "prompt": { "type": "string" },
+      "engine": { "type": "string", "enum": ["ltx-2.5", "hunyuan"] },
+      "aspect_ratio": { "type": "string", "default": "16:9" }
+    },
+    "required": ["prompt"]
+  }
+}</code></pre>
+                <pre class="snippet-content" data-lang="python" style="display:none;"><code class="language-python">from fastmcp import FastMCP
+
+mcp = FastMCP("SpacePilot")
+
+@mcp.tool()
+def render_video(prompt: str, engine: str = "ltx-2.5", aspect_ratio: str = "16:9") -> str:
+    """Submits a DocIR 2.0 payload to the rendering queue."""
+    # Internal routing logic
+    return f"Job queued for {engine} at {aspect_ratio}"</code></pre>
+            </div>
+        </section>
+
+        <section id="rest-api" class="doc-section">
+            <h2>6. REST API & Auth Matrix</h2>
+            <p>Direct HTTP access requires the <code>X-Pluto-Token</code> header. API interactions are strictly typed.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>/api/compute/local-profile</code></td>
+                        <td>GET</td>
+                        <td>Returns host hardware constraints.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/render/submit</code></td>
+                        <td>POST</td>
+                        <td>Accepts DocIR 2.0 payload.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/render/status/:id</code></td>
+                        <td>GET</td>
+                        <td>Polling endpoint for job completion.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="economics" class="doc-section">
+            <h2>7. SkyPilot Economics</h2>
+            <p>SaaS APIs charge upwards of $0.30 per generation. Using our SkyPilot Spot Mesh router, generation requests that exceed your local headroom are automatically routed to spot instances (e.g., GCP a2-highgpu-1g preemptible) at roughly $0.012 per take, representing a 25x cost reduction.</p>
+        </section>
+        
+        <div style="height: 100px;"></div>
+    </main>
+
+    <script src="./docs.js"></script>
+</body>
+</html>
