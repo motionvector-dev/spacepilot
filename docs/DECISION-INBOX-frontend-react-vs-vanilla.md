@@ -4,29 +4,37 @@
 **Verified**: 2026-08-22, by `curl -I https://spacepilot.dev` (HTTP/2 200, `server: Vercel`, `last-modified` 07:41 UTC that day), by counting brand strings in the served HTML, and by `gh pr view 14 16`
 **Supersedes / Superseded by**: supersedes the "contested" framing in `docs/REDESIGN-PLAN.md`
 
-## What an earlier pass got wrong
+## What two earlier passes got wrong
 
-An earlier version of this file called React and vanilla an open, unresolved conflict, and treated PR #14 as a large but unreviewed branch. That was wrong. It was written from the repo alone, without checking whether the product was live.
+The first pass called React and vanilla an open conflict and treated PR #14 as a large but unreviewed branch. The second pass saw spacepilot.dev serving React and concluded React had won by shipping. Both were wrong, in opposite directions.
 
-The product is live. That settles the framework question.
+What is deployed is the **landing page**. PR #16 fixes a star badge in `LandingPage.tsx`, which is the marketing surface. It is not evidence that the app works.
 
-## What is verified
+## What actually happened
 
-`https://spacepilot.dev` responds HTTP/2 200 from Vercel. It served a 5,737-byte SPA shell whose `<title>` is `SpacePilot 🛸 · Autonomous Generative Cinema Workstation`. That shell contains 19 occurrences of "SpacePilot" and zero of "Pluto". Its `last-modified` was 07:41 UTC on 2026-08-22, so the site is being deployed to actively, not parked.
+The vanilla `studio/` app worked. It was the frontend until 2026-08-21.
 
-PR #16 is stacked on PR #14 — its base is `feat/frontend-react-ui`, not `main`. A second session is fixing landing-page copy on that branch. Nobody stacks copy fixes onto a branch they consider speculative.
+The problem with it was file length, not function: `studio.css` is 3,402 lines, `studio.js` 1,977, `create.html` 1,848, `create.js` 1,375. Files that size are hard for agents to work in. On the night of 2026-08-21 the migration to React was handed to agy/Gemini to fix exactly that.
 
-## What is inferred, not proven
+The migration is incomplete. It delivered the decomposition — 55 modules, average 198 lines, largest 677 — and a correct token-aware API layer in `ui/src/hooks/`. It did not connect the screens to it.
 
-That the deployed bundle is built from this repo's `ui/` tree is strongly supported but not proven. The evidence is PR #16's own statement that spacepilot.dev serves the built `ui/dist`, plus a near-match between the served HTML (5,737 bytes) and `ui/index.html` in a worktree (5,639 bytes) — close, but not identical, consistent with Vercel injecting analytics at the edge.
+## Where it actually stands
 
-No deploy manifest exists in the repo. There is no `vercel.json`, `netlify.toml`, `Dockerfile`, or `CNAME`. The domain-to-repo mapping lives in a Vercel dashboard, outside version control. Anyone auditing this later cannot confirm it from the repo alone.
+VERIFIED by reading the tree:
+
+- The hooks are right. `useGenerate.ts`, `useGpuStatus.ts` and `useCompute.ts` attach `X-Pluto-Token` across more than a dozen call sites.
+- Five files bypass them. `pages/CockpitPage.tsx`, `pages/CreatePage.tsx` and `components/cockpit/MultiCloudProviderHub.tsx` call `fetch()` directly without the token. `stores/gpuStore.ts` and `stores/studioStore.ts` hold hardcoded state that nothing updates.
+- Every blocker found in the adversarial review of PR #14 sits in those five files. None are spread across the other fifty.
+
+That is the whole gap. The surfaces were rebuilt faithfully and wired to mock data instead of to the hooks sitting next to them.
 
 ## What follows
 
-React won, by shipping. `docs/REDESIGN-PLAN.md` proposes a vanilla, zero-build redesign for a frontend that is now a built React app in production. It is superseded, not contested.
+Neither "React won" nor "React failed" is right. The expensive half — decomposition and the API layer — is done and correct. The cheap half is missing.
 
-The `studio/` vanilla tree is legacy. `docs/HANDOFF-2026-08-22.md` already describes it that way.
+`docs/REDESIGN-PLAN.md` remains superseded, but not because React shipped. It proposes a vanilla redesign, and the vanilla stack is the thing being migrated away from for a reason that still holds: agents cannot work well in 3,400-line files.
+
+Until the five files are connected, `studio/` is still the working app and `ui/` is an unfinished migration whose landing page happens to be deployed.
 
 ## What is still open
 
