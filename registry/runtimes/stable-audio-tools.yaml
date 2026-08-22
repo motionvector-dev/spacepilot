@@ -1,0 +1,25 @@
+schema: 1
+id: stable-audio-tools
+name: Stable Audio Tools
+summary: Text to audio for sound effects and short musical loops.
+homepage: https://github.com/Stability-AI/stable-audio-tools
+serves: [audio]
+backends: [cuda, metal, cpu]
+license: MIT
+
+install:
+  method: pip
+  package: stable-audio-tools
+  min_version: "0.0.20"
+  checked: "2026-08-22"
+python_requires: ">=3.10,<3.11"
+
+verify:
+  import: stable_audio_tools
+
+runs:
+  - stable-audio-open
+notes: >
+  Pinned below Python 3.11 by its own metadata, so it will not install on this
+  project's 3.11 environment. Listed because it is real and because the reason
+  it is unavailable should be visible rather than discovered at install time.

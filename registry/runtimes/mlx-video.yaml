@@ -1,0 +1,29 @@
+schema: 1
+id: mlx-video
+name: MLX Video
+summary: >
+  Video generation on Apple Silicon. The only path that runs Wan and LTX
+  natively on Metal rather than through MPS.
+homepage: https://github.com/Blaizzy/mlx-video
+serves: [video]
+backends: [metal]
+license: MIT
+
+install:
+  method: pip
+  package: mlx-video
+  min_version: "0.1.0"
+  checked: "2026-08-22"
+python_requires: ">=3.9"
+
+verify:
+  import: mlx_video
+
+runs:
+  - wan-2-1
+  - wan-2-2
+  - ltx-video
+notes: >
+  At 0.1.0 and moving quickly. Independent reports put Wan 2.2 at roughly 82
+  minutes per 2-second clip on a 64 GB M1 Max, so this is worth installing to
+  experiment with rather than to work in. Nothing here has been measured by us.

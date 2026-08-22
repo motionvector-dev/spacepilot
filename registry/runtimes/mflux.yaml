@@ -1,0 +1,29 @@
+schema: 1
+id: mflux
+name: MFLUX
+summary: >
+  MLX-native image generation for Apple Silicon. A line-by-line port of the
+  diffusers pipelines, so it runs on Metal without going through PyTorch's MPS
+  compatibility layer.
+homepage: https://github.com/mflux-community/mflux
+serves: [image]
+backends: [metal]
+license: MIT
+
+install:
+  method: pip
+  package: mflux
+  min_version: "0.19.0"
+  checked: "2026-08-22"
+python_requires: ">=3.10"
+
+verify:
+  import: mflux
+
+runs:
+  - flux
+  - qwen-image
+  - z-image
+notes: >
+  Apple Silicon only. There is no CUDA path — on an NVIDIA machine the image
+  runtime is diffusers instead.

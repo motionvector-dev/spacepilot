@@ -495,6 +495,78 @@ def pluto_train_lora(name: str, base_model: str, image_paths: list[str], trigger
         return {"status": "error", "message": str(e)}
 
 
+
+@mcp.tool()
+def pluto_list_runtimes() -> dict:
+    """List the packages that execute models, and whether each is installed here.
+
+    A runtime is what runs a model — mflux for image on Apple Silicon, mlx-video
+    for video, llama.cpp for GGUF text. Separate from the model registry, which
+    holds weights. Having weights without a runtime gets you nothing.
+    """
+    from src.device_probe import probe_local_device
+    from src.pluto import runtimes as rt
+
+    profile = probe_local_device()
+    out = []
+    for r in rt.runtimes().values():
+        st = rt.check(r)
+        out.append({
+            "id": r.id, "name": r.name, "serves": r.serves, "backends": r.backends,
+            "installed": st.installed, "version": st.version,
+            "below_minimum": st.below_minimum,
+            "usable_here": bool(profile.backend and profile.backend in r.backends)
+                           and st.python_compatible,
+            "reason": st.reason, "python_note": st.python_note,
+            "runs": r.runs, "license": r.license,
+        })
+    return {"backend": profile.backend, "interpreter": rt.interpreter(), "runtimes": out}
+
+
+@mcp.tool()
+def pluto_preview_runtime_install(runtime_id: str) -> dict:
+    """Resolve what installing a runtime would change, without changing anything.
+
+    Call this before pluto_install_runtime and show the result to the person.
+    Installing into a shared environment is not additive: resolving mflux
+    downgrades opencv-python from 5.0 to 4.14, which breaks whatever needed the
+    newer one, later, somewhere else.
+    """
+    from src.pluto import runtimes as rt
+    r = rt.runtimes().get(runtime_id)
+    if not r:
+        return {"error": f"no runtime '{runtime_id}'", "known": sorted(rt.runtimes())}
+    imp = rt.preview(r)
+    return {"runtime_id": runtime_id,
+            "command": " ".join(rt.install_command(r)),
+            "interpreter": rt.interpreter(), **imp.to_dict()}
+
+
+@mcp.tool()
+def pluto_install_runtime(runtime_id: str, allow_downgrade: bool = False) -> dict:
+    """Install a runtime, then verify it by importing it.
+
+    Ask the person first — this mutates their Python environment. Refuses when
+    the resolution would downgrade something, unless allow_downgrade is set, and
+    that flag should only ever be set because a human said so after seeing
+    pluto_preview_runtime_install.
+    """
+    from src.pluto import runtimes as rt
+    r = rt.runtimes().get(runtime_id)
+    if not r:
+        return {"error": f"no runtime '{runtime_id}'", "known": sorted(rt.runtimes())}
+
+    imp = rt.preview(r)
+    if imp.error:
+        return {"installed": False, "error": imp.error}
+    if imp.is_disruptive and not allow_downgrade:
+        return {"installed": False, "refused": "would downgrade a package",
+                "downgrades": imp.downgrades,
+                "hint": "show these to the person; only set allow_downgrade if they agree"}
+
+    st = rt.install(r)
+    return {**st.to_dict(), "changed": imp.to_dict()}
+
 if __name__ == "__main__":
     mcp.run()
 

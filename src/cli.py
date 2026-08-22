@@ -680,6 +680,130 @@ def cmd_models(args, cfg=None) -> int:
     return 0
 
 
+def cmd_runtimes(args, cfg=None) -> int:
+    """List, check or install the packages that execute a model."""
+    from src.device_probe import probe_local_device
+    from src.pluto import runtimes as rt
+
+    reg = rt.runtimes()
+    action = getattr(args, "runtimes_action", None) or "list"
+
+    if action == "list":
+        profile = probe_local_device()
+        backend = profile.backend
+        print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
+              f"· {rt.interpreter()}\n")
+        print(f"  {'STATE':11s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
+        for r in sorted(reg.values(), key=lambda x: x.id):
+            st = rt.check(r)
+            if not st.python_compatible:
+                state = "unusable"
+            elif st.below_minimum:
+                state = "outdated"
+            elif st.installed:
+                state = "installed"
+            elif backend and backend not in r.backends:
+                state = "n/a here"
+            else:
+                state = "available"
+            print(f"  {state:11s}{r.id:20s}{','.join(r.serves):16s}"
+                  f"{','.join(r.backends):20s}{st.version or '-'}")
+            if not st.python_compatible:
+                print(f"  {'':11s}{'':20s}{st.python_note}")
+        print("\n  `pluto runtimes check <id>` for detail, `install <id>` to add one.")
+        print("  n/a here means it needs silicon this machine does not have.")
+        return 0
+
+    rid = getattr(args, "runtime_id", None)
+    r = reg.get(rid)
+    if not r:
+        print(f"No runtime '{rid}'. Known: {', '.join(sorted(reg))}")
+        return 1
+
+    if action == "check":
+        st = rt.check(r)
+        print(f"{r.name}  [{r.id}]")
+        print(f"  {r.summary}")
+        print(f"  serves    {', '.join(r.serves)}")
+        print(f"  backends  {', '.join(r.backends)}")
+        print(f"  licence   {r.license}")
+        print(f"  package   {r.install.package}"
+              + (f" >= {r.install.min_version}" if r.install.min_version else "")
+              + (f"   (checked {r.install.checked})" if r.install.checked else ""))
+        print(f"  python    {r.python_requires or 'any'}")
+        print(f"  runs      {', '.join(r.runs) or '-'}")
+        print(f"  here      " + (
+            f"installed, {st.version}" if st.installed and not st.below_minimum
+            else f"installed but outdated — {st.reason}" if st.below_minimum
+            else f"not installed — {st.reason}"))
+        if not st.python_compatible:
+            print(f"            {st.python_note}")
+        if r.notes:
+            print(f"  note      {r.notes}")
+        return 0
+
+    if action == "install":
+        st = rt.check(r)
+        if st.installed and not st.below_minimum:
+            print(f"{r.name} is already installed ({st.version}).")
+            return 0
+        if not st.python_compatible:
+            print(f"Cannot install {r.name}: {st.python_note}")
+            return 1
+
+        argv = rt.install_command(r)
+        print(f"{r.name} — {r.summary}\n")
+        print(f"  will run   {' '.join(argv)}")
+        print(f"  into       {rt.interpreter()}")
+        print(f"  licence    {r.license}")
+        if r.notes:
+            print(f"  note       {r.notes}")
+
+        print("\n  resolving what this would change...")
+        imp = rt.preview(r)
+        if imp.error:
+            print(f"  could not resolve: {imp.error}")
+            return 1
+        if imp.new:
+            print(f"  new        {', '.join(n for n, _ in imp.new)}")
+        for name, cur, ver in imp.upgrades:
+            print(f"  upgrade    {name} {cur} -> {ver}")
+        for name, cur, ver in imp.downgrades:
+            print(f"  DOWNGRADE  {name} {cur} -> {ver}")
+        if imp.is_disruptive:
+            # A downgrade in a shared environment breaks whatever needed the
+            # newer version, somewhere else, later. It is never implied by
+            # "install this runtime", so it is never assumed here.
+            print("\n  This lowers a package version other work in this environment may")
+            print("  depend on. Consider a separate environment for this runtime.")
+            if getattr(args, "yes", False):
+                print("  --yes does not cover a downgrade. Re-run with --allow-downgrade.")
+                if not getattr(args, "allow_downgrade", False):
+                    return 1
+
+        if not getattr(args, "yes", False):
+            # Installing into the user's interpreter is a real mutation, so it
+            # is confirmed rather than assumed, the same as a model download.
+            try:
+                if input("\n  Install? [y/N] ").strip().lower() not in ("y", "yes"):
+                    print("  Nothing installed.")
+                    return 1
+            except EOFError:
+                print("\n  No terminal to confirm on. Re-run with --yes to proceed.")
+                return 1
+
+        print(f"\n  installing {r.install.package}...")
+        st = rt.install(r)
+        if st.installed and not st.below_minimum:
+            print(f"  {r.name} {st.version} installed and imports cleanly.")
+            return 0
+        print(f"  Install did not take: {st.reason}")
+        return 1
+
+    print(f"Unknown action '{action}'.")
+    return 1
+
+
 def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(prog="pluto", description="Pluto Remote GPU Box & Video Generation Tool")
@@ -713,6 +837,17 @@ def main():
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
     # status
+    rt_p = subparsers.add_parser("runtimes", help="Packages that execute models")
+    rt_sub = rt_p.add_subparsers(dest="runtimes_action")
+    rt_sub.add_parser("list", help="What is installed and what is available")
+    rt_check = rt_sub.add_parser("check", help="One runtime in detail")
+    rt_check.add_argument("runtime_id")
+    rt_inst = rt_sub.add_parser("install", help="Install a runtime")
+    rt_inst.add_argument("runtime_id")
+    rt_inst.add_argument("--yes", action="store_true", help="Skip the confirmation")
+    rt_inst.add_argument("--allow-downgrade", action="store_true",
+                         help="Proceed even if it lowers a package other work may need")
+
     models_p = subparsers.add_parser("models", help="List models and whether they run here")
     models_p.add_argument("model_id", nargs="?", help="A variant id, for detail")
 
@@ -770,6 +905,7 @@ def main():
         "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
+        "runtimes": cmd_runtimes,
         "status": cmd_status,
         "launch": cmd_launch,
         "deploy": cmd_deploy,
@@ -781,11 +917,14 @@ def main():
     }
 
     handler = dispatch.get(args.command)
-    if handler:
-        handler(args, cfg)
-    else:
+    if not handler:
         parser.print_help()
+        return 2
+    # Return the handler's status. This used to be discarded, so every command
+    # exited 0 — including ones that had just printed a refusal or an error,
+    # which made pluto unusable from a script or a CI step.
+    return handler(args, cfg) or 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
