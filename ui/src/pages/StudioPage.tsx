@@ -169,7 +169,7 @@ export default function StudioPage() {
   }, [isPlaying, shuttleRate]);
 
   return (
-    <div className="h-screen bg-black text-[#fafafa] flex overflow-hidden font-sans select-none">
+    <div className="h-screen bg-ground text-ink flex overflow-hidden font-sans select-none">
       {/* Persistent Left Sidebar Navigation Rail */}
       <LeftSidebarRail />
 
@@ -195,58 +195,58 @@ export default function StudioPage() {
         /* ── Mode 2: Pro NLE Multi-Track Storyboard Experience ── */
         <div className="flex-1 flex flex-col pl-[56px] h-full overflow-hidden">
           {/* Pro NLE Top Control Header */}
-          <header className="h-12 bg-[#09090b] border-b border-white/10 px-4 flex items-center justify-between z-20 shrink-0 select-none">
+          <header className="h-12 bg-surface border-b border-line-200 px-4 flex items-center justify-between z-20 shrink-0 select-none">
             <div className="flex items-center gap-3">
               {/* Studio Experience Mode Switcher */}
-              <div className="flex items-center bg-[#111114] p-0.5 rounded-lg border border-white/10 font-mono text-xs">
+              <div className="flex items-center bg-raised p-0.5 rounded-lg border border-line-200 font-mono text-xs">
                 <button
                   onClick={() => setStudioExperience('runway')}
-                  className="px-2.5 py-1 rounded flex items-center gap-1.5 text-white/60 hover:text-white transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded flex items-center gap-1.5 text-ink-700 hover:text-ink transition-all cursor-pointer"
                   title="Switch to Runway Gen-4 Agent Mode"
                 >
-                  <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                  <Bot className="w-3.5 h-3.5 text-verify" />
                   <span>Agent Mode</span>
                 </button>
                 <button
                   onClick={() => setStudioExperience('nle')}
-                  className="px-2.5 py-1 rounded flex items-center gap-1.5 bg-[#18181b] text-cyan-400 font-bold border border-cyan-500/30 transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded flex items-center gap-1.5 bg-inset text-ink font-bold border border-line-400 transition-all cursor-pointer"
                   title="Currently in Pro NLE Storyboard Mode"
                 >
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <Layers className="w-3.5 h-3.5 text-ink" />
                   <span>Pro NLE Mode</span>
                 </button>
               </div>
 
-              <div className="h-4 w-px bg-white/10" />
+              <div className="h-4 w-px bg-line-200" />
 
               {/* NLE View Tabs: Director vs Vibe Canvas */}
-              <div className="flex items-center bg-[#111114] p-0.5 rounded-lg border border-white/10 font-mono text-xs">
+              <div className="flex items-center bg-raised p-0.5 rounded-lg border border-line-200 font-mono text-xs">
                 <button
                   onClick={() => setActiveMode('director')}
                   className={`px-3 py-1 rounded flex items-center gap-1.5 transition-all cursor-pointer ${
                     activeMode === 'director'
-                      ? 'bg-[#18181b] text-white font-bold border border-white/10'
-                      : 'text-white/50 hover:text-white'
+                      ? 'bg-inset text-ink font-bold border border-line-200'
+                      : 'text-ink-500 hover:text-ink'
                   }`}
                 >
-                  <Clapperboard className="w-3.5 h-3.5 text-emerald-400" />
+                  <Clapperboard className="w-3.5 h-3.5 text-verify" />
                   Storyboard Director
                 </button>
                 <button
                   onClick={() => setActiveMode('vibe')}
                   className={`px-3 py-1 rounded flex items-center gap-1.5 transition-all cursor-pointer ${
                     activeMode === 'vibe'
-                      ? 'bg-[#18181b] text-white font-bold border border-white/10'
-                      : 'text-white/50 hover:text-white'
+                      ? 'bg-inset text-ink font-bold border border-line-200'
+                      : 'text-ink-500 hover:text-ink'
                   }`}
                 >
-                  <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                  <Palette className="w-3.5 h-3.5 text-ink" />
                   Vibe & MotionVector
                 </button>
               </div>
 
-              <div className="h-4 w-px bg-white/10 hidden md:block" />
-              <div className="hidden md:flex items-center gap-2 font-mono text-xs text-white/60">
+              <div className="h-4 w-px bg-line-200 hidden md:block" />
+              <div className="hidden md:flex items-center gap-2 font-mono text-xs text-ink-700">
                 <span className={`w-2 h-2 rounded-full ${gpuDotClass(gpuStatus, gpuStatusError)}`} />
                 <span>
                   {gpuLabel(gpuStatus, gpuStatusError)} · {formatVram(gpuStatus)}
@@ -258,26 +258,26 @@ export default function StudioPage() {
               {/* Quick Actions (Cmd+K) */}
               <button
                 onClick={() => setCmdOpen(true)}
-                className="hidden sm:flex items-center gap-2 text-xs font-mono bg-[#111114] hover:bg-[#18181b] border border-white/10 px-3 py-1.5 rounded-lg text-white/70 hover:text-white transition-all cursor-pointer"
+                className="hidden sm:flex items-center gap-2 text-xs font-mono bg-raised hover:bg-inset border border-line-200 px-3 py-1.5 rounded-lg text-ink-700 hover:text-ink transition-all cursor-pointer"
                 title="Quick Actions (⌘K)"
               >
-                <Command className="w-3 h-3 text-emerald-400" />
+                <Command className="w-3 h-3 text-verify" />
                 <span>Quick Actions</span>
-                <kbd className="text-[10px] bg-white/10 px-1 rounded border border-white/10">⌘K</kbd>
+                <kbd className="text-[10px] bg-strong px-1 rounded border border-line-200">⌘K</kbd>
               </button>
 
               <a
                 href="/cockpit"
-                className="flex items-center gap-1.5 text-xs font-mono bg-[#18181b] hover:bg-[#222226] border border-white/10 px-3 py-1.5 rounded-lg text-white/70 hover:text-white transition-all cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-mono bg-inset hover:bg-strong border border-line-200 px-3 py-1.5 rounded-lg text-ink-700 hover:text-ink transition-all cursor-pointer"
               >
-                <Terminal className="w-3.5 h-3.5 text-sky-400" />
+                <Terminal className="w-3.5 h-3.5 text-ink-700" />
                 Cockpit SSH
               </a>
 
               <button 
                 disabled={isGenerating}
                 onClick={() => setExportOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold bg-white text-black px-4 py-1.5 rounded-lg hover:bg-zinc-200 transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 text-xs font-semibold bg-accent text-accent-contrast px-4 py-1.5 rounded-lg hover:opacity-90 transition-all cursor-pointer disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>

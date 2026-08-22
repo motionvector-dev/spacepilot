@@ -193,7 +193,7 @@ export default function CockpitPage() {
       />
 
       {isError && (
-        <div className="bg-[#f43535]/10 border border-[#f43535]/30 rounded-xl p-4 flex items-center gap-3 text-[#f43535] text-sm">
+        <div className="bg-danger-soft border border-danger/30 rounded-xl p-4 flex items-center gap-3 text-danger text-sm">
           <AlertTriangle className="w-5 h-5 shrink-0" />
           <div>
             <span className="font-bold">Backend Standby:</span> Running in high-fidelity mock mode. Live telemetry will synchronize when GPU instance connects.
@@ -218,12 +218,12 @@ export default function CockpitPage() {
       />
 
       {/* 3. One-Click Command Center Toolbar */}
-      <div className="bg-[#18181b] border border-white/10 rounded-[24px] px-6 py-5 flex items-center justify-between gap-4 flex-wrap hover:border-white/20 transition-all">
+      <div className="bg-inset border border-line-200 rounded-[24px] px-6 py-5 flex items-center justify-between gap-4 flex-wrap hover:border-line-400 transition-all">
         <div className="flex items-center gap-2.5 flex-wrap">
           <button 
             onClick={() => setIsLaunchModalOpen(true)}
             disabled={isRunning}
-            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-transparent bg-[#fafafa] text-[#09090b] hover:bg-white transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-transparent bg-accent text-accent-contrast hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Play className="w-4 h-4" />
             <span>Launch Spot GPU</span>
@@ -232,27 +232,27 @@ export default function CockpitPage() {
           <button 
             onClick={handleDeployWorker}
             disabled={!isRunning || isDeploying}
-            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-white/14 bg-[#18181b] text-[#fafafa] hover:bg-[#222226] hover:border-white/24 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-line-300 bg-inset text-ink hover:bg-strong hover:border-line-400 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <RotateCw className={`w-4 h-4 text-[#3b82f6] ${isDeploying ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-4 h-4 text-ink-700 ${isDeploying ? 'animate-spin' : ''}`} />
             <span>{isDeploying ? 'Deploying...' : 'Deploy Worker'}</span>
           </button>
           
           <button 
             onClick={handleSyncOutputs}
             disabled={!isRunning || isSyncing}
-            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-white/14 bg-[#18181b] text-[#fafafa] hover:bg-[#222226] hover:border-white/24 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-line-300 bg-inset text-ink hover:bg-strong hover:border-line-400 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Download className={`w-4 h-4 text-[#10b981] ${isSyncing ? 'animate-bounce' : ''}`} />
+            <Download className={`w-4 h-4 text-verify ${isSyncing ? 'animate-bounce' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Sync Outputs'}</span>
           </button>
           
           <button 
             onClick={handleCopySsh}
             disabled={!isRunning}
-            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-white/14 bg-[#18181b] text-[#fafafa] hover:bg-[#222226] hover:border-white/24 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-line-300 bg-inset text-ink hover:bg-strong hover:border-line-400 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Copy className="w-4 h-4 text-[#06b6d4]" />
+            <Copy className="w-4 h-4 text-ink-700" />
             <span>Copy SSH</span>
           </button>
         </div>
@@ -260,7 +260,7 @@ export default function CockpitPage() {
         <button 
           onClick={() => setIsTerminateModalOpen(true)}
           disabled={!isRunning}
-          className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-[#f43535]/30 bg-[#f43535]/10 text-[#f43535] hover:bg-[#f43535] hover:text-white transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-danger/30 bg-danger-soft text-danger hover:bg-danger hover:text-white transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Trash2 className="w-4 h-4" />
           <span>Terminate &amp; Stop Billing</span>
@@ -327,8 +327,8 @@ export default function CockpitPage() {
 
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#18181b] border border-white/20 text-[#fafafa] px-4 py-2.5 rounded-xl shadow-2xl font-mono text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <Check className="w-4 h-4 text-[#10b981]" />
+        <div className="fixed bottom-6 right-6 z-50 bg-inset border border-line-400 text-ink px-4 py-2.5 rounded-xl shadow-lg font-mono text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <Check className="w-4 h-4 text-verify" />
           <span>{toastMsg}</span>
         </div>
       )}

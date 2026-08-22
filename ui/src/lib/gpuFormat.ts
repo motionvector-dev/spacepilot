@@ -14,8 +14,8 @@ export function formatAccruedCost(status: GpuStatus): string {
 
 /** Three states, not two: unknown (poll failed), online, stopped. */
 export function gpuDotClass(status: GpuStatus, statusError: string | null): string {
-  if (statusError) return 'bg-amber-400';
-  return status.online ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600';
+  if (statusError) return 'bg-ink-500';
+  return status.online ? 'bg-verify animate-pulse' : 'bg-ink-300';
 }
 
 export function gpuLabel(status: GpuStatus, statusError: string | null): string {

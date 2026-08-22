@@ -1,13 +1,13 @@
 import { useEngines } from '../../hooks/useCompute';
-import { 
-  Shuffle, 
-  Lock, 
-  Unlock, 
-  Sliders, 
-  Compass, 
-  ChevronUp, 
-  ChevronDown, 
-  ChevronLeft, 
+import {
+  Shuffle,
+  Lock,
+  Unlock,
+  Sliders,
+  Compass,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 
@@ -81,7 +81,7 @@ export function ModelEngineStep({
     { id: 'hunyuan', name: 'HunyuanVideo DiT', vram: '16GB', time: '~35s', color: 'amber' },
   ];
 
-  const engines = enginesData && enginesData.length > 0 
+  const engines = enginesData && enginesData.length > 0
     ? enginesData.map((e, idx) => ({
         id: e.id,
         name: e.name,
@@ -91,11 +91,14 @@ export function ModelEngineStep({
       }))
     : fallbackEngines;
 
+  // These hues carried no meaning — they only told engines apart in a list, not
+  // whether one was healthy, wrong, or agent-authored — so every key now points
+  // at the same neutral marker.
   const colorMap: Record<string, string> = {
-    emerald: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-    cyan: 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]',
-    amber: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]',
-    purple: 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]',
+    emerald: 'bg-ink-500',
+    cyan: 'bg-ink-500',
+    amber: 'bg-ink-500',
+    purple: 'bg-ink-500',
   };
 
   // Calculate total frames
@@ -126,20 +129,20 @@ export function ModelEngineStep({
   };
 
   return (
-    <div className="flex flex-col gap-5 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm">
-      <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+    <div className="flex flex-col gap-5 p-5 bg-surface border border-line-200 rounded-xl">
+      <div className="flex justify-between items-center border-b border-line-100 pb-3">
         <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-white/60" />
-          <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">Engine &amp; Controls</h2>
+          <Sliders className="w-4 h-4 text-ink-700" />
+          <h2 className="text-[13px] font-semibold text-ink-700 uppercase tracking-wider">Engine &amp; Controls</h2>
         </div>
-        <span className="text-[11px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+        <span className="text-[11px] font-mono text-ink bg-inset px-2 py-0.5 rounded border border-line-300">
           Resident DiT
         </span>
       </div>
 
       {/* 1. Model Engine Selector */}
       <div className="flex flex-col gap-2">
-        <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+        <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
           Inference Engine
         </label>
         <div className="grid grid-cols-1 gap-2">
@@ -150,18 +153,18 @@ export function ModelEngineStep({
                 key={eng.id}
                 onClick={() => setSelectedEngine(eng.id)}
                 className={`flex flex-col gap-1.5 p-3 rounded-lg border text-left transition-all cursor-pointer ${
-                  isSelected 
-                    ? 'bg-[#18181b] border-white/25 shadow-sm' 
-                    : 'bg-black border-white/[0.08] hover:bg-[#111114] hover:border-white/[0.14]'
+                  isSelected
+                    ? 'bg-inset border-line-400'
+                    : 'bg-ground border-line-200 hover:bg-raised hover:border-line-300'
                 }`}
               >
                 <div className="flex justify-between items-center w-full">
-                  <span className="font-semibold text-xs text-white">{eng.name}</span>
+                  <span className="font-semibold text-xs text-ink">{eng.name}</span>
                   {isSelected && (
                     <div className={`w-2 h-2 rounded-full ${colorMap[eng.color] || colorMap.purple}`} />
                   )}
                 </div>
-                <div className="flex gap-2 text-[10.5px] font-mono text-white/45">
+                <div className="flex gap-2 text-[10.5px] font-mono text-ink-500">
                   <span>VRAM: {eng.vram}</span>
                   <span>·</span>
                   <span>Cold: {eng.time}</span>
@@ -175,13 +178,13 @@ export function ModelEngineStep({
       {/* 2. Compute Target & Quality */}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+          <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
             Compute Target
           </label>
           <select
             value={computeTarget}
             onChange={(e) => setComputeTarget(e.target.value as 'auto' | 'local' | 'spot')}
-            className="w-full bg-black border border-white/[0.14] rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-ground border border-line-300 rounded-lg px-2.5 py-2 text-xs text-ink focus:outline-none focus:border-line-500 cursor-pointer"
           >
             <option value="auto">⚡ Auto (Local-First)</option>
             <option value="local">💻 Local GPU ($0.00)</option>
@@ -190,13 +193,13 @@ export function ModelEngineStep({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+          <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
             Engine Quality
           </label>
           <select
             value={engineQuality}
             onChange={(e) => setEngineQuality(e.target.value as 'pro' | 'draft')}
-            className="w-full bg-black border border-white/[0.14] rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-ground border border-line-300 rounded-lg px-2.5 py-2 text-xs text-ink focus:outline-none focus:border-line-500 cursor-pointer"
           >
             <option value="pro">🎬 Pro Cinema (30s · ~$0.04)</option>
             <option value="draft">⚡ Draft Mode (15s · ~$0.01)</option>
@@ -206,10 +209,10 @@ export function ModelEngineStep({
 
       {/* 3. Aspect Ratio Selector */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+        <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
           Aspect Ratio
         </label>
-        <div className="grid grid-cols-4 gap-1.5 bg-black p-1 rounded-lg border border-white/[0.08]">
+        <div className="grid grid-cols-4 gap-1.5 bg-ground p-1 rounded-lg border border-line-200">
           {[
             { id: '16:9', label: '16:9' },
             { id: '9:16', label: '9:16' },
@@ -221,8 +224,8 @@ export function ModelEngineStep({
               onClick={() => setAspect(item.id)}
               className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 aspect === item.id
-                  ? 'bg-[#18181b] text-white border border-white/[0.14] shadow-sm'
-                  : 'text-white/40 hover:text-white/80'
+                  ? 'bg-inset text-ink border border-line-300'
+                  : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               {item.label}
@@ -234,20 +237,20 @@ export function ModelEngineStep({
       {/* 4. Duration Slider & Quick Presets */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center text-xs">
-          <label className="font-bold text-white/50 uppercase tracking-wider text-[11px]">
+          <label className="font-bold text-ink-500 uppercase tracking-wider text-[11px]">
             Duration &amp; Length
           </label>
-          <span className="font-mono text-cyan-400 font-semibold">{duration.toFixed(1)}s</span>
+          <span className="font-mono text-ink font-semibold">{duration.toFixed(1)}s</span>
         </div>
-        
-        <input 
+
+        <input
           type="range"
           min={2.0}
           max={10.0}
           step={0.5}
           value={duration}
           onChange={(e) => setDuration(parseFloat(e.target.value))}
-          className="w-full h-1.5 bg-[#18181b] rounded-lg appearance-none cursor-pointer accent-white"
+          className="w-full h-1.5 bg-inset rounded-lg appearance-none cursor-pointer accent-ink"
         />
 
         <div className="flex items-center gap-1.5 justify-between">
@@ -257,8 +260,8 @@ export function ModelEngineStep({
               onClick={() => setDuration(sec)}
               className={`px-2 py-0.5 rounded text-[10.5px] font-mono transition-colors cursor-pointer ${
                 duration === sec
-                  ? 'bg-white text-black font-bold'
-                  : 'bg-black text-white/40 hover:text-white border border-white/[0.08]'
+                  ? 'bg-accent text-accent-contrast font-bold'
+                  : 'bg-ground text-ink-500 hover:text-ink border border-line-200'
               }`}
             >
               {sec.toFixed(1)}s
@@ -270,23 +273,23 @@ export function ModelEngineStep({
       {/* 5. FPS Toggle & Frames Readout */}
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between items-center text-xs">
-          <label className="font-bold text-white/50 uppercase tracking-wider text-[11px]">
+          <label className="font-bold text-ink-500 uppercase tracking-wider text-[11px]">
             Framerate (FPS)
           </label>
-          <span className="font-mono text-white/40 text-[11px]">
+          <span className="font-mono text-ink-500 text-[11px]">
             {duration.toFixed(1)}s = {totalFrames} frames
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 bg-black p-1 rounded-lg border border-white/[0.08]">
+        <div className="grid grid-cols-3 gap-1.5 bg-ground p-1 rounded-lg border border-line-200">
           {[24, 30, 60].map((rate) => (
             <button
               key={rate}
               onClick={() => setFps(rate)}
               className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer font-mono ${
                 fps === rate
-                  ? 'bg-[#18181b] text-white border border-white/[0.14] shadow-sm'
-                  : 'text-white/40 hover:text-white/80'
+                  ? 'bg-inset text-ink border border-line-300'
+                  : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               {rate} fps {rate === 24 ? '🎬' : rate === 60 ? '⚡' : ''}
@@ -298,21 +301,21 @@ export function ModelEngineStep({
       {/* 6. Motion Guidance (STG) / Motion Intensity Slider */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center text-xs">
-          <label className="font-bold text-white/50 uppercase tracking-wider text-[11px]">
+          <label className="font-bold text-ink-500 uppercase tracking-wider text-[11px]">
             Motion Guidance (STG)
           </label>
-          <span className="font-mono text-white/90 font-semibold">{stg.toFixed(1)}</span>
+          <span className="font-mono text-ink-900 font-semibold">{stg.toFixed(1)}</span>
         </div>
-        <input 
+        <input
           type="range"
           min={0.0}
           max={2.0}
           step={0.1}
           value={stg}
           onChange={(e) => setStg(parseFloat(e.target.value))}
-          className="w-full h-1.5 bg-[#18181b] rounded-lg appearance-none cursor-pointer accent-white"
+          className="w-full h-1.5 bg-inset rounded-lg appearance-none cursor-pointer accent-ink"
         />
-        <div className="flex justify-between text-[10px] font-mono text-white/30">
+        <div className="flex justify-between text-[10px] font-mono text-ink-300">
           <span>0.0 (Subtle)</span>
           <span>1.0 (Balanced)</span>
           <span>2.0 (Dynamic)</span>
@@ -322,22 +325,22 @@ export function ModelEngineStep({
       {/* 7. Seed Lock & Randomize */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center text-xs">
-          <label className="font-bold text-white/50 uppercase tracking-wider text-[11px]">
+          <label className="font-bold text-ink-500 uppercase tracking-wider text-[11px]">
             Generation Seed
           </label>
-          <span className="font-mono text-[11px] text-white/50">
+          <span className="font-mono text-[11px] text-ink-500">
             {isSeedLocked ? 'Locked' : 'Dynamic Auto'}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <input 
+            <input
               type="number"
               value={seed}
               onChange={(e) => setSeed(parseInt(e.target.value, 10) || 0)}
               disabled={!isSeedLocked}
-              className="w-full bg-black border border-white/[0.14] rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30 disabled:opacity-50 disabled:bg-[#111114]"
+              className="w-full bg-ground border border-line-300 rounded-lg px-3 py-2 text-xs font-mono text-ink focus:outline-none focus:border-line-500 disabled:opacity-50 disabled:bg-raised"
               placeholder="Seed number..."
             />
           </div>
@@ -346,9 +349,9 @@ export function ModelEngineStep({
             type="button"
             onClick={() => setIsSeedLocked(!isSeedLocked)}
             className={`p-2 rounded-lg border text-xs transition-all cursor-pointer ${
-              isSeedLocked 
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
-                : 'bg-[#18181b] border-white/[0.12] text-white/70 hover:text-white'
+              isSeedLocked
+                ? 'bg-inset border-line-400 text-ink'
+                : 'bg-inset border-line-300 text-ink-700 hover:text-ink'
             }`}
             title={isSeedLocked ? 'Unlock dynamic random seed' : 'Lock current seed'}
           >
@@ -358,7 +361,7 @@ export function ModelEngineStep({
           <button
             type="button"
             onClick={handleRandomizeSeed}
-            className="p-2 rounded-lg bg-[#18181b] hover:bg-[#222226] border border-white/[0.12] text-white/80 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-lg bg-inset hover:bg-strong border border-line-300 text-ink-900 hover:text-ink transition-all cursor-pointer"
             title="Randomize seed (dice)"
           >
             <Shuffle className="w-4 h-4" />
@@ -367,21 +370,21 @@ export function ModelEngineStep({
       </div>
 
       {/* 8. 3D Camera Compass Widget */}
-      <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
+      <div className="flex flex-col gap-3 border-t border-line-100 pt-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5">
-            <Compass className="w-4 h-4 text-cyan-400" />
-            <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider">
+            <Compass className="w-4 h-4 text-ink-700" />
+            <span className="text-[11px] font-bold text-ink-700 uppercase tracking-wider">
               3D Camera Compass
             </span>
           </div>
-          <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.2 rounded border border-cyan-500/20">
+          <span className="text-[10px] font-mono text-ink bg-inset px-1.5 py-0.2 rounded border border-line-300">
             {cameraPan !== 'static' || cameraTilt !== 'static' ? 'Vector Active' : 'Static'}
           </span>
         </div>
 
         {/* Compass Direction Grid with Center Gimbal */}
-        <div className="flex items-center justify-center p-3 bg-black/60 border border-white/[0.08] rounded-xl">
+        <div className="flex items-center justify-center p-3 bg-ground/60 border border-line-200 rounded-xl">
           <div className="grid grid-cols-3 grid-rows-3 gap-1 w-32 h-32">
             {/* Row 1 */}
             <div />
@@ -390,8 +393,8 @@ export function ModelEngineStep({
               onClick={() => setCameraTilt(cameraTilt === 'up' ? 'static' : 'up')}
               className={`flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
                 cameraTilt === 'up'
-                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#18181b] border-white/[0.08] text-white/60 hover:text-white hover:bg-[#222226]'
+                  ? 'bg-strong border-line-500 text-ink'
+                  : 'bg-inset border-line-200 text-ink-700 hover:text-ink hover:bg-strong'
               }`}
               title="Tilt Up"
             >
@@ -405,8 +408,8 @@ export function ModelEngineStep({
               onClick={() => setCameraPan(cameraPan === 'left' ? 'static' : 'left')}
               className={`flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
                 cameraPan === 'left'
-                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#18181b] border-white/[0.08] text-white/60 hover:text-white hover:bg-[#222226]'
+                  ? 'bg-strong border-line-500 text-ink'
+                  : 'bg-inset border-line-200 text-ink-700 hover:text-ink hover:bg-strong'
               }`}
               title="Pan Left"
             >
@@ -414,9 +417,9 @@ export function ModelEngineStep({
             </button>
 
             {/* Gimbal Center Display */}
-            <div className="relative flex items-center justify-center rounded-full bg-[#111114] border border-white/[0.14] overflow-hidden">
-              <div 
-                className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)] transition-transform duration-200"
+            <div className="relative flex items-center justify-center rounded-full bg-raised border border-line-300 overflow-hidden">
+              <div
+                className="w-2.5 h-2.5 rounded-full bg-ink transition-transform duration-200"
                 style={{ transform: `translate(${gimbalX}px, ${gimbalY}px)` }}
               />
             </div>
@@ -426,8 +429,8 @@ export function ModelEngineStep({
               onClick={() => setCameraPan(cameraPan === 'right' ? 'static' : 'right')}
               className={`flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
                 cameraPan === 'right'
-                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#18181b] border-white/[0.08] text-white/60 hover:text-white hover:bg-[#222226]'
+                  ? 'bg-strong border-line-500 text-ink'
+                  : 'bg-inset border-line-200 text-ink-700 hover:text-ink hover:bg-strong'
               }`}
               title="Pan Right"
             >
@@ -441,8 +444,8 @@ export function ModelEngineStep({
               onClick={() => setCameraTilt(cameraTilt === 'down' ? 'static' : 'down')}
               className={`flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
                 cameraTilt === 'down'
-                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#18181b] border-white/[0.08] text-white/60 hover:text-white hover:bg-[#222226]'
+                  ? 'bg-strong border-line-500 text-ink'
+                  : 'bg-inset border-line-200 text-ink-700 hover:text-ink hover:bg-strong'
               }`}
               title="Tilt Down"
             >
@@ -455,8 +458,8 @@ export function ModelEngineStep({
         {/* Dolly Zoom & Roll/Orbit Controls */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-white/40 uppercase">Dolly Zoom</span>
-            <div className="flex bg-black p-0.5 rounded-md border border-white/[0.08]">
+            <span className="text-[10px] font-bold text-ink-500 uppercase">Dolly Zoom</span>
+            <div className="flex bg-ground p-0.5 rounded-md border border-line-200">
               {(['in', 'static', 'out'] as const).map((z) => (
                 <button
                   key={z}
@@ -464,8 +467,8 @@ export function ModelEngineStep({
                   onClick={() => setCameraZoom(z)}
                   className={`flex-1 py-1 text-[10.5px] font-semibold rounded capitalize transition-colors cursor-pointer ${
                     cameraZoom === z
-                      ? 'bg-[#18181b] text-white border border-white/[0.12]'
-                      : 'text-white/40 hover:text-white'
+                      ? 'bg-inset text-ink border border-line-300'
+                      : 'text-ink-500 hover:text-ink'
                   }`}
                 >
                   {z === 'static' ? 'Off' : z}
@@ -475,8 +478,8 @@ export function ModelEngineStep({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-white/40 uppercase">Roll / Orbit</span>
-            <div className="flex bg-black p-0.5 rounded-md border border-white/[0.08]">
+            <span className="text-[10px] font-bold text-ink-500 uppercase">Roll / Orbit</span>
+            <div className="flex bg-ground p-0.5 rounded-md border border-line-200">
               {(['none', 'left', 'orbit'] as const).map((r) => (
                 <button
                   key={r}
@@ -484,8 +487,8 @@ export function ModelEngineStep({
                   onClick={() => setCameraRoll(r)}
                   className={`flex-1 py-1 text-[10.5px] font-semibold rounded capitalize transition-colors cursor-pointer ${
                     cameraRoll === r
-                      ? 'bg-[#18181b] text-white border border-white/[0.12]'
-                      : 'text-white/40 hover:text-white'
+                      ? 'bg-inset text-ink border border-line-300'
+                      : 'text-ink-500 hover:text-ink'
                   }`}
                 >
                   {r === 'none' ? 'Off' : r === 'orbit' ? 'Orbit' : 'Roll'}
@@ -497,23 +500,23 @@ export function ModelEngineStep({
 
         {/* Camera Intensity Slider */}
         <div className="flex flex-col gap-1.5 mt-1">
-          <div className="flex justify-between items-center text-[10px] font-mono text-white/40 uppercase">
+          <div className="flex justify-between items-center text-[10px] font-mono text-ink-500 uppercase">
             <span>Vector Intensity</span>
-            <span className="text-white/80 font-bold">{cameraIntensity}/5</span>
+            <span className="text-ink-900 font-bold">{cameraIntensity}/5</span>
           </div>
-          <input 
+          <input
             type="range"
             min={1}
             max={5}
             step={1}
             value={cameraIntensity}
             onChange={(e) => setCameraIntensity(parseInt(e.target.value, 10))}
-            className="w-full h-1 bg-[#18181b] rounded-lg appearance-none cursor-pointer accent-cyan-400"
+            className="w-full h-1 bg-inset rounded-lg appearance-none cursor-pointer accent-ink-700"
           />
         </div>
 
         {/* Descriptor Preview */}
-        <div className="text-center font-mono text-[11px] text-cyan-400 bg-cyan-500/5 border border-cyan-500/15 py-1.5 px-2 rounded-lg">
+        <div className="text-center font-mono text-[11px] text-ink-700 bg-inset border border-line-200 py-1.5 px-2 rounded-lg">
           {cameraDescriptor}
         </div>
       </div>

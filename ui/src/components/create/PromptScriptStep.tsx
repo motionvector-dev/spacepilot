@@ -1,17 +1,17 @@
 import { useState, useRef } from 'react';
 import { useEnhancePrompt, useDecomposeStoryboard, useUploadImage } from '../../hooks/useGenerate';
 import type { StoryboardScene } from '../../types/api';
-import { 
-  Sparkles, 
-  Loader2, 
-  ChevronDown, 
-  ChevronRight, 
-  Image as ImageIcon, 
-  X, 
-  Zap, 
-  Film, 
-  AlertTriangle, 
-  Check, 
+import {
+  Sparkles,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Image as ImageIcon,
+  X,
+  Zap,
+  Film,
+  AlertTriangle,
+  Check,
   Layers
 } from 'lucide-react';
 
@@ -228,16 +228,16 @@ export function PromptScriptStep({
   };
 
   // Check aspect mismatch for Dual Keyframe FLF2V
-  const isAspectMismatch = keyframeMode === 'dual' && 
+  const isAspectMismatch = keyframeMode === 'dual' &&
     Boolean(detectedAspect && detectedAspectEnd && detectedAspect !== detectedAspectEnd);
 
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Prompt Definition Card */}
-      <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
+      <div className="flex flex-col gap-4 p-5 bg-surface border border-line-200 rounded-xl hover:border-line-300 transition-colors">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">Prompt Definition</h2>
+            <h2 className="text-[13px] font-semibold text-ink-700 uppercase tracking-wider">Prompt Definition</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -247,32 +247,32 @@ export function PromptScriptStep({
                 }
                 setIsStoryboardOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181b] border border-white/[0.12] text-xs font-semibold text-white/80 hover:text-white hover:border-white/30 hover:bg-[#222226] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-inset border border-line-300 text-xs font-semibold text-ink-900 hover:text-ink hover:border-line-500 hover:bg-strong transition-all cursor-pointer"
               title="Gemini Storyboard & Screenplay Decomposer (60s -> 6-8 Scenes)"
             >
-              <Film className="w-3 h-3 text-cyan-400" />
+              <Film className="w-3 h-3 text-ink-700" />
               <span>Decompose Script</span>
             </button>
-            <button 
+            <button
               onClick={handleEnhance}
               disabled={enhanceMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181b] border border-white/[0.14] text-xs font-semibold text-white/80 hover:text-white hover:border-white/30 hover:bg-[#222226] transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-inset border border-line-300 text-xs font-semibold text-ink-900 hover:text-ink hover:border-line-500 hover:bg-strong transition-all cursor-pointer disabled:opacity-50"
               title="AI Prompt Expansion"
             >
               {enhanceMutation.isPending ? (
-                <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                <Loader2 className="w-3 h-3 animate-spin text-agent" />
               ) : (
-                <Sparkles className="w-3 h-3 text-purple-400" />
+                <Sparkles className="w-3 h-3 text-agent" />
               )}
               <span>{enhanceMutation.isPending ? 'Enhancing...' : 'Enhance'}</span>
             </button>
           </div>
         </div>
 
-        <textarea 
+        <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full h-32 p-3.5 bg-black border border-white/[0.14] rounded-lg text-[14.5px] text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all resize-y placeholder-white/30 leading-relaxed font-sans"
+          className="w-full h-32 p-3.5 bg-ground border border-line-300 rounded-lg text-[14.5px] text-ink focus:outline-none focus:border-line-500 focus:ring-1 focus:ring-line-500 transition-all resize-y placeholder-ink-300 leading-relaxed font-sans"
           placeholder="Describe the scene with rich visual details... (e.g. Cinematic wide tracking shot of a futuristic motorcycle accelerating through neon-lit rain-slicked Tokyo streets at midnight, 35mm lens, atmospheric haze)"
         />
 
@@ -282,34 +282,34 @@ export function PromptScriptStep({
               <button
                 key={preset.label}
                 onClick={() => handleApplyStyle(preset.tokens)}
-                className="px-2.5 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-[11px] font-medium text-white/70 hover:text-white transition-all whitespace-nowrap cursor-pointer"
+                className="px-2.5 py-1 rounded-full bg-inset hover:bg-strong border border-line-200 hover:border-line-400 text-[11px] font-medium text-ink-700 hover:text-ink transition-all whitespace-nowrap cursor-pointer"
               >
                 {preset.label}
               </button>
             ))}
           </div>
-          <span className="text-[11px] font-mono text-white/40 whitespace-nowrap shrink-0">
+          <span className="text-[11px] font-mono text-ink-500 whitespace-nowrap shrink-0">
             {prompt.length} / 4000
           </span>
         </div>
 
         {/* 2. Negative Prompt Collapsible Field */}
-        <div className="border-t border-white/[0.06] pt-3 flex flex-col gap-2.5">
+        <div className="border-t border-line-100 pt-3 flex flex-col gap-2.5">
           <button
             type="button"
             onClick={() => setIsNegativeOpen(!isNegativeOpen)}
             className="flex items-center justify-between text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-white/60 group-hover:text-white/90 transition-colors">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-700 group-hover:text-ink transition-colors">
               {isNegativeOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               <span>Negative Prompt (Optional Filter)</span>
               {negativePrompt.trim() && (
-                <span className="ml-1.5 px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono text-[10px]">
+                <span className="ml-1.5 px-1.5 py-0.2 rounded bg-inset text-ink border border-line-400 font-mono text-[10px]">
                   Active
                 </span>
               )}
             </div>
-            <span className="text-[11px] font-mono text-white/40">
+            <span className="text-[11px] font-mono text-ink-500">
               {negativePrompt.length > 0 ? `${negativePrompt.length} chars` : 'Collapsed'}
             </span>
           </button>
@@ -320,17 +320,17 @@ export function PromptScriptStep({
                 value={negativePrompt}
                 onChange={(e) => setNegativePrompt(e.target.value)}
                 rows={2}
-                className="w-full p-2.5 bg-black border border-white/[0.12] rounded-lg text-xs text-white focus:outline-none focus:border-white/30 placeholder-white/30 font-mono"
+                className="w-full p-2.5 bg-ground border border-line-300 rounded-lg text-xs text-ink focus:outline-none focus:border-line-500 placeholder-ink-300 font-mono"
                 placeholder="Specify unwanted elements... (e.g. blurry, low quality, distorted anatomy, cartoon, watermark, glitch)"
               />
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] font-semibold text-white/40 uppercase mr-1">Quick Filters:</span>
+                <span className="text-[10px] font-semibold text-ink-500 uppercase mr-1">Quick Filters:</span>
                 {NEGATIVE_PRESETS.map((tag) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => handleApplyNegativeToken(tag)}
-                    className="px-2 py-0.5 rounded bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] text-[10.5px] text-white/60 hover:text-white font-mono transition-colors cursor-pointer"
+                    className="px-2 py-0.5 rounded bg-inset hover:bg-strong border border-line-100 text-[10.5px] text-ink-700 hover:text-ink font-mono transition-colors cursor-pointer"
                   >
                     +{tag}
                   </button>
@@ -342,20 +342,20 @@ export function PromptScriptStep({
       </div>
 
       {/* 3. Keyframing Mode & Dual Image Dropzones */}
-      <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
+      <div className="flex flex-col gap-4 p-5 bg-surface border border-line-200 rounded-xl hover:border-line-300 transition-colors">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-white/60" />
-            <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">Keyframe Grounding</h2>
+            <Layers className="w-4 h-4 text-ink-700" />
+            <h2 className="text-[13px] font-semibold text-ink-700 uppercase tracking-wider">Keyframe Grounding</h2>
           </div>
           {/* Keyframe Mode Segmented Control */}
-          <div className="flex bg-black p-0.5 rounded-lg border border-white/[0.08]">
+          <div className="flex bg-ground p-0.5 rounded-lg border border-line-200">
             <button
               onClick={() => setKeyframeMode('single')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 keyframeMode === 'single'
-                  ? 'bg-[#18181b] text-white border border-white/[0.12] shadow-sm'
-                  : 'text-white/40 hover:text-white/80'
+                  ? 'bg-inset text-ink border border-line-300'
+                  : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               Single Keyframe (I2V)
@@ -364,8 +364,8 @@ export function PromptScriptStep({
               onClick={() => setKeyframeMode('dual')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 keyframeMode === 'dual'
-                  ? 'bg-[#18181b] text-white border border-white/[0.12] shadow-sm'
-                  : 'text-white/40 hover:text-white/80'
+                  ? 'bg-inset text-ink border border-line-300'
+                  : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               Dual Keyframe (FLF2V Morph)
@@ -375,8 +375,8 @@ export function PromptScriptStep({
 
         {/* Aspect Mismatch Alert */}
         {isAspectMismatch && (
-          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-inset border border-line-400 text-ink text-xs">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-ink-700" />
             <div>
               <span className="font-bold">Aspect Ratio Mismatch:</span> Start keyframe is{' '}
               <span className="font-mono">{detectedAspect}</span> while end keyframe is{' '}
@@ -389,18 +389,18 @@ export function PromptScriptStep({
           {/* First Keyframe Dropzone */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
                 {keyframeMode === 'dual' ? 'Start Keyframe (Frame 0)' : 'Reference Keyframe (I2V)'}
               </span>
               {imageDims && (
-                <span className="text-[10.5px] font-mono text-white/40">
+                <span className="text-[10.5px] font-mono text-ink-500">
                   {imageDims.width}×{imageDims.height}
                 </span>
               )}
             </div>
 
-            <input 
-              type="file" 
+            <input
+              type="file"
               ref={startFileInputRef}
               accept="image/*"
               className="hidden"
@@ -408,34 +408,34 @@ export function PromptScriptStep({
             />
 
             {!imageUrl ? (
-              <div 
+              <div
                 onClick={() => startFileInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropStart}
-                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/[0.12] hover:border-cyan-500/50 bg-black/40 hover:bg-black/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
+                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-line-300 hover:border-line-500 bg-ground/40 hover:bg-ground/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
               >
-                <div className="w-10 h-10 rounded-full bg-[#111114] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-all">
+                <div className="w-10 h-10 rounded-full bg-raised border border-line-200 flex items-center justify-center text-ink-500 group-hover:text-ink-900 group-hover:border-line-400 transition-all">
                   <ImageIcon className="w-5 h-5" />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-white/80 group-hover:text-white">
+                  <p className="text-xs font-semibold text-ink-900 group-hover:text-ink">
                     Drop start reference image or browse
                   </p>
-                  <p className="text-[11px] text-white/40">PNG, JPG, WebP up to 20MB</p>
+                  <p className="text-[11px] text-ink-500">PNG, JPG, WebP up to 20MB</p>
                 </div>
               </div>
             ) : (
-              <div className="relative p-3 bg-black border border-white/[0.12] rounded-xl flex flex-col gap-2.5 group">
-                <div className="relative max-h-48 rounded-lg overflow-hidden bg-[#111114] flex items-center justify-center border border-white/[0.08]">
-                  <img 
-                    src={imageUrl} 
-                    alt="Start Keyframe" 
+              <div className="relative p-3 bg-ground border border-line-300 rounded-xl flex flex-col gap-2.5 group">
+                <div className="relative max-h-48 rounded-lg overflow-hidden bg-raised flex items-center justify-center border border-line-200">
+                  <img
+                    src={imageUrl}
+                    alt="Start Keyframe"
                     className="max-h-48 w-full object-contain rounded-lg"
                   />
                   <button
                     type="button"
                     onClick={onImageRemoved}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 hover:bg-rose-500/90 text-white/70 hover:text-white transition-all cursor-pointer backdrop-blur-md"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-ground/80 hover:bg-danger text-ink-700 hover:text-white transition-all cursor-pointer backdrop-blur-md"
                     title="Remove reference keyframe"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -443,12 +443,12 @@ export function PromptScriptStep({
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/60 bg-[#111114] px-2 py-0.5 rounded border border-white/[0.08]">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-ink-700 bg-raised px-2 py-0.5 rounded border border-line-200">
                     <span>{imageDims ? `${imageDims.width}×${imageDims.height}` : imagePath}</span>
                     {detectedAspect && (
                       <>
-                        <span className="text-white/30">·</span>
-                        <span className="text-cyan-400">{detectedAspect}</span>
+                        <span className="text-ink-300">·</span>
+                        <span className="text-ink-700">{detectedAspect}</span>
                       </>
                     )}
                   </div>
@@ -459,18 +459,18 @@ export function PromptScriptStep({
                       onClick={() => setAspect(detectedAspect)}
                       className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                         aspect === detectedAspect
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-[#18181b] text-white/80 hover:text-white border border-white/[0.12]'
+                          ? 'bg-verify-soft text-verify border border-verify/30'
+                          : 'bg-inset text-ink-900 hover:text-ink border border-line-300'
                       }`}
                     >
                       {aspect === detectedAspect ? (
                         <>
-                          <Check className="w-3 h-3 text-emerald-400" />
+                          <Check className="w-3 h-3 text-verify" />
                           <span>Matched</span>
                         </>
                       ) : (
                         <>
-                          <Zap className="w-3 h-3 text-cyan-400" />
+                          <Zap className="w-3 h-3 text-ink-700" />
                           <span>Auto-Aspect</span>
                         </>
                       )}
@@ -485,18 +485,18 @@ export function PromptScriptStep({
           {keyframeMode === 'dual' && (
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
                   End Keyframe (Frame End - Morph)
                 </span>
                 {lastImageDims && (
-                  <span className="text-[10.5px] font-mono text-white/40">
+                  <span className="text-[10.5px] font-mono text-ink-500">
                     {lastImageDims.width}×{lastImageDims.height}
                   </span>
                 )}
               </div>
 
-              <input 
-                type="file" 
+              <input
+                type="file"
                 ref={endFileInputRef}
                 accept="image/*"
                 className="hidden"
@@ -504,34 +504,34 @@ export function PromptScriptStep({
               />
 
               {!lastImageUrl ? (
-                <div 
+                <div
                   onClick={() => endFileInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropEnd}
-                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/[0.12] hover:border-purple-500/50 bg-black/40 hover:bg-black/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
+                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-line-300 hover:border-line-500 bg-ground/40 hover:bg-ground/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#111114] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-purple-400 group-hover:border-purple-500/30 transition-all">
+                  <div className="w-10 h-10 rounded-full bg-raised border border-line-200 flex items-center justify-center text-ink-500 group-hover:text-ink-900 group-hover:border-line-400 transition-all">
                     <ImageIcon className="w-5 h-5" />
                   </div>
                   <div className="text-center">
-                    <p className="text-xs font-semibold text-white/80 group-hover:text-white">
+                    <p className="text-xs font-semibold text-ink-900 group-hover:text-ink">
                       Drop morph destination keyframe
                     </p>
-                    <p className="text-[11px] text-white/40">FLF2V end frame target</p>
+                    <p className="text-[11px] text-ink-500">FLF2V end frame target</p>
                   </div>
                 </div>
               ) : (
-                <div className="relative p-3 bg-black border border-white/[0.12] rounded-xl flex flex-col gap-2.5 group">
-                  <div className="relative max-h-48 rounded-lg overflow-hidden bg-[#111114] flex items-center justify-center border border-white/[0.08]">
-                    <img 
-                      src={lastImageUrl} 
-                      alt="End Keyframe" 
+                <div className="relative p-3 bg-ground border border-line-300 rounded-xl flex flex-col gap-2.5 group">
+                  <div className="relative max-h-48 rounded-lg overflow-hidden bg-raised flex items-center justify-center border border-line-200">
+                    <img
+                      src={lastImageUrl}
+                      alt="End Keyframe"
                       className="max-h-48 w-full object-contain rounded-lg"
                     />
                     <button
                       type="button"
                       onClick={onLastImageRemoved}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 hover:bg-rose-500/90 text-white/70 hover:text-white transition-all cursor-pointer backdrop-blur-md"
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-ground/80 hover:bg-danger text-ink-700 hover:text-white transition-all cursor-pointer backdrop-blur-md"
                       title="Remove end keyframe"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -539,12 +539,12 @@ export function PromptScriptStep({
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/60 bg-[#111114] px-2 py-0.5 rounded border border-white/[0.08]">
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-ink-700 bg-raised px-2 py-0.5 rounded border border-line-200">
                       <span>{lastImageDims ? `${lastImageDims.width}×${lastImageDims.height}` : lastImagePath}</span>
                       {detectedAspectEnd && (
                         <>
-                          <span className="text-white/30">·</span>
-                          <span className="text-purple-400">{detectedAspectEnd}</span>
+                          <span className="text-ink-300">·</span>
+                          <span className="text-ink-700">{detectedAspectEnd}</span>
                         </>
                       )}
                     </div>
@@ -559,46 +559,46 @@ export function PromptScriptStep({
       {/* 4. Gemini Storyboard & Screenplay Decomposer Modal */}
       {isStoryboardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-[#0e0e11] border border-white/[0.14] rounded-2xl p-6 flex flex-col gap-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <div className="w-full max-w-2xl bg-raised border border-line-300 rounded-2xl p-6 flex flex-col gap-5 shadow-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-line-200 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                <div className="w-9 h-9 rounded-xl bg-inset border border-line-300 flex items-center justify-center text-ink-700">
                   <Film className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-white">Gemini Storyboard &amp; Script Decomposer</h3>
-                  <p className="text-xs text-white/50">
+                  <h3 className="font-bold text-base text-ink">Gemini Storyboard &amp; Script Decomposer</h3>
+                  <p className="text-xs text-ink-500">
                     Deconstruct full narratives into 4–8 cinematic shots with locked character seeds.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsStoryboardOpen(false)}
-                className="p-2 rounded-lg bg-[#18181b] hover:bg-[#222226] text-white/70 hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-lg bg-inset hover:bg-strong text-ink-700 hover:text-ink transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="flex flex-col gap-3">
-              <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider font-mono">
+              <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider font-mono">
                 Full Narrative / Screenplay Script
               </label>
               <textarea
                 value={storyboardScript}
                 onChange={(e) => setStoryboardScript(e.target.value)}
                 rows={4}
-                className="w-full p-3.5 bg-black border border-white/[0.14] rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50 leading-relaxed font-sans placeholder-white/30"
+                className="w-full p-3.5 bg-ground border border-line-300 rounded-lg text-sm text-ink focus:outline-none focus:border-line-500 leading-relaxed font-sans placeholder-ink-300"
                 placeholder="Paste a 60-second narrative story or script here... (e.g. A solitary cybernetic samurai wanders through rain-drenched Neo-Tokyo, discovers an ancient glowing temple hidden beneath skyscrapers, and steps through a portal of pure starlight into hyperspace.)"
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-white/60">Target Duration</label>
+                  <label className="text-[11px] font-semibold text-ink-700">Target Duration</label>
                   <select
                     value={storyboardDuration}
                     onChange={(e) => setStoryboardDuration(e.target.value)}
-                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                    className="bg-ground border border-line-300 rounded-md px-3 py-2 text-xs text-ink focus:outline-none cursor-pointer"
                   >
                     <option value="30.0">30s (Short Promo)</option>
                     <option value="45.0">45s (Fast Narrative)</option>
@@ -608,11 +608,11 @@ export function PromptScriptStep({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-white/60">Scene Count</label>
+                  <label className="text-[11px] font-semibold text-ink-700">Scene Count</label>
                   <select
                     value={storyboardScenes}
                     onChange={(e) => setStoryboardScenes(parseInt(e.target.value, 10))}
-                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                    className="bg-ground border border-line-300 rounded-md px-3 py-2 text-xs text-ink focus:outline-none cursor-pointer"
                   >
                     <option value={4}>4 Scenes (Compact)</option>
                     <option value={6}>6 Scenes (Recommended)</option>
@@ -621,11 +621,11 @@ export function PromptScriptStep({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-white/60">Directing Style</label>
+                  <label className="text-[11px] font-semibold text-ink-700">Directing Style</label>
                   <select
                     value={storyboardStyle}
                     onChange={(e) => setStoryboardStyle(e.target.value)}
-                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                    className="bg-ground border border-line-300 rounded-md px-3 py-2 text-xs text-ink focus:outline-none cursor-pointer"
                   >
                     <option value="Cinematic 35mm Hollywood">Cinematic 35mm Hollywood</option>
                     <option value="Sci-Fi Cyberpunk Noir">Sci-Fi Cyberpunk Noir</option>
@@ -638,11 +638,11 @@ export function PromptScriptStep({
               <button
                 onClick={handleRunStoryboard}
                 disabled={decomposeMutation.isPending || (!storyboardScript.trim() && !prompt.trim())}
-                className="w-full py-2.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+                className="w-full py-2.5 mt-2 bg-accent hover:brightness-110 text-accent-contrast font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {decomposeMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Deconstructing Narrative...</span>
                   </>
                 ) : (
@@ -656,13 +656,13 @@ export function PromptScriptStep({
 
             {/* Decomposed Output Grid */}
             {decomposedScenes.length > 0 && (
-              <div className="border-t border-white/[0.08] pt-4 flex flex-col gap-3">
+              <div className="border-t border-line-200 pt-4 flex flex-col gap-3">
                 <div className="flex justify-between items-center font-mono text-xs">
-                  <span className="font-bold text-white">
+                  <span className="font-bold text-ink">
                     Generated Storyboard ({decomposedScenes.length} Scenes · {storyboardDuration}s Total)
                   </span>
                   {lockedSeed && (
-                    <span className="text-emerald-400">
+                    <span className="text-verify">
                       Locked Character Seed: #{lockedSeed}
                     </span>
                   )}
@@ -672,25 +672,25 @@ export function PromptScriptStep({
                   {decomposedScenes.map((sc, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 bg-black/60 border border-white/[0.08] hover:border-cyan-500/40 rounded-xl flex flex-col gap-2 transition-colors"
+                      className="p-3.5 bg-ground/60 border border-line-200 hover:border-line-400 rounded-xl flex flex-col gap-2 transition-colors"
                     >
                       <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="font-bold text-white/90">Scene {sc.scene_idx || idx + 1} · {sc.duration_sec}s</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#18181b] text-cyan-400 border border-white/[0.06]">
+                        <span className="font-bold text-ink-900">Scene {sc.scene_idx || idx + 1} · {sc.duration_sec}s</span>
+                        <span className="px-1.5 py-0.5 rounded bg-agent-soft text-agent border border-agent-border">
                           {sc.camera_motion || 'Dolly In'}
                         </span>
                       </div>
-                      <div className="font-bold text-xs text-white">{sc.title || `Shot ${idx + 1}`}</div>
-                      <p className="text-[11.5px] text-white/60 line-clamp-3 leading-relaxed">
+                      <div className="font-bold text-xs text-ink">{sc.title || `Shot ${idx + 1}`}</div>
+                      <p className="text-[11.5px] text-ink-700 line-clamp-3 leading-relaxed">
                         {sc.prompt}
                       </p>
-                      <div className="pt-1 text-[10px] font-mono text-white/40 border-t border-white/[0.06] flex justify-between">
+                      <div className="pt-1 text-[10px] font-mono text-ink-500 border-t border-line-100 flex justify-between">
                         <span>{sc.shot_type || 'Tracking'}</span>
                         <span>{sc.lighting || 'Cinematic'}</span>
                       </div>
                       <button
                         onClick={() => handleUseScene(sc)}
-                        className="w-full mt-1 py-1.5 rounded bg-[#18181b] hover:bg-cyan-500 hover:text-black border border-white/[0.12] text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full mt-1 py-1.5 rounded bg-inset hover:bg-strong border border-line-300 text-xs font-semibold text-ink transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Zap className="w-3 h-3" />
                         <span>Use Scene in Prompt</span>
@@ -706,4 +706,3 @@ export function PromptScriptStep({
     </div>
   );
 }
-

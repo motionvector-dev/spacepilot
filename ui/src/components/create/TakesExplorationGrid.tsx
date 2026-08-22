@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { 
-  Play, 
-  Loader2, 
-  Download, 
-  Copy, 
-  Check, 
-  Star, 
-  Plus, 
-  Scissors, 
+import {
+  Play,
+  Loader2,
+  Download,
+  Copy,
+  Check,
+  Star,
+  Plus,
+  Scissors,
   Film
 } from 'lucide-react';
 
@@ -33,8 +33,8 @@ interface TakesExplorationGridProps {
   onSelectSeed?: (seed: number) => void;
 }
 
-export function TakesExplorationGrid({ 
-  takes, 
+export function TakesExplorationGrid({
+  takes,
   isGenerating,
   activePrompt = '',
   generationProgress = 0,
@@ -84,28 +84,28 @@ export function TakesExplorationGrid({
   else if (generationProgress >= 10) currentStage = 2;
 
   return (
-    <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
-      <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+    <div className="flex flex-col gap-4 p-5 bg-surface border border-line-200 rounded-xl hover:border-line-300 transition-colors">
+      <div className="flex justify-between items-center border-b border-line-100 pb-3">
         <div className="flex items-center gap-2">
-          <Film className="w-4 h-4 text-cyan-400" />
-          <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+          <Film className="w-4 h-4 text-ink-700" />
+          <h2 className="text-[13px] font-semibold text-ink-700 uppercase tracking-wider">
             Takes &amp; Exploration Director Grid
           </h2>
         </div>
-        <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+        <span className="text-[11px] font-mono text-verify bg-verify-soft px-2 py-0.5 rounded border border-verify/20">
           {takes && takes.length > 0 ? `${takes.length} Takes Generated` : '4-Take Batch Explorer'}
         </span>
       </div>
 
       {/* Live Multi-Phase Generation Status Bar */}
       {isGenerating && (
-        <div className="flex flex-col gap-3 p-4 bg-black/60 border border-white/[0.12] rounded-xl animate-in fade-in duration-200">
+        <div className="flex flex-col gap-3 p-4 bg-inset border border-line-300 rounded-xl animate-in fade-in duration-200">
           <div className="flex justify-between items-center text-xs">
-            <div className="flex items-center gap-2 text-cyan-400 font-semibold font-mono">
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            <div className="flex items-center gap-2 text-ink-900 font-semibold font-mono">
+              <Loader2 className="w-4 h-4 animate-spin text-ink-900" />
               <span>{generationPhase} — {generationProgress}%</span>
             </div>
-            <span className="font-mono text-white/40 text-[11px]">
+            <span className="font-mono text-ink-500 text-[11px]">
               Resident GPU Worker (48GB L40S)
             </span>
           </div>
@@ -124,16 +124,16 @@ export function TakesExplorationGrid({
               return (
                 <div key={stg.num} className="flex flex-col items-center gap-1.5 text-center">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
-                    isDone 
-                      ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                    isDone
+                      ? 'bg-verify-soft text-verify border border-verify'
                       : isActive
-                      ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.8)] animate-pulse'
-                      : 'bg-[#18181b] border border-white/[0.08] text-white/40'
+                      ? 'bg-strong border border-line-500 text-ink animate-pulse'
+                      : 'bg-inset border border-line-200 text-ink-500'
                   }`}>
                     {isDone ? '✓' : stg.num}
                   </div>
                   <span className={`text-[9.5px] font-mono leading-tight ${
-                    isDone ? 'text-emerald-400' : isActive ? 'text-cyan-400 font-bold' : 'text-white/30'
+                    isDone ? 'text-verify' : isActive ? 'text-ink font-bold' : 'text-ink-300'
                   }`}>
                     {stg.label}
                   </span>
@@ -143,9 +143,9 @@ export function TakesExplorationGrid({
           </div>
 
           {/* Progress Bar Track */}
-          <div className="w-full h-1.5 bg-[#18181b] rounded-full overflow-hidden mt-1">
-            <div 
-              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300 rounded-full"
+          <div className="w-full h-1.5 bg-strong rounded-full overflow-hidden mt-1">
+            <div
+              className="h-full bg-verify transition-all duration-300 rounded-full"
               style={{ width: `${Math.max(5, generationProgress)}%` }}
             />
           </div>
@@ -159,29 +159,29 @@ export function TakesExplorationGrid({
             const isStarred = starredTakes.includes(take.id);
             const isCopied = copiedTakeId === take.id;
             return (
-              <div 
-                key={take.id} 
+              <div
+                key={take.id}
                 onMouseEnter={() => setHoveredTakeId(take.id)}
                 onMouseLeave={() => setHoveredTakeId(null)}
-                className="relative aspect-video bg-[#111114] rounded-xl border border-white/[0.12] overflow-hidden group hover:border-cyan-500/50 transition-all shadow-md"
+                className="relative aspect-video bg-raised rounded-xl border border-line-300 overflow-hidden group hover:border-line-400 transition-all"
               >
                 {/* Take Video Player */}
-                <video 
-                  src={take.video_url} 
-                  className="w-full h-full object-cover" 
-                  controls 
+                <video
+                  src={take.video_url}
+                  className="w-full h-full object-cover"
+                  controls
                   autoPlay={hoveredTakeId === take.id}
-                  loop 
-                  muted 
+                  loop
+                  muted
                   playsInline
                 />
 
                 {/* Top Badge: Take ID, Seed, Star */}
                 <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/80 font-mono text-[10.5px] text-white/90 border border-white/10 backdrop-blur-md">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-ground/80 font-mono text-[10.5px] text-ink-900 border border-line-200 backdrop-blur-md">
                     <span>Take #{take.id}</span>
-                    <span className="text-white/30">·</span>
-                    <span className="text-cyan-400">Seed {take.seed}</span>
+                    <span className="text-ink-300">·</span>
+                    <span className="text-ink-700">Seed {take.seed}</span>
                   </div>
 
                   <button
@@ -189,23 +189,23 @@ export function TakesExplorationGrid({
                     onClick={(e) => toggleStarTake(take.id, e)}
                     className={`pointer-events-auto p-1.5 rounded-md backdrop-blur-md transition-all cursor-pointer ${
                       isStarred
-                        ? 'bg-amber-500 text-black shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-                        : 'bg-black/70 text-white/60 hover:text-amber-400 hover:bg-black/90 border border-white/10'
+                        ? 'bg-strong text-ink border border-line-500'
+                        : 'bg-ground/70 text-ink-700 hover:text-ink-900 hover:bg-ground/90 border border-line-200'
                     }`}
                     title={isStarred ? 'Unstar Best Take' : 'Star / Mark Best Take'}
                   >
-                    <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-black' : ''}`} />
+                    <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-ink' : ''}`} />
                   </button>
                 </div>
 
                 {/* Hover Action Overlay Toolbar */}
-                <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/95 via-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1.5">
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-ground/95 via-ground/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1.5">
                   <div className="flex items-center gap-1">
                     {/* Direct Take Download Button */}
                     <button
                       type="button"
                       onClick={(e) => handleDownloadVideo(take, e)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-emerald-500 hover:text-black text-white text-[11px] font-bold backdrop-blur-md transition-all cursor-pointer shadow-sm"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-inset/70 hover:bg-strong text-ink text-[11px] font-bold backdrop-blur-md transition-all cursor-pointer"
                       title="Download MP4 video take directly"
                     >
                       <Download className="w-3 h-3" />
@@ -218,12 +218,12 @@ export function TakesExplorationGrid({
                       onClick={(e) => handleCopyPrompt(take, e)}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer ${
                         isCopied
-                          ? 'bg-cyan-500 text-black font-bold'
-                          : 'bg-white/10 hover:bg-white/20 text-white'
+                          ? 'bg-strong text-ink font-bold'
+                          : 'bg-inset/70 hover:bg-inset text-ink'
                       }`}
                       title="Copy generation prompt & recipe"
                     >
-                      {isCopied ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
+                      {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       <span>{isCopied ? 'Copied' : 'Prompt'}</span>
                     </button>
                   </div>
@@ -232,7 +232,7 @@ export function TakesExplorationGrid({
                     {/* Extend Take (+4s) */}
                     <a
                       href={`/create?extend_id=${take.id}`}
-                      className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-white/10 hover:bg-cyan-500 hover:text-black text-white text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-inset/70 hover:bg-strong text-ink text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer"
                       title="Extend take duration (+4s)"
                     >
                       <Plus className="w-3 h-3" />
@@ -242,7 +242,7 @@ export function TakesExplorationGrid({
                     {/* Open in Pro Studio Timeline */}
                     <a
                       href={`/studio?asset_id=${take.id}`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-purple-500 hover:text-white text-white text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-inset/70 hover:bg-strong text-ink text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer"
                       title="Open clip in Spacepilot Pro Studio Timeline"
                     >
                       <Scissors className="w-3 h-3" />
@@ -255,23 +255,23 @@ export function TakesExplorationGrid({
           })
         ) : (
           fallbackSeeds.map((seed, idx) => (
-            <div 
-              key={seed} 
-              className="relative aspect-video bg-[#111114] rounded-xl border border-white/[0.08] overflow-hidden group hover:border-amber-500/50 transition-all cursor-pointer"
+            <div
+              key={seed}
+              className="relative aspect-video bg-raised rounded-xl border border-line-200 overflow-hidden group hover:border-line-400 transition-all cursor-pointer"
             >
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/25 gap-1.5">
-                <div className="w-10 h-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-all">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-ink-300 gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-inset border border-line-200 flex items-center justify-center text-ink-500 group-hover:text-ink-900 group-hover:border-line-400 transition-all">
                   <Play className="w-4 h-4 ml-0.5" />
                 </div>
                 <span className="font-mono text-[11px]">Director Take #{idx + 1} Slot</span>
               </div>
-              
-              <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/95 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-center">
-                <span className="text-[11px] font-mono text-white/70">Seed: #{seed}</span>
-                <button 
+
+              <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-ground/95 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-center">
+                <span className="text-[11px] font-mono text-ink-700">Seed: #{seed}</span>
+                <button
                   type="button"
                   onClick={() => onSelectSeed && onSelectSeed(seed)}
-                  className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-400 text-[11px] font-bold rounded border border-amber-500/30 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 bg-accent-soft hover:bg-accent hover:text-accent-contrast text-ink text-[11px] font-bold rounded border border-accent-border transition-colors cursor-pointer"
                 >
                   Load Seed #{seed}
                 </button>
@@ -283,4 +283,3 @@ export function TakesExplorationGrid({
     </div>
   );
 }
-
