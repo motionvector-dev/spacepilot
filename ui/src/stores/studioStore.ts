@@ -4,6 +4,10 @@ export interface Take {
   id: number;
   seed: number;
   videoUrl?: string;
+  // The backend job_id this take is polling — distinct from `id`, which is
+  // only a local 1..N slot index for the take grid.
+  jobId?: string;
+  error?: string;
   panDeg: number;
   zoomRatio: number;
   selected: boolean;
@@ -87,13 +91,17 @@ interface StudioState {
   selectedTakeId: number;
   setSelectedTakeId: (id: number) => void;
   takes: Take[];
+  setTakes: (takes: Take[]) => void;
+  updateTake: (id: number, patch: Partial<Take>) => void;
+  clearTakes: () => void;
   scenes: StoryboardScene[];
   activeSceneId: string;
   setActiveSceneId: (id: string) => void;
   addScene: (prompt: string) => void;
   removeScene: (id: string) => void;
   updateScenePrompt: (id: string, prompt: string) => void;
-  
+  updateScene: (id: string, patch: Partial<StoryboardScene>) => void;
+
   // Generation & Audio Status
   isGenerating: boolean;
   setIsGenerating: (g: boolean) => void;
@@ -181,22 +189,23 @@ export const useStudioStore = create<StudioState>((set) => ({
   audioWaveformPlaying: false,
   setAudioWaveformPlaying: (audioWaveformPlaying) => set({ audioWaveformPlaying }),
 
-  takes: [
-    { id: 1, seed: 42801, panDeg: 15, zoomRatio: 1.4, selected: true, status: 'ready' },
-    { id: 2, seed: 42802, panDeg: 15, zoomRatio: 1.4, selected: false, status: 'ready' },
-    { id: 3, seed: 42803, panDeg: 15, zoomRatio: 1.4, selected: false, status: 'ready' },
-    { id: 4, seed: 42804, panDeg: 15, zoomRatio: 1.4, selected: false, status: 'ready' },
-  ],
-  activeSceneId: 'scene-1',
+  // Empty until a real generation completes — no placeholder takes. A "ready"
+  // take that never rendered anything is the fabricated-success shape this was
+  // built to remove.
+  takes: [],
+  setTakes: (takes) => set({ takes }),
+  updateTake: (id, patch) =>
+    set((state) => ({
+      takes: state.takes.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    })),
+  clearTakes: () => set({ takes: [] }),
+
+  activeSceneId: '',
   setActiveSceneId: (activeSceneId) => set({ activeSceneId }),
-  scenes: [
-    { id: 'scene-1', prompt: 'Establishing wide dolly-in: Cyberpunk neon alleyway with volumetric rain', duration: 4.0, panDeg: 15, zoomRatio: 1.4, status: 'ready' },
-    { id: 'scene-2', prompt: 'Medium close-up: Holographic terminal reflecting off wet asphalt', duration: 3.5, panDeg: -10, zoomRatio: 1.2, status: 'ready' },
-    { id: 'scene-3', prompt: 'Anamorphic pan: Autonomous courier drone launching into neon fog', duration: 4.5, panDeg: 25, zoomRatio: 1.6, status: 'ready' },
-  ],
+  scenes: [],
   addScene: (prompt) =>
     set((state) => {
-      const newId = `scene-${state.scenes.length + 1}`;
+      const newId = `scene-${Date.now()}`;
       return {
         scenes: [
           ...state.scenes,
@@ -206,12 +215,19 @@ export const useStudioStore = create<StudioState>((set) => ({
       };
     }),
   removeScene: (id) =>
-    set((state) => ({
-      scenes: state.scenes.filter((s) => s.id !== id),
-      activeSceneId: state.scenes[0]?.id || '',
-    })),
+    set((state) => {
+      const scenes = state.scenes.filter((s) => s.id !== id);
+      return {
+        scenes,
+        activeSceneId: state.activeSceneId === id ? (scenes[0]?.id || '') : state.activeSceneId,
+      };
+    }),
   updateScenePrompt: (id, prompt) =>
     set((state) => ({
       scenes: state.scenes.map((s) => (s.id === id ? { ...s, prompt } : s)),
+    })),
+  updateScene: (id, patch) =>
+    set((state) => ({
+      scenes: state.scenes.map((s) => (s.id === id ? { ...s, ...patch } : s)),
     })),
 }));

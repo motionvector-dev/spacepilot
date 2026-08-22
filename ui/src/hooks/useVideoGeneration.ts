@@ -23,12 +23,19 @@ export function useVideoGeneration() {
 
       // 2. Poll job until completed
       let attempts = 0;
+      let consecutiveFailures = 0;
+      let skipUntilAttempt = 0;
+      const MAX_CONSECUTIVE_FAILURES = 6;
+
       const interval = setInterval(async () => {
         attempts++;
-        setProgress((prev) => Math.min(prev + 12, 92));
+        if (attempts < skipUntilAttempt) return; // backing off after a run of failed status checks
 
         try {
           const status = await api.getJobStatus(jobId);
+          consecutiveFailures = 0;
+          setProgress((prev) => Math.min(prev + 12, 92));
+
           if (status.status === 'completed') {
             clearInterval(interval);
             setProgress(100);
@@ -54,15 +61,21 @@ export function useVideoGeneration() {
             setError(status.error || 'Generation failed');
           }
         } catch (pollErr) {
-          // If backend runs in mock mode, simulate completion
-          if (attempts > 6) {
+          // A poll failure (network blip, proxy 502, GPU mid-restart) is not a completion —
+          // the job is still queued as far as we know. Back off and keep polling; only
+          // surface an error once failures are persistent, never flip to success.
+          consecutiveFailures++;
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
             clearInterval(interval);
-            setProgress(100);
             setIsGenerating(false);
-            useStudioStore.setState((state) => ({
-              takes: state.takes.map((t) => ({ ...t, status: 'ready' })),
-            }));
+            setError(
+              `Lost contact with the render job after ${consecutiveFailures} failed status checks: ${
+                pollErr instanceof Error ? pollErr.message : 'unknown error'
+              }`
+            );
+            return;
           }
+          skipUntilAttempt = attempts + Math.min(2 ** consecutiveFailures, 16);
         }
       }, 1000);
     } catch (err: any) {
