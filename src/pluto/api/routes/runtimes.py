@@ -35,17 +35,39 @@ class InstallJob(BaseModel):
 
 _jobs: Dict[str, InstallJob] = {}
 
+# Checking seven runtimes means seven interpreter starts — about 2.4 seconds
+# even run together, which is too long for a panel that renders on every visit.
+# The answer only changes when something is installed, so it is cached and
+# dropped explicitly at that point rather than guessed at with a short TTL.
+_listing_cache: Optional[dict] = None
+
+
+def invalidate_listing() -> None:
+    global _listing_cache
+    _listing_cache = None
+
 
 @router.get("")
-def list_runtimes():
-    """Every runtime, with whether it is installed in this interpreter."""
+async def list_runtimes():
+    """Every runtime, with whether it is installed in this interpreter.
+
+    Each check spawns an interpreter to try the import, which is the only
+    honest way to know. Serially that is seven process starts and several
+    seconds before anything renders, so they run together.
+    """
+    global _listing_cache
+    if _listing_cache is not None:
+        return _listing_cache
+
     from src.device_probe import probe_local_device
     from src.pluto import runtimes as rt
 
-    profile = probe_local_device()
+    profile = await asyncio.to_thread(probe_local_device)
+    registry = list(rt.runtimes().values())
+    checks = await asyncio.gather(*(asyncio.to_thread(rt.check, r) for r in registry))
+
     out = []
-    for r in rt.runtimes().values():
-        st = rt.check(r)
+    for r, st in zip(registry, checks):
         out.append({
             **{k: v for k, v in r.to_dict().items()},
             "status": st.to_dict(),
@@ -54,12 +76,13 @@ def list_runtimes():
             "usable_here": bool(profile.backend and profile.backend in r.backends)
                            and st.python_compatible,
         })
-    return {
+    _listing_cache = {
         "backend": profile.backend,
         "chip": profile.chip,
         "interpreter": rt.interpreter(),
         "runtimes": out,
     }
+    return _listing_cache
 
 
 @router.get("/{runtime_id}/preview", dependencies=[Depends(require_token)])
@@ -142,6 +165,9 @@ async def _run(job: InstallJob, r, allow_downgrade: bool) -> None:
         job.status, job.error = "failed", str(e)
     finally:
         job.finished_at = time.time()
+        # Even a refusal drops it: cheaper than reasoning about which outcomes
+        # could have changed what is on disk.
+        invalidate_listing()
 
 
 @router.get("/jobs/{job_id}", dependencies=[Depends(require_token)])
