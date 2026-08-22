@@ -11,6 +11,7 @@ import {
   Edit2
 } from 'lucide-react';
 import { useStudioStore } from '../../../stores/studioStore';
+import { formatVram, formatAccruedCost, gpuDotClass, gpuLabel } from '../../../lib/gpuFormat';
 import { useGpuStore } from '../../../stores/gpuStore';
 
 interface TopMiniHeaderProps {
@@ -23,7 +24,7 @@ export const TopMiniHeader = ({
   onOpenExportDrawer,
 }: TopMiniHeaderProps) => {
   const { studioExperience, setStudioExperience } = useStudioStore();
-  const { status: gpuStatus, launchGpu, isLaunching } = useGpuStore();
+  const { status: gpuStatus, statusError, launchGpu, isLaunching } = useGpuStore();
 
   const [projectTitle, setProjectTitle] = useState('Diffusion Physics Documentary · Ep 01');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -34,7 +35,7 @@ export const TopMiniHeader = ({
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  const estimatedCost = (gpuStatus.hourlyCostUsd * (gpuStatus.uptimeSeconds / 3600)).toFixed(2);
+  const estimatedCost = formatAccruedCost(gpuStatus);
 
   return (
     <header className="fixed top-0 left-[56px] right-0 h-[44px] bg-[#09090b]/90 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 z-30 select-none">
@@ -107,11 +108,11 @@ export const TopMiniHeader = ({
           className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 text-xs font-mono transition-all cursor-pointer"
           title="Click to view Cockpit GPU Metrics"
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-white/60 hidden md:inline">{gpuStatus.instanceType.toUpperCase()} ·</span>
-          <span className="text-emerald-400 font-semibold">{gpuStatus.vramUsedGb.toFixed(1)} / {gpuStatus.vramTotalGb}GB</span>
+          <span className={`w-2 h-2 rounded-full ${gpuDotClass(gpuStatus, statusError)}`} />
+          <span className="text-white/60 hidden md:inline">{gpuLabel(gpuStatus, statusError)} ·</span>
+          <span className={`font-semibold ${gpuStatus.vramUsedGb === null ? 'text-white/40' : 'text-emerald-400'}`}>{formatVram(gpuStatus)}</span>
           <span className="text-white/40">·</span>
-          <span className="text-white/90 font-medium">${estimatedCost}</span>
+          <span className="text-white/90 font-medium">{estimatedCost}</span>
         </div>
 
         {/* Command Palette Trigger (⌘K) */}

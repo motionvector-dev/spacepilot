@@ -12,6 +12,7 @@ import {
 import { useStudioStore } from '../stores/studioStore';
 import { useTimelineStore } from '../stores/timelineStore';
 import { useGpuStore } from '../stores/gpuStore';
+import { formatVram, gpuDotClass, gpuLabel } from '../lib/gpuFormat';
 import { useGpuPoller } from '../hooks/useGpuPoller';
 
 // Runway Gen-4 Agent Components
@@ -53,7 +54,7 @@ export default function StudioPage() {
     clearInOutPoints,
   } = useTimelineStore();
 
-  const { status: gpuStatus } = useGpuStore();
+  const { status: gpuStatus, statusError: gpuStatusError } = useGpuStore();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -246,9 +247,9 @@ export default function StudioPage() {
 
               <div className="h-4 w-px bg-white/10 hidden md:block" />
               <div className="hidden md:flex items-center gap-2 font-mono text-xs text-white/60">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${gpuDotClass(gpuStatus, gpuStatusError)}`} />
                 <span>
-                  {gpuStatus.instanceType.toUpperCase()} · {gpuStatus.vramUsedGb.toFixed(1)} / {gpuStatus.vramTotalGb}GB VRAM
+                  {gpuLabel(gpuStatus, gpuStatusError)} · {formatVram(gpuStatus)}
                 </span>
               </div>
             </div>
