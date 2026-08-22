@@ -38,16 +38,22 @@ export interface GenerationJobResult {
   error?: string;
 }
 
+// null means "the backend does not report this", never zero. /api/status
+// (_build_status, studio_api.py:391) carries instance state, uptime and accrued
+// cost — it has no VRAM, utilization, dead-man or resident-model telemetry, and
+// inventing plausible numbers for those renders an idle box as a busy one.
 export interface GpuStatusData {
-  instance_type: string;
+  online: boolean;
+  instance_type: string | null;
   provider: 'aws_spot' | 'shadeform' | 'local';
-  vram_used_gb: number;
-  vram_total_gb: number;
-  gpu_utilization: number;
-  hourly_cost: number;
-  uptime_seconds: number;
-  dead_man_seconds_remaining: number;
-  resident_model: string;
+  vram_used_gb: number | null;
+  vram_total_gb: number | null;
+  gpu_utilization: number | null;
+  hourly_cost: number | null;
+  estimated_cost_usd: number | null;
+  uptime_seconds: number | null;
+  dead_man_seconds_remaining: number | null;
+  resident_model: string | null;
 }
 
 export class ApiClient {
@@ -88,8 +94,16 @@ export class ApiClient {
     });
 
     if (!res.ok) {
+      // FastAPI puts the human-readable reason in `detail`; raw JSON in a toast is noise.
       const errBody = await res.text().catch(() => '');
-      throw new Error(`API Error ${res.status}: ${res.statusText} — ${errBody}`);
+      let reason = errBody;
+      try {
+        const parsed = JSON.parse(errBody);
+        reason = parsed?.detail || parsed?.message || errBody;
+      } catch {
+        // non-JSON body: use it as-is
+      }
+      throw new Error(reason || `API Error ${res.status}: ${res.statusText}`);
     }
     return res.json();
   }
@@ -139,48 +153,39 @@ export class ApiClient {
     });
   }
 
-  // GPU Spot Instance Telemetry (matches FRONTEND-SYNC-HANDOFF.md Section 3C)
+  // GPU Spot Instance Telemetry. Throws on a failed fetch: a status poll that
+  // cannot reach the server is an unknown state, not an idle GPU.
   async getGpuStatus(): Promise<GpuStatusData> {
-    try {
-      const data = await this.fetchJson<any>('/api/status');
-      return {
-        instance_type: data.instance?.type || 'g6e.xlarge',
-        provider: 'aws_spot',
-        vram_used_gb: data.vram_used_gb || 18.4,
-        vram_total_gb: data.vram_total_gb || 48.0,
-        gpu_utilization: data.gpu_online ? 64.2 : 0,
-        hourly_cost: data.estimated_cost_usd || 0.75,
-        uptime_seconds: (data.uptime_minutes || 0) * 60,
-        dead_man_seconds_remaining: 1800,
-        resident_model: 'ltx-2.5-float8',
-      };
-    } catch {
-      return {
-        instance_type: 'g6e.xlarge',
-        provider: 'aws_spot',
-        vram_used_gb: 18.4,
-        vram_total_gb: 48.0,
-        gpu_utilization: 64.2,
-        hourly_cost: 0.75,
-        uptime_seconds: 1420,
-        dead_man_seconds_remaining: 1780,
-        resident_model: 'ltx-2.5-float8',
-      };
-    }
+    const data = await this.fetchJson<any>('/api/status');
+    return {
+      online: Boolean(data.gpu_online),
+      instance_type: data.instance?.type ?? null,
+      provider: 'aws_spot',
+      vram_used_gb: null,
+      vram_total_gb: null,
+      gpu_utilization: null,
+      hourly_cost: null,
+      estimated_cost_usd: data.estimated_cost_usd ?? null,
+      uptime_seconds: typeof data.uptime_minutes === 'number' ? data.uptime_minutes * 60 : null,
+      dead_man_seconds_remaining: null,
+      resident_model: null,
+    };
   }
 
-  // Launch Spot GPU
-  async launchGpu(instanceType = 'g6e.xlarge'): Promise<{ status: string }> {
+  // Launch Spot GPU. GpuActionRequest (studio_api.py:467) 400s without
+  // {confirm: true}; it takes no instance_type, so the size is server-side config.
+  async launchGpu(confirm = true): Promise<{ status: string; message?: string }> {
     return this.fetchJson('/api/gpu/launch', {
       method: 'POST',
-      body: JSON.stringify({ instance_type: instanceType }),
+      body: JSON.stringify({ confirm }),
     });
   }
 
-  // Terminate Spot GPU
-  async terminateGpu(): Promise<{ status: string }> {
+  // Terminate Spot GPU. Same confirm requirement as launch.
+  async terminateGpu(confirm = true): Promise<{ status: string; message?: string }> {
     return this.fetchJson('/api/gpu/terminate', {
       method: 'POST',
+      body: JSON.stringify({ confirm }),
     });
   }
 

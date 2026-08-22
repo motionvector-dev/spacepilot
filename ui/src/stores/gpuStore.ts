@@ -1,20 +1,26 @@
 import { create } from 'zustand';
-import { fetchToken } from '../hooks/useGpuStatus';
+import { api } from '../lib/api';
 
+// null is "not reported", distinct from a real zero reading. See GpuStatusData
+// in lib/api.ts for which of these /api/status actually carries.
 export interface GpuStatus {
-  instanceType: string;
+  online: boolean;
+  instanceType: string | null;
   provider: 'aws_spot' | 'shadeform' | 'local';
-  vramTotalGb: number;
-  vramUsedGb: number;
-  gpuUtilization: number;
-  hourlyCostUsd: number;
-  uptimeSeconds: number;
-  deadManTimeoutSeconds: number;
-  residentModel: string;
+  vramTotalGb: number | null;
+  vramUsedGb: number | null;
+  gpuUtilization: number | null;
+  hourlyCostUsd: number | null;
+  estimatedCostUsd: number | null;
+  uptimeSeconds: number | null;
+  deadManTimeoutSeconds: number | null;
+  residentModel: string | null;
 }
 
 interface GpuState {
   status: GpuStatus;
+  // Set when a status poll fails. The last `status` is then stale, not current.
+  statusError: string | null;
   isLaunching: boolean;
   isTerminating: boolean;
   error: string | null;
@@ -22,47 +28,31 @@ interface GpuState {
   terminateGpu: (confirm?: boolean) => Promise<void>;
 }
 
-// gpu.py's /api/gpu/launch and /api/gpu/terminate both 400 without {confirm: true}
-// in the body, and both require X-Pluto-Token (Depends(require_token)).
-async function postGpuAction(endpoint: '/api/gpu/launch' | '/api/gpu/terminate', confirm: boolean) {
-  const token = await fetchToken();
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'X-Pluto-Token': token } : {}),
-    },
-    body: JSON.stringify({ confirm }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data?.detail || data?.message || `${endpoint} failed (${res.status})`);
-  }
-  return data as { status?: string; message?: string };
-}
-
 export const useGpuStore = create<GpuState>((set) => ({
   status: {
-    instanceType: 'g6e.xlarge',
+    online: false,
+    instanceType: null,
     provider: 'aws_spot',
-    vramTotalGb: 48,
-    vramUsedGb: 0,
-    gpuUtilization: 0,
-    hourlyCostUsd: 0.75,
-    uptimeSeconds: 0,
-    deadManTimeoutSeconds: 1800,
-    residentModel: 'ltx-2.5-float8',
+    vramTotalGb: null,
+    vramUsedGb: null,
+    gpuUtilization: null,
+    hourlyCostUsd: null,
+    estimatedCostUsd: null,
+    uptimeSeconds: null,
+    deadManTimeoutSeconds: null,
+    residentModel: null,
   },
+  statusError: null,
   isLaunching: false,
   isTerminating: false,
   error: null,
   launchGpu: async (confirm = true) => {
     set({ isLaunching: true, error: null });
     try {
-      // launch is fire-and-backgrounded server-side (gpu.py:71-77) — this only
+      // launch is fire-and-backgrounded server-side (studio_api.py:487-493) — this only
       // confirms the request was accepted, not that the instance is up. Real
       // state comes from the status poller (useGpuPoller / useGpuStatus).
-      await postGpuAction('/api/gpu/launch', confirm);
+      await api.launchGpu(confirm);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -72,7 +62,7 @@ export const useGpuStore = create<GpuState>((set) => ({
   terminateGpu: async (confirm = true) => {
     set({ isTerminating: true, error: null });
     try {
-      await postGpuAction('/api/gpu/terminate', confirm);
+      await api.terminateGpu(confirm);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     } finally {
