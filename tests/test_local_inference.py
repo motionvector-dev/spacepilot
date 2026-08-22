@@ -11,7 +11,7 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
-from src.device_probe import DeviceProfile, probe_local_device, _probe_ram
+from src.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
 from src.model_recommender import (
     ModelEntry,
     RECOMMENDED_MODEL_CATALOG,
@@ -32,13 +32,12 @@ AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
 
 
 def test_device_probe_returns_valid_profile():
-    """Test that probe_local_device returns a valid DeviceProfile with non-empty fields."""
     profile = probe_local_device()
     assert isinstance(profile, DeviceProfile)
     assert profile.os_type in ["darwin", "linux", "windows"]
     assert profile.vram_total_gb > 0
     assert profile.vram_usable_gb >= 0
-    assert profile.backend in ["metal_mps", "cuda", "cpu", "rocm"]
+    assert profile.backend in ["metal", "cuda", "cpu", "rocm"]
     assert isinstance(profile.is_local_capable, bool)
 
     data = profile.to_dict()
@@ -46,29 +45,56 @@ def test_device_probe_returns_valid_profile():
     assert "vram_usable_gb" in data
 
 
-def test_safety_headroom_formula():
-    """Verify the 80% VRAM minus 1.5GB display buffer formula."""
-    total_64 = 64.0
-    usable_64 = max(0.0, round(total_64 * 0.80 - 1.5, 2))
-    assert usable_64 == 49.7
+def test_probe_reads_this_machine_not_a_default():
+    """A probe that cannot measure must say so, never substitute a plausible spec.
 
-    total_16 = 16.0
-    usable_16 = max(0.0, round(total_16 * 0.80 - 1.5, 2))
-    assert usable_16 == 11.3
+    Magnitude reported this 32 GB M1 Max MacBook Pro as an 8 GB 4-core x86
+    MacBook Air, because its probe failed and fell back to constants. The
+    recommendation it built on top was confidently wrong and unfalsifiable.
+    """
+    profile = probe_local_device()
+
+    # Whatever is reported must be backed by a measurement or recorded as unknown.
+    for field in ("memory_total_bytes", "cpu_cores"):
+        assert getattr(profile, field) is not None or field in profile.unknown
+
+    if profile.os_type == "darwin":
+        # These come from sysctl/system_profiler and cannot be guessed.
+        assert profile.chip, "chip must come from machdep.cpu.brand_string"
+        assert profile.arch in ("arm64", "x86_64")
+        assert profile.machine_model, "hw.model must be read"
+        if profile.arch == "arm64":
+            assert profile.memory_unified is True
+            assert profile.backend == "metal"
+
+
+def test_usable_memory_prefers_the_platforms_own_limit():
+    """Metal reports ~78% of RAM, not the 90% a flat reserve would assume."""
+    metal = DeviceProfile(
+        memory_total_bytes=32 * GIB, memory_unified=True, backend="metal",
+        memory_limit_bytes=int(24.96 * GIB), memory_limit_source="metal",
+    )
+    assert usable_memory_bytes(metal) == int(24.96 * GIB)
+
+    # No platform answer: fall back to capacity minus max(10%, 3 GB).
+    heuristic = DeviceProfile(
+        memory_total_bytes=64 * GIB, memory_unified=True, backend="metal")
+    assert usable_memory_bytes(heuristic) == 64 * GIB - int(64 * GIB * 0.10)
+
+    small = DeviceProfile(
+        memory_total_bytes=8 * GIB, memory_unified=True, backend="metal")
+    assert usable_memory_bytes(small) == 8 * GIB - 3 * GIB  # floor, not 10%
+
+    # Nothing measured: promise nothing.
+    assert usable_memory_bytes(DeviceProfile()) == 0
 
 
 def test_model_recommender_task_routing():
     """Test model recommender on different hardware profiles."""
     high_end_profile = DeviceProfile(
-        os_type="darwin",
-        architecture="arm64",
-        device_name="Apple M4 Max",
-        backend="metal_mps",
-        vram_total_gb=64.0,
-        vram_usable_gb=49.7,
-        ram_total_gb=64.0,
-        ram_free_gb=40.0,
-        is_local_capable=True
+        os_name="macOS", arch="arm64", chip="Apple M4 Max", backend="metal",
+        memory_total_bytes=64 * GIB, memory_free_bytes=40 * GIB, memory_unified=True,
+        memory_limit_bytes=int(49.7 * GIB), memory_limit_source="metal",
     )
     res_high = recommend_models_for_device(high_end_profile)
     assert res_high["total_models"] >= 6
@@ -77,15 +103,9 @@ def test_model_recommender_task_routing():
     assert recs_high["ltx-video-2.5-fp8"]["execution_route"] == "local"
 
     low_profile = DeviceProfile(
-        os_type="linux",
-        architecture="x86_64",
-        device_name="Generic CPU",
-        backend="cpu",
-        vram_total_gb=8.0,
-        vram_usable_gb=4.9,
-        ram_total_gb=8.0,
-        ram_free_gb=4.0,
-        is_local_capable=False
+        os_name="Linux", arch="x86_64", chip="Generic CPU", backend="cpu",
+        memory_total_bytes=8 * GIB, memory_free_bytes=4 * GIB,
+        memory_limit_bytes=int(4.9 * GIB), memory_limit_source="heuristic",
     )
     res_low = recommend_models_for_device(low_profile)
     recs_low = {m["model_id"]: m for m in res_low["recommendations"]}

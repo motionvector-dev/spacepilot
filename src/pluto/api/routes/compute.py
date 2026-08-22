@@ -67,3 +67,10 @@ def get_local_compute_status():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve local status: {str(e)}")
+
+
+@router.get("/compatibility")
+def get_compatibility_report():
+    """The probed machine, every model's verdict against it, and what to lead with."""
+    from src.pluto.services.model_catalog import catalog_manager
+    return catalog_manager.compatibility_report()

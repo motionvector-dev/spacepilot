@@ -3,24 +3,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any
 from pydantic import BaseModel
-from src.pluto.services.model_catalog import catalog_manager
+from src.pluto.services.model_catalog import ModelRecipeSpec, catalog_manager
 from src.pluto.api.deps import require_token, update_activity
 
 router = APIRouter(tags=["recipes"])
 
-class RecipeResponse(BaseModel):
-    recipe_id: str
-    name: str
-    family: str
-    size_gb: float
-    min_vram_gb: float
-    quantization: str
-    hf_repo: str
-    download_url: str
-    recommended_gpu: str
-    is_local_runnable: bool
 
-@router.get("/api/compute/recipes", response_model=List[RecipeResponse])
+@router.get("/api/compute/recipes", response_model=List[ModelRecipeSpec])
 def list_recipes(_: None = Depends(require_token)):
     """List recipes enriched with local compatibility status."""
     recipes = catalog_manager.get_all_recipes()
