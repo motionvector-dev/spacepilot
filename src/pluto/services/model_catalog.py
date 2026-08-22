@@ -1,4 +1,7 @@
 import asyncio
+import os
+import time
+from pathlib import Path
 import uuid
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -27,6 +30,10 @@ class DownloadJob(BaseModel):
     status: str  # pending, downloading, completed, failed
     progress_percent: float
     speed_mb_s: float
+    downloaded_bytes: int = 0
+    total_bytes: Optional[int] = None   # from the recipe; None when unknown
+    local_path: Optional[str] = None    # set on success, so callers can find the weights
+    error: Optional[str] = None         # set on failure, so a caller can tell
 
 class ModelCatalogManager:
     """Manages the available model recipes and handles background downloads."""
@@ -148,45 +155,109 @@ class ModelCatalogManager:
         )
         return spec
 
-    async def _mock_download_task(self, job_id: str):
+    # Models live in one cache under ~/.spacepilot/models, the layout
+    # huggingface_hub uses natively (hub/ + locks/). One directory to inspect,
+    # one to delete when reclaiming disk.
+    MODELS_DIR = Path(os.environ.get("SPACEPILOT_MODELS_DIR", Path.home() / ".spacepilot" / "models"))
+
+    @staticmethod
+    def _dir_bytes(path: Path) -> int:
+        # Count blobs/ only. The hub stores each file's content once under blobs/
+        # and materialises it again under snapshots/ — on a filesystem where that
+        # is a copy rather than a symlink, walking everything double-counts and
+        # reports twice the bytes that crossed the network.
+        total = 0
+        for f in path.rglob("*"):
+            try:
+                if f.is_file() and not f.is_symlink() and "snapshots" not in f.parts:
+                    total += f.stat().st_size
+            except OSError:
+                pass  # file vanished mid-walk; hub writes then renames
+        return total  # includes small refs/ and lock metadata, so it reads a
+                      # couple of KB above the Hub's payload total. That is real
+                      # disk used, which is the number a user cares about.
+
+    def _run_download(self, job_id: str, repo_id: str) -> None:
+        """Download a repo. Runs on a worker thread."""
+        from huggingface_hub import snapshot_download
+
+        job = self.jobs[job_id]
+        self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        job.local_path = snapshot_download(repo_id=repo_id, cache_dir=str(self.MODELS_DIR))
+
+    async def _download_task(self, job_id: str, repo_id: str):
+        """Run the download, reporting bytes actually on disk.
+
+        Progress is measured by walking the cache directory rather than by hooking
+        huggingface_hub's progress bars: in hub 1.x, tqdm_class only wraps the outer
+        'Fetching N files' counter, so anything derived from it reports file counts
+        as though they were bytes. Disk is the ground truth and does not move
+        between library versions.
         """
-        Mock task to simulate downloading a recipe.
-        
-        TODO(real-download): Replace this mock with an actual download implementation.
-        """
+        from huggingface_hub import HfApi
+
+        job = self.jobs[job_id]
+        before = self._dir_bytes(self.MODELS_DIR) if self.MODELS_DIR.exists() else 0
         try:
-            job = self.jobs[job_id]
             job.status = "downloading"
-            job.speed_mb_s = 50.0
-            
-            for i in range(10):
-                await asyncio.sleep(1)
-                job.progress_percent = (i + 1) * 10
-                
+
+            # Exact total from the Hub, not the recipe's size_gb estimate.
+            try:
+                info = await asyncio.to_thread(
+                    lambda: HfApi().model_info(repo_id, files_metadata=True)
+                )
+                total = sum(f.size or 0 for f in (info.siblings or []))
+                if total:
+                    job.total_bytes = total
+            except Exception as e:
+                logger.warning("could not size %s up front: %s", repo_id, e)
+
+            started = time.monotonic()
+            task = asyncio.create_task(asyncio.to_thread(self._run_download, job_id, repo_id))
+            while not task.done():
+                await asyncio.sleep(0.5)
+                got = max(0, self._dir_bytes(self.MODELS_DIR) - before)
+                job.downloaded_bytes = got
+                elapsed = time.monotonic() - started
+                if elapsed > 0:
+                    job.speed_mb_s = round(got / elapsed / 1_048_576, 2)
+                if job.total_bytes:
+                    job.progress_percent = round(min(99.9, got / job.total_bytes * 100.0), 1)
+            await task  # re-raises whatever the download raised
+
+            job.downloaded_bytes = max(0, self._dir_bytes(self.MODELS_DIR) - before)
             job.status = "completed"
-            job.speed_mb_s = 0.0
             job.progress_percent = 100.0
+            job.speed_mb_s = 0.0
+            logger.info("downloaded %s to %s (%d bytes)", repo_id, job.local_path, job.downloaded_bytes)
         except Exception as e:
-            logger.error(f"Error in mock download task: {e}", exc_info=True)
-            if job_id in self.jobs:
-                self.jobs[job_id].status = "failed"
+            # A failed download must read as failed. The previous implementation
+            # slept ten seconds and reported success regardless.
+            job.status = "failed"
+            job.error = str(e)
+            job.speed_mb_s = 0.0
+            logger.error("download failed for %s: %s", repo_id, e, exc_info=True)
 
     def download_recipe(self, recipe_id: str) -> str:
         """Start a background download job for a recipe."""
         if recipe_id not in self.recipes:
             raise ValueError(f"Recipe not found: {recipe_id}")
             
+        recipe = self.recipes[recipe_id]
+        if not recipe.hf_repo:
+            raise ValueError(f"Recipe {recipe_id} has no hf_repo to download from")
+
         job_id = recipe_id
         job = DownloadJob(
             job_id=job_id,
             recipe_id=recipe_id,
             status="pending",
             progress_percent=0.0,
-            speed_mb_s=0.0
+            speed_mb_s=0.0,
+            total_bytes=int((recipe.size_gb or 0) * 1_073_741_824) or None,
         )
         self.jobs[job_id] = job
-        # TODO(real-download): Update task creation when actual download is implemented
-        asyncio.create_task(self._mock_download_task(job_id))
+        asyncio.create_task(self._download_task(job_id, recipe.hf_repo))
         return job_id
 
     def get_download_progress(self, job_id: str) -> Optional[DownloadJob]:
