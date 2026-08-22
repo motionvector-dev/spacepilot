@@ -2,7 +2,7 @@
 
 import time
 import asyncio
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from src.pluto.core.config import get_settings
@@ -18,10 +18,22 @@ async def healthz():
 
 
 @router.get("/api/token")
-def get_token():
-    """Hand the UI its session token."""
-    settings = get_settings()
-    return {"token": settings.studio_token}
+def get_token(request: Request):
+    """Hand the UI its session token.
+
+    Loopback callers only. This is the key to every other gate on the server,
+    including the shell websocket, so it stays unreachable even if someone
+    widens the bind later or a proxy is put in front.
+    """
+    from src.pluto.api.security import is_loopback_client
+
+    client = request.client.host if request.client else None
+    if not is_loopback_client(client):
+        raise HTTPException(
+            status_code=403,
+            detail="The session token is issued to this machine only.",
+        )
+    return {"token": get_settings().studio_token}
 
 
 @router.get("/api/status")

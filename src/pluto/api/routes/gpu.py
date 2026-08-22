@@ -283,6 +283,16 @@ async def stream_gpu_logs():
 @router.websocket("/api/gpu/inspect/shell")
 async def inspect_shell_ws(websocket: WebSocket):
     settings = get_settings()
+
+    # Before accepting anything. CORS does not apply to websockets, so a page on
+    # any origin may reach this handler; the token frame below is the only other
+    # gate, and a rebinding attack can read that token.
+    from src.pluto.api.security import websocket_is_local
+
+    if settings.local_only and not await websocket_is_local(websocket, settings.cors_origins):
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
     try:
         try:

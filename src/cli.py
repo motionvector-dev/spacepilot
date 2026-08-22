@@ -627,7 +627,8 @@ def main():
 
     # serve
     serve_p = subparsers.add_parser("serve", help="Start FastAPI app")
-    serve_p.add_argument("--host", type=str, default="0.0.0.0", help="Host (default: 0.0.0.0)")
+    serve_p.add_argument("--host", type=str, default="127.0.0.1",
+                         help="Host (default: 127.0.0.1, this machine only)")
     serve_p.add_argument("--port", type=int, default=8088, help="Port (default: 8088)")
     serve_p.add_argument("--reload", action="store_true", help="Enable reload")
 
