@@ -1,0 +1,60 @@
+schema: 1
+id: wan-2-1
+name: Wan 2.1
+family: wan
+kind: video
+summary: Alibaba's text-to-video family. The 1.3B is the smallest genuinely open video model that is worth running.
+homepage: https://huggingface.co/Wan-AI
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: wan-2-1-t2v-1-3b
+    name: Wan 2.1 T2V 1.3B
+    params: 1.3B
+    precision: bf16
+    repo: Wan-AI/Wan2.1-T2V-1.3B
+    backends: [metal, cuda]
+    download:
+      value: 17580000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 8794138050
+      source: declared
+      checked: "2026-08-22"
+      note: >
+        8.19 GB peak GPU memory, stated on the official model card at
+        https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B for a 5-second 480p
+        generation. Replaces our earlier 11 GB estimate; the card is describing
+        the same bf16 weights this variant downloads.
+    speed:
+      - device: NVIDIA RTX 4090
+        backend: cuda
+        metric: seconds_per_second_of_video
+        value: 48
+        source: declared
+        measured_on: "2026-08-22"
+        note: >
+          About 4 minutes for a 5-second 480p clip, stated on the official model
+          card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B without
+          quantisation or other optimisation. Not measured by us.
+  - id: wan-2-1-t2v-14b
+    name: Wan 2.1 T2V 14B
+    params: 14B
+    precision: bf16
+    repo: Wan-AI/Wan2.1-T2V-14B
+    backends: [cuda]
+    download:
+      value: 69050000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 51539607552
+      source: estimated
+      note: "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet"
+    notes: Beyond any single consumer card and beyond every Apple Silicon configuration currently sold.

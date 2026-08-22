@@ -1,0 +1,35 @@
+schema: 1
+id: hunyuan-video
+name: HunyuanVideo
+family: tencent
+kind: video
+summary: >
+  Strong quality at a small quantised footprint. The licence is the problem, not
+  the model.
+homepage: https://huggingface.co/city96/HunyuanVideo-gguf
+
+license:
+  id: Tencent Hunyuan Community
+  spdx: null
+  open_source: false
+  url: https://huggingface.co/tencent/HunyuanVideo
+  restrictions:
+    - Not licensed in the EU, the United Kingdom or South Korea
+    - Capped at 100 million monthly active users
+
+variants:
+  - id: hunyuan-video-t2v-720p-q4-k-m
+    name: HunyuanVideo T2V 720p Q4_K_M
+    params: 13B
+    precision: gguf-q4_k_m
+    repo: city96/HunyuanVideo-gguf
+    files: ["hunyuan-video-t2v-720p-Q4_K_M.gguf"]
+    backends: [metal, cuda]
+    download:
+      value: 7880000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 12884901888
+      source: estimated
+      note: "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet; text encoders are not in this repo and are counted separately"

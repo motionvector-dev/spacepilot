@@ -1,0 +1,81 @@
+schema: 1
+id: ltx-video
+name: LTX Video
+family: lightricks
+kind: video
+summary: >
+  Fast and good, and not open source. The repo carries every checkpoint ever
+  shipped, so fetching it whole is 236 GB against the few gigabytes actually wanted.
+homepage: https://huggingface.co/Lightricks/LTX-Video
+
+license:
+  id: LTX Community
+  spdx: null
+  open_source: false
+  url: https://huggingface.co/Lightricks/LTX-Video
+  restrictions:
+    - Free only while your annual revenue is under $10M
+    - The terms pass to anyone you ship it to
+
+variants:
+  - id: ltx-video-2b-098-distilled
+    name: LTX Video 2B 0.9.8 distilled
+    params: 2B
+    precision: bf16
+    repo: Lightricks/LTX-Video
+    files: ["ltxv-2b-0.9.8-distilled.safetensors"]
+    backends: [metal, cuda]
+    download:
+      value: 6350000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 10200547430
+      source: estimated
+      note: transformer weights plus text encoder and VAE held resident, no measured run on any machine yet
+    speed:
+      - device: NVIDIA RTX 4090
+        backend: cuda
+        metric: seconds_per_second_of_video
+        value: 2.7
+        source: declared
+        measured_on: "2026-08-22"
+        note: >
+          121 frames at 512x512 in 11 seconds, reported at
+          https://huggingface.co/Lightricks/LTX-Video/discussions/6 and converted
+          at the model card's 30 FPS. The source does not say which checkpoint or
+          precision was used, so this may not be this exact variant — treat it as
+          the speed class of a small LTX model on a 4090, not as this row's number.
+  - id: ltx-video-13b-098-distilled-fp8
+    name: LTX Video 13B 0.9.8 distilled FP8
+    params: 13B
+    precision: fp8
+    repo: Lightricks/LTX-Video
+    files: ["ltxv-13b-0.9.8-distilled-fp8.safetensors"]
+    backends: [cuda]
+    download:
+      value: 15700000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 21474836480
+      source: estimated
+      note: transformer weights plus text encoder and VAE held resident, no measured run on any machine yet
+    speed:
+      - device: NVIDIA RTX 4090 48GB
+        backend: cuda
+        metric: seconds_per_second_of_video
+        value: 43.6
+        source: declared
+        measured_on: "2026-08-22"
+        note: >
+          88 frames at 1216x704 in 2 minutes 8 seconds without CPU offloading,
+          reported at https://github.com/Lightricks/LTX-Video/issues/166 and
+          converted at the model card's 30 FPS. The report says "13B model"
+          without stating distilled or fp8, and the card is a modified 48 GB
+          4090, so this is an upper bound for a 13B LTX rather than this
+          variant's figure.
+    notes: >
+      FP8 has no Metal path and fails rather than falling back, so this is CUDA on
+      Ada or newer. Reported independently at
+      https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen
