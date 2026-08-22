@@ -279,6 +279,54 @@ td:nth-child(5) .lic.warn::after { content: ""; }
   border-radius: var(--radius-2); padding: var(--space-3) var(--space-4);
   color: var(--text-1000); font-size: var(--text-size-sm); margin-bottom: var(--space-4); }
 
+
+/* Dialog. Enters at --motion-slow with rise and scale; leaves at
+   --motion-exit by fading where it stands, because an exit should get out of
+   the way rather than perform. allow-discrete is what lets display animate. */
+dialog.sheet {
+  padding: 0; border: none; background: transparent; color: inherit;
+  max-width: min(460px, calc(100vw - var(--space-6)));
+}
+dialog.sheet::backdrop { background: rgba(0,0,0,.45); opacity: 0;
+  transition: opacity var(--motion-exit) var(--ease-out); }
+dialog.sheet[open]::backdrop { opacity: 1;
+  transition: opacity var(--motion-slow) var(--ease-out); }
+@starting-style { dialog.sheet[open]::backdrop { opacity: 0; } }
+
+dialog.sheet .panel {
+  background: var(--surface-raised); border: var(--hairline) solid var(--border-200);
+  border-radius: var(--radius-4); padding: var(--space-5);
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  opacity: 1; transform: translateY(0) scale(1); transform-origin: center;
+  transition: opacity var(--motion-slow) var(--ease-out),
+              transform var(--motion-slow) var(--ease-out);
+}
+@starting-style {
+  dialog.sheet[open] .panel {
+    opacity: 0;
+    transform: translateY(var(--motion-rise-lg)) scale(var(--motion-enter-scale));
+  }
+}
+dialog.sheet[data-leaving="true"] .panel {
+  opacity: 0; transform: translateY(0) scale(1);
+  transition: opacity var(--motion-exit) var(--ease-out);
+}
+dialog.sheet[data-leaving="true"]::backdrop { opacity: 0; }
+
+dialog.sheet h2 { margin: 0 0 var(--space-2); }
+dialog.sheet .terms { display: grid; grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4); margin: var(--space-4) 0; align-items: baseline; }
+dialog.sheet .terms dt { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  text-transform: uppercase; letter-spacing: var(--tracking-mono-label); color: var(--text-500); }
+dialog.sheet .terms dd { margin: 0; color: var(--text-1000); font-size: var(--text-size-md); }
+dialog.sheet .terms dd small { display: block; color: var(--text-500);
+  font-size: var(--text-size-meta); letter-spacing: var(--tracking-meta); margin-top: 2px; }
+dialog.sheet .restrict { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4);
+  background: var(--surface-inset); border-radius: var(--radius-2); }
+dialog.sheet .restrict li { color: var(--text-900); font-size: var(--text-size-sm); margin: 2px 0; }
+dialog.sheet .acts { display: flex; gap: var(--space-3); justify-content: flex-end;
+  margin-top: var(--space-5); }
+
 /* ----------------------------------------------------------------- chrome */
 .chrome { position: fixed; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-1);
   background: var(--surface); border: var(--hairline) solid var(--border-200);
@@ -416,6 +464,21 @@ td:nth-child(5) .lic.warn::after { content: ""; }
       </div>
     </div>
   </section>
+
+
+<dialog class="sheet" id="gate" aria-labelledby="gate-h">
+  <form method="dialog" class="panel">
+    <p class="label">Confirm before anything downloads</p>
+    <h2 id="gate-h">Install <span id="gate-name">this model</span>?</h2>
+    <dl class="terms" id="gate-terms"></dl>
+    <ul class="restrict" id="gate-restrict" hidden></ul>
+    <p class="why" id="gate-where" style="max-width:none"></p>
+    <div class="acts">
+      <button class="btn quiet" value="cancel">Cancel</button>
+      <button class="btn" value="go" id="gate-go">Download</button>
+    </div>
+  </form>
+</dialog>
 
   <div class="foot">
     <span id="f-agent">Checking for an agent</span>
@@ -645,17 +708,56 @@ document.addEventListener("click", (e) => {
   if (e.target.id === "b-more") show("s-machine");
 });
 
-async function install(recipeId) {
-  const m = REPORT.models.find((r) => r.recipe_id === recipeId);
-  const v = REPORT.verdicts[recipeId];
 
-  // A download is the first thing here that costs the user something real.
-  const ok = confirm(
-    `Install ${m.name}?\n\n` +
-    `Download   ${gb(m.download_bytes)} from huggingface.co/${m.hf_repo}\n` +
-    `Disk       ${gb(REPORT.device.disk_free_bytes, 0)} free\n` +
-    `Licence    ${m.license}${m.license_note ? `\n           ${m.license_note}` : ""}\n\n` +
-    `It is saved to ${REPORT.device.disk_path} and can be deleted from there.`);
+/* The install gate. Resolves true only on an explicit Download. */
+function confirmInstall(m) {
+  const dlg = $("gate");
+  $("gate-name").textContent = m.name;
+  $("gate-terms").innerHTML = [
+    ["Download", `${gb(m.download_bytes)}<small>huggingface.co/${esc(m.hf_repo)}</small>`],
+    ["Disk", `${gb(REPORT.device.disk_free_bytes, 0)} free<small>${esc(REPORT.device.disk_path)}</small>`],
+    ["Licence", esc(m.license)],
+  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+  const restrict = $("gate-restrict");
+  const terms = (m.license_note || "").split("; ").filter(Boolean);
+  restrict.hidden = terms.length === 0;
+  restrict.innerHTML = terms.map((t) => `<li>${esc(t)}</li>`).join("");
+
+  $("gate-where").textContent =
+    "Saved to the folder above. Deleting it there is all it takes to reclaim the space.";
+
+  return new Promise((resolve) => {
+    const done = (ev) => {
+      dlg.removeEventListener("close", done);
+      // Let the exit play before the element goes away.
+      dlg.dataset.leaving = "true";
+      setTimeout(() => { dlg.removeAttribute("data-leaving"); }, 140);
+      resolve(dlg.returnValue === "go");
+    };
+    dlg.addEventListener("close", done);
+    dlg.showModal();
+    $("gate-go").focus();
+  });
+}
+
+async function install(recipeId) {
+  const m = REPORT?.models.find((r) => r.recipe_id === recipeId);
+  if (!m) {
+    // Better to say nothing is known than to open a dialog still carrying the
+    // last model's size and licence next to a different name.
+    show("s-get");
+    $("g-title").textContent = "Cannot install";
+    $("g-spin")?.remove();
+    $("g-err").innerHTML =
+      `<div class="err">No model called <code>${esc(recipeId)}</code> in the catalog. ` +
+      `The page and the server may be out of step — reload to pick up the current list.</div>`;
+    return;
+  }
+
+  // A download is the first thing here that costs the user something real,
+  // so it gets a real gate rather than a browser alert wearing our data.
+  const ok = await confirmInstall(m);
   if (!ok) return;
 
   show("s-get");
