@@ -40,6 +40,19 @@ class ModelCatalogManager:
     
     def __init__(self):
         self.recipes: Dict[str, ModelRecipeSpec] = {
+            # Smallest real model the product actually ships, so a first run
+            # finishes in under a minute instead of pulling multiple GB.
+            "kokoro-82m-tts": ModelRecipeSpec(
+                recipe_id="kokoro-82m-tts",
+                name="Kokoro 82M TTS",
+                family="kokoro",
+                size_gb=0.36,
+                min_vram_gb=0,
+                quantization="fp32",
+                hf_repo="hexgrad/Kokoro-82M",
+                download_url="",
+                recommended_gpu="any",
+            ),
             "wan-2.1-1.3b-fp8": ModelRecipeSpec(
                 recipe_id="wan-2.1-1.3b-fp8",
                 name="Wan 2.1 1.3B FP8",
