@@ -26,3 +26,4 @@ flask
 # Tests
 pytest
 httpx
+PyYAML>=6.0

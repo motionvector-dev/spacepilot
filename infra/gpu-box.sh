@@ -15,11 +15,11 @@ set -euo pipefail
 
 PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_REGION:-us-east-1}"
-TYPE="${INSTANCE_TYPE:-g6e.xlarge}"        # L40S, matching modal_app.py's gpu="L40S"
+TYPE="${INSTANCE_TYPE:-g6e.2xlarge}"       # 8 vCPU Spot (fits 8 vCPU quota) + 1x L40S 48GB VRAM + 32GB RAM + 32GB Swap
 KEY="${KEY_NAME:-pluto-gpu-key-2026-07-26}"
 KEY_FILE="${KEY_FILE:-$HOME/.ssh/${KEY}.pem}"
 SG="${SECURITY_GROUP:-pluto-gpu-sg}"
-DISK_GB="${DISK_GB:-200}"
+DISK_GB="${DISK_GB:-220}"
 NAME="pluto-gpu-research"
 TAG_KEY=CreatedBy
 TAG_VAL=antigravity-dev-user               # the $100/mo budget filters on this exact tag
@@ -75,11 +75,13 @@ cmd_launch() {
   id=$(aws_ ec2 run-instances \
     --image-id "$ami" --instance-type "$TYPE" --key-name "$KEY" \
     --security-group-ids "$sg_id" --count 1 \
+    --instance-market-options '{"MarketType":"spot"}' \
     --metadata-options 'HttpTokens=required,HttpEndpoint=enabled' \
     --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${DISK_GB},\"VolumeType\":\"gp3\",\"Throughput\":500,\"DeleteOnTermination\":true}}]" \
     --tag-specifications \
-      "ResourceType=instance,Tags=[{Key=Name,Value=$NAME},{Key=$TAG_KEY,Value=$TAG_VAL},{Key=Purpose,Value=upscaler-quality-research}]" \
-      "ResourceType=volume,Tags=[{Key=Name,Value=$NAME},{Key=$TAG_KEY,Value=$TAG_VAL}]" \
+      "ResourceType=instance,Tags=[{Key=Name,Value=$NAME},{Key=$TAG_KEY,Value=$TAG_VAL},{Key=ManagedBy,Value=pluto},{Key=Purpose,Value=ltx25-cinematic-movie}]" \
+      "ResourceType=volume,Tags=[{Key=Name,Value=$NAME},{Key=$TAG_KEY,Value=$TAG_VAL},{Key=ManagedBy,Value=pluto}]" \
+      "ResourceType=spot-instances-request,Tags=[{Key=Name,Value=$NAME},{Key=$TAG_KEY,Value=$TAG_VAL},{Key=ManagedBy,Value=pluto}]" \
     --query 'Instances[0].InstanceId' --output text)
   echo "launched $id — waiting for it to run..."
   aws_ ec2 wait instance-running --instance-ids "$id"

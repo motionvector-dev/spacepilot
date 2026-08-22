@@ -1,7 +1,19 @@
 # What actually exists
 
-Read this before assuming any part of the pipeline has been exercised. Verified
-2026-08-16.
+**Status**: Current
+**Verified**: 2026-08-22 (re-verified by running `pytest tests/ -q`, reading
+`src/pluto/services/checkpoint_sync.py` and `src/pluto/api/routes/recipes.py`
+and `src/pluto/services/model_catalog.py`, and checking `outputs/` metadata)
+**Supersedes / Superseded by**: none
+
+Read this before assuming any part of the pipeline has been exercised. First
+verified 2026-08-16.
+
+## Re-verified 2026-08-22
+
+The central claim still holds. Everything in `outputs/` is still a mock, and
+the real LTX-2.5 renders still live outside this repo, in
+`~/Downloads/ltx-out`. Nothing since 2026-08-16 has changed that.
 
 ## Everything in `outputs/` is a mock
 
@@ -76,6 +88,25 @@ $0.75 on the box against $7.50 on Veo.
 
 The Flow watermark disqualifies Flow output for anything shipped, so "free via Flow"
 is a quality-evaluation path, not a production one.
+
+## What's still mocked on main today
+
+Five `TODO(real-*)` markers, all on main right now:
+
+- `src/pluto/api/routes/recipes.py:36` — `TODO(real-download)`
+- `src/pluto/services/model_catalog.py:155` — `TODO(real-download)`
+- `src/pluto/services/model_catalog.py:188` — `TODO(real-download)`
+- `src/pluto/services/checkpoint_sync.py:87` — `TODO(real-sync)`, storage upload
+- `src/pluto/services/checkpoint_sync.py:127` — `TODO(real-sync)`, storage download
+
+That splits into two mocked layers: model download (recipes and
+`model_catalog`) and checkpoint storage sync (upload and download).
+
+The useful thing to record here: PR #13 (checkpoints) and PR #11 (recipes)
+are both merged. The features shipped. The storage layer underneath them
+did not — it's still the mock. Anyone calling these routes today is
+exercising real request handling and a fake backend. Treat both features as
+UI-complete and storage-incomplete until those five markers clear.
 
 ## Open, and not to be re-derived
 

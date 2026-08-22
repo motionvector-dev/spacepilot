@@ -1,6 +1,12 @@
 # LTX-2.5 Deep Dive, Experimentation Matrix & Pluto CLI Audit
 
+**Status**: Superseded (in part) — two findings below are resolved on main; the rest are still open.
+**Verified**: 2026-08-22, by reading `src/ltx_worker.py` on main @ c6b99c4 and checking commit history (`git log`).
+**Supersedes / Superseded by**: none
+
 This document provides a technical reference for **LTX-2.5** (Lightricks' 22B parameter multi-modal diffusion transformer for synchronized video and audio), a complete **configuration experimentation matrix**, and an architectural audit of the **Pluto CLI / Worker** codebase.
+
+Two of the findings below have since been fixed in code and are marked **RESOLVED**. Everything else in Sections 4 and 5 — the unpinned dependency risk, the hardcoded invariants, the concurrency lock, the multipart upload style, and the silent polling failures — is still open as written.
 
 ---
 
@@ -59,6 +65,8 @@ Here is the parameter reference for testing and tuning LTX-2.5 generation qualit
 ---
 
 ### B. Multi-Modal Guidance Controls
+
+**SUPERSEDED BY CODE.** This table states general LTX-2.5 guidance theory. The shipped worker does not follow the "distilled" defaults below — it sets `guidance_scale=3.0` and `audio_guidance_scale=7.0` deliberately, per commit `cc0303c` ("set official LTX-2.5 guidance_scale=3.0 and disable prompt enhancement"). The source of truth for current defaults is `src/ltx_worker.py:145-148`, not this table. The reasoning here is kept because it may still be useful for tuning experiments away from the shipped defaults.
 
 | Parameter | Type | Range | Recommended | Description & Tuning Guide |
 | :--- | :--- | :--- | :--- | :--- |
@@ -169,7 +177,7 @@ We conducted an in-depth audit of [`src/cli.py`](file:///Users/saurabh/code/moti
 
 | Severity | Component | Finding | Architectural Impact |
 | :--- | :--- | :--- | :--- |
-| 🔴 **CRITICAL** | `src/ltx_worker.py` | **Duplicate Model VRAM Allocation** | `load_i2v_model()` loads a *second* full 22B pipeline into CUDA, holding both T2V and I2V pipelines simultaneously. Risks CUDA OOM on 48GB cards. |
+| ✅ **RESOLVED** | `src/ltx_worker.py` | **Duplicate Model VRAM Allocation** — fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). Line 121 now reads `LTX2ImageToVideoPipeline(**_pipe.components)`, so the I2V pipeline shares the T2V pipeline's components instead of loading a second 22B copy. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` was also added at line 16 by commit `c6b99c4`. See Finding 1 in Section 5 for detail. | Was: risked CUDA OOM on 48GB cards from double-loading. Now: components are shared, no second load. |
 | 🔴 **CRITICAL** | `infra/setup_ltx_ec2.sh` | **Unpinned Dependencies** | `pip install torchao` installs bleeding-edge versions that break on DLAMI PyTorch (`ScalingType` error). |
 | 🟡 **MAJOR** | `src/ltx_worker.py` & `cli.py` | **Hardcoded Invariants** | `stg_scale`, `modality_scale`, `negative_prompt`, and guidance settings are hardcoded in the worker and inaccessible from `pluto generate`. |
 | 🟡 **MAJOR** | `src/ltx_worker.py` | **Rigid Concurrency Lock** | Returns HTTP `409 Busy` when `_active >= 1`, rejecting requests instead of using an in-memory queue. |
@@ -180,8 +188,11 @@ We conducted an in-depth audit of [`src/cli.py`](file:///Users/saurabh/code/moti
 
 ## 5. Detailed Audit Recommendations & Code Patches
 
-### Finding 1: Shared Transformer Memory (Fixing VRAM Double-Allocation)
-**Problem**: In `ltx_worker.py`:
+### Finding 1: Shared Transformer Memory (Fixing VRAM Double-Allocation) — RESOLVED
+
+**RESOLVED.** Fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). `src/ltx_worker.py:121` now reads `LTX2ImageToVideoPipeline(**_pipe.components)` — the I2V pipeline shares the T2V pipeline's already-resident components instead of loading a second 22B copy. Commit `c6b99c4` (`fix(worker): enable expandable_segments and VAE slicing to prevent OOM fragmentation`) further hardens this by setting `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` at line 16. The problem statement and patch sketch below are kept for the historical record of what was wrong and why; the code now differs from the "Currently loads TWO separate model copies" snippet.
+
+**Problem (historical)**: In `ltx_worker.py`:
 ```python
 # Currently loads TWO separate model copies in VRAM
 _pipe = LTX2Pipeline.from_pretrained(...)       # 28 GB VRAM
@@ -233,7 +244,7 @@ Prevent runtime breaks across different AWS DLAMI images:
 ## 6. Summary Checklist for Pluto v2.0
 
 - [x] LTX-2.5 parameter and multi-modal architecture verified
-- [ ] Implement shared component loading between T2V & I2V pipelines
-- [ ] Add CLI flags for `--stg`, `--modality-scale`, `--guidance-scale`, and `--negative-prompt`
+- [x] Implement shared component loading between T2V & I2V pipelines — RESOLVED, commit `85e7115` (see Section 5, Finding 1)
+- [ ] Add CLI flags for `--stg`, `--modality-scale`, `--guidance-scale`, and `--negative-prompt` — still open
 - [ ] Integrate optional 2-stage latent upscaling (`--upscale-1080p`)
 - [ ] Update `setup_ltx_ec2.sh` with pinned dependency versions

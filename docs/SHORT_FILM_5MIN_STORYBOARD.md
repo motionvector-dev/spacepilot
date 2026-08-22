@@ -1,6 +1,10 @@
 # 5-Minute Cinematic Short Film: "An Unexpected Encounter"
 ## Production Storyboard & 10-Second Batch Prompt Sheet (LTX-Video Format)
 
+> **Status:** Template — not production state. This is an unfilled template with placeholder markers. No production assets exist for it.
+> **Verified:** 2026-08-22, by reading this file.
+> **Supersedes / Superseded by:** none
+
 - **Total Duration:** 5 minutes (300 seconds)
 - **Batch Architecture:** 30 sequential 10-second clips (241 frames @ 24 FPS each)
 - **Aspect Ratio:** 16:9 (1280×720 or 768×512 base)

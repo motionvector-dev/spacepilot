@@ -14,6 +14,12 @@
       Moving the Katana GPU pipeline from a resilient survivor to a hyperscale, world-class video processing engine.
     </p>
 
+    <div style="border:1px solid #c0392b; background:rgba(192,57,43,0.08); border-radius:8px; padding:1rem 1.25rem; margin-bottom:2rem;">
+      <p style="margin:0 0 0.4rem 0;"><strong>Status</strong>: Proposal — not started. No code exists for any phase below (SQS, ONNX unification, OpenTelemetry). This page describes a plan, not the current architecture.</p>
+      <p style="margin:0 0 0.4rem 0;"><strong>Verified</strong>: 2026-08-22, by reading src/ and finding no implementation of these phases.</p>
+      <p style="margin:0;"><strong>Supersedes / Superseded by</strong>: none</p>
+    </div>
+
     <div class="mv-section">
       <div class="mv-badge">Phase 1</div>
       <h2>Event-Driven State (Replacing MongoDB Polling)</h2>

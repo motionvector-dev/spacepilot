@@ -13,6 +13,7 @@ Endpoints:
 """
 
 import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import re
 import secrets
 import sys
@@ -99,6 +100,8 @@ def load_model():
     ).to("cuda")
 
     _pipe.vae.enable_tiling()
+    if hasattr(_pipe.vae, "enable_slicing"):
+        _pipe.vae.enable_slicing()
     _model_ready = True
     load_dur = time.time() - start_t
     print(f"[ltx_worker] LTX-2.5 t2v model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
@@ -114,16 +117,11 @@ def load_i2v_model():
     print("[ltx_worker] Instantiating LTX-2.5 i2v pipeline sharing resident VRAM weights...", flush=True)
     start_t = time.time()
 
-    # Reuse the exact resident quantized transformer, text encoder, VAE, and vocoder
-    _pipe_i2v = LTX2ImageToVideoPipeline(
-        transformer=_pipe.transformer,
-        text_encoder=_pipe.text_encoder,
-        tokenizer=_pipe.tokenizer,
-        vae=_pipe.vae,
-        scheduler=_pipe.scheduler,
-        vocoder=getattr(_pipe, "vocoder", None),
-    )
+    # Reuse the exact resident quantized components from _pipe
+    _pipe_i2v = LTX2ImageToVideoPipeline(**_pipe.components)
     _pipe_i2v.vae.enable_tiling()
+    if hasattr(_pipe_i2v.vae, "enable_slicing"):
+        _pipe_i2v.vae.enable_slicing()
     load_dur = time.time() - start_t
     print(f"[ltx_worker] LTX-2.5 i2v pipeline READY in {load_dur:.2f}s (zero duplicate VRAM overhead)!", flush=True)
 
@@ -131,6 +129,8 @@ def load_i2v_model():
 def _generate_thread(job_id, params):
     """Worker thread running inference for a single video job."""
     global _active, _jobs
+    gc.collect()
+    torch.cuda.empty_cache()
     try:
         prompt = params.get("prompt", "")
         negative_prompt = params.get("negative_prompt", "worst quality, inconsistent motion, blurry, jittery, distorted")
@@ -141,15 +141,15 @@ def _generate_thread(job_id, params):
         seed = int(params.get("seed", int(time.time() * 1000) % 2147483647))
         steps = int(params.get("steps", 30))
 
-        # Advanced Guidance & Multi-Modal Controls
-        guidance_scale = float(params.get("guidance_scale", 1.0))
-        audio_guidance_scale = float(params.get("audio_guidance_scale", 1.0))
-        stg_scale = float(params.get("stg_scale", 0.0))
-        audio_stg_scale = float(params.get("audio_stg_scale", 0.0))
-        modality_scale = float(params.get("modality_scale", 1.0))
-        audio_modality_scale = float(params.get("audio_modality_scale", 1.0))
-        guidance_rescale = float(params.get("guidance_rescale", 0.0))
-        audio_guidance_rescale = float(params.get("audio_guidance_rescale", 0.0))
+        # Advanced Guidance & Multi-Modal Controls (official LTX-2.5 defaults)
+        guidance_scale = float(params.get("guidance_scale", 3.0))
+        audio_guidance_scale = float(params.get("audio_guidance_scale", 7.0))
+        stg_scale = float(params.get("stg_scale", 1.0))
+        audio_stg_scale = float(params.get("audio_stg_scale", 1.0))
+        modality_scale = float(params.get("modality_scale", 3.0))
+        audio_modality_scale = float(params.get("audio_modality_scale", 3.0))
+        guidance_rescale = float(params.get("guidance_rescale", 0.7))
+        audio_guidance_rescale = float(params.get("audio_guidance_rescale", 0.7))
         conditioning_scale = float(params.get("conditioning_scale", 1.0))
         image_noise_scale = float(params.get("image_noise_scale", 0.0))
 
@@ -201,6 +201,7 @@ def _generate_thread(job_id, params):
             "audio_modality_scale": audio_modality_scale,
             "guidance_rescale": guidance_rescale,
             "audio_guidance_rescale": audio_guidance_rescale,
+            "enable_prompt_enhancement": False,
             "generator": generator,
             "output_type": "np",
             "return_dict": False,
@@ -221,9 +222,9 @@ def _generate_thread(job_id, params):
             audio_tensor = audio[0].float().cpu()
             audio_sr = _pipe.vocoder.config.output_sampling_rate if _pipe_i2v is None else _pipe_i2v.vocoder.config.output_sampling_rate
             encode_video(
-                frames,
-                str(out_file),
+                video=frames,
                 fps=fps,
+                output_path=str(out_file),
                 audio=audio_tensor,
                 audio_sample_rate=audio_sr,
             )

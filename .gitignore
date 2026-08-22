@@ -17,3 +17,13 @@ scratch/
 *.egg-info/
 .idea/
 .vscode/
+
+# local model weights cache — never committed.
+# Anchored to the repo root on purpose: a bare `models/` also matches
+# registry/models/, which is source, and git add skips ignored files without
+# saying so — the model registry was silently absent from a commit that
+# claimed to add it.
+/models/
+
+# legacy studio snapshot kept on disk only; studio/ history is in git already
+studio_backup_original/

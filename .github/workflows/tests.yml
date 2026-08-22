@@ -1,9 +1,31 @@
 name: tests
 
+# CI runs only on the release branches and on PRs aimed at them. Every push to
+# every branch used to trigger a run, and an unscoped pull_request trigger ran
+# the same commit a second time: 60% of runner minutes went to feature branches
+# nobody was gating on. Push to a feature branch freely; the gate is the PR.
 on:
   push:
-    branches: ["**"]
+    branches: [main, dev]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
   pull_request:
+    branches: [main, dev]
+    # Kept in sync with the push filter above by hand: GitHub Actions does not
+    # support YAML anchors, so this list cannot be shared.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+
+# A new push supersedes the run already in flight for the same ref. Runs on the
+# release branches are never cancelled: their result is the record of whether
+# that commit was good.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev' }}
 
 # Runs on Linux because this repo is private and macOS runners bill at 10x.
 # The product itself is macOS-only (videotoolbox, CoreML, MLX): no test asserts
@@ -15,9 +37,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip

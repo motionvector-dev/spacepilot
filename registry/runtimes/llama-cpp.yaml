@@ -1,0 +1,26 @@
+schema: 1
+id: llama-cpp
+name: llama.cpp
+summary: GGUF inference for text and vision models. Runs on anything.
+homepage: https://github.com/abetlen/llama-cpp-python
+serves: [text, vision]
+backends: [metal, cuda, cpu]
+license: MIT
+
+install:
+  method: pip
+  package: llama-cpp-python
+  min_version: "0.3.35"
+  checked: "2026-08-22"
+python_requires: ">=3.8"
+
+verify:
+  import: llama_cpp
+
+runs:
+  - deepseek-r1-distill-qwen
+  - qwen2-5-vl
+notes: >
+  The pip wheel is built for the platform it installs on. Getting Metal or CUDA
+  acceleration can need a source build with the right flags, so a successful
+  install does not by itself prove the GPU is being used.

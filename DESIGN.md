@@ -1,6 +1,6 @@
 ---
 name: pluto-studio-design-system
-version: 2.5.0
+version: 2.5.0   # unverified — no dated record of when this was set; do not bump without evidence
 author: Antigravity Team
 description: |
   Comprehensive design system specification for Pluto Studio + MotionVector.
@@ -80,6 +80,15 @@ tokens:
 ---
 
 # Pluto Studio Design System (DESIGN.md)
+
+**Status**: Current
+**Verified**: 2026-08-22 (`version: 2.5.0` above is unverified — no dated record of when it was set)
+**Supersedes / Superseded by**: none
+
+This spec covers the UI layer only. The backend it talks to is the modular
+`src/pluto/api/routes/` FastAPI app, live on main with 14 route modules
+(assets, audio, billing, checkpoints, compute, engines, generate, gpu, health,
+lora, recipes, storyboard, views, `__init__`).
 
 ## 1. Visual Hierarchy & Philosophy
 - **Obsidian Dark Precision**: Deep dark UI backgrounds prevent color perception bias when color-grading video and viewing high-contrast LaTeX vector animations.

@@ -1,0 +1,43 @@
+schema: 1
+id: wan-2-2
+name: Wan 2.2
+family: wan
+kind: video
+summary: >
+  The only video model here under a licence with no revenue cap and no territory
+  exclusion. That makes it the safe default even where it is not the fastest.
+homepage: https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: wan-2-2-ti2v-5b
+    name: Wan 2.2 TI2V 5B
+    params: 5B
+    precision: bf16
+    repo: Wan-AI/Wan2.2-TI2V-5B
+    backends: [metal, cuda]
+    download:
+      value: 34200000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 25769803776
+      source: estimated
+      note: "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet"
+    speed:
+      - device: Apple M1 Max 64GB
+        backend: metal
+        metric: seconds_per_second_of_video
+        value: 2460
+        source: declared
+        measured_on: "2026-08-22"
+        note: >
+          82 minutes for a 2-second clip in GGUF, reported at
+          https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen — third-party,
+          on twice the memory of a 32 GB machine. Not measured by us. Treat as the
+          order of magnitude, not the number.

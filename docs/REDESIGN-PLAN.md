@@ -1,6 +1,9 @@
 # Pluto Studio Redesign Plan
 
-> **Status:** Draft — Pending Approval  
+> **Status:** Superseded. This plan assumes a zero-build vanilla stack. The product now ships as a built React app: `https://spacepilot.dev` returns HTTP 200 from Vercel and is deployed to actively.
+> **Verified:** 2026-08-22, by `curl -I https://spacepilot.dev` and `gh pr view 14 16`.
+> **Superseded by:** the React `ui/` tree on `feat/frontend-react-ui` (PR #14). Context in docs/DECISION-INBOX-frontend-react-vs-vanilla.md.
+> **Kept because:** the Runway-derived interaction design here is not tied to the vanilla stack and can inform the React surfaces.
 > **Date:** 2026-08-21  
 > **Reference:** Runway ML Gen-4 / Agent Interface (10 screenshots captured 2026-08-21)  
 > **Goal:** Transform Pluto Studio from a header-nav NLE layout into a modern, agent-first creative studio — while preserving MotionVector Obsidian design DNA and zero-build vanilla stack.
