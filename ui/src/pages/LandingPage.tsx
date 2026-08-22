@@ -103,15 +103,7 @@ run: |
         </div>
 
         <div className="flex items-center gap-3">
-          <a 
-            href="https://github.com/motionvector-dev/pluto" 
-            target="_blank" 
-            rel="noreferrer"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-mono bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] px-3 py-1.5 rounded-md text-[#a1a1aa] hover:text-white transition-all"
-          >
-            ★ 10.4k
-          </a>
-          <button 
+          <button
             onClick={() => {
               navigator.clipboard.writeText('pip install spacepilot');
               alert('Copied to clipboard: pip install spacepilot');
