@@ -1,7 +1,8 @@
 # SpacePilot Public Documentation Architecture & Editorial Specification
 
 > **Status:** Proposal — not started.
-> **Verified:** 2026-08-22, by reading this file and the repo identity (the repo and its docs call the product "pluto"; this plan calls it "SpacePilot"). That naming drift is unresolved.
+> **Verified:** 2026-08-22, by `curl https://spacepilot.dev` (HTTP 200, 19 "SpacePilot" strings, zero "Pluto") and by `README.md` line 1.
+> **Naming:** not drift. SpacePilot is the product, Pluto is the engine and package. The README states the split directly ("SpacePilot 🚀 (Pluto Engine)"), and the live site is SpacePilot-branded throughout. This plan's use of "SpacePilot" is correct.
 > **Supersedes / Superseded by:** none
 > **Target Release:** v2.8.0  
 > **Route:** `/docs` (`http://spacepilot.localhost:8088/docs`)  

@@ -1,41 +1,42 @@
-# Decision Inbox: React vs. Vanilla Frontend
+# Decision Inbox: React vs. Vanilla Frontend — settled by deployment
 
-**Status**: Open — awaiting decision
-**Verified**: 2026-08-22, by `gh pr list`, `gh pr view 14`, and reading `docs/REDESIGN-PLAN.md`, `docs/PLUTO_FRONTEND_MIGRATION.md`, `docs/FRONTEND-SYNC-HANDOFF.md`
-**Supersedes / Superseded by**: none — this doc records the conflict, it resolves nothing
+**Status**: Closed on the framework question. Open on the cleanup.
+**Verified**: 2026-08-22, by `curl -I https://spacepilot.dev` (HTTP/2 200, `server: Vercel`, `last-modified` 07:41 UTC that day), by counting brand strings in the served HTML, and by `gh pr view 14 16`
+**Supersedes / Superseded by**: supersedes the "contested" framing in `docs/REDESIGN-PLAN.md`
 
-## The conflict
+## What an earlier pass got wrong
 
-Two frontend strategies exist side by side. Both are dated 2026-08-21. Neither has been withdrawn.
+An earlier version of this file called React and vanilla an open, unresolved conflict, and treated PR #14 as a large but unreviewed branch. That was wrong. It was written from the repo alone, without checking whether the product was live.
 
-**Side A: React + Vite.** `docs/PLUTO_FRONTEND_MIGRATION.md` lays out the migration plan, and `docs/FRONTEND-SYNC-HANDOFF.md` assumes it as the integration target. This side is built: PR #14 (`feat/frontend-react-ui`) carries 75 files and 12,765 added lines, all under `ui/`. It is open, unreviewed, CI-green, and its merge state is CLEAN.
+The product is live. That settles the framework question.
 
-**Side B: vanilla HTML/JS.** `docs/REDESIGN-PLAN.md` explicitly rejects React and bundlers. It proposes a Runway-inspired redesign built on the existing zero-build vanilla stack. Its own header marks it `Status: Draft — Pending Approval`. No code for it exists yet.
+## What is verified
 
-These two plans cannot both be the frontend. One assumes a build step and a component framework; the other rejects both by design.
+`https://spacepilot.dev` responds HTTP/2 200 from Vercel. It served a 5,737-byte SPA shell whose `<title>` is `SpacePilot 🛸 · Autonomous Generative Cinema Workstation`. That shell contains 19 occurrences of "SpacePilot" and zero of "Pluto". Its `last-modified` was 07:41 UTC on 2026-08-22, so the site is being deployed to actively, not parked.
 
-## Why merging #14 does not force the decision
+PR #16 is stacked on PR #14 — its base is `feat/frontend-react-ui`, not `main`. A second session is fixing landing-page copy on that branch. Nobody stacks copy fixes onto a branch they consider speculative.
 
-PR #14 is purely additive. It touches zero backend files — everything it adds lives under `ui/`. That means it can merge cleanly into main without breaking anything and without requiring anyone to choose between React and vanilla. Both trees, `ui/` (React) and the existing `studio/` (vanilla), can sit in the repo at once.
+## What is inferred, not proven
 
-This is exactly why the conflict can persist unnoticed. Nothing forces a resolution. CI stays green either way, because CI has no coverage of `ui/` today — a merge of #14 would add 12,765 lines with no test gate over them.
+That the deployed bundle is built from this repo's `ui/` tree is strongly supported but not proven. The evidence is PR #16's own statement that spacepilot.dev serves the built `ui/dist`, plus a near-match between the served HTML (5,737 bytes) and `ui/index.html` in a worktree (5,639 bytes) — close, but not identical, consistent with Vercel injecting analytics at the edge.
 
-## What each path costs
+No deploy manifest exists in the repo. There is no `vercel.json`, `netlify.toml`, `Dockerfile`, or `CNAME`. The domain-to-repo mapping lives in a Vercel dashboard, outside version control. Anyone auditing this later cannot confirm it from the repo alone.
 
-**Merge #14 as-is, keep REDESIGN-PLAN alive.** Two frontends in one repo, no rule for which one is authoritative, no CI coverage for the new one. Anyone landing a UI change has to guess which tree to touch.
+## What follows
 
-**Do nothing.** The ambiguity sits in the repo indefinitely. PR #14 stays open and unreviewed. REDESIGN-PLAN stays a draft nobody has approved or rejected. Two documents keep telling two different stories about the frontend.
+React won, by shipping. `docs/REDESIGN-PLAN.md` proposes a vanilla, zero-build redesign for a frontend that is now a built React app in production. It is superseded, not contested.
 
-**Pick a side.** Whichever side loses, some cost is already sunk: 12,765 lines of built React code on one side, or the Runway-inspired design work captured in REDESIGN-PLAN on the other.
+The `studio/` vanilla tree is legacy. `docs/HANDOFF-2026-08-22.md` already describes it that way.
 
-## Options
+## What is still open
 
-Saurabh needs to choose one. This document does not recommend an option.
+These are the real decisions left, and they are smaller than the one this file used to pose.
 
-1. **Merge #14, retire REDESIGN-PLAN.** Review and merge the React frontend, mark `docs/REDESIGN-PLAN.md` superseded, and make `ui/` the one frontend going forward. Add CI coverage for `ui/` as part of the merge, since none exists today.
-2. **Close #14, build vanilla.** Close the React PR, keep the existing `studio/` vanilla stack, and move `docs/REDESIGN-PLAN.md` from draft to active work. The 12,765 lines in #14 become sunk cost.
-3. **Keep both, with an explicit boundary.** Decide what each frontend is for (for example: `ui/` for a specific surface, `studio/` for the rest), write that boundary down, and add CI coverage for both trees. This is the only option that does not require throwing away either side's work, but it is also the only one that keeps two frontends to maintain long-term.
+1. **`main` does not contain the production frontend.** `ui/` exists only on `feat/frontend-react-ui`. The site people can visit is built from a branch, not from the default branch. Merging PR #14 fixes that; leaving it open means `main` does not describe the product.
+2. **CI has no coverage of `ui/`.** 12,765 lines of TypeScript with nothing gating build, typecheck, or lint. See PR #18, which scopes CI spend and deliberately leaves this gap open rather than deciding it in passing.
+3. **Deploy config is not in the repo.** Committing a `vercel.json` would make the domain-to-repo link auditable.
+4. **`studio/` has no stated end date.** It is legacy by description, but nothing says when it goes.
 
-## What happens until this is decided
+## What this does not settle
 
-Treat `docs/PLUTO_FRONTEND_MIGRATION.md` and `docs/FRONTEND-SYNC-HANDOFF.md` as describing a built-but-unreviewed PR, not an accepted direction. Treat `docs/REDESIGN-PLAN.md` as an unapproved draft, not a plan in progress. Neither is current authority on "the" Pluto frontend until this inbox entry is closed.
+Whether PR #14 should merge as-is. It should not — an adversarial review confirmed eight blocking defects in it, including GPU-lifecycle controls that never send the auth token and a generation flow that fabricates success when the backend is down. Those are recorded against the PR, not here. The framework question is closed; the code quality question is not.
