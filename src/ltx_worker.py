@@ -13,6 +13,7 @@ Endpoints:
 """
 
 import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import re
 import secrets
 import sys
@@ -99,6 +100,8 @@ def load_model():
     ).to("cuda")
 
     _pipe.vae.enable_tiling()
+    if hasattr(_pipe.vae, "enable_slicing"):
+        _pipe.vae.enable_slicing()
     _model_ready = True
     load_dur = time.time() - start_t
     print(f"[ltx_worker] LTX-2.5 t2v model is RESIDENT in VRAM (loaded in {load_dur:.1f}s)!", flush=True)
@@ -117,6 +120,8 @@ def load_i2v_model():
     # Reuse the exact resident quantized components from _pipe
     _pipe_i2v = LTX2ImageToVideoPipeline(**_pipe.components)
     _pipe_i2v.vae.enable_tiling()
+    if hasattr(_pipe_i2v.vae, "enable_slicing"):
+        _pipe_i2v.vae.enable_slicing()
     load_dur = time.time() - start_t
     print(f"[ltx_worker] LTX-2.5 i2v pipeline READY in {load_dur:.2f}s (zero duplicate VRAM overhead)!", flush=True)
 
@@ -124,6 +129,8 @@ def load_i2v_model():
 def _generate_thread(job_id, params):
     """Worker thread running inference for a single video job."""
     global _active, _jobs
+    gc.collect()
+    torch.cuda.empty_cache()
     try:
         prompt = params.get("prompt", "")
         negative_prompt = params.get("negative_prompt", "worst quality, inconsistent motion, blurry, jittery, distorted")
