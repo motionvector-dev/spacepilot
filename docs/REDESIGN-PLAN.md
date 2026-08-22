@@ -1,6 +1,8 @@
 # Pluto Studio Redesign Plan
 
-> **Status:** Draft — Pending Approval  
+> **Status:** Open — contested. PR #14 (`feat/frontend-react-ui`, open) proposes a different frontend direction than this plan assumes. See docs/DECISION-INBOX-frontend-react-vs-vanilla.md for the open conflict.
+> **Verified:** 2026-08-22, from `gh pr list`.
+> **Supersedes / Superseded by:** none yet — resolution pending in the decision inbox above.
 > **Date:** 2026-08-21  
 > **Reference:** Runway ML Gen-4 / Agent Interface (10 screenshots captured 2026-08-21)  
 > **Goal:** Transform Pluto Studio from a header-nav NLE layout into a modern, agent-first creative studio — while preserving MotionVector Obsidian design DNA and zero-build vanilla stack.

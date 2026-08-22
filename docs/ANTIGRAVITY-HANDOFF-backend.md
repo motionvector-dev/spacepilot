@@ -1,5 +1,9 @@
 # Antigravity task — pluto video-API backend: add /clips/generate, verify contracts
 
+> **Status:** Open spec — unstarted. Read this as a task to do, not a status report.
+> **Verified:** 2026-08-22, by grepping `src/` for a `/clips/generate` route. None exists.
+> **Supersedes / Superseded by:** none
+
 You built this pluto backend (Python, `server.py` serves `/health`, `/enhance`, `/generate` at localhost:8001) and the frontend VideoGen UI. Now close the backend gaps the frontend depends on. The repo now has a git baseline commit — commit your work as you go so there's an undo trail.
 
 ## Task 1 (primary): implement `POST /clips/generate`

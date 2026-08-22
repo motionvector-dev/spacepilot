@@ -4,6 +4,36 @@
 **Target Repository:** `motionvector-dev/pluto`  
 **Oven Kanban Status:** Fully Synchronized & Review-Ready  
 
+**Status**: Context-only
+**Verified**: 2026-08-22 (by `gh pr list` and a live test run — see correction block below)
+**Supersedes / Superseded by**: none
+
+---
+
+## Correction — added 2026-08-22
+
+This report is a record of what things looked like on August 21–22. Since then,
+every PR it lists has moved. Here is the true state, as of 2026-08-22, verified
+with `gh pr list`:
+
+| PR # | This report called it | Actual state, 2026-08-22 |
+| --- | --- | --- |
+| #9  | Approved (Score 96) | **Merged** |
+| #10 | Review Ready | **Merged** |
+| #11 | Review Ready | **Merged** |
+| #12 | Review Ready | **Merged** |
+| #13 | Review Ready | **Merged** |
+| #15 | Review Ready | **Merged** |
+
+All six PRs are merged into main. Nothing in the Pull Request Fleet Summary or
+the Kanban section below reflects that — read them as a snapshot of a past
+moment, not current status.
+
+The test count in Section 6 is also stale. This report says 55 (studio_api)
+plus five more suites passing. The full suite, run 2026-08-22, is **172
+passed, 0 failed**, in 57.81s (`python -m pytest tests/ -q`). Treat any test
+count in the body below as superseded by that number.
+
 ---
 
 ## 1. Executive Summary

@@ -2,7 +2,10 @@
 
 > Vanilla monolith → production-grade, agent-friendly architecture
 
-**Status**: 📋 Planning  
+**Status**: Partially superseded by events. The backend half shipped in PR #9 (merged) as `src/pluto/api/routes/` — 14 modules, not the plan on this page. The frontend half is mid-flight in PR #14 (open, `feat/frontend-react-ui`, +12,765/-0 across 75 files under `ui/`).
+**Verified**: 2026-08-22, from `gh pr list` and a read of `src/pluto/api/routes/` on main.
+**Supersedes / Superseded by**: Backend section superseded by the shipped PR #9 layout. Frontend section still open pending PR #14; see docs/REDESIGN-PLAN.md for the contested frontend direction.
+
 **Author**: Antigravity Audit  
 **Date**: 2026-08-21  
 

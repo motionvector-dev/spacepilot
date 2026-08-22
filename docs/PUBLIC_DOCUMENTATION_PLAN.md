@@ -1,6 +1,8 @@
 # SpacePilot Public Documentation Architecture & Editorial Specification
 
-> **Status:** Approved  
+> **Status:** Proposal — not started.
+> **Verified:** 2026-08-22, by reading this file and the repo identity (the repo and its docs call the product "pluto"; this plan calls it "SpacePilot"). That naming drift is unresolved.
+> **Supersedes / Superseded by:** none
 > **Target Release:** v2.8.0  
 > **Route:** `/docs` (`http://spacepilot.localhost:8088/docs`)  
 > **Design Philosophy:** MotionVector Obsidian (Achromatic luminance, True-Black #000/#09090b, Zinc neutrals, crisp SVG architectural flowcharts, zero AI slop).

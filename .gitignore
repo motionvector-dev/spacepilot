@@ -17,3 +17,9 @@ scratch/
 *.egg-info/
 .idea/
 .vscode/
+
+# local model weights cache — never committed
+models/
+
+# legacy studio snapshot kept on disk only; studio/ history is in git already
+studio_backup_original/

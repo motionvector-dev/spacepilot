@@ -1,5 +1,9 @@
 # SpacePilot 🚀 (Pluto Engine)
 
+**Status**: Current
+**Verified**: 2026-08-22 via `python -m pytest tests/ -q` (172 passed, 57.81s) and `gh pr list`
+**Supersedes / Superseded by**: none
+
 > **"SkyPilot pilots your cloud servers. SpacePilot pilots your generative cinema."**
 
 **SpacePilot** is the high-performance generative cinema workstation and zero-markup compute platform for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine, backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers with SkyPilot multi-cloud spot arbitrage ($0.012/take instead of 20x SaaS subscription markups).
@@ -119,7 +123,7 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -m pytest tests/ -v
 ```
 
-**139 passing tests** covering:
+**172 passing tests**, 0 failed, in 57.81s (verified 2026-08-22). Covers:
 - Polymorphic DiT engines (LTX, Wan 1.3B/14B, HunyuanVideo spatial/temporal constraints).
 - In-process Kokoro TTS and GGUF narrative drivers.
 - Device capability probing and safety headroom calculations.
@@ -151,7 +155,11 @@ src/
 │   └── gguf_driver.py          GGUF screenplay deconstruction driver
 ├── skypilot_orchestrator.py    SkyPilot spot cluster manager & arbitrage
 ├── storyboard_decomposer.py    Screenplay-to-shot decomposition
-└── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
+├── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
+└── pluto/api/routes/           Modular FastAPI backend, live on main: 14 route
+                                 modules (assets, audio, billing, checkpoints,
+                                 compute, engines, generate, gpu, health, lora,
+                                 recipes, storyboard, views, __init__)
 studio/                         Zero-build Obsidian UI
 ├── index.html / studio.js      Director NLE & Asset matrix
 ├── create.html / create.js     Create Studio (Camera Compass, Dual Keyframe)
@@ -159,6 +167,6 @@ studio/                         Zero-build Obsidian UI
 ├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
 └── studio.css                  Obsidian design system
 infra/                          SkyPilot YAML, GPU startup scripts, IAM
-tests/                          Pytest integration test suite (139 tests)
+tests/                          Pytest integration test suite (172 tests)
 docs/                           Architecture blueprints, plans, and research
 ```
