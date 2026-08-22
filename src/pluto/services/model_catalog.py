@@ -11,6 +11,7 @@ import logging
 # Direct import from src.device_probe because it's an external utility not part of the pluto module structure
 from src.device_probe import probe_local_device
 from src.pluto.services.compatibility import assess, assess_all, recommend
+from src.pluto.registry import Variant, registry
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,8 @@ class ModelRecipeSpec(BaseModel):
     license: str = "unknown"
     license_note: Optional[str] = None
 
+    speed: List[Dict[str, object]] = []
+
     download_url: str = ""
     recommended_gpu: str = "any"
     is_local_runnable: bool = False
@@ -64,128 +67,36 @@ class DownloadJob(BaseModel):
     local_path: Optional[str] = None    # set on success, so callers can find the weights
     error: Optional[str] = None         # set on failure, so a caller can tell
 
+
+def _spec_from_variant(v: Variant) -> "ModelRecipeSpec":
+    """Flatten one registry variant into the shape the API and CLI already speak."""
+    return ModelRecipeSpec(
+        recipe_id=v.id,
+        name=v.name,
+        family=v.family,
+        kind=v.kind,
+        params=v.params,
+        quantization=v.precision or "unknown",
+        hf_repo=v.repo,
+        allow_patterns=list(v.files) if v.files else None,
+        download_bytes=int(v.download.value),
+        working_set_bytes=int(v.working_set.value),
+        working_set_confidence=v.working_set.source,
+        backends=list(v.backends),
+        license=v.license.id,
+        license_note="; ".join(v.license.restrictions) or None,
+        speed=[s.to_dict() for s in v.speed],
+    )
+
+
 class ModelCatalogManager:
     """Manages the available model recipes and handles background downloads."""
     
     def __init__(self):
-        # Every hf_repo below was resolved against the Hub API; sizes are the
-        # summed byte counts of the files allow_patterns actually selects.
+        # Recipes are a view over the registry, not a second copy of it.
+        # registry/models/*.yaml is the one place a model is described.
         self.recipes: Dict[str, ModelRecipeSpec] = {
-            "kokoro-82m-tts": ModelRecipeSpec(
-                recipe_id="kokoro-82m-tts",
-                name="Kokoro 82M",
-                family="kokoro", kind="tts", params="82M",
-                quantization="fp32",
-                hf_repo="hexgrad/Kokoro-82M",
-                download_bytes=366_000_000,
-                working_set_bytes=int(0.7 * GIB),
-                backends=["metal", "cuda", "cpu"],
-                license="apache-2.0",
-                recommended_gpu="any",
-            ),
-            "wan-2.1-t2v-1.3b": ModelRecipeSpec(
-                recipe_id="wan-2.1-t2v-1.3b",
-                name="Wan 2.1 T2V 1.3B",
-                family="wan", kind="video", params="1.3B",
-                quantization="bf16",
-                hf_repo="Wan-AI/Wan2.1-T2V-1.3B",
-                download_bytes=17_580_000_000,
-                working_set_bytes=int(11.0 * GIB),
-                backends=["metal", "cuda"],
-                license="apache-2.0",
-                recommended_gpu="RTX 4070",
-            ),
-            "wan-2.2-ti2v-5b": ModelRecipeSpec(
-                recipe_id="wan-2.2-ti2v-5b",
-                name="Wan 2.2 TI2V 5B",
-                family="wan", kind="video", params="5B",
-                quantization="bf16",
-                hf_repo="Wan-AI/Wan2.2-TI2V-5B",
-                download_bytes=34_200_000_000,
-                working_set_bytes=int(24.0 * GIB),
-                backends=["metal", "cuda"],
-                license="apache-2.0",
-                license_note="The only unencumbered video model here. Apache-2.0, no revenue cap, no territory limit.",
-                recommended_gpu="RTX 4090",
-            ),
-            "wan-2.1-t2v-14b": ModelRecipeSpec(
-                recipe_id="wan-2.1-t2v-14b",
-                name="Wan 2.1 T2V 14B",
-                family="wan", kind="video", params="14B",
-                quantization="bf16",
-                hf_repo="Wan-AI/Wan2.1-T2V-14B",
-                download_bytes=69_050_000_000,
-                working_set_bytes=int(48.0 * GIB),
-                backends=["cuda"],
-                license="apache-2.0",
-                recommended_gpu="A100 80GB",
-            ),
-            "ltx-video-2b-098": ModelRecipeSpec(
-                recipe_id="ltx-video-2b-098",
-                name="LTX Video 2B 0.9.8 distilled",
-                family="ltx", kind="video", params="2B",
-                quantization="bf16",
-                hf_repo="Lightricks/LTX-Video",
-                allow_patterns=["ltxv-2b-0.9.8-distilled.safetensors"],
-                download_bytes=6_350_000_000,
-                working_set_bytes=int(9.5 * GIB),
-                backends=["metal", "cuda"],
-                license="LTX Community",
-                license_note="Not open source. Free only while your revenue is under $10M, and the term passes to anyone you ship it to.",
-                recommended_gpu="RTX 4070",
-            ),
-            "ltx-video-13b-098-fp8": ModelRecipeSpec(
-                recipe_id="ltx-video-13b-098-fp8",
-                name="LTX Video 13B 0.9.8 distilled FP8",
-                family="ltx", kind="video", params="13B",
-                quantization="fp8",
-                hf_repo="Lightricks/LTX-Video",
-                allow_patterns=["ltxv-13b-0.9.8-distilled-fp8.safetensors"],
-                download_bytes=15_700_000_000,
-                working_set_bytes=int(20.0 * GIB),
-                backends=["cuda"],
-                license="LTX Community",
-                license_note="Not open source. FP8 needs Ada or newer; Metal has no FP8 path.",
-                recommended_gpu="RTX 4090",
-            ),
-            "hunyuan-video-t2v-q4km": ModelRecipeSpec(
-                recipe_id="hunyuan-video-t2v-q4km",
-                name="HunyuanVideo T2V 720p Q4_K_M",
-                family="hunyuan", kind="video", params="13B",
-                quantization="gguf-q4_k_m",
-                hf_repo="city96/HunyuanVideo-gguf",
-                allow_patterns=["hunyuan-video-t2v-720p-Q4_K_M.gguf"],
-                download_bytes=7_880_000_000,
-                working_set_bytes=int(12.0 * GIB),
-                backends=["metal", "cuda"],
-                license="Tencent Hunyuan Community",
-                license_note="Licence excludes the EU, UK and South Korea, and caps you at 100M monthly users.",
-                recommended_gpu="RTX 4080",
-            ),
-            "qwen2.5-vl-7b": ModelRecipeSpec(
-                recipe_id="qwen2.5-vl-7b",
-                name="Qwen2.5 VL 7B Instruct",
-                family="qwen", kind="vlm", params="7B",
-                quantization="bf16",
-                hf_repo="Qwen/Qwen2.5-VL-7B-Instruct",
-                download_bytes=16_600_000_000,
-                working_set_bytes=int(18.0 * GIB),
-                backends=["metal", "cuda"],
-                license="apache-2.0",
-                recommended_gpu="RTX 4080",
-            ),
-            "deepseek-r1-distill-qwen-7b": ModelRecipeSpec(
-                recipe_id="deepseek-r1-distill-qwen-7b",
-                name="DeepSeek R1 Distill Qwen 7B",
-                family="deepseek", kind="llm", params="7B",
-                quantization="bf16",
-                hf_repo="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-                download_bytes=15_240_000_000,
-                working_set_bytes=int(17.0 * GIB),
-                backends=["metal", "cuda", "cpu"],
-                license="mit",
-                recommended_gpu="RTX 4080",
-            ),
+            v.id: _spec_from_variant(v) for v in registry().variants
         }
         self.jobs: Dict[str, DownloadJob] = {}
 

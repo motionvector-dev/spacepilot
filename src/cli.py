@@ -617,6 +617,69 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 # CLI ENTRYPOINT
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+def _gb(b) -> str:
+    return f"{(b or 0) / 1024 ** 3:.1f} GB"
+
+
+def cmd_models(args, cfg=None) -> int:
+    """List the registry, or one variant, judged against this machine."""
+    from src.device_probe import probe_local_device, usable_memory_bytes
+    from src.pluto.registry import registry
+    from src.pluto.services.compatibility import assess
+    from src.pluto.services.model_catalog import catalog_manager
+
+    reg = registry()
+    profile = probe_local_device()
+
+    if getattr(args, "model_id", None):
+        v = reg.variant(args.model_id)
+        if not v:
+            print(f"No variant '{args.model_id}'. Run `pluto models` to list them.")
+            return 1
+        verdict = assess(catalog_manager.recipes[v.id], profile)
+        print(f"{v.name}  [{v.id}]")
+        print(f"  {v.kind} · {v.params or '?'} · {v.precision or '?'} · runs on {', '.join(v.backends)}")
+        print(f"  repo      {v.repo}" + (f"   files: {', '.join(v.files)}" if v.files else "   (whole repo)"))
+        checked = f", checked {v.download.checked}" if v.download.checked else ""
+        print(f"  download  {_gb(v.download.value)}   [{v.download.source}{checked}]")
+        print(f"  needs     {_gb(v.working_set.value)}   [{v.working_set.source}]")
+        if v.working_set.note:
+            print(f"            {v.working_set.note}")
+        print(f"  licence   {v.license.id}")
+        for r in v.license.restrictions:
+            print(f"            ! {r}")
+        print(f"  here      {verdict.verdict} — {verdict.reason}")
+        if v.speed:
+            for sp in v.speed:
+                print(f"  speed     {sp.value} {sp.metric} on {sp.device}   [{sp.source}]")
+                if sp.note:
+                    print(f"            {sp.note.strip()}")
+        else:
+            print("  speed     not measured on any machine yet")
+        return 0
+
+    usable = usable_memory_bytes(profile)
+    src = profile.memory_limit_source or "unknown"
+    print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
+          f"· {_gb(usable)} available to models [{src}]\n")
+    print(f"  {'VERDICT':10s}{'MODEL':36s}{'DOWNLOAD':>10s}{'NEEDS':>9s}   {'SPEED':<11s}LICENCE")
+
+    order = {"fits": 0, "tight": 1, "unknown": 2, "wont_fit": 3, "blocked": 4}
+    rows = [(assess(catalog_manager.recipes[v.id], profile), v) for v in reg.variants]
+    rows.sort(key=lambda rv: (order.get(rv[0].verdict, 9), -rv[1].working_set.value))
+
+    for verdict, v in rows:
+        speed = ("measured" if any(s.source == "measured" for s in v.speed)
+                 else "published" if v.speed else "—")
+        lic = v.license.id + ("" if v.license.is_permissive else "  !")
+        print(f"  {verdict.verdict:10s}{v.id:36s}{_gb(v.download.value):>10s}"
+              f"{_gb(v.working_set.value):>9s}   {speed:<11s}{lic}")
+    print("\n  `pluto models <id>` for detail.  ! marks a licence with restrictions.")
+    print("  SPEED is how the number was obtained, not how fast it is — most are unmeasured.")
+    return 0
+
+
 def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(prog="pluto", description="Pluto Remote GPU Box & Video Generation Tool")
@@ -650,6 +713,9 @@ def main():
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
     # status
+    models_p = subparsers.add_parser("models", help="List models and whether they run here")
+    models_p.add_argument("model_id", nargs="?", help="A variant id, for detail")
+
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
     # launch
@@ -703,6 +769,7 @@ def main():
         "lora": cmd_lora,
         "recipes": cmd_recipes,
         "studio": cmd_studio,
+        "models": cmd_models,
         "status": cmd_status,
         "launch": cmd_launch,
         "deploy": cmd_deploy,

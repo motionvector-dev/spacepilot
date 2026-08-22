@@ -246,6 +246,7 @@ button { font: inherit; cursor: pointer; }
   letter-spacing: var(--tracking-meta); color: var(--text-500); }
 .lic.warn { color: var(--text-900); }
 .lic.warn::after { content: " ⚠"; color: var(--text-500); }
+td:nth-child(5) .lic.warn::after { content: ""; }
 
 /* --------------------------------------------------------------- progress */
 .bar { height: 4px; border-radius: 999px; background: var(--surface-inset);
@@ -382,7 +383,7 @@ button { font: inherit; cursor: pointer; }
     <div class="card" style="--i:3">
       <table class="matrix"><thead><tr>
         <th>Model</th><th class="num">Download</th><th class="num">Needs</th>
-        <th>On this machine</th><th>Licence</th>
+        <th>On this machine</th><th>Speed</th><th>Licence</th>
       </tr></thead><tbody id="m-rows"></tbody></table>
       <p class="note" id="m-basis"></p>
     </div>
@@ -526,6 +527,29 @@ function renderMachine(d) {
   }
 }
 
+
+// How long it takes is the number nobody publishes for Apple Silicon. Show what
+// we have and say plainly where it came from — never dress an estimate as a run.
+const SPEED_UNIT = {
+  tokens_per_second: (v) => `${v} tok/s`,
+  seconds_per_image: (v) => `${v}s per image`,
+  seconds_per_second_of_video: (v) => v >= 120
+    ? `${Math.round(v / 60)} min per second of video`
+    : `${v}s per second of video`,
+  realtime_factor: (v) => `${v}× realtime`,
+};
+function speedCell(m, device) {
+  if (!m.speed || !m.speed.length) {
+    return `<span class="lic">—</span><span class="why">not measured anywhere yet</span>`;
+  }
+  const chip = (device.chip || "").toLowerCase();
+  const exact = m.speed.find((s) => s.device.toLowerCase().includes(chip)) || m.speed[0];
+  const text = (SPEED_UNIT[exact.metric] || ((v) => `${v} ${exact.metric}`))(exact.value);
+  const ours = exact.source === "measured";
+  return `<span class="${ours ? "lic" : "lic warn"}">${esc(text)}</span>` +
+         `<span class="why">${ours ? "measured by us" : "published elsewhere"} on ${esc(exact.device)}</span>`;
+}
+
 const VERDICT_TEXT = { fits: "Fits", tight: "Tight fit", wont_fit: "Won't fit", blocked: "Not supported", unknown: "Unknown" };
 const ENCUMBERED = (l) => !["apache-2.0", "mit", "bsd-3-clause"].includes((l || "").toLowerCase());
 
@@ -556,6 +580,7 @@ function renderMatrix(rep) {
           <span class="why">${esc(v.reason)}${
             v.runnable_now === false ? ` — ${gb(v.free_shortfall_bytes)} more than is free right now` : ""}${
             v.disk_ok === false ? ` — ${gb(v.disk_shortfall_bytes)} more disk needed` : ""}</span></td>
+      <td>${speedCell(m, rep.device)}</td>
       <td><span class="${licClass}" ${m.license_note ? `title="${esc(m.license_note)}"` : ""}>${esc(m.license)}</span></td>
     </tr>`;
   }).join("");

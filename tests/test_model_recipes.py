@@ -34,8 +34,8 @@ def test_list_recipes_endpoint(client, auth_headers):
     recipes = res.json()
     assert len(recipes) >= 5
     ids = [r["recipe_id"] for r in recipes]
-    assert "wan-2.1-t2v-1.3b" in ids
-    assert "wan-2.1-t2v-14b" in ids
+    assert "wan-2-1-t2v-1-3b" in ids
+    assert "wan-2-1-t2v-14b" in ids
     
     # Every repo id must be one that actually exists on the Hub. Six of the
     # original seven were invented and 401'd; a catalog of unfetchable models
@@ -56,28 +56,28 @@ def test_list_recipes_endpoint(client, auth_headers):
 @mock.patch("src.pluto.services.model_catalog.asyncio.create_task")
 def test_download_recipe_flow(mock_create_task, client, auth_headers):
     # 1. Trigger download
-    res = client.post("/api/compute/recipes/wan-2.1-t2v-1.3b/download", headers=auth_headers)
+    res = client.post("/api/compute/recipes/wan-2-1-t2v-1-3b/download", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
-    assert data["job_id"] == "wan-2.1-t2v-1.3b"
+    assert data["job_id"] == "wan-2-1-t2v-1-3b"
     assert data["status"] == "pending"
     assert mock_create_task.called
 
     # 2. Check progress
-    res = client.get("/api/compute/recipes/wan-2.1-t2v-1.3b/progress", headers=auth_headers)
+    res = client.get("/api/compute/recipes/wan-2-1-t2v-1-3b/progress", headers=auth_headers)
     assert res.status_code == 200
     prog = res.json()
-    assert prog["recipe_id"] == "wan-2.1-t2v-1.3b"
+    assert prog["recipe_id"] == "wan-2-1-t2v-1-3b"
     assert "progress_percent" in prog
     assert prog["status"] == "pending"
 
 
 def test_download_auth_gate(client):
     # Missing token fails closed with 401
-    res = client.post("/api/compute/recipes/wan-2.1-t2v-1.3b/download")
+    res = client.post("/api/compute/recipes/wan-2-1-t2v-1-3b/download")
     assert res.status_code == 401
     
-    res2 = client.get("/api/compute/recipes/wan-2.1-t2v-1.3b/progress")
+    res2 = client.get("/api/compute/recipes/wan-2-1-t2v-1-3b/progress")
     assert res2.status_code == 401
 
 
