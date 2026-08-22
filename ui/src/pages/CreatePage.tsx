@@ -403,26 +403,26 @@ export default function CreatePage() {
   const isDispatchBlocked = Boolean(isGenerating) || isImageUploading || isLastImageUploading;
 
   return (
-    <div className="min-h-screen bg-black text-white font-['Plus_Jakarta_Sans'] antialiased">
+    <div className="min-h-screen bg-ground text-ink font-['Plus_Jakarta_Sans'] antialiased">
       <CreateWizardHeader />
 
       <main className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-8">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-[26px] font-bold tracking-tight text-white/90 flex items-center gap-2.5">
+          <h1 className="text-[26px] font-bold tracking-tight text-ink flex items-center gap-2.5">
             <span>Generate Video</span>
             {extendId && (
-              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-inset text-ink-900 border border-line-400">
                 Extension Mode
               </span>
             )}
           </h1>
-          <p className="text-white/50 text-[14px]">
+          <p className="text-ink-500 text-[14px]">
             Transform text or reference keyframes into cinematic motion using multi-engine resident DiT orchestration.
           </p>
         </div>
 
         {combinedError && (
-          <div className="bg-[#f43535]/10 border border-[#f43535]/30 rounded-xl p-4 flex items-center gap-3 text-[#f43535] text-sm animate-in fade-in">
+          <div className="bg-danger-soft border border-danger/30 rounded-xl p-4 flex items-center gap-3 text-danger text-sm animate-in fade-in">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div>
               <span className="font-bold">Generation Error:</span> {combinedError}
@@ -431,7 +431,7 @@ export default function CreatePage() {
         )}
 
         {dispatchWarning && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 text-amber-400 text-sm animate-in fade-in">
+          <div className="bg-inset border border-line-400 rounded-xl p-4 flex items-center gap-3 text-ink-900 text-sm animate-in fade-in">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div>
               <span className="font-bold">Partial Dispatch:</span> {dispatchWarning}
@@ -440,7 +440,7 @@ export default function CreatePage() {
         )}
 
         {allSettled && !failedJobMeta && (
-          <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl p-4 flex items-center justify-between text-[#10b981] text-sm animate-in fade-in">
+          <div className="bg-verify-soft border border-verify/30 rounded-xl p-4 flex items-center justify-between text-verify text-sm animate-in fade-in">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 shrink-0" />
               <div>
@@ -449,7 +449,7 @@ export default function CreatePage() {
             </div>
             <a
               href={`/studio?asset_id=${activeJobIds[0]}`}
-              className="px-3 py-1.5 rounded-lg bg-emerald-500 text-black font-bold text-xs hover:bg-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-verify text-accent-contrast font-bold text-xs hover:opacity-90 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <span>Open in Pro Studio</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -489,32 +489,32 @@ export default function CreatePage() {
             />
 
             {/* MotionVector Proposed PatchCard Component */}
-            <div className="p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors flex flex-col gap-4">
-              <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+            <div className="p-5 bg-surface border border-line-200 rounded-xl shadow-sm hover:border-line-300 transition-colors flex flex-col gap-4">
+              <div className="flex justify-between items-center border-b border-line-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <span className="font-mono text-xs font-bold text-white/80 uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-ink-700" />
+                  <span className="font-mono text-xs font-bold text-ink-900 uppercase tracking-wider">
                     Proposed Generation Patch
                   </span>
                 </div>
-                <span className="font-mono text-[11px] text-white/80 bg-[#18181b] px-2.5 py-1 rounded-md border border-white/[0.08]">
+                <span className="font-mono text-[11px] text-ink-900 bg-inset px-2.5 py-1 rounded-md border border-line-200">
                   {costBadge}
                 </span>
               </div>
 
               {/* Upfront Fact Block */}
-              <div className="p-3.5 bg-black/70 border border-white/[0.08] rounded-xl flex flex-col gap-2">
+              <div className="p-3.5 bg-inset border border-line-200 rounded-xl flex flex-col gap-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                    <div className="w-2 h-2 rounded-full bg-ink-700" />
                     <span>LTX-2.5 Resident DiT Generation</span>
                   </div>
-                  <span className="font-mono text-[11px] text-white/70 bg-[#18181b] px-2 py-0.5 rounded border border-white/[0.08]">
+                  <span className="font-mono text-[11px] text-ink-700 bg-inset px-2 py-0.5 rounded border border-line-200">
                     {width}×{height} · {fps}fps · {duration.toFixed(1)}s
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-white/50">
-                  <Info className="w-3.5 h-3.5 text-white/40 shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs text-ink-500">
+                  <Info className="w-3.5 h-3.5 text-ink-500 shrink-0" />
                   <span>{computeQuote}</span>
                 </div>
               </div>
@@ -522,13 +522,13 @@ export default function CreatePage() {
               {/* Parameter Diff Inspector */}
               <div className="flex flex-col gap-2 pt-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-mono font-bold text-white/40 uppercase tracking-wider">
+                  <span className="text-[11px] font-mono font-bold text-ink-500 uppercase tracking-wider">
                     Parameter Diff Inspector
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsDiffExpanded(!isDiffExpanded)}
-                    className="text-[11px] text-white/50 hover:text-white underline cursor-pointer"
+                    className="text-[11px] text-ink-500 hover:text-ink underline cursor-pointer"
                   >
                     {isDiffExpanded ? 'Collapse' : 'Expand'}
                   </button>
@@ -536,97 +536,97 @@ export default function CreatePage() {
 
                 {isDiffExpanded && (
                   <div className="flex flex-col gap-1.5 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Prompt</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Prompt</span>
                       <div className="flex items-center gap-1.5 max-w-[70%]">
-                        <span className="text-white/30 line-through text-[11px]">empty</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white/90 font-medium truncate font-sans text-right">
+                        <span className="text-ink-300 line-through text-[11px]">empty</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-medium truncate font-sans text-right">
                           "{prompt.slice(0, 50)}..."
                         </span>
                       </div>
                     </div>
 
                     {negativePrompt.trim() && (
-                      <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                        <span className="font-mono text-white/40 uppercase text-[10.5px]">Negative Prompt</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                        <span className="font-mono text-ink-500 uppercase text-[10.5px]">Negative Prompt</span>
                         <div className="flex items-center gap-1.5 max-w-[70%]">
-                          <span className="text-white/30 line-through text-[11px]">none</span>
-                          <span className="text-white/30">→</span>
-                          <span className="text-amber-400 font-medium truncate font-mono text-[11px] text-right">
+                          <span className="text-ink-300 line-through text-[11px]">none</span>
+                          <span className="text-ink-300">→</span>
+                          <span className="text-ink font-medium truncate font-mono text-[11px] text-right">
                             {negativePrompt.slice(0, 45)}...
                           </span>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Engine Quality</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Engine Quality</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <span className="text-white/30 line-through">Draft (15 steps)</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white font-bold">
+                        <span className="text-ink-300 line-through">Draft (15 steps)</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-bold">
                           {engineQuality === 'pro' ? 'Pro Cinema (30 steps)' : 'Draft Mode (15 steps)'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Motion Guidance (STG)</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Motion Guidance (STG)</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <span className="text-white/30 line-through">1.0</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white font-bold">{stg.toFixed(1)}</span>
+                        <span className="text-ink-300 line-through">1.0</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-bold">{stg.toFixed(1)}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Aspect &amp; Resolution</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Aspect &amp; Resolution</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <span className="text-white/30 line-through">16:9 (1024x576)</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white font-bold">{aspect} ({width}×{height})</span>
+                        <span className="text-ink-300 line-through">16:9 (1024x576)</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-bold">{aspect} ({width}×{height})</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Duration &amp; Frames</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Duration &amp; Frames</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <span className="text-white/30 line-through">4.0s (97 frames)</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white font-bold">{duration.toFixed(1)}s ({totalFrames} frames @ {fps}fps)</span>
+                        <span className="text-ink-300 line-through">4.0s (97 frames)</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-bold">{duration.toFixed(1)}s ({totalFrames} frames @ {fps}fps)</span>
                       </div>
                     </div>
 
                     {cameraMotions.length > 0 && (
-                      <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                        <span className="font-mono text-white/40 uppercase text-[10.5px]">Camera Motion</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                        <span className="font-mono text-ink-500 uppercase text-[10.5px]">Camera Motion</span>
                         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                          <span className="text-white/30 line-through">Static</span>
-                          <span className="text-white/30">→</span>
-                          <span className="text-cyan-400 font-bold">{cameraSummary}</span>
+                          <span className="text-ink-300 line-through">Static</span>
+                          <span className="text-ink-300">→</span>
+                          <span className="text-ink font-bold">{cameraSummary}</span>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                      <span className="font-mono text-white/40 uppercase text-[10.5px]">Seed</span>
+                    <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                      <span className="font-mono text-ink-500 uppercase text-[10.5px]">Seed</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <span className="text-white/30 line-through">random</span>
-                        <span className="text-white/30">→</span>
-                        <span className="text-white font-bold">
+                        <span className="text-ink-300 line-through">random</span>
+                        <span className="text-ink-300">→</span>
+                        <span className="text-ink font-bold">
                           {isSeedLocked ? `#${seed} (Locked)` : 'Dynamic (Auto)'}
                         </span>
                       </div>
                     </div>
 
                     {imagePath && (
-                      <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-white/[0.06] text-xs">
-                        <span className="font-mono text-white/40 uppercase text-[10.5px]">Reference Keyframe(s)</span>
+                      <div className="flex items-center justify-between p-2 rounded bg-inset border border-line-100 text-xs">
+                        <span className="font-mono text-ink-500 uppercase text-[10.5px]">Reference Keyframe(s)</span>
                         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                          <span className="text-white/30 line-through">none (T2V)</span>
-                          <span className="text-white/30">→</span>
-                          <span className="text-cyan-400 font-bold truncate max-w-[180px]">
+                          <span className="text-ink-300 line-through">none (T2V)</span>
+                          <span className="text-ink-300">→</span>
+                          <span className="text-ink font-bold truncate max-w-[180px]">
                             {keyframeMode === 'dual' && lastImagePath ? `${imagePath} → ${lastImagePath}` : imagePath}
                           </span>
                         </div>
@@ -636,7 +636,7 @@ export default function CreatePage() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center text-[10.5px] font-mono text-white/40 border-t border-white/[0.06] pt-2">
+              <div className="flex justify-between items-center text-[10.5px] font-mono text-ink-500 border-t border-line-100 pt-2">
                 <span>No charge on failure · Reversible byte-exact</span>
                 <span>Spacepilot Engine Recipe</span>
               </div>
@@ -704,16 +704,16 @@ export default function CreatePage() {
               <button
                 onClick={() => handleGenerate(1)}
                 disabled={isDispatchBlocked}
-                className="w-full h-[48px] bg-white hover:bg-[#e4e4e7] text-black text-[14px] font-bold rounded-xl shadow-[0_0_24px_rgba(255,255,255,0.18)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-[48px] bg-accent hover:opacity-90 text-accent-contrast text-[14px] font-bold rounded-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <Loader2 className="w-4 h-4 animate-spin text-accent-contrast" />
                     <span>Rendering Video ({generationProgress}%)...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 fill-black" />
+                    <Play className="w-4 h-4 fill-current" />
                     <span>Generate Video (1 Take)</span>
                   </>
                 )}
@@ -722,13 +722,13 @@ export default function CreatePage() {
               <button
                 onClick={() => handleGenerate(4)}
                 disabled={isDispatchBlocked}
-                className="w-full h-[44px] bg-[#09090b] text-white/90 hover:text-white text-[13px] font-semibold rounded-xl border border-white/[0.14] hover:bg-[#111114] hover:border-white/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                className="w-full h-[44px] bg-surface text-ink hover:text-ink text-[13px] font-semibold rounded-xl border border-line-300 hover:bg-raised hover:border-line-500 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
               >
-                <Grid2X2 className="w-4 h-4 text-cyan-400" />
+                <Grid2X2 className="w-4 h-4 text-ink-700" />
                 <span>4-Take Director Grid (Batch 4 Seeds)</span>
               </button>
 
-              <div className="text-center text-[11px] font-mono text-white/40 mt-0.5">
+              <div className="text-center text-[11px] font-mono text-ink-500 mt-0.5">
                 Estimated Spot Compute: ~$0.04 - $0.16 (No charge on failure)
               </div>
             </div>

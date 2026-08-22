@@ -119,44 +119,44 @@ export function MultiCloudProviderHub() {
   const getRiskBadge = (risk: string, pct: number) => {
     if (risk === 'very-low') {
       return (
-        <span className="font-mono text-[11px] font-semibold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/25 px-2 py-0.5 rounded">
+        <span className="font-mono text-[11px] font-semibold text-verify bg-verify-soft border border-verify px-2 py-0.5 rounded">
           VERY LOW ({pct}%)
         </span>
       );
     }
     if (risk === 'low') {
       return (
-        <span className="font-mono text-[11px] font-semibold text-[#06b6d4] bg-[#06b6d4]/10 border border-[#06b6d4]/25 px-2 py-0.5 rounded">
+        <span className="font-mono text-[11px] font-semibold text-ink bg-inset border border-line-400 px-2 py-0.5 rounded">
           LOW ({pct}%)
         </span>
       );
     }
     if (risk === 'medium') {
       return (
-        <span className="font-mono text-[11px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/25 px-2 py-0.5 rounded">
-          MED ({pct}%)
+        <span className="font-mono text-[11px] font-semibold text-ink bg-inset border border-line-400 px-2 py-0.5 rounded">
+          MED &middot; WATCH ({pct}%)
         </span>
       );
     }
     return (
-      <span className="font-mono text-[11px] font-semibold text-[#f43535] bg-[#f43535]/10 border border-[#f43535]/25 px-2 py-0.5 rounded">
+      <span className="font-mono text-[11px] font-semibold text-danger bg-danger-soft border border-danger px-2 py-0.5 rounded">
         HIGH ({pct}%)
       </span>
     );
   };
 
   return (
-    <div className="bg-[#18181b] border border-white/10 rounded-[24px] p-7 flex flex-col gap-6 hover:border-white/20 transition-all duration-150 ease-in-out">
+    <div className="bg-inset border border-line-200 rounded-[24px] p-7 flex flex-col gap-6 hover:border-line-400 transition-all duration-150 ease-in-out">
       {/* 1. Header & Provider Hub Selector */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-5 border-b border-white/10 gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-5 border-b border-line-200 gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-[#3b82f6]" />
-            <h3 className="text-[18px] font-bold text-[#fafafa]">
+            <Globe className="w-5 h-5 text-ink-700" />
+            <h3 className="text-[18px] font-bold text-ink">
               Multi-Cloud Compute Provider Hub
             </h3>
           </div>
-          <p className="text-[13px] text-[#a1a1aa] mt-1">
+          <p className="text-[13px] text-ink-700 mt-1">
             Intelligent spot arbitrage routing across 12+ cloud providers with instant preemption failover.
           </p>
         </div>
@@ -165,7 +165,7 @@ export function MultiCloudProviderHub() {
           <select 
             value={selectedProvider} 
             onChange={(e) => setSelectedProvider(e.target.value as any)}
-            className="bg-[#111114] border border-white/14 rounded-lg px-3.5 py-2 text-[13px] font-mono text-[#fafafa] outline-none focus:border-[#3b82f6] transition-all cursor-pointer min-w-[260px]"
+            className="bg-raised border border-line-300 rounded-lg px-3.5 py-2 text-[13px] font-mono text-ink outline-none focus:border-line-500 transition-all cursor-pointer min-w-[260px]"
           >
             <option value="aws">☁️ AWS Direct Spot (us-east-1 · g6e.xlarge)</option>
             <option value="shadeform">🌐 Shadeform (20+ Clouds · Auto-Cheapest)</option>
@@ -175,21 +175,21 @@ export function MultiCloudProviderHub() {
 
           <button
             onClick={() => setShowSwitchModal(true)}
-            className="font-sans text-xs font-semibold px-3 py-2 rounded-lg border border-white/14 bg-[#111114] text-[#fafafa] hover:bg-[#222226] transition-all flex items-center gap-1.5 cursor-pointer"
+            className="font-sans text-xs font-semibold px-3 py-2 rounded-lg border border-line-300 bg-raised text-ink hover:bg-strong transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <Settings2 className="w-3.5 h-3.5 text-[#a1a1aa]" />
+            <Settings2 className="w-3.5 h-3.5 text-ink-700" />
             <span>Connect Hub</span>
           </button>
         </div>
       </div>
 
       {/* 2. Provider Credentials & Settings Inline Strip */}
-      <div className="bg-[#111114] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-raised border border-line-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {selectedProvider === 'aws' && (
             <>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10.5px] font-mono font-semibold uppercase text-[#71717a]">
+                <label className="text-[10.5px] font-mono font-semibold uppercase text-ink-500">
                   AWS Profile
                 </label>
                 <input 
@@ -197,18 +197,18 @@ export function MultiCloudProviderHub() {
                   value={awsProfile} 
                   onChange={(e) => setAwsProfile(e.target.value)} 
                   placeholder="default"
-                  className="bg-[#18181b] border border-white/10 rounded-md px-3 py-1.5 text-xs text-[#fafafa] font-mono outline-none focus:border-[#3b82f6]"
+                  className="bg-inset border border-line-200 rounded-md px-3 py-1.5 text-xs text-ink font-mono outline-none focus:border-line-500"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10.5px] font-mono font-semibold uppercase text-[#71717a]">
+                <label className="text-[10.5px] font-mono font-semibold uppercase text-ink-500">
                   Spot Instance Type
                 </label>
                 <input 
                   type="text" 
                   disabled
                   value="g6e.xlarge (L40S 48GB · $0.75/hr)" 
-                  className="bg-[#18181b] border border-white/10 rounded-md px-3 py-1.5 text-xs text-[#a1a1aa] font-mono cursor-not-allowed opacity-80"
+                  className="bg-inset border border-line-200 rounded-md px-3 py-1.5 text-xs text-ink-700 font-mono cursor-not-allowed opacity-80"
                 />
               </div>
             </>
@@ -217,9 +217,9 @@ export function MultiCloudProviderHub() {
           {selectedProvider === 'shadeform' && (
             <>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label className="text-[10.5px] font-mono font-semibold uppercase text-[#71717a] flex items-center justify-between">
+                <label className="text-[10.5px] font-mono font-semibold uppercase text-ink-500 flex items-center justify-between">
                   <span>Shadeform API Key</span>
-                  <button onClick={() => setShowKey(!showKey)} className="text-[#3b82f6] text-[10px] lowercase flex items-center gap-1 cursor-pointer">
+                  <button onClick={() => setShowKey(!showKey)} className="text-ink-700 text-[10px] lowercase flex items-center gap-1 cursor-pointer">
                     {showKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     {showKey ? 'hide' : 'reveal'}
                   </button>
@@ -230,7 +230,7 @@ export function MultiCloudProviderHub() {
                     value={shadeformKey} 
                     onChange={(e) => setShadeformKey(e.target.value)} 
                     placeholder="sf_live_..."
-                    className="w-full bg-[#18181b] border border-white/10 rounded-md px-3 py-1.5 text-xs text-[#fafafa] font-mono outline-none focus:border-[#3b82f6]"
+                    className="w-full bg-inset border border-line-200 rounded-md px-3 py-1.5 text-xs text-ink font-mono outline-none focus:border-line-500"
                   />
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function MultiCloudProviderHub() {
           {selectedProvider === 'runpod' && (
             <>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label className="text-[10.5px] font-mono font-semibold uppercase text-[#71717a]">
+                <label className="text-[10.5px] font-mono font-semibold uppercase text-ink-500">
                   RunPod API Key
                 </label>
                 <input 
@@ -248,7 +248,7 @@ export function MultiCloudProviderHub() {
                   value={runpodKey} 
                   onChange={(e) => setRunpodKey(e.target.value)} 
                   placeholder="rpa_..."
-                  className="bg-[#18181b] border border-white/10 rounded-md px-3 py-1.5 text-xs text-[#fafafa] font-mono outline-none focus:border-[#3b82f6]"
+                  className="bg-inset border border-line-200 rounded-md px-3 py-1.5 text-xs text-ink font-mono outline-none focus:border-line-500"
                 />
               </div>
             </>
@@ -257,7 +257,7 @@ export function MultiCloudProviderHub() {
           {selectedProvider === 'local' && (
             <>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <label className="text-[10.5px] font-mono font-semibold uppercase text-[#71717a]">
+                <label className="text-[10.5px] font-mono font-semibold uppercase text-ink-500">
                   Local Inference Bridge URL
                 </label>
                 <input 
@@ -265,7 +265,7 @@ export function MultiCloudProviderHub() {
                   value={localHost} 
                   onChange={(e) => setLocalHost(e.target.value)} 
                   placeholder="http://127.0.0.1:8000"
-                  className="bg-[#18181b] border border-white/10 rounded-md px-3 py-1.5 text-xs text-[#fafafa] font-mono outline-none focus:border-[#3b82f6]"
+                  className="bg-inset border border-line-200 rounded-md px-3 py-1.5 text-xs text-ink font-mono outline-none focus:border-line-500"
                 />
               </div>
             </>
@@ -276,13 +276,13 @@ export function MultiCloudProviderHub() {
           <button
             onClick={handleSaveConfig}
             disabled={updateConfigMutation.isPending}
-            className="font-sans text-xs font-semibold px-4 py-2 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="font-sans text-xs font-semibold px-4 py-2 rounded-md bg-ink text-ground hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {updateConfigMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             <span>{savedToast ? 'Saved ✓' : 'Save Config'}</span>
           </button>
           {updateConfigMutation.isError && (
-            <span className="font-mono text-[11px] text-[#f43535]">
+            <span className="font-mono text-[11px] text-danger">
               {updateConfigMutation.error instanceof Error ? updateConfigMutation.error.message : 'Save failed'}
             </span>
           )}
@@ -292,14 +292,14 @@ export function MultiCloudProviderHub() {
       {/* 3. SkyPilot Cluster Status & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="text-[13px] font-semibold text-[#fafafa]">
+          <span className="text-[13px] font-semibold text-ink">
             SkyPilot Cluster Status:
           </span>
-          <span className="font-mono text-xs text-[#a1a1aa]">
+          <span className="font-mono text-xs text-ink-700">
             {skyStatus?.cluster_name ? `${skyStatus.cluster_name} (${skyStatus.provider})` : 'Auto-Arbitrage Mode'}
           </span>
-          <span className="font-mono text-[11px] text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/25 px-2 py-0.5 rounded flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
+          <span className="font-mono text-[11px] text-verify bg-verify-soft border border-verify px-2 py-0.5 rounded flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-verify animate-pulse" />
             <span>R2 Checkpoint Synced</span>
           </span>
         </div>
@@ -308,20 +308,20 @@ export function MultiCloudProviderHub() {
           <button
             onClick={handleTriggerFailover}
             disabled={failoverMutation.isPending}
-            className="font-sans text-xs font-semibold px-3 py-1.5 rounded-md border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] hover:bg-[#f59e0b] hover:text-[#09090b] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="font-sans text-xs font-semibold px-3 py-1.5 rounded-md border border-line-400 bg-inset text-ink hover:bg-strong transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {failoverMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-            <span>⚡ Trigger Failover</span>
+            <span>⚡ Trigger Failover (Interrupts)</span>
           </button>
           {failoverError && (
-            <span className="font-mono text-[11px] text-[#f43535]">{failoverError}</span>
+            <span className="font-mono text-[11px] text-danger">{failoverError}</span>
           )}
 
           <button
             onClick={handleOpenYaml}
-            className="font-sans text-xs font-semibold px-3 py-1.5 rounded-md border border-white/14 bg-[#18181b] text-[#fafafa] hover:bg-[#222226] transition-all flex items-center gap-1.5 cursor-pointer"
+            className="font-sans text-xs font-semibold px-3 py-1.5 rounded-md border border-line-300 bg-inset text-ink hover:bg-strong transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <FileCode className="w-3.5 h-3.5 text-[#06b6d4]" />
+            <FileCode className="w-3.5 h-3.5 text-ink-700" />
             <span>📄 SkyPilot YAML</span>
           </button>
         </div>
@@ -329,12 +329,12 @@ export function MultiCloudProviderHub() {
 
       {/* 4. Live Spot Arbitrage Matrix Table */}
       {routeError && (
-        <div className="font-mono text-[11px] text-[#f43535]">{routeError}</div>
+        <div className="font-mono text-[11px] text-danger">{routeError}</div>
       )}
-      <div className="overflow-x-auto border border-white/10 rounded-xl bg-[#09090b]">
+      <div className="overflow-x-auto border border-line-200 rounded-xl bg-surface">
         <table className="w-full border-collapse text-left font-mono text-[12px]">
           <thead>
-            <tr className="bg-[#111114] border-b border-white/10 text-[#a1a1aa] font-semibold text-[11px]">
+            <tr className="bg-raised border-b border-line-200 text-ink-700 font-semibold text-[11px]">
               <th className="p-3">Provider</th>
               <th className="p-3">GPU Accelerator</th>
               <th className="p-3">VRAM</th>
@@ -347,7 +347,7 @@ export function MultiCloudProviderHub() {
           <tbody>
             {cloudsLoading ? (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-[#a1a1aa]">
+                <td colSpan={7} className="p-6 text-center text-ink-700">
                   <div className="flex items-center justify-center gap-2">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     <span>Loading spot arbitrage matrix...</span>
@@ -356,13 +356,13 @@ export function MultiCloudProviderHub() {
               </tr>
             ) : cloudsError ? (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-[#f43535]">
+                <td colSpan={7} className="p-6 text-center text-danger">
                   {cloudsError instanceof Error ? cloudsError.message : 'Failed to load spot arbitrage matrix'}
                 </td>
               </tr>
             ) : clouds.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-[#71717a]">
+                <td colSpan={7} className="p-6 text-center text-ink-500">
                   No cloud providers reported by the arbitrage matrix.
                 </td>
               </tr>
@@ -370,24 +370,24 @@ export function MultiCloudProviderHub() {
               clouds.map((cloud) => (
                 <tr
                   key={`${cloud.provider}-${cloud.accelerator}`}
-                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-colors"
+                  className="border-b border-line-200 last:border-0 hover:bg-raised-hover transition-colors"
                 >
-                  <td className="p-3 font-semibold text-[#fafafa]">
+                  <td className="p-3 font-semibold text-ink">
                     <div className="flex items-center gap-2">
                       <span>{cloud.name}</span>
                       {cloud.is_cheapest && (
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30">
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-verify-soft text-verify border border-verify">
                           Cheapest
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="p-3 text-[#a1a1aa]">{cloud.accelerator}</td>
-                  <td className="p-3 text-[#71717a]">{cloud.vram_gb} GB</td>
-                  <td className="p-3 font-bold text-[#10b981]">
+                  <td className="p-3 text-ink-700">{cloud.accelerator}</td>
+                  <td className="p-3 text-ink-500">{cloud.vram_gb} GB</td>
+                  <td className="p-3 font-bold text-verify">
                     ${cloud.spot_price_usd.toFixed(2)}
                   </td>
-                  <td className="p-3 text-[#71717a] line-through">
+                  <td className="p-3 text-ink-500 line-through">
                     ${cloud.ondemand_price_usd.toFixed(2)}
                   </td>
                   <td className="p-3">
@@ -397,7 +397,7 @@ export function MultiCloudProviderHub() {
                     <button
                       onClick={() => handleRouteSpot(cloud)}
                       disabled={routingProvider === cloud.provider}
-                      className="font-sans text-xs font-semibold px-3 py-1 rounded bg-[#18181b] border border-white/14 text-[#fafafa] hover:bg-[#222226] hover:border-white/25 transition-all cursor-pointer disabled:opacity-50"
+                      className="font-sans text-xs font-semibold px-3 py-1 rounded bg-inset border border-line-300 text-ink hover:bg-strong hover:border-line-400 transition-all cursor-pointer disabled:opacity-50"
                     >
                       {routingProvider === cloud.provider ? 'Routing...' : 'Route'}
                     </button>
@@ -412,37 +412,37 @@ export function MultiCloudProviderHub() {
       {/* YAML Viewer Modal */}
       {showYamlModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#09090b] border border-white/14 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-            <div className="px-5 py-3.5 bg-[#111114] border-b border-white/10 flex items-center justify-between">
+          <div className="bg-surface border border-line-300 rounded-2xl w-full max-w-2xl overflow-hidden shadow-lg flex flex-col max-h-[85vh]">
+            <div className="px-5 py-3.5 bg-raised border-b border-line-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileCode className="w-4 h-4 text-[#06b6d4]" />
-                <span className="font-mono text-sm font-bold text-[#fafafa]">
+                <FileCode className="w-4 h-4 text-ink-700" />
+                <span className="font-mono text-sm font-bold text-ink">
                   infra/skypilot.yaml · Declarative Spec
                 </span>
               </div>
               <button 
                 onClick={() => setShowYamlModal(false)}
-                className="p-1 rounded text-[#a1a1aa] hover:text-white transition-colors cursor-pointer"
+                className="p-1 rounded text-ink-700 hover:text-ink transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto font-mono text-xs text-[#a1a1aa] leading-relaxed bg-[#000000]">
+            <div className="p-5 overflow-y-auto font-mono text-xs text-ink-700 leading-relaxed bg-ground">
               {yamlLoading ? (
-                <div className="py-12 flex items-center justify-center gap-2 text-[#a1a1aa]">
+                <div className="py-12 flex items-center justify-center gap-2 text-ink-700">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Generating SkyPilot YAML spec...</span>
                 </div>
               ) : yamlError ? (
-                <div className="py-12 text-center text-[#f43535]">{yamlError}</div>
+                <div className="py-12 text-center text-danger">{yamlError}</div>
               ) : (
-                <pre className="whitespace-pre text-[#10b981]">{yamlContent}</pre>
+                <pre className="whitespace-pre text-verify">{yamlContent}</pre>
               )}
             </div>
 
-            <div className="px-5 py-3 bg-[#111114] border-t border-white/10 flex items-center justify-between">
-              <span className="text-[11px] font-mono text-[#71717a]">
+            <div className="px-5 py-3 bg-raised border-t border-line-200 flex items-center justify-between">
+              <span className="text-[11px] font-mono text-ink-500">
                 Zero-data-loss checkpoint recovery enabled
               </span>
               <button
@@ -451,7 +451,7 @@ export function MultiCloudProviderHub() {
                   setShowYamlModal(false);
                 }}
                 disabled={yamlLoading || !!yamlError || !yamlContent}
-                className="font-sans text-xs font-semibold px-4 py-1.5 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="font-sans text-xs font-semibold px-4 py-1.5 rounded-md bg-ink text-ground hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Copy YAML
               </button>
@@ -463,15 +463,15 @@ export function MultiCloudProviderHub() {
       {/* Provider Switcher Hub Modal */}
       {showSwitchModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#09090b] border border-white/14 rounded-3xl w-full max-w-xl p-6 shadow-2xl flex flex-col gap-5">
+          <div className="bg-surface border border-line-300 rounded-3xl w-full max-w-xl p-6 shadow-lg flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-[#fafafa]">Connect Compute Provider</h3>
-                <p className="text-xs text-[#a1a1aa] mt-0.5">Select and authorize your primary spot infrastructure backend.</p>
+                <h3 className="text-lg font-bold text-ink">Connect Compute Provider</h3>
+                <p className="text-xs text-ink-700 mt-0.5">Select and authorize your primary spot infrastructure backend.</p>
               </div>
               <button 
                 onClick={() => setShowSwitchModal(false)}
-                className="p-1.5 rounded-lg text-[#71717a] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                className="p-1.5 rounded-lg text-ink-500 hover:text-ink hover:bg-raised-hover transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -491,17 +491,17 @@ export function MultiCloudProviderHub() {
                   }}
                   className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-2 ${
                     selectedProvider === p.id 
-                      ? 'bg-[#3b82f6]/10 border-[#3b82f6] shadow-[0_0_12px_rgba(59,130,246,0.2)]' 
-                      : 'bg-[#111114] border-white/10 hover:border-white/20'
+                      ? 'bg-strong border-line-500' 
+                      : 'bg-raised border-line-200 hover:border-line-400'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <p.icon className={`w-5 h-5 ${selectedProvider === p.id ? 'text-[#3b82f6]' : 'text-[#a1a1aa]'}`} />
-                    {selectedProvider === p.id && <ShieldCheck className="w-4 h-4 text-[#3b82f6]" />}
+                    <p.icon className={`w-5 h-5 ${selectedProvider === p.id ? 'text-ink' : 'text-ink-700'}`} />
+                    {selectedProvider === p.id && <ShieldCheck className="w-4 h-4 text-ink" />}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-[#fafafa]">{p.name}</div>
-                    <div className="text-[11px] font-mono text-[#71717a] mt-0.5">{p.desc}</div>
+                    <div className="text-sm font-bold text-ink">{p.name}</div>
+                    <div className="text-[11px] font-mono text-ink-500 mt-0.5">{p.desc}</div>
                   </div>
                 </button>
               ))}
@@ -510,7 +510,7 @@ export function MultiCloudProviderHub() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowSwitchModal(false)}
-                className="font-sans text-xs font-semibold px-4 py-2 rounded-lg border border-white/10 text-[#a1a1aa] hover:bg-white/5 cursor-pointer"
+                className="font-sans text-xs font-semibold px-4 py-2 rounded-lg border border-line-200 text-ink-700 hover:bg-raised-hover cursor-pointer"
               >
                 Cancel
               </button>
@@ -519,7 +519,7 @@ export function MultiCloudProviderHub() {
                   handleSaveConfig();
                   setShowSwitchModal(false);
                 }}
-                className="font-sans text-xs font-semibold px-4 py-2 rounded-lg bg-[#fafafa] text-[#09090b] hover:bg-white cursor-pointer"
+                className="font-sans text-xs font-semibold px-4 py-2 rounded-lg bg-ink text-ground hover:brightness-110 cursor-pointer"
               >
                 Confirm Provider
               </button>

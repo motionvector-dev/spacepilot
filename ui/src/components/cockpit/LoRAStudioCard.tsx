@@ -20,47 +20,47 @@ export function LoRAStudioCard() {
   const [activeAdapter, setActiveAdapter] = useState<string>('lora-1');
 
   return (
-    <div className="bg-[#18181b] border border-white/10 rounded-[24px] p-7 flex flex-col gap-5 hover:border-white/24 transition-all duration-150 ease-in-out">
+    <div className="bg-inset border border-line-200 rounded-[24px] p-7 flex flex-col gap-5 hover:border-line-400 transition-all duration-150 ease-in-out">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-[18px] font-bold text-[#fafafa] flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#a855f7]" />
+          <h3 className="text-[18px] font-bold text-ink flex items-center gap-2">
+            <Layers className="w-5 h-5 text-ink-700" />
             PEFT LoRA Studio
           </h3>
-          <p className="text-[13px] text-[#a1a1aa] mt-1">
+          <p className="text-[13px] text-ink-700 mt-1">
             1-Click fine-tuning & active adapter hot-swapping.
           </p>
         </div>
-        <button className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-transparent bg-[#fafafa] text-[#09090b] hover:bg-white transition-all shadow-sm cursor-pointer flex items-center gap-2">
+        <button className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-transparent bg-accent text-accent-contrast hover:brightness-110 transition-all cursor-pointer flex items-center gap-2">
           <Settings2 className="w-4 h-4" />
           New Fine-Tune
         </button>
       </div>
 
       <div className="flex flex-col gap-3 mt-2">
-        <div className="text-[11px] font-bold text-[#71717a] uppercase font-mono tracking-wider">
+        <div className="text-[11px] font-bold text-ink-500 uppercase font-mono tracking-wider">
           Adapter Registry
         </div>
-        
+
         <div className="flex flex-col gap-2.5">
           {ADAPTERS.map((adapter) => (
-            <div 
-              key={adapter.id} 
+            <div
+              key={adapter.id}
               className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
-                adapter.id === activeAdapter 
-                  ? 'bg-[#a855f7]/10 border-[#a855f7]/30' 
-                  : 'bg-[#111114] border-white/10 hover:border-white/20'
+                adapter.id === activeAdapter
+                  ? 'bg-strong border-line-400'
+                  : 'bg-raised border-line-200 hover:border-line-400'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${
-                  adapter.status === 'active' ? 'bg-[#10b981] shadow-[0_0_6px_#10b981]' : 
-                  adapter.status === 'training' ? 'bg-[#f59e0b] animate-pulse' : 
-                  'bg-[#71717a]'
+                  adapter.status === 'active' ? 'bg-verify' :
+                  adapter.status === 'training' ? 'bg-strong animate-pulse' :
+                  'bg-strong'
                 }`} />
                 <div>
-                  <div className="text-sm font-semibold text-[#fafafa]">{adapter.name}</div>
-                  <div className="text-[11px] font-mono text-[#a1a1aa] mt-0.5">
+                  <div className="text-sm font-semibold text-ink">{adapter.name}</div>
+                  <div className="text-[11px] font-mono text-ink-700 mt-0.5">
                     {adapter.baseModel} · Rank {adapter.rank}
                   </div>
                 </div>
@@ -69,19 +69,19 @@ export function LoRAStudioCard() {
               <div className="flex items-center gap-3">
                 {adapter.status === 'training' ? (
                   <div className="flex items-center gap-3 w-32">
-                    <span className="text-[11px] font-mono text-[#f59e0b]">{adapter.progress}%</span>
-                    <div className="flex-1 h-1.5 bg-[#18181b] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#f59e0b]" style={{ width: `${adapter.progress}%` }} />
+                    <span className="text-[11px] font-mono text-ink-700">Training · {adapter.progress}%</span>
+                    <div className="flex-1 h-1.5 bg-inset rounded-full overflow-hidden">
+                      <div className="h-full bg-strong" style={{ width: `${adapter.progress}%` }} />
                     </div>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => setActiveAdapter(adapter.id)}
                     disabled={adapter.id === activeAdapter}
                     className={`font-sans text-[11px] font-semibold px-3 py-1.5 rounded-md border transition-all flex items-center gap-1.5 cursor-pointer ${
-                      adapter.id === activeAdapter 
-                        ? 'bg-[#a855f7]/20 text-[#a855f7] border-[#a855f7]/30'
-                        : 'bg-[#18181b] text-[#fafafa] border-white/14 hover:bg-[#222226] hover:border-white/24'
+                      adapter.id === activeAdapter
+                        ? 'bg-strong text-ink-900 border-line-400'
+                        : 'bg-inset text-ink border-line-300 hover:bg-strong hover:border-line-400'
                     }`}
                   >
                     {adapter.id === activeAdapter ? (

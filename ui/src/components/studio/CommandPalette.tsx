@@ -107,22 +107,22 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
       onClick={onClose}
       className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-start justify-center pt-24 p-4 font-sans"
     >
-      <div 
+      <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-[#09090b] border border-white/[0.15] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-xl bg-surface border border-line-300 rounded-2xl shadow-lg overflow-hidden flex flex-col"
       >
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 border-b border-white/[0.08]">
-          <Search className="w-4 h-4 text-[#71717a] shrink-0" />
+        <div className="flex items-center px-4 border-b border-line-200">
+          <Search className="w-4 h-4 text-ink-500 shrink-0" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or search studio actions..."
             autoFocus
-            className="w-full bg-transparent px-3 py-4 text-xs font-sans text-white focus:outline-none placeholder-[#71717a]"
+            className="w-full bg-transparent px-3 py-4 text-xs font-sans text-ink focus:outline-none placeholder-ink-500"
           />
-          <kbd className="font-mono text-[10px] text-[#71717a] bg-white/[0.06] px-1.5 py-0.5 rounded border border-white/[0.08]">
+          <kbd className="font-mono text-[10px] text-ink-500 bg-inset px-1.5 py-0.5 rounded border border-line-200">
             ESC
           </kbd>
         </div>
@@ -135,22 +135,22 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
               <div
                 key={c.id}
                 onClick={c.action}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.06] cursor-pointer transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-inset cursor-pointer transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#111114] border border-white/[0.08] text-[#10b981] group-hover:border-[#10b981]/40">
+                  <div className="p-2 rounded-lg bg-raised border border-line-200 text-verify group-hover:border-verify/40">
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white group-hover:text-[#10b981] transition-colors">
+                    <span className="text-xs font-bold text-ink group-hover:text-verify transition-colors">
                       {c.title}
                     </span>
-                    <span className="text-[10px] text-[#71717a] font-mono">{c.sub}</span>
+                    <span className="text-[10px] text-ink-500 font-mono">{c.sub}</span>
                   </div>
                 </div>
 
                 {c.shortcut && (
-                  <kbd className="font-mono text-[10px] text-[#a1a1aa] bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.08]">
+                  <kbd className="font-mono text-[10px] text-ink-700 bg-inset px-2 py-0.5 rounded border border-line-200">
                     {c.shortcut}
                   </kbd>
                 )}
@@ -158,7 +158,7 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
             );
           })}
           {filtered.length === 0 && (
-            <div className="text-center py-8 text-xs font-mono text-[#71717a]">
+            <div className="text-center py-8 text-xs font-mono text-ink-500">
               No commands matching "{query}"
             </div>
           )}
