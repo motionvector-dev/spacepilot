@@ -397,7 +397,7 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print("█", end="", flush=True)
         try:
             st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
-            with urllib.request.urlopen(st_req, timeout=10) as st_resp:
+            with urllib.request.urlopen(st_req, timeout=30) as st_resp:
                 st_data = json.loads(st_resp.read().decode())
                 retries = 0
                 if st_data.get("status") == "completed":
