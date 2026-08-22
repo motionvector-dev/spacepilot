@@ -1,0 +1,553 @@
+{
+ "generated": "2026-08-22",
+ "rules": {
+  "memory_reserve_fraction": 0.1,
+  "memory_reserve_floor_bytes": 3221225472,
+  "metal_working_set_fraction": 0.78,
+  "tight_threshold": 0.8,
+  "footprint_bands": [
+   [
+    0.2,
+    "tiny"
+   ],
+   [
+    0.4,
+    "light"
+   ],
+   [
+    0.6,
+    "medium"
+   ],
+   [
+    0.8,
+    "heavy"
+   ]
+  ],
+  "permissive_licenses": [
+   "apache-2.0",
+   "bsd-3-clause",
+   "cc0-1.0",
+   "mit"
+  ]
+ },
+ "models": [
+  {
+   "id": "deepseek-r1-distill-qwen",
+   "name": "DeepSeek R1 Distill Qwen",
+   "family": "deepseek",
+   "kind": "text",
+   "summary": "Local reasoning model, used here for prompt work and shot planning rather than generation.",
+   "homepage": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://opensource.org/license/mit",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "deepseek-r1-distill-qwen-7b",
+     "model_id": "deepseek-r1-distill-qwen",
+     "name": "DeepSeek R1 Distill Qwen 7B",
+     "kind": "text",
+     "family": "deepseek",
+     "params": "7B",
+     "precision": "bf16",
+     "repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+     "files": null,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 15240000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 18253611008.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus KV cache at a short context; long contexts cost considerably more",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "hunyuan-video",
+   "name": "HunyuanVideo",
+   "family": "tencent",
+   "kind": "video",
+   "summary": "Strong quality at a small quantised footprint. The licence is the problem, not the model.\n",
+   "homepage": "https://huggingface.co/city96/HunyuanVideo-gguf",
+   "license": {
+    "id": "Tencent Hunyuan Community",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/tencent/HunyuanVideo",
+    "restrictions": [
+     "Not licensed in the EU, the United Kingdom or South Korea",
+     "Capped at 100 million monthly active users"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "hunyuan-video-t2v-720p-q4-k-m",
+     "model_id": "hunyuan-video",
+     "name": "HunyuanVideo T2V 720p Q4_K_M",
+     "kind": "video",
+     "family": "tencent",
+     "params": "13B",
+     "precision": "gguf-q4_k_m",
+     "repo": "city96/HunyuanVideo-gguf",
+     "files": [
+      "hunyuan-video-t2v-720p-Q4_K_M.gguf"
+     ],
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 7880000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 12884901888.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet; text encoders are not in this repo and are counted separately",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Tencent Hunyuan Community",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/tencent/HunyuanVideo",
+      "restrictions": [
+       "Not licensed in the EU, the United Kingdom or South Korea",
+       "Capped at 100 million monthly active users"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "kokoro",
+   "name": "Kokoro",
+   "family": "hexgrad",
+   "kind": "speech",
+   "summary": "An 82M-parameter text-to-speech model. Small enough to be the first thing anyone installs.",
+   "homepage": "https://huggingface.co/hexgrad/Kokoro-82M",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "kokoro-82m",
+     "model_id": "kokoro",
+     "name": "Kokoro 82M",
+     "kind": "speech",
+     "family": "hexgrad",
+     "params": "82M",
+     "precision": "fp32",
+     "repo": "hexgrad/Kokoro-82M",
+     "files": null,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 366000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 751619276.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus a small activation margin; the ONNX build runs comfortably in well under a gigabyte",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 32GB",
+       "backend": "cpu",
+       "metric": "realtime_factor",
+       "value": 4.6,
+       "source": "measured",
+       "measured_on": "2026-08-22",
+       "note": "12.5s of speech from a single sentence in 2.7s wall clock, kokoro-v1.0.onnx via onnxruntime"
+      }
+     ],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "ltx-video",
+   "name": "LTX Video",
+   "family": "lightricks",
+   "kind": "video",
+   "summary": "Fast and good, and not open source. The repo carries every checkpoint ever shipped, so fetching it whole is 236 GB against the few gigabytes actually wanted.\n",
+   "homepage": "https://huggingface.co/Lightricks/LTX-Video",
+   "license": {
+    "id": "LTX Community",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/Lightricks/LTX-Video",
+    "restrictions": [
+     "Free only while your annual revenue is under $10M",
+     "The terms pass to anyone you ship it to"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "ltx-video-2b-098-distilled",
+     "model_id": "ltx-video",
+     "name": "LTX Video 2B 0.9.8 distilled",
+     "kind": "video",
+     "family": "lightricks",
+     "params": "2B",
+     "precision": "bf16",
+     "repo": "Lightricks/LTX-Video",
+     "files": [
+      "ltxv-2b-0.9.8-distilled.safetensors"
+     ],
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 6350000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 10200547430.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+      "is_measured": false
+     },
+     "license": {
+      "id": "LTX Community",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/Lightricks/LTX-Video",
+      "restrictions": [
+       "Free only while your annual revenue is under $10M",
+       "The terms pass to anyone you ship it to"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": null
+    },
+    {
+     "id": "ltx-video-13b-098-distilled-fp8",
+     "model_id": "ltx-video",
+     "name": "LTX Video 13B 0.9.8 distilled FP8",
+     "kind": "video",
+     "family": "lightricks",
+     "params": "13B",
+     "precision": "fp8",
+     "repo": "Lightricks/LTX-Video",
+     "files": [
+      "ltxv-13b-0.9.8-distilled-fp8.safetensors"
+     ],
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 15700000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 21474836480.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+      "is_measured": false
+     },
+     "license": {
+      "id": "LTX Community",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/Lightricks/LTX-Video",
+      "restrictions": [
+       "Free only while your annual revenue is under $10M",
+       "The terms pass to anyone you ship it to"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "FP8 has no Metal path and fails rather than falling back, so this is CUDA on Ada or newer. Reported independently at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen\n"
+    }
+   ]
+  },
+  {
+   "id": "qwen2-5-vl",
+   "name": "Qwen2.5 VL",
+   "family": "qwen",
+   "kind": "vision",
+   "summary": "Reads images and video frames. Used here for describing and tagging footage rather than making it.",
+   "homepage": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen2-5-vl-7b-instruct",
+     "model_id": "qwen2-5-vl",
+     "name": "Qwen2.5 VL 7B Instruct",
+     "kind": "vision",
+     "family": "qwen",
+     "params": "7B",
+     "precision": "bf16",
+     "repo": "Qwen/Qwen2.5-VL-7B-Instruct",
+     "files": null,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 16600000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 19327352832.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus KV cache at a short context; long contexts cost considerably more",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "wan-2-1",
+   "name": "Wan 2.1",
+   "family": "wan",
+   "kind": "video",
+   "summary": "Alibaba's text-to-video family. The 1.3B is the smallest genuinely open video model that is worth running.",
+   "homepage": "https://huggingface.co/Wan-AI",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "wan-2-1-t2v-1-3b",
+     "model_id": "wan-2-1",
+     "name": "Wan 2.1 T2V 1.3B",
+     "kind": "video",
+     "family": "wan",
+     "params": "1.3B",
+     "precision": "bf16",
+     "repo": "Wan-AI/Wan2.1-T2V-1.3B",
+     "files": null,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 17580000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 11811160064.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet; the UMT5 encoder is 10.6 GB of the download and can be offloaded to CPU, which this figure assumes",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": null
+    },
+    {
+     "id": "wan-2-1-t2v-14b",
+     "model_id": "wan-2-1",
+     "name": "Wan 2.1 T2V 14B",
+     "kind": "video",
+     "family": "wan",
+     "params": "14B",
+     "precision": "bf16",
+     "repo": "Wan-AI/Wan2.1-T2V-14B",
+     "files": null,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 69050000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 51539607552.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Beyond any single consumer card and beyond every Apple Silicon configuration currently sold."
+    }
+   ]
+  },
+  {
+   "id": "wan-2-2",
+   "name": "Wan 2.2",
+   "family": "wan",
+   "kind": "video",
+   "summary": "The only video model here under a licence with no revenue cap and no territory exclusion. That makes it the safe default even where it is not the fastest.\n",
+   "homepage": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "wan-2-2-ti2v-5b",
+     "model_id": "wan-2-2",
+     "name": "Wan 2.2 TI2V 5B",
+     "kind": "video",
+     "family": "wan",
+     "params": "5B",
+     "precision": "bf16",
+     "repo": "Wan-AI/Wan2.2-TI2V-5B",
+     "files": null,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 34200000000.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 25769803776.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 64GB",
+       "backend": "metal",
+       "metric": "seconds_per_second_of_video",
+       "value": 2460.0,
+       "source": "declared",
+       "measured_on": "2026-08-22",
+       "note": "82 minutes for a 2-second clip in GGUF, reported at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen \u2014 third-party, on twice the memory of a 32 GB machine. Not measured by us. Treat as the order of magnitude, not the number.\n"
+      }
+     ],
+     "notes": null
+    }
+   ]
+  }
+ ]
+}

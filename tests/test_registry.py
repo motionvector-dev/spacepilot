@@ -97,3 +97,32 @@ def test_catalog_is_a_view_over_the_registry():
     """No second copy of the model list anywhere in the codebase."""
     from src.pluto.services.model_catalog import catalog_manager
     assert set(catalog_manager.recipes) == {v.id for v in registry().variants}
+
+
+def test_exported_json_matches_the_registry(tmp_path):
+    """studio/registry.json is what the public page reads.
+
+    It is generated, so it can fall behind the YAML it came from — and the page
+    has no server to correct it. This fails when someone edits a model and
+    forgets to re-run tools/export_registry.py.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    shipped = root / "studio" / "registry.json"
+    assert shipped.is_file(), "run: python tools/export_registry.py"
+
+    fresh = tmp_path / "registry.json"
+    subprocess.run(
+        [sys.executable, str(root / "tools" / "export_registry.py"), "--out", str(fresh)],
+        cwd=root, check=True, capture_output=True,
+    )
+
+    a = json.loads(shipped.read_text())
+    b = json.loads(fresh.read_text())
+    a.pop("generated", None)          # the date moves on its own; the data must not
+    b.pop("generated", None)
+    assert a == b, "studio/registry.json is stale — re-run tools/export_registry.py"
