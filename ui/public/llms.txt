@@ -1,49 +1,18 @@
-# SpacePilot.dev — Autonomous Generative Cinema Workstation & Runtime
+# SpacePilot
 
-> SkyPilot pilots your cloud compute. SpacePilot pilots your generative cinema.
+> SpacePilot compiles intent into cinema.
 
-## System Overview
-SpacePilot is a zero-cold-start generative video runtime, NLE workstation, and autonomous directing engine. It bridges AI agents (Claude, Cursor, Antigravity, Grok) with high-density GPU nodes (AWS Spot L40S 48GB @ $0.75/hr, Shadeform 20+ clouds) using FastMCP (Model Context Protocol).
+SpacePilot is a generative cinema runtime by the MotionVector program
+(motionvector.dev). It runs open-weight video and audio models directly on GPUs
+you control — local or cloud — and is directed through code, UI, or MCP tools,
+serving human directors and AI agents alike.
 
-## Core Capabilities
-- **0.0s Resident LTX-2.5 Daemon**: Quantized Float8 checkpoint permanently loaded into 48GB VRAM.
-- **In-Process Audio Mastering**: Kokoro-82M ONNX TTS with automatic 2-pass EBU R128 (-16 LUFS) loudnorm and sidechain BGM ducking.
-- **4-Take Exploration Grid**: Deterministic seed stepping rendered concurrently in a 2x2 preview canvas.
-- **3D Camera Trajectory**: Dynamic Pan, Tilt, Zoom, and Roll dials that scale STG spatial guidance vectors.
-- **FLF2V Dual Keyframes**: First-Frame and Last-Frame morphing and cross-dissolve generation.
-- **Dead Man's Switch**: Watchdog auto-terminating idle GPU instances after 10-30 minutes.
+## Status
 
-## Developer Quickstart
-```bash
-pip install spacepilot
-sky launch spacepilot.yaml
-```
+In private development. The public surface is this waitlist page:
+https://spacepilot.dev — join for early access. Runtime documentation is
+internal.
 
-## FastMCP Tool Signature
-```json
-{
-  "name": "spacepilot_direct_scene",
-  "description": "Direct a generative cinema scene with 3D camera trajectory, seed stepping, and Kokoro voice mastering.",
-  "parameters": {
-    "prompt": "string",
-    "camera_pan": "number (deg -45..+45)",
-    "camera_zoom": "number (ratio 1.0..2.5)",
-    "voice_preset": "string (af_bella, af_sarah, am_adam, bf_emma)",
-    "music_lufs": "number (-16.0)",
-    "num_takes": "integer (1..4)"
-  }
-}
-```
+## Related
 
-## API Endpoint Reference
-- POST `/api/generate` — Dispatch video generation job
-- POST `/api/generate/voice` — In-process Kokoro TTS generation
-- POST `/api/generate/music` — Background soundtrack synthesis & ducking
-- GET `/api/gpu/status` — Real-time telemetry, VRAM usage & dead man timer
-- POST `/api/gpu/launch` — Provision AWS Spot / Shadeform instance
-- POST `/api/gpu/terminate` — Immediately release GPU node
-
-## Architecture & Repositories
-- Official Repo: https://github.com/motionvector-dev/pluto
-- MotionVector Obsidian Design System: https://motionvector.dev
-- Domain: https://spacepilot.dev
+- MotionVector agentic video studio: https://motionvector.dev
