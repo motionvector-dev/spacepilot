@@ -282,7 +282,17 @@
       ],
       "is_permissive": false
      },
-     "speed": [],
+     "speed": [
+      {
+       "device": "NVIDIA RTX 4090",
+       "backend": "cuda",
+       "metric": "seconds_per_second_of_video",
+       "value": 2.7,
+       "source": "declared",
+       "measured_on": "2026-08-22",
+       "note": "121 frames at 512x512 in 11 seconds, reported at https://huggingface.co/Lightricks/LTX-Video/discussions/6 and converted at the model card's 30 FPS. The source does not say which checkpoint or precision was used, so this may not be this exact variant \u2014 treat it as the speed class of a small LTX model on a 4090, not as this row's number.\n"
+      }
+     ],
      "notes": null
     },
     {
@@ -325,7 +335,17 @@
       ],
       "is_permissive": false
      },
-     "speed": [],
+     "speed": [
+      {
+       "device": "NVIDIA RTX 4090 48GB",
+       "backend": "cuda",
+       "metric": "seconds_per_second_of_video",
+       "value": 43.6,
+       "source": "declared",
+       "measured_on": "2026-08-22",
+       "note": "88 frames at 1216x704 in 2 minutes 8 seconds without CPU offloading, reported at https://github.com/Lightricks/LTX-Video/issues/166 and converted at the model card's 30 FPS. The report says \"13B model\" without stating distilled or fp8, and the card is a modified 48 GB 4090, so this is an upper bound for a 13B LTX rather than this variant's figure.\n"
+      }
+     ],
      "notes": "FP8 has no Metal path and fails rather than falling back, so this is CUDA on Ada or newer. Reported independently at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen\n"
     }
    ]
@@ -425,10 +445,10 @@
       "is_measured": true
      },
      "working_set": {
-      "value": 11811160064.0,
-      "source": "estimated",
-      "checked": null,
-      "note": "transformer weights plus text encoder and VAE held resident, no measured run on any machine yet; the UMT5 encoder is 10.6 GB of the download and can be offloaded to CPU, which this figure assumes",
+      "value": 8794138050.0,
+      "source": "declared",
+      "checked": "2026-08-22",
+      "note": "8.19 GB peak GPU memory, stated on the official model card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B for a 5-second 480p generation. Replaces our earlier 11 GB estimate; the card is describing the same bf16 weights this variant downloads.\n",
       "is_measured": false
      },
      "license": {
@@ -439,7 +459,17 @@
       "restrictions": [],
       "is_permissive": true
      },
-     "speed": [],
+     "speed": [
+      {
+       "device": "NVIDIA RTX 4090",
+       "backend": "cuda",
+       "metric": "seconds_per_second_of_video",
+       "value": 48.0,
+       "source": "declared",
+       "measured_on": "2026-08-22",
+       "note": "About 4 minutes for a 5-second 480p clip, stated on the official model card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B without quantisation or other optimisation. Not measured by us.\n"
+      }
+     ],
      "notes": null
     },
     {
