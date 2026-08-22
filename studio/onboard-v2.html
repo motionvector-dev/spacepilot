@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpacePilot — Set up</title>
+<link rel="preload" href="/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<style>
+@font-face {
+  font-family: 'Geist Variable';
+  src: url('/fonts/geist-variable.woff2') format('woff2');
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+
+/* ---------------------------------------------------------------- tokens
+   Values are the studio's own (apps/studio/src/tokens.css). Three states:
+   bare :root is light, prefers-color-scheme guarded so an explicit light
+   choice wins, and [data-theme="dark"] so the toggle wins in both directions. */
+:root {
+  --font-sans: 'Geist Variable', 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', 'SF Mono', ui-monospace, monospace;
+  --weight-regular: 400; --weight-medium: 500;
+
+  --text-size-meta: 11px; --text-size-sm: 12px; --text-size-md: 13px;
+  --text-size-xl: 20px; --text-size-display: 32px;
+  --tracking-display: -0.02em; --tracking-meta: -0.02em; --tracking-mono-label: 0.04em;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --radius-1: 4px; --radius-2: 6px; --radius-3: 8px; --radius-4: 12px;
+  --h-control: 30px; --h-control-primary: 34px;
+  --hairline: 0.5px; --border-strong: 1px;
+
+  --motion-fast: 120ms; --motion-base: 160ms; --motion-slow: 220ms;
+  --motion-slower: 300ms; --motion-exit: 120ms;
+  --motion-loop-spin: 900ms; --motion-loop-pulse: 1400ms; --motion-loop-shimmer: 1600ms;
+  --motion-loop-play: running;
+  --motion-rise-sm: 4px; --motion-rise-md: 6px; --motion-rise-lg: 10px;
+  --motion-press: 0.985; --motion-enter-scale: 0.98;
+  --stagger-step: 40ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: linear(0, 0.06, 0.22, 0.47, 0.72, 0.92, 1.05, 1.09, 1.07, 1.03, 1, 0.99, 1);
+  --travel: 1;
+
+  color-scheme: light;
+  --app-ground: #ffffff; --surface: #f4f4f5; --surface-hover: #efeff1;
+  --surface-raised: #efeff1; --surface-raised-hover: #e9e9eb;
+  --surface-inset: #e9e9eb; --surface-strong: #e4e4e7;
+  --border-100: #f0f0f1; --border-200: #ececee; --border-300: #e4e4e7;
+  --border-400: #dadade; --border-500: #d4d4d8;
+  --text-300: #a1a1aa; --text-500: #71717a; --text-700: #52525b;
+  --text-900: #3f3f46; --text-1000: #111113;
+  --accent: var(--text-1000); --accent-contrast: var(--app-ground);
+  --accent-soft: rgba(17,17,19,.06); --accent-border: rgba(17,17,19,.16);
+  --danger: #d93036; --danger-soft: rgba(217,48,54,.09);
+  --verify: #16a34a; --verify-soft: rgba(22,163,74,.10);
+  --agent: #7c6bb3; --agent-soft: rgba(124,107,179,.08);
+  --focus-ring: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent-border);
+  --mark-ink: #09090b; --mark-recessive: #a1a1aa;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --app-ground: #000000; --surface: #18181b; --surface-hover: #1d1d20;
+    --surface-raised: #1d1d20; --surface-raised-hover: #232326;
+    --surface-inset: #232326; --surface-strong: #27272a;
+    --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
+    --border-400: #333338; --border-500: #3f3f46;
+    --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
+    --text-900: #d4d4d8; --text-1000: #ffffff;
+    --accent-soft: rgba(250,250,250,.08); --accent-border: rgba(250,250,250,.18);
+    --danger: #e5484d; --danger-soft: rgba(229,72,77,.12);
+    --verify: #4ade80; --verify-soft: rgba(74,222,128,.12);
+    --agent: #a396d6; --agent-soft: rgba(163,150,214,.10);
+    --mark-ink: #fafafa; --mark-recessive: #52525b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-ground: #000000; --surface: #18181b; --surface-hover: #1d1d20;
+  --surface-raised: #1d1d20; --surface-raised-hover: #232326;
+  --surface-inset: #232326; --surface-strong: #27272a;
+  --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
+  --border-400: #333338; --border-500: #3f3f46;
+  --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
+  --text-900: #d4d4d8; --text-1000: #ffffff;
+  --accent-soft: rgba(250,250,250,.08); --accent-border: rgba(250,250,250,.18);
+  --danger: #e5484d; --danger-soft: rgba(229,72,77,.12);
+  --verify: #4ade80; --verify-soft: rgba(74,222,128,.12);
+  --agent: #a396d6; --agent-soft: rgba(163,150,214,.10);
+  --mark-ink: #fafafa; --mark-recessive: #52525b;
+}
+
+/* Reduced motion zeroes DISTANCE, never TIME. A crossfade is the accessible
+   affordance; removing it leaves the user with an unexplained jump cut. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-rise-sm: 0px; --motion-rise-md: 0px; --motion-rise-lg: 0px;
+    --motion-press: 1; --motion-enter-scale: 1;
+    --ease-spring: var(--ease-out);
+    --stagger-step: 0ms; --motion-loop-play: paused; --travel: 0;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--app-ground); color: var(--text-900);
+  font-family: var(--font-sans); font-size: var(--text-size-md);
+  font-weight: var(--weight-regular);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.wrap { max-width: 760px; margin: 0 auto; padding: var(--space-8) var(--space-5) var(--space-8); }
+
+/* ------------------------------------------------------------ brand splash
+   The one licensed celebratory moment: a playhead sweeps left to right, the
+   mark renders behind it in the recessive tone, then five bars re-render in
+   ink. Cold start only — never on a surface seen more than a few times a day. */
+.splash { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-7); }
+.mark { display: block; overflow: visible; }
+.mark .bar { fill: var(--mark-recessive); }
+.mark .sweep { transform-box: fill-box; transform-origin: left center;
+  transform: scaleX(calc(1 - var(--travel))); }
+.go .mark .sweep { transform: scaleX(1); transition: transform 360ms linear; }
+.mark .vee { fill: var(--mark-ink); opacity: 0; }
+.go .mark .vee { opacity: 1;
+  transition: opacity var(--motion-base) var(--ease-out);
+  transition-delay: calc(460ms + var(--i) * var(--stagger-step)); }
+.mark .playhead { fill: var(--mark-ink); opacity: 0;
+  transform: translateX(calc(-44px * var(--travel))); }
+.go .mark .playhead { opacity: 1; transform: translateX(0);
+  transition: opacity 360ms linear, transform 360ms linear; }
+.wordmark { font-size: var(--text-size-xl); font-weight: var(--weight-medium);
+  letter-spacing: -0.02em; color: var(--text-1000); opacity: 0;
+  translate: calc(var(--motion-rise-sm) * var(--travel)) 0; }
+.go .wordmark { opacity: 1; translate: 0 0;
+  transition: opacity var(--motion-slow) var(--ease-out) 820ms,
+              translate var(--motion-slow) var(--ease-out) 820ms; }
+
+/* ------------------------------------------------------------------ steps */
+.step { display: none; }
+.step.on { display: block; }
+.step > * { animation: rise var(--motion-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step)); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(var(--motion-rise-md)) scale(var(--motion-enter-scale)); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+h1 { font-size: var(--text-size-display); letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-medium); color: var(--text-1000); margin: 0 0 var(--space-3); }
+h2 { font-size: var(--text-size-xl); letter-spacing: -0.01em;
+  font-weight: var(--weight-medium); color: var(--text-1000); margin: 0 0 var(--space-3); }
+p  { margin: 0 0 var(--space-4); line-height: 1.5; color: var(--text-700); max-width: 62ch; }
+.lede { font-size: 15px; }
+
+.label { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  text-transform: uppercase; letter-spacing: var(--tracking-mono-label);
+  color: var(--text-500); margin: 0 0 var(--space-3); }
+
+/* ------------------------------------------------------------------- card */
+.card { background: var(--surface-raised); border: var(--hairline) solid var(--border-200);
+  border-radius: var(--radius-3); padding: var(--space-5); margin-bottom: var(--space-4); }
+.card.agent { border-left: 2px solid var(--agent); }
+
+.reads { list-style: none; margin: 0 0 var(--space-4); padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-2) var(--space-4); }
+.reads li { font-size: var(--text-size-sm); color: var(--text-700);
+  display: flex; gap: var(--space-2); align-items: baseline; }
+.reads li::before { content: ""; flex: none; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--text-300); transform: translateY(-3px); }
+
+.note { font-size: var(--text-size-sm); color: var(--text-500); border-left: var(--border-strong) solid var(--border-300);
+  padding-left: var(--space-3); margin: 0 0 var(--space-4); line-height: 1.5; }
+
+/* ---------------------------------------------------------------- buttons */
+.row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+button { font: inherit; cursor: pointer; }
+.btn { font-size: var(--text-size-md); font-weight: var(--weight-medium);
+  height: var(--h-control-primary); padding: 0 var(--space-5);
+  border-radius: var(--radius-2); border: var(--hairline) solid transparent;
+  background: var(--accent); color: var(--accent-contrast);
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+  transition: filter var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); }
+.btn:hover:not(:disabled) { filter: brightness(1.08); }
+.btn:active:not(:disabled) { scale: var(--motion-press); }
+.btn:disabled { background: var(--surface-strong); color: var(--text-300); cursor: not-allowed; }
+.btn.quiet { background: transparent; border-color: var(--border-300); color: var(--text-700); }
+.btn.quiet:hover { background: var(--surface-raised-hover); color: var(--text-1000); filter: none; }
+
+/* ------------------------------------------------------------------ specs */
+.spec { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-5); margin: 0 0 var(--space-5); }
+.spec dt { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  letter-spacing: var(--tracking-mono-label); text-transform: uppercase; color: var(--text-500); padding-top: 2px; }
+.spec dd { margin: 0; font-size: var(--text-size-md); color: var(--text-1000); }
+.spec dd small { color: var(--text-500); font-size: var(--text-size-sm); }
+.spec dd .unk { color: var(--text-300); font-style: italic; }
+
+.mem { margin: 0 0 var(--space-2); }
+.mem .track { display: flex; height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-inset); border: var(--hairline) solid var(--border-200); }
+.mem .seg { height: 100%; transform-origin: left center; }
+.mem .seg.models { background: var(--accent); }
+.mem .seg.reserved { background: var(--border-500); }
+.mem .keys { display: flex; gap: var(--space-4); margin-top: var(--space-2); flex-wrap: wrap; }
+.mem .key { display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-size-meta); letter-spacing: var(--tracking-meta); color: var(--text-500); }
+.mem .key i { width: 8px; height: 8px; border-radius: 2px; display: block; }
+
+/* ----------------------------------------------------------- model matrix */
+.matrix { width: 100%; border-collapse: collapse; margin: 0 0 var(--space-4); }
+.matrix th { text-align: left; font-weight: var(--weight-medium); color: var(--text-500);
+  font-family: var(--font-mono); font-size: var(--text-size-meta); text-transform: uppercase;
+  letter-spacing: var(--tracking-mono-label); padding: 0 var(--space-3) var(--space-2) 0;
+  border-bottom: var(--hairline) solid var(--border-300); white-space: nowrap; }
+.matrix th.num, .matrix td.num { text-align: right; }
+.matrix td { padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: var(--hairline) solid var(--border-100); vertical-align: top; }
+.matrix tr[data-verdict="wont_fit"] td, .matrix tr[data-verdict="blocked"] td { opacity: 0.5; }
+.matrix .name { color: var(--text-1000); font-weight: var(--weight-medium); }
+.matrix .sub { display: block; color: var(--text-500); font-size: var(--text-size-meta);
+  letter-spacing: var(--tracking-meta); margin-top: 2px; }
+.matrix .num { font-family: var(--font-mono); font-size: var(--text-size-sm);
+  letter-spacing: var(--tracking-meta); color: var(--text-900); white-space: nowrap; }
+
+.verdict { display: inline-flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-size-sm); color: var(--text-900); white-space: nowrap; }
+.verdict i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--text-300); }
+.verdict[data-v="fits"] i { background: var(--verify); }
+.verdict[data-v="tight"] i { background: var(--text-500); box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 3px var(--text-500); }
+.verdict[data-v="wont_fit"] i, .verdict[data-v="blocked"] i { background: transparent;
+  border: var(--border-strong) solid var(--text-300); }
+.why { display: block; color: var(--text-500); font-size: var(--text-size-meta);
+  letter-spacing: var(--tracking-meta); margin-top: 3px; max-width: 34ch; line-height: 1.4; }
+
+.fp { width: 56px; height: 4px; border-radius: 999px; background: var(--surface-inset);
+  overflow: hidden; margin-top: 6px; }
+.fp span { display: block; height: 100%; background: var(--text-500);
+  transform-origin: left center; transform: scaleX(var(--r, 0));
+  transition: transform var(--motion-slow) var(--ease-out); }
+
+.lic { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  letter-spacing: var(--tracking-meta); color: var(--text-500); }
+.lic.warn { color: var(--text-900); }
+.lic.warn::after { content: " ⚠"; color: var(--text-500); }
+
+/* --------------------------------------------------------------- progress */
+.bar { height: 4px; border-radius: 999px; background: var(--surface-inset);
+  overflow: hidden; margin: var(--space-4) 0 var(--space-3); }
+/* scaleX, never width: width is not composited and judders under a render. */
+.bar span { display: block; height: 100%; background: var(--accent);
+  transform-origin: left center; transform: scaleX(var(--p, 0));
+  transition: transform var(--motion-base) linear; }
+.readout { font-family: var(--font-mono); font-size: var(--text-size-sm);
+  letter-spacing: var(--tracking-meta); color: var(--text-700); }
+
+.spinner { width: 13px; height: 13px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border-500); border-top-color: var(--text-900);
+  animation: spin var(--motion-loop-spin) linear infinite;
+  animation-play-state: var(--motion-loop-play); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; border-top-color: var(--border-300); }
+}
+.working { display: flex; align-items: center; gap: var(--space-3); color: var(--text-700); }
+
+.check { width: 20px; height: 20px; }
+.check path { stroke: var(--verify); stroke-width: 2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 24; stroke-dashoffset: 24;
+  animation: draw 260ms var(--ease-out) 60ms forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.err { background: var(--danger-soft); border: var(--hairline) solid var(--danger);
+  border-radius: var(--radius-2); padding: var(--space-3) var(--space-4);
+  color: var(--text-1000); font-size: var(--text-size-sm); margin-bottom: var(--space-4); }
+
+/* ----------------------------------------------------------------- chrome */
+.chrome { position: fixed; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-1);
+  background: var(--surface); border: var(--hairline) solid var(--border-200);
+  border-radius: var(--radius-2); padding: 3px; }
+.chrome button { height: 24px; padding: 0 var(--space-3); border: none; background: transparent;
+  border-radius: var(--radius-1); color: var(--text-500); font-size: var(--text-size-meta);
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+.chrome button:hover { transition-duration: 0ms; color: var(--text-1000); background: var(--surface-raised-hover); }
+.chrome button[aria-pressed="true"] { background: var(--accent); color: var(--accent-contrast); }
+
+.foot { margin-top: var(--space-7); padding-top: var(--space-4);
+  border-top: var(--hairline) solid var(--border-200);
+  display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;
+  font-size: var(--text-size-meta); letter-spacing: var(--tracking-meta); color: var(--text-500); }
+.foot b { font-weight: var(--weight-medium); color: var(--text-700); }
+</style>
+</head>
+<body>
+
+<div class="chrome" role="group" aria-label="Theme">
+  <button data-theme-set="system" aria-pressed="true">System</button>
+  <button data-theme-set="light" aria-pressed="false">Light</button>
+  <button data-theme-set="dark" aria-pressed="false">Dark</button>
+</div>
+
+<div class="wrap" id="root">
+
+  <div class="splash" id="splash">
+    <svg class="mark" width="66" height="36" viewBox="0 0 44 24" fill="none" aria-hidden="true">
+      <g class="sweep">
+        <rect class="bar" x="0"  y="8"  width="2" height="8"/>
+        <rect class="bar" x="4"  y="4"  width="2" height="16"/>
+        <rect class="bar" x="8"  y="2"  width="2" height="20"/>
+        <rect class="bar" x="12" y="6"  width="2" height="12"/>
+        <rect class="bar" x="16" y="0"  width="2" height="24"/>
+        <rect class="bar" x="20" y="10" width="2" height="4"/>
+        <rect class="bar" x="24" y="4"  width="2" height="16"/>
+        <rect class="bar" x="28" y="8"  width="2" height="8"/>
+        <rect class="bar" x="32" y="2"  width="2" height="20"/>
+        <rect class="bar" x="36" y="6"  width="2" height="12"/>
+        <rect class="bar" x="40" y="10" width="2" height="4"/>
+      </g>
+      <!-- the vee: five frames that re-render in ink on top of themselves -->
+      <rect class="vee" style="--i:0" x="12" y="6"  width="2" height="12"/>
+      <rect class="vee" style="--i:1" x="16" y="0"  width="2" height="24"/>
+      <rect class="vee" style="--i:2" x="20" y="10" width="2" height="4"/>
+      <rect class="vee" style="--i:3" x="24" y="4"  width="2" height="16"/>
+      <rect class="vee" style="--i:4" x="28" y="8"  width="2" height="8"/>
+      <rect class="playhead" x="43" y="-2" width="1" height="28"/>
+    </svg>
+    <span class="wordmark">SpacePilot</span>
+  </div>
+
+  <!-- ------------------------------------------------------------ consent -->
+  <section class="step on" id="s-consent">
+    <h1 style="--i:0">First, your permission.</h1>
+    <p class="lede" style="--i:1">SpacePilot picks models by what your machine can actually run.
+      To do that it has to look at your machine. Here is exactly what it reads.</p>
+
+    <div class="card" style="--i:2">
+      <p class="label">Read locally, once</p>
+      <ul class="reads">
+        <li>Model and chip name</li>
+        <li>CPU core count and split</li>
+        <li>GPU name and core count</li>
+        <li>Total and free memory</li>
+        <li>Graphics backend and its memory ceiling</li>
+        <li>Free space where models are stored</li>
+        <li>Operating system and version</li>
+      </ul>
+      <p class="note">This runs on the SpacePilot server on this machine and the answer stays
+        here. Nothing is uploaded, and no account is involved. You can see the raw
+        reading at any point, and the commands behind it are ordinary
+        <code>sysctl</code> and <code>system_profiler</code> calls.</p>
+      <div class="row">
+        <button class="btn" id="b-consent">Read this machine</button>
+        <button class="btn quiet" id="b-skip">Not now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ probing -->
+  <section class="step" id="s-probe">
+    <h2 style="--i:0">Reading this machine</h2>
+    <div class="card" style="--i:1"><div class="working"><span class="spinner"></span><span id="probe-line">Asking the hardware, not guessing.</span></div></div>
+  </section>
+
+  <!-- ------------------------------------------------------------ machine -->
+  <section class="step" id="s-machine">
+    <h1 style="--i:0" id="m-title">This machine</h1>
+    <div class="card" style="--i:1">
+      <dl class="spec" id="m-spec"></dl>
+      <div class="mem" id="m-mem"></div>
+    </div>
+
+    <div style="--i:2">
+      <h2>What it can run</h2>
+      <p>Every model, measured against the memory above. A model has to fit in what
+        the graphics driver will actually hand out, which is less than the memory installed.</p>
+    </div>
+
+    <div class="card" style="--i:3">
+      <table class="matrix"><thead><tr>
+        <th>Model</th><th class="num">Download</th><th class="num">Needs</th>
+        <th>On this machine</th><th>Licence</th>
+      </tr></thead><tbody id="m-rows"></tbody></table>
+      <p class="note" id="m-basis"></p>
+    </div>
+
+    <div class="card agent" id="m-pick" style="--i:4"></div>
+  </section>
+
+  <!-- ----------------------------------------------------------- download -->
+  <section class="step" id="s-get">
+    <h1 style="--i:0" id="g-title">Installing</h1>
+    <div class="card" style="--i:1">
+      <div class="working"><span class="spinner" id="g-spin"></span><span id="g-line">Starting</span></div>
+      <div class="bar"><span id="g-bar"></span></div>
+      <div class="readout" id="g-read">0%</div>
+    </div>
+    <div id="g-err"></div>
+  </section>
+
+  <!-- --------------------------------------------------------------- done -->
+  <section class="step" id="s-done">
+    <h1 style="--i:0">Set up. Make something.</h1>
+    <div class="card" style="--i:1">
+      <div class="working">
+        <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 L9.5 18 L20 6"/></svg>
+        <span id="d-line"></span>
+      </div>
+      <div class="row" style="margin-top: var(--space-4)">
+        <a class="btn" href="/create.html">Open Create</a>
+        <button class="btn quiet" id="b-more">Install another</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span id="f-agent">Checking for an agent</span>
+    <span id="f-store"></span>
+  </div>
+</div>
+
+<script>
+const $  = (id) => document.getElementById(id);
+const GIB = 1024 ** 3;
+const gb  = (b, d = 1) => (b == null ? null : (b / GIB).toFixed(d) + " GB");
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---- theme: three states, system is the default and stamps nothing -------- */
+const themeBtns = [...document.querySelectorAll("[data-theme-set]")];
+function setTheme(mode) {
+  if (mode === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", mode);
+  try { localStorage.setItem("sp-theme", mode); } catch {}
+  themeBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeSet === mode)));
+}
+themeBtns.forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.themeSet)));
+try { setTheme(localStorage.getItem("sp-theme") || "system"); } catch { setTheme("system"); }
+
+/* ---- the splash plays once per session, never on a revisit --------------- */
+let splashSeen = false;
+try { splashSeen = sessionStorage.getItem("sp-splash") === "1"; } catch {}
+if (splashSeen) {
+  $("splash").style.setProperty("--travel", "0");
+  $("root").classList.add("go");
+} else {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $("root").classList.add("go");
+    try { sessionStorage.setItem("sp-splash", "1"); } catch {}
+  }));
+}
+
+function show(id) {
+  document.querySelectorAll(".step").forEach((s) => s.classList.toggle("on", s.id === id));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ---- the local server ---------------------------------------------------- */
+let TOKEN = new URLSearchParams(location.search).get("token") || "";
+async function authHeaders() {
+  // Same source the rest of the studio uses, so one server session, one token.
+  if (!TOKEN) TOKEN = (await (await fetch("/api/token")).json()).token;
+  return { "X-Pluto-Token": TOKEN };
+}
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { ...(await authHeaders()), ...(opts.headers || {}) } });
+  if (!res.ok) throw new Error(`${path} → ${res.status} ${await res.text().catch(() => "")}`.slice(0, 240));
+  return res.json();
+}
+
+let REPORT = null;
+
+/* ---- rendering ----------------------------------------------------------- */
+function renderMachine(d) {
+  const unknown = (k) => `<span class="unk">not readable — ${esc(d.unknown[k] || "no source")}</span>`;
+  const rows = [];
+
+  rows.push(["Machine", d.machine_name || d.machine_model
+    ? `${esc(d.machine_name || "")} ${d.machine_model ? `<small>${esc(d.machine_model)}</small>` : ""}`
+    : unknown("system_profiler")]);
+
+  rows.push(["Chip", d.chip ? esc(d.chip) : unknown("chip")]);
+
+  const cores = d.cpu_cores == null ? unknown("cpu_cores")
+    : `${d.cpu_cores} cores` + (d.cpu_cores_performance
+        ? ` <small>${d.cpu_cores_performance} performance + ${d.cpu_cores_efficiency} efficiency</small>` : "");
+  rows.push(["CPU", cores]);
+
+  const gpu = d.gpu_name
+    ? `${esc(d.gpu_name)}${d.gpu_cores ? ` <small>${d.gpu_cores}-core</small>` : ""}` +
+      `${d.backend_detail ? ` <small>· ${esc(d.backend_detail)}</small>` : ""}`
+    : unknown("gpu");
+  rows.push(["GPU", gpu]);
+
+  rows.push(["Memory", d.memory_total_bytes == null ? unknown("memory_total_bytes")
+    : `${gb(d.memory_total_bytes)} ${d.memory_unified ? "unified" : ""}` +
+      `${d.memory_free_bytes != null ? ` <small>${gb(d.memory_free_bytes)} free right now</small>` : ""}`]);
+
+  rows.push(["Disk", d.disk_free_bytes == null ? unknown("disk_free_bytes")
+    : `${gb(d.disk_free_bytes, 0)} free <small>${esc(d.disk_path || "")}</small>`]);
+
+  rows.push(["System", `${esc(d.os_name || "?")} ${esc(d.os_version || "")} <small>${esc(d.arch || "")}</small>`]);
+
+  $("m-spec").innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("");
+
+  $("m-title").textContent = d.chip
+    ? `${d.machine_name || "This machine"} · ${d.chip}`
+    : "This machine";
+
+  // Memory bar: what models may use, versus what the system holds back.
+  const total = d.memory_total_bytes, limit = d.vram_usable_bytes ?? d.memory_limit_bytes;
+  if (total && limit) {
+    const pct = (b) => ((b / total) * 100).toFixed(2) + "%";
+    $("m-mem").innerHTML =
+      `<div class="track">
+         <span class="seg models" style="width:${pct(limit)}"></span>
+         <span class="seg reserved" style="width:${pct(total - limit)}"></span>
+       </div>
+       <div class="keys">
+         <span class="key"><i style="background:var(--accent)"></i>${gb(limit)} available to models</span>
+         <span class="key"><i style="background:var(--border-500)"></i>${gb(total - limit)} held by the system</span>
+       </div>`;
+  }
+}
+
+const VERDICT_TEXT = { fits: "Fits", tight: "Tight fit", wont_fit: "Won't fit", blocked: "Not supported", unknown: "Unknown" };
+const ENCUMBERED = (l) => !["apache-2.0", "mit", "bsd-3-clause"].includes((l || "").toLowerCase());
+
+function renderMatrix(rep) {
+  // Runnable first, then video before everything else — this is a video
+  // workstation, so a text model outranking a video one buries the point.
+  const order = { fits: 0, tight: 1, unknown: 2, wont_fit: 3, blocked: 4 };
+  const kindRank = { video: 0, vlm: 1, llm: 2, tts: 3 };
+  const models = [...rep.models].sort((a, b) => {
+    const va = rep.verdicts[a.recipe_id], vb = rep.verdicts[b.recipe_id];
+    return (order[va.verdict] - order[vb.verdict])
+        || ((kindRank[a.kind] ?? 9) - (kindRank[b.kind] ?? 9))
+        || ((vb.working_set_bytes || 0) - (va.working_set_bytes || 0));
+  });
+
+  $("m-rows").innerHTML = models.map((m) => {
+    const v = rep.verdicts[m.recipe_id];
+    const installed = rep.installed.includes(m.hf_repo);
+    const ratio = v.memory_use_ratio == null ? 0 : v.memory_use_ratio;
+    const licClass = ENCUMBERED(m.license) ? "lic warn" : "lic";
+    return `<tr data-verdict="${esc(v.verdict)}">
+      <td><span class="name">${esc(m.name)}</span>
+          <span class="sub">${esc(m.params || "")} · ${esc(m.quantization)} · ${esc(m.kind)}${installed ? " · installed" : ""}</span></td>
+      <td class="num">${gb(m.download_bytes)}</td>
+      <td class="num">${gb(m.working_set_bytes)}
+          <div class="fp"><span style="--r:${ratio}"></span></div></td>
+      <td><span class="verdict" data-v="${esc(v.verdict)}"><i></i>${VERDICT_TEXT[v.verdict]}</span>
+          <span class="why">${esc(v.reason)}${
+            v.runnable_now === false ? ` — ${gb(v.free_shortfall_bytes)} more than is free right now` : ""}${
+            v.disk_ok === false ? ` — ${gb(v.disk_shortfall_bytes)} more disk needed` : ""}</span></td>
+      <td><span class="${licClass}" ${m.license_note ? `title="${esc(m.license_note)}"` : ""}>${esc(m.license)}</span></td>
+    </tr>`;
+  }).join("");
+
+  const src = rep.device.memory_limit_source;
+  $("m-basis").innerHTML = src === "metal"
+    ? `Needs are peak memory while generating, not download size — weights plus activations. ` +
+      `The ceiling is Metal's own reported limit of ${esc(gb(rep.device.memory_limit_bytes))}, not a fraction we picked. ` +
+      `Footprints are estimates until we have measured a run on this machine.`
+    : `Needs are peak memory while generating, not download size. ` +
+      `This platform does not report a limit, so the ceiling is memory less a reserve for the system. ` +
+      `Both numbers are estimates until measured here.`;
+
+  // The recommendation.
+  const pick = rep.models.find((m) => m.recipe_id === rep.recommended);
+  if (!pick) {
+    $("m-pick").innerHTML =
+      `<p class="label">Nothing fits</p>
+       <p>No model in the catalog fits inside ${esc(gb(rep.device.memory_limit_bytes))}.
+          You can still render on a cloud box from Create.</p>
+       <a class="btn quiet" href="/create.html">Open Create</a>`;
+    return;
+  }
+  const pv = rep.verdicts[pick.recipe_id];
+  $("m-pick").innerHTML =
+    `<p class="label">Suggested first install</p>
+     <h2 style="margin-bottom:var(--space-2)">${esc(pick.name)}</h2>
+     <p>${esc(pv.reason)}, licensed ${esc(pick.license)} with no revenue cap or territory limit,
+        and it is the most capable video model that still leaves you room to work.
+        ${esc(gb(pick.download_bytes))} to download from
+        <code>${esc(pick.hf_repo)}</code>.</p>
+     <div class="row">
+       <button class="btn" data-install="${esc(pick.recipe_id)}">Install ${esc(pick.name)}</button>
+       <button class="btn quiet" id="b-choose">Choose a different one</button>
+     </div>`;
+}
+
+/* ---- flow ---------------------------------------------------------------- */
+async function probe() {
+  show("s-probe");
+  try {
+    REPORT = await api("/api/compute/compatibility");
+    renderMachine(REPORT.device);
+    renderMatrix(REPORT);
+    $("f-store").textContent = `Models are stored in ${REPORT.device.disk_path}`;
+    show("s-machine");
+  } catch (e) {
+    $("probe-line").innerHTML = `<span class="err">Could not read this machine: ${esc(e.message)}</span>`;
+    $("g-spin")?.remove();
+  }
+}
+
+$("b-consent").addEventListener("click", probe);
+$("b-skip").addEventListener("click", () => { location.href = "/create.html"; });
+
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-install]");
+  if (t) install(t.dataset.install);
+  if (e.target.id === "b-choose") {
+    document.querySelector(".matrix").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  if (e.target.id === "b-more") show("s-machine");
+});
+
+async function install(recipeId) {
+  const m = REPORT.models.find((r) => r.recipe_id === recipeId);
+  const v = REPORT.verdicts[recipeId];
+
+  // A download is the first thing here that costs the user something real.
+  const ok = confirm(
+    `Install ${m.name}?\n\n` +
+    `Download   ${gb(m.download_bytes)} from huggingface.co/${m.hf_repo}\n` +
+    `Disk       ${gb(REPORT.device.disk_free_bytes, 0)} free\n` +
+    `Licence    ${m.license}${m.license_note ? `\n           ${m.license_note}` : ""}\n\n` +
+    `It is saved to ${REPORT.device.disk_path} and can be deleted from there.`);
+  if (!ok) return;
+
+  show("s-get");
+  $("g-title").textContent = `Installing ${m.name}`;
+  $("g-err").innerHTML = "";
+  $("g-line").textContent = `Fetching from ${m.hf_repo}`;
+
+  try {
+    await api(`/api/compute/recipes/${encodeURIComponent(recipeId)}/download`, { method: "POST" });
+  } catch (e) {
+    $("g-err").innerHTML = `<div class="err">Could not start: ${esc(e.message)}</div>`;
+    return;
+  }
+
+  const started = Date.now();
+  const tick = setInterval(async () => {
+    let j;
+    try { j = await api(`/api/compute/recipes/${encodeURIComponent(recipeId)}/progress`); }
+    catch { return; }
+
+    const pct = (j.progress_percent || 0) / 100;
+    $("g-bar").style.setProperty("--p", pct.toFixed(4));
+    const done = j.downloaded_bytes || 0, total = j.total_bytes;
+    $("g-read").textContent =
+      `${(j.progress_percent || 0).toFixed(1)}%  ·  ${gb(done, 2)}${total ? ` of ${gb(total, 2)}` : ""}` +
+      `${j.speed_mb_s ? `  ·  ${j.speed_mb_s} MB/s` : ""}`;
+
+    if (j.status === "completed") {
+      clearInterval(tick);
+      const secs = Math.round((Date.now() - started) / 1000);
+      // A warm cache transfers nothing. Saying "0.00 GB in 2s" reads as a bug.
+      $("d-line").textContent = (j.downloaded_bytes || 0) < 1_048_576
+        ? `${m.name} was already on this machine — nothing to download.`
+        : `${m.name} is on this machine — ${gb(j.downloaded_bytes, 2)} in ${secs}s.`;
+      show("s-done");
+    }
+    if (j.status === "failed") {
+      clearInterval(tick);
+      $("g-spin").remove();
+      $("g-err").innerHTML =
+        `<div class="err">${esc(j.error || "The download failed.")}</div>` +
+        `<button class="btn quiet" data-install="${esc(recipeId)}">Try again</button>`;
+    }
+  }, 700);
+}
+
+/* ---- WebMCP: the same steps, available to an agent ----------------------- */
+(function registerAgentTools() {
+  const mc = window.navigator?.modelContext || window.document?.modelContext;
+  if (!mc?.registerTool) {
+    $("f-agent").textContent = "No agent connected — WebMCP is not available in this browser";
+    return;
+  }
+  const tool = (name, description, inputSchema, execute) =>
+    mc.registerTool({ name, description, inputSchema, execute });
+
+  tool("probe_hardware", "Read this machine's chip, cores, GPU, memory and free disk.",
+    { type: "object", properties: {} },
+    async () => {
+      REPORT = await api("/api/compute/compatibility");
+      renderMachine(REPORT.device); renderMatrix(REPORT); show("s-machine");
+      return { content: [{ type: "text", text: JSON.stringify(REPORT.device, null, 2) }] };
+    });
+
+  tool("model_compatibility", "Every model's verdict against this machine: fits, tight, won't fit or unsupported.",
+    { type: "object", properties: {} },
+    async () => {
+      REPORT = REPORT || await api("/api/compute/compatibility");
+      const rows = REPORT.models.map((m) => {
+        const v = REPORT.verdicts[m.recipe_id];
+        return `${v.verdict.padEnd(9)} ${m.name} — ${v.reason} (${m.license})`;
+      });
+      return { content: [{ type: "text", text: rows.join("\n") }] };
+    });
+
+  tool("recommended_model", "The model to install first on this machine, and why.",
+    { type: "object", properties: {} },
+    async () => {
+      REPORT = REPORT || await api("/api/compute/compatibility");
+      const m = REPORT.models.find((r) => r.recipe_id === REPORT.recommended);
+      return { content: [{ type: "text", text: m
+        ? `${m.name} (${m.recipe_id}) — ${REPORT.verdicts[m.recipe_id].reason}, ${m.license}, ${gb(m.download_bytes)} from ${m.hf_repo}`
+        : "Nothing in the catalog fits this machine." }] };
+    });
+
+  tool("install_model", "Download a model onto this machine. Ask the person first — it moves gigabytes.",
+    { type: "object", properties: { recipe_id: { type: "string" } }, required: ["recipe_id"] },
+    async ({ recipe_id }) => {
+      REPORT = REPORT || await api("/api/compute/compatibility");
+      await install(recipe_id);
+      return { content: [{ type: "text", text: `Started ${recipe_id}. Poll download_progress.` }] };
+    });
+
+  tool("download_progress", "How far along an install is.",
+    { type: "object", properties: { recipe_id: { type: "string" } }, required: ["recipe_id"] },
+    async ({ recipe_id }) => {
+      const j = await api(`/api/compute/recipes/${encodeURIComponent(recipe_id)}/progress`);
+      return { content: [{ type: "text", text: JSON.stringify(j, null, 2) }] };
+    });
+
+  $("f-agent").textContent = "An agent can drive this page — 5 tools registered over WebMCP";
+})();
+</script>
+</body>
+</html>
