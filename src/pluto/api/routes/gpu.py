@@ -389,7 +389,15 @@ def get_inspect_metrics(_: None = Depends(require_token)):
     cfg = lc_fn()
     inst = gi_fn(cfg)
     if not inst or inst.get("state") != "running" or not inst.get("ip"):
-        raise HTTPException(status_code=400, detail="Instance not running")
+        # No box is the normal, cheap, default state — not a malformed request.
+        # Returning 400 here made every poller treat "nothing is running" as a
+        # failure and retry forever, which is what fills the console when the
+        # cockpit is open and no instance has been launched.
+        return {
+            "running": False,
+            "state": (inst or {}).get("state"),
+            "reason": "No GPU instance is running. Launch one to see live metrics.",
+        }
 
     key = cfg.get("key_file", str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
     ip = inst["ip"]

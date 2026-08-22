@@ -144,7 +144,12 @@ export function useGpuMetrics() {
       if (!res.ok) throw new Error('Failed to fetch GPU metrics');
       return res.json();
     },
-    refetchInterval: 2500,
+    // Poll live metrics every 2.5s only while a box exists. With none running
+    // — the normal state — this settled into a permanent retry loop against a
+    // condition that cannot resolve without someone launching an instance.
+    refetchInterval: (query) =>
+      (query.state.data as GpuMetrics | undefined)?.running === false ? 15000 : 2500,
+    retry: false,
   });
 }
 
@@ -158,7 +163,9 @@ export function useInspectMetrics() {
       if (!res.ok) throw new Error('Failed to fetch inspect metrics');
       return res.json();
     },
-    refetchInterval: 5000,
+    refetchInterval: (query) =>
+      (query.state.data as InspectMetricsResponse | undefined)?.running === false ? 15000 : 5000,
+    retry: false,
   });
 }
 
