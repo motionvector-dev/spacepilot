@@ -1,6 +1,9 @@
 # SpacePilot Public Documentation Architecture & Editorial Specification
 
-> **Status:** Approved  
+> **Status:** Proposal — not started.
+> **Verified:** 2026-08-22, by `curl https://spacepilot.dev` (HTTP 200, 19 "SpacePilot" strings, zero "Pluto") and by `README.md` line 1.
+> **Naming:** not drift. SpacePilot is the product, Pluto is the engine and package. The README states the split directly ("SpacePilot 🚀 (Pluto Engine)"), and the live site is SpacePilot-branded throughout. This plan's use of "SpacePilot" is correct.
+> **Supersedes / Superseded by:** none
 > **Target Release:** v2.8.0  
 > **Route:** `/docs` (`http://spacepilot.localhost:8088/docs`)  
 > **Design Philosophy:** MotionVector Obsidian (Achromatic luminance, True-Black #000/#09090b, Zinc neutrals, crisp SVG architectural flowcharts, zero AI slop).
