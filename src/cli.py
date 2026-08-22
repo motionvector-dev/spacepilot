@@ -279,11 +279,11 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     image_path = getattr(args, "image", None)
     fps = getattr(args, "fps", 24) or 24
     negative_prompt = getattr(args, "negative_prompt", None)
-    stg = getattr(args, "stg", 0.0)
-    modality_scale = getattr(args, "modality_scale", 1.0)
-    guidance_scale = getattr(args, "guidance_scale", 1.0)
-    audio_guidance_scale = getattr(args, "audio_guidance_scale", 1.0)
-    guidance_rescale = getattr(args, "guidance_rescale", 0.0)
+    stg = getattr(args, "stg", 1.0)
+    modality_scale = getattr(args, "modality_scale", 3.0)
+    guidance_scale = getattr(args, "guidance_scale", 3.0)
+    audio_guidance_scale = getattr(args, "audio_guidance_scale", 7.0)
+    guidance_rescale = getattr(args, "guidance_rescale", 0.7)
     conditioning_scale = getattr(args, "conditioning_scale", 1.0)
     image_noise_scale = getattr(args, "image_noise_scale", 0.0)
 
