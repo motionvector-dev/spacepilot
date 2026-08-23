@@ -1,0 +1,17 @@
+schema: 1
+id: apple-m1-max-32gb
+chip: Apple M1 Max
+machine_model: MacBookPro18,4
+backend: metal
+os_name: macOS
+os_version: 26.6.2
+cpu_cores: 10
+gpu_cores: 32
+memory_total_bytes: 34359738368
+memory_limit_bytes: 26800603136
+memory_limit_source: metal
+memory_unified: true
+vram_total_bytes: null
+host_fingerprint: b0689f2dbc85
+recorded_on: '2026-08-23'
+unknown: {}
