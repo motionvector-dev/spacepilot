@@ -1,0 +1,23 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: kokoro-82m
+metric: realtime_factor
+value: 4.021
+contention: solo
+measured_on: '2026-08-23T14:15:45+00:00'
+runtime_id: kokoro-onnx
+quantisation: fp32
+backend: metal
+interpreter: /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python
+wall_seconds: 2.912960292000207
+knobs:
+  voice: af_sarah
+  speed: 1.0
+  lang: en-us
+  weights: kokoro-v1.0.onnx
+  audio_seconds: 11.712
+  runs: 3
+  statistic: median_of_3
+note: fixed 27-word sentence via kokoro-onnx on CPU; realtime factor = audio seconds
+  / wall seconds
+status: ok
