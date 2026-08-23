@@ -52,7 +52,10 @@ class Settings(BaseModel):
     studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(PLUTO_ROOT))
     local_worker_token: Optional[str] = Field(default_factory=lambda: os.environ.get("LOCAL_WORKER_TOKEN"))
 
-    host: str = Field(default_factory=lambda: os.environ.get("PLUTO_STUDIO_HOST", "0.0.0.0"))
+    # Loopback by default. This server hands out a token that unlocks a shell
+    # websocket, so publishing it to every interface put that shell on whatever
+    # network the laptop happened to join.
+    host: str = Field(default_factory=lambda: os.environ.get("PLUTO_STUDIO_HOST", "127.0.0.1"))
     port: int = Field(default_factory=lambda: int(os.environ.get("PLUTO_STUDIO_PORT", 8088)))
 
     # Audio defaults
@@ -66,6 +69,13 @@ class Settings(BaseModel):
     # Kokoro paths
     kokoro_model_path: Optional[str] = Field(default_factory=lambda: os.environ.get("PLUTO_KOKORO_MODEL"))
     kokoro_voices_path: Optional[str] = Field(default_factory=lambda: os.environ.get("PLUTO_KOKORO_VOICES"))
+
+    # Set PLUTO_ALLOW_REMOTE=1 to serve something other than this machine.
+    # It widens the bind and drops the Host guard together, because doing one
+    # without the other yields a server that listens and then refuses.
+    @property
+    def local_only(self) -> bool:
+        return os.environ.get("PLUTO_ALLOW_REMOTE", "").strip() not in ("1", "true", "yes")
 
     # CORS
     @property
