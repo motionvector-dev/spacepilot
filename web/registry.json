@@ -869,7 +869,27 @@
       "is_permissive": true
      },
      "speed": [],
-     "notes": "This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require accepting a license gate on huggingface.co before the weights can be downloaded at all, which this session could not do (accepting a HuggingFace model gate is an account action requiring the user's own browser session). This variant is the one actually exercised for the real load/generate measurement recorded for this task -- see registry/measurements/. --quantize 4 with mflux-generate-flux2. Verified against black-forest-labs/FLUX.2-klein-4B via HfApi 2026-08-22; alias \"flux2-klein-4b\" confirmed live in mflux-capabilities 0.19.0 output.\n"
+     "notes": "This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require accepting a license gate on huggingface.co before the weights can be downloaded at all, which this session could not do (accepting a HuggingFace model gate is an account action requiring the user's own browser session). This variant is the one actually exercised for the real load/generate measurement recorded for this task -- see registry/measurements/. --quantize 4 with mflux-generate-flux2. Verified against black-forest-labs/FLUX.2-klein-4B via HfApi 2026-08-22; alias \"flux2-klein-4b\" confirmed live in mflux-capabilities 0.19.0 output.\n",
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "flux2-klein-4b-4bit",
+       "metric": "load_seconds",
+       "solo_median": null,
+       "solo_samples": 0,
+       "observed_median": 24.51,
+       "observed_samples": 1
+      },
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "flux2-klein-4b-4bit",
+       "metric": "seconds_per_image",
+       "solo_median": null,
+       "solo_samples": 0,
+       "observed_median": 32.985,
+       "observed_samples": 1
+      }
+     ]
     }
    ]
   },
@@ -1814,6 +1834,26 @@
      "notes": "Requires both this repo and the base Tongyi-MAI/Z-Image-Turbo weights \u2014 the `repo` field here names the ControlNet only, and `download` is the sum of both. mflux aliases \"z-image-turbo-controlnet-union-2.1\", \"z-image-controlnet-union-2.1\", \"z-image-controlnet\", \"z-image-turbo-controlnet\".\n"
     }
    ]
+  }
+ ],
+ "systems": [
+  {
+   "id": "apple-m1-max-32gb",
+   "chip": "Apple M1 Max",
+   "machine_model": "MacBookPro18,4",
+   "backend": "metal",
+   "os_name": "macOS",
+   "os_version": "26.6.2",
+   "cpu_cores": 10,
+   "gpu_cores": 32,
+   "memory_total_bytes": 34359738368,
+   "memory_limit_bytes": 26800603136,
+   "memory_limit_source": "metal",
+   "memory_unified": true,
+   "vram_total_bytes": null,
+   "host_fingerprint": "b0689f2dbc85",
+   "recorded_on": "2026-08-23",
+   "unknown": {}
   }
  ]
 }
