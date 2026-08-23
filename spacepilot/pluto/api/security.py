@@ -30,7 +30,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.websockets import WebSocket
 
-LOOPBACK_HOSTNAMES = {"localhost", "127.0.0.1", "::1", "0.0.0.0", "testserver"}
+# nosec B104 - this is an allowlist of hostnames that mean "this machine",
+# not a bind address. The literal is what LocalOnlyMiddleware compares an
+# incoming Host header against; it opens nothing.
+LOOPBACK_HOSTNAMES = {"localhost", "127.0.0.1", "::1", "0.0.0.0", "testserver"}  # nosec B104
 
 # Hostnames that resolve to this machine and are used deliberately. Anything
 # ending in .localhost is loopback by RFC 6761 and browsers honour it.
