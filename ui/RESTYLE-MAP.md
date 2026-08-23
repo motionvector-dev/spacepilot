@@ -53,6 +53,38 @@ Old names implied an elevation ladder. Keep the ladder, change the values.
 AI suggestions, or model-authored content. Where purple was decoration, treat
 it as decoration below.
 
+## The rule the three colours are subject to
+
+`verify`, `danger` and `agent` describe **a state of the world**, not a
+category, a rank or a feature name. Check what the colour is attached to before
+you convert it, because the source hue will happily lie to you:
+
+| the thing is | example | use |
+|---|---|---|
+| genuinely true / healthy / connected | "Online", "Merged", VRAM headroom | `verify` |
+| genuinely wrong / failed / destructive | an error, Terminate, Purge | `danger` |
+| the model speaking or its output | agent chat avatar, AI-authored badge | `agent` |
+| a rank or a severity level | P0, P1, "HIGH", "MED" | **neutral, weighted** |
+| a category or a feature name | a skill card, a section icon, a tab | **neutral** |
+| a selection or an active state | selected adapter, current tab | **neutral, weighted** |
+| brand | the wordmark | **neutral** — the brand has no hue |
+
+The first pass got three of these wrong by converting the hue rather than
+reading the meaning: a **P0** badge became `danger` (P0 is the most urgent work,
+not a failure), an **AI Director** skill card became `danger`, and half the
+**wordmark** stayed green. All three were red or green in the source, so a
+literal hex-to-token swap reproduced the error faithfully.
+
+Where you need a ladder without a hue — p0 above p1, selected above unselected —
+use weight and surface: `bg-strong` + `text-ink` + `border-line-500` +
+`font-bold` reads as "more" without claiming anything.
+
+**And note that agent is not only purple.** Several of the clearest "the agent
+is speaking" moments in this app were emerald in the source — the agent panel's
+own header, the Bot icon on Runway Agent Mode — so a purple-only rule sent them
+to `verify`, where they said "this is true" about a chat window. Read the label
+next to the colour, not the colour.
+
 ## Colour with no meaning in this system
 
 `amber-*` `#f59e0b` · `cyan-*` `#06b6d4` · `blue-*` `sky-*` `indigo-*` `teal-*`

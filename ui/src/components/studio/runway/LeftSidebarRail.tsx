@@ -48,7 +48,7 @@ export const LeftSidebarRail: React.FC = () => {
     {
       id: 'agent',
       label: 'Runway Agent Mode',
-      icon: <Bot className="w-5 h-5 text-verify" />,
+      icon: <Bot className="w-5 h-5 text-agent" />,
       action: () => {
         setStudioExperience('runway');
         if (window.location.pathname !== '/studio') navigate('/studio');
@@ -137,7 +137,7 @@ export const LeftSidebarRail: React.FC = () => {
           {effectiveExpanded && (
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-xs text-ink tracking-wide truncate font-sans">
-                MOTION<span className="text-verify">VECTOR</span>
+                MOTION<span className="text-ink-500">VECTOR</span>
               </span>
               <span className="text-[9px] font-mono text-ink-500 tracking-wider">PLUTO 2.5 PRO</span>
             </div>
@@ -165,12 +165,12 @@ export const LeftSidebarRail: React.FC = () => {
             setStudioExperience('runway');
             if (window.location.pathname !== '/studio') navigate('/studio');
           }}
-          className={`flex items-center w-full h-9 px-2 rounded-lg bg-inset hover:bg-verify-soft border border-line-200 hover:border-verify/30 text-ink-900 hover:text-verify transition-all cursor-pointer group ${
+          className={`flex items-center w-full h-9 px-2 rounded-lg bg-inset hover:bg-strong border border-line-200 hover:border-line-400 text-ink-900 hover:text-ink transition-all cursor-pointer group ${
             !effectiveExpanded ? 'justify-center' : 'gap-2.5'
           }`}
           title="Start New Generation Session"
         >
-          <Sparkles className="w-4 h-4 text-verify shrink-0 group-hover:scale-110 transition-transform" />
+          <Sparkles className="w-4 h-4 text-ink-700 shrink-0 group-hover:scale-110 transition-transform" />
           {effectiveExpanded && (
             <span className="text-xs font-semibold truncate">New Session</span>
           )}

@@ -40,9 +40,9 @@ const SKILLS: Skill[] = [
     command: '/I2V',
     title: 'Image to Video',
     description: 'Animate first/last frame keyframes',
-    accentText: 'text-verify',
-    accentBg: 'group-hover:bg-verify-soft',
-    accentBorder: 'group-hover:border-verify/30',
+    accentText: 'text-ink',
+    accentBg: 'group-hover:bg-strong',
+    accentBorder: 'group-hover:border-line-400',
     icon: ImageIcon
   },
   {
@@ -70,9 +70,9 @@ const SKILLS: Skill[] = [
     command: '/Style',
     title: 'Style Transfer',
     description: 'Apply aesthetic LoRA styles',
-    accentText: 'text-pink-400',
-    accentBg: 'group-hover:bg-pink-500/10',
-    accentBorder: 'group-hover:border-pink-500/30',
+    accentText: 'text-ink-700',
+    accentBg: 'group-hover:bg-strong',
+    accentBorder: 'group-hover:border-line-400',
     icon: Palette
   },
   {
@@ -90,9 +90,9 @@ const SKILLS: Skill[] = [
     command: '/Director',
     title: 'AI Director',
     description: 'Multi-scene documentary storyboard',
-    accentText: 'text-danger',
-    accentBg: 'group-hover:bg-danger-soft',
-    accentBorder: 'group-hover:border-danger/30',
+    accentText: 'text-ink-700',
+    accentBg: 'group-hover:bg-strong',
+    accentBorder: 'group-hover:border-line-400',
     icon: Clapperboard
   },
 ];
@@ -133,7 +133,7 @@ export const SkillsDrawer: React.FC = () => {
       <div className="max-w-4xl mx-auto w-full pointer-events-auto bg-surface/90 backdrop-blur-md border border-line-200 rounded-2xl p-3 shadow-lg">
         <div className="flex items-center justify-between mb-2.5 px-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-verify" />
+            <Sparkles className="w-3.5 h-3.5 text-agent" />
             <span className="text-[11px] font-semibold text-ink-700 tracking-wider uppercase font-mono">
               Agent Skills System
             </span>

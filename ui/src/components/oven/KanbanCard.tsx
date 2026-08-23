@@ -12,7 +12,7 @@ interface KanbanCardProps {
 
 export function KanbanCard({ priority, badgeText, title, description, persona, status, statusColor, borderColor }: KanbanCardProps) {
   const badgeClasses = {
-    p0: 'bg-danger-soft text-danger border border-danger/30',
+    p0: 'bg-strong text-ink border border-line-500 font-bold',
     p1: 'bg-inset text-ink border border-line-400',
     p2: 'bg-inset text-ink border border-line-400',
     done: 'bg-verify-soft text-verify border border-verify/30',
