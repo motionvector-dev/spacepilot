@@ -45,9 +45,11 @@ def test_registry_files_exist_one_per_family():
     for fname in NEW_FAMILY_FILES:
         assert (models_dir / fname).is_file(), f"missing {fname}"
     # And no FLUX.1 file — that belongs to the other agent's workstream.
-    assert not (models_dir / "flux.yaml").is_file(), (
-        "flux.yaml is owned by the FLUX.1 workstream; this task must not create it"
-    )
+    # This file deliberately does NOT assert flux.yaml is absent. That was a
+    # coordination rule between two agents working in parallel on the same
+    # afternoon, not a property of the registry — and it froze into a test that
+    # failed the moment both branches merged. Ownership boundaries belong in the
+    # brief, not in an assertion that outlives the reason for it.
 
 
 def test_full_registry_still_loads_with_the_new_files():

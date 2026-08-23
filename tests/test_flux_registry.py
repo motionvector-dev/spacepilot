@@ -12,14 +12,33 @@ def _flux_variant(vid: str):
     return v
 
 
-def test_flux_model_loads_with_all_four_variants():
+def test_flux_file_holds_flux_1_only():
+    """FLUX.2 Klein is its own family in its own file.
+
+    A 4-bit Klein variant lived here briefly, for a scheduling reason rather than
+    a modelling one: FLUX.1 was gated on HuggingFace and Klein was the only thing
+    measurable. Two variants then shared one repo across two files, and neither
+    narrowed its download, which the multi-checkpoint test caught on merge.
+    """
     m = registry().model("flux")
     assert m is not None
-    ids = {v.id for v in m.variants}
-    assert ids == {
-        "flux-schnell-4bit", "flux-schnell-8bit",
-        "flux-dev-bf16", "flux2-klein-4b-4bit",
+    assert {v.id for v in m.variants} == {
+        "flux-schnell-4bit", "flux-schnell-8bit", "flux-dev-bf16",
     }
+    assert not any("klein" in v.id for v in m.variants)
+
+
+def test_klein_family_owns_its_measured_variant():
+    """The measurement is keyed to flux2-klein-4b-4bit, so the move had to keep
+    that id intact or the recorded load_seconds would dangle."""
+    k = registry().model("flux2-klein")
+    assert k is not None
+    ids = {v.id for v in k.variants}
+    assert "flux2-klein-4b-4bit" in ids
+    shared = [v for v in k.variants
+              if v.repo == "black-forest-labs/FLUX.2-klein-4B"]
+    assert len(shared) >= 2
+    assert all(v.files for v in shared), "variants sharing a repo must narrow their download"
 
 
 def test_schnell_is_apache_licensed_and_open():

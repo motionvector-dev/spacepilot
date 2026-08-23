@@ -592,54 +592,6 @@
      },
      "speed": [],
      "notes": "Full-quality, non-distilled model; the model card recommends 20-50 steps and CFG guidance schnell does not use. --quantize omitted (mflux-generate --model dev with no --quantize flag). Non-commercial license \u2014 do not ship generated output from a commercial product without checking LICENSE.md. Verified against black-forest-labs/FLUX.1-dev via HfApi 2026-08-22; alias \"dev\" confirmed live in mflux-capabilities 0.19.0 output.\n"
-    },
-    {
-     "id": "flux2-klein-4b-4bit",
-     "model_id": "flux",
-     "name": "FLUX.2 [klein-4B] (mflux, 4-bit)",
-     "kind": "image",
-     "family": "black-forest-labs",
-     "params": "4B",
-     "precision": "int4",
-     "repo": "black-forest-labs/FLUX.2-klein-4B",
-     "files": [
-      "vae/*.safetensors",
-      "vae/*.json",
-      "transformer/*.safetensors",
-      "transformer/*.json",
-      "text_encoder/*.safetensors",
-      "text_encoder/*.json",
-      "tokenizer/*",
-      "added_tokens.json",
-      "chat_template.jinja"
-     ],
-     "backends": [
-      "metal"
-     ],
-     "download": {
-      "value": 15980130813.0,
-      "source": "huggingface-api",
-      "checked": "2026-08-22",
-      "note": "Sum of 16 files (huggingface_hub.HfApi().model_info(files_metadata=True)) under vae/, transformer/, text_encoder/, tokenizer/, plus added_tokens.json and chat_template.jinja -- matches mflux's own download_patterns. Excludes the 7.75 GB monolithic flux-2-klein-4b.safetensors also hosted in this repo, which mflux never downloads.\n",
-      "is_measured": true
-     },
-     "working_set": {
-      "value": 11295763988.0,
-      "source": "measured",
-      "checked": "2026-08-23",
-      "note": "mflux's own \"Peak MLX memory: 10.52 GB\" line, printed by mflux-generate-flux2 --model flux2-klein-4b --quantize 4 --steps 4 --height 512 --width 512 at the end of a real run on this Mac (10.52 * 1024**3 bytes). This is mlx.metal's own peak-allocation counter, not an OS RSS estimate. See registry/measurements/ apple-m1-max-32gb/flux2-klein-4b-4bit/ for the paired load_seconds and seconds_per_image samples from the same driver run; this is the one working_set number in this file that is not a paper estimate.\n",
-      "is_measured": true
-     },
-     "license": {
-      "id": "apache-2.0",
-      "open_source": true,
-      "spdx": "Apache-2.0",
-      "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
-      "restrictions": [],
-      "is_permissive": true
-     },
-     "speed": [],
-     "notes": "This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require accepting a license gate on huggingface.co before the weights can be downloaded at all, which this session could not do (accepting a HuggingFace model gate is an account action requiring the user's own browser session). This variant is the one actually exercised for the real load/generate measurement recorded for this task -- see registry/measurements/. --quantize 4 with mflux-generate-flux2. Verified against black-forest-labs/FLUX.2-klein-4B via HfApi 2026-08-22; alias \"flux2-klein-4b\" confirmed live in mflux-capabilities 0.19.0 output.\n"
     }
    ]
   },
@@ -668,7 +620,17 @@
      "params": "4B",
      "precision": "bf16",
      "repo": "black-forest-labs/FLUX.2-klein-4B",
-     "files": null,
+     "files": [
+      "vae/*.safetensors",
+      "vae/*.json",
+      "transformer/*.safetensors",
+      "transformer/*.json",
+      "text_encoder/*.safetensors",
+      "text_encoder/*.json",
+      "tokenizer/*",
+      "added_tokens.json",
+      "chat_template.jinja"
+     ],
      "backends": [
       "metal"
      ],
@@ -860,6 +822,54 @@
      },
      "speed": [],
      "notes": "Undistilled base, meant for fine-tuning and research rather than direct deployment.\n"
+    },
+    {
+     "id": "flux2-klein-4b-4bit",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 [klein-4B] (mflux, 4-bit)",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "4B",
+     "precision": "int4",
+     "repo": "black-forest-labs/FLUX.2-klein-4B",
+     "files": [
+      "vae/*.safetensors",
+      "vae/*.json",
+      "transformer/*.safetensors",
+      "transformer/*.json",
+      "text_encoder/*.safetensors",
+      "text_encoder/*.json",
+      "tokenizer/*",
+      "added_tokens.json",
+      "chat_template.jinja"
+     ],
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 15980130813.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-22",
+      "note": "Sum of 16 files (huggingface_hub.HfApi().model_info(files_metadata=True)) under vae/, transformer/, text_encoder/, tokenizer/, plus added_tokens.json and chat_template.jinja -- matches mflux's own download_patterns. Excludes the 7.75 GB monolithic flux-2-klein-4b.safetensors also hosted in this repo, which mflux never downloads.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 11295763988.0,
+      "source": "measured",
+      "checked": "2026-08-23",
+      "note": "mflux's own \"Peak MLX memory: 10.52 GB\" line, printed by mflux-generate-flux2 --model flux2-klein-4b --quantize 4 --steps 4 --height 512 --width 512 at the end of a real run on this Mac (10.52 * 1024**3 bytes). This is mlx.metal's own peak-allocation counter, not an OS RSS estimate. See registry/measurements/ apple-m1-max-32gb/flux2-klein-4b-4bit/ for the paired load_seconds and seconds_per_image samples from the same driver run; this is the one working_set number in this file that is not a paper estimate.\n",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require accepting a license gate on huggingface.co before the weights can be downloaded at all, which this session could not do (accepting a HuggingFace model gate is an account action requiring the user's own browser session). This variant is the one actually exercised for the real load/generate measurement recorded for this task -- see registry/measurements/. --quantize 4 with mflux-generate-flux2. Verified against black-forest-labs/FLUX.2-klein-4B via HfApi 2026-08-22; alias \"flux2-klein-4b\" confirmed live in mflux-capabilities 0.19.0 output.\n"
     }
    ]
   },

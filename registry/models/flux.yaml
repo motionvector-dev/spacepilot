@@ -3,228 +3,152 @@ id: flux
 name: FLUX.1
 family: black-forest-labs
 kind: image
-summary: >
-  Black Forest Labs' rectified-flow transformer for text-to-image. schnell is
-  the distilled, few-step, permissively-licensed variant; dev is the
-  higher-quality full model under a non-commercial license. Run here through
-  mflux (registry/runtimes/mflux.yaml), which quantizes and executes on Metal.
-homepage: https://huggingface.co/black-forest-labs
+summary: 'Black Forest Labs'' rectified-flow transformer for text-to-image. schnell is the
+  distilled, few-step, permissively-licensed variant; dev is the higher-quality full model
+  under a non-commercial license. Run here through mflux (registry/runtimes/mflux.yaml), which
+  quantizes and executes on Metal.
 
-# Model-level default; schnell overrides this per-variant with its own
-# apache-2.0 license block, since the two variants are NOT on the same terms.
+  '
+homepage: https://huggingface.co/black-forest-labs
 license:
   id: flux-1-dev-non-commercial-license
   spdx: null
   open_source: false
   url: https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/LICENSE.md
   restrictions:
-    - non-commercial use only (see LICENSE.md on the model card)
-    - output usage restrictions apply per the license text
-    - no redistribution of the weights outside the license terms
-
+  - non-commercial use only (see LICENSE.md on the model card)
+  - output usage restrictions apply per the license text
+  - no redistribution of the weights outside the license terms
 variants:
-  - id: flux-schnell-4bit
-    name: FLUX.1 [schnell] (mflux, 4-bit)
-    params: 12B
-    precision: int4
-    repo: black-forest-labs/FLUX.1-schnell
-    # mflux only ever fetches these subtrees (transformer + both text
-    # encoders + vae), never the monolithic flux1-schnell.safetensors also in
-    # this repo — confirmed against FluxWeightDefinition.get_download_patterns()
-    # in mflux 0.19.0 (models/flux/weights/flux_weight_definition.py).
-    files:
-      - "text_encoder/*.safetensors"
-      - "text_encoder/*.json"
-      - "text_encoder_2/*.safetensors"
-      - "text_encoder_2/*.json"
-      - "transformer/*.safetensors"
-      - "transformer/*.json"
-      - "vae/*.safetensors"
-      - "vae/*.json"
-    backends: [metal]
-    license:
-      id: apache-2.0
-      spdx: Apache-2.0
-      open_source: true
-      url: https://www.apache.org/licenses/LICENSE-2.0
-      restrictions: []
-    download:
-      value: 33721097067
-      source: huggingface-api
-      checked: "2026-08-22"
-      note: >
-        Sum of the 13 files under text_encoder/, text_encoder_2/, transformer/
-        and vae/ (huggingface_hub.HfApi().model_info(files_metadata=True)) —
-        the same subtree mflux's own download_patterns pulls. Excludes the
-        23.8 GB monolithic flux1-schnell.safetensors also hosted in this repo,
-        which mflux never downloads. mflux quantizes weights after download,
-        not before, so this figure is the same regardless of --quantize.
-    working_set:
-      value: 9273301843
-      source: estimated
-      note: >
-        Estimated as download bytes (bf16 on disk, ~2 bytes/param) scaled by
-        the int4/bf16 width ratio (4/16) plus a 10% activation margin:
-        33721097067 * 0.25 * 1.1. Not measured — mflux quantizes the
-        transformer and both text encoders on load (any module exposing
-        to_quantized, per quantization_predicate in
-        flux_weight_definition.py), so resident size should track this
-        closely, but nobody has run Activity Monitor against it yet.
-    notes: >
-      Distilled, timestep-guided model designed for 2-4 sampling steps
-      (source: FLUX.1-schnell model card). --quantize 4 with mflux-generate.
-      Verified against black-forest-labs/FLUX.1-schnell via HfApi 2026-08-22;
-      alias "schnell" confirmed live in mflux-capabilities 0.19.0 output.
+- id: flux-schnell-4bit
+  name: FLUX.1 [schnell] (mflux, 4-bit)
+  params: 12B
+  precision: int4
+  repo: black-forest-labs/FLUX.1-schnell
+  files:
+  - text_encoder/*.safetensors
+  - text_encoder/*.json
+  - text_encoder_2/*.safetensors
+  - text_encoder_2/*.json
+  - transformer/*.safetensors
+  - transformer/*.json
+  - vae/*.safetensors
+  - vae/*.json
+  backends:
+  - metal
+  license:
+    id: apache-2.0
+    spdx: Apache-2.0
+    open_source: true
+    url: https://www.apache.org/licenses/LICENSE-2.0
+    restrictions: []
+  download:
+    value: 33721097067
+    source: huggingface-api
+    checked: '2026-08-22'
+    note: 'Sum of the 13 files under text_encoder/, text_encoder_2/, transformer/ and vae/
+      (huggingface_hub.HfApi().model_info(files_metadata=True)) — the same subtree mflux''s
+      own download_patterns pulls. Excludes the 23.8 GB monolithic flux1-schnell.safetensors
+      also hosted in this repo, which mflux never downloads. mflux quantizes weights after
+      download, not before, so this figure is the same regardless of --quantize.
 
-  - id: flux-schnell-8bit
-    name: FLUX.1 [schnell] (mflux, 8-bit)
-    params: 12B
-    precision: int8
-    repo: black-forest-labs/FLUX.1-schnell
-    files:
-      - "text_encoder/*.safetensors"
-      - "text_encoder/*.json"
-      - "text_encoder_2/*.safetensors"
-      - "text_encoder_2/*.json"
-      - "transformer/*.safetensors"
-      - "transformer/*.json"
-      - "vae/*.safetensors"
-      - "vae/*.json"
-    backends: [metal]
-    license:
-      id: apache-2.0
-      spdx: Apache-2.0
-      open_source: true
-      url: https://www.apache.org/licenses/LICENSE-2.0
-      restrictions: []
-    download:
-      value: 33721097067
-      source: huggingface-api
-      checked: "2026-08-22"
-      note: >
-        Same subtree as flux-schnell-4bit — one repo, one download,
-        quantization happens locally after the fetch. See that variant's note
-        for the exact file list and how it was confirmed against mflux's
-        download_patterns.
-    working_set:
-      value: 18546604187
-      source: estimated
-      note: >
-        Estimated as download bytes scaled by the int8/bf16 width ratio
-        (8/16) plus a 10% activation margin: 33721097067 * 0.5 * 1.1. Same
-        caveat as the 4-bit variant — derived from the quantization ratio, not
-        measured against a running process.
-    notes: >
-      Same weights as flux-schnell-4bit, --quantize 8. Fits a 32 GB Mac with
-      real headroom; the 4-bit variant exists for machines with less to spare
-      or when speed matters more than the extra fidelity.
+      '
+  working_set:
+    value: 9273301843
+    source: estimated
+    note: 'Estimated as download bytes (bf16 on disk, ~2 bytes/param) scaled by the int4/bf16
+      width ratio (4/16) plus a 10% activation margin: 33721097067 * 0.25 * 1.1. Not measured
+      — mflux quantizes the transformer and both text encoders on load (any module exposing
+      to_quantized, per quantization_predicate in flux_weight_definition.py), so resident
+      size should track this closely, but nobody has run Activity Monitor against it yet.
 
-  - id: flux-dev-bf16
-    name: FLUX.1 [dev] (mflux, bf16)
-    params: 12B
-    precision: bf16
-    repo: black-forest-labs/FLUX.1-dev
-    files:
-      - "text_encoder/*.safetensors"
-      - "text_encoder/*.json"
-      - "text_encoder_2/*.safetensors"
-      - "text_encoder_2/*.json"
-      - "transformer/*.safetensors"
-      - "transformer/*.json"
-      - "vae/*.safetensors"
-      - "vae/*.json"
-    backends: [metal]
-    # dev is NOT apache-2.0 like schnell — verified live via
-    # HfApi().model_info('black-forest-labs/FLUX.1-dev').card_data, which
-    # reports license=other, license_name=flux-1-dev-non-commercial-license,
-    # 2026-08-22. Falls through to the model-level license block above.
-    download:
-      value: 33741557618
-      source: huggingface-api
-      checked: "2026-08-22"
-      note: >
-        Same file-pattern methodology as the schnell variants, summed against
-        black-forest-labs/FLUX.1-dev instead (13 files, same subtree layout).
-    working_set:
-      value: 37115713380
-      source: estimated
-      note: >
-        Unquantized bf16 run: download bytes (already bf16 on disk) plus a
-        10% activation margin, no quantization ratio applied:
-        33741557618 * 1.1. Included for contrast against the two quantized
-        schnell variants above — at ~37 GB resident this does not comfortably
-        fit a 32 GB Mac, which is the whole point of quantizing schnell in
-        the first place.
-    notes: >
-      Full-quality, non-distilled model; the model card recommends 20-50
-      steps and CFG guidance schnell does not use. --quantize omitted
-      (mflux-generate --model dev with no --quantize flag). Non-commercial
-      license — do not ship generated output from a commercial product
-      without checking LICENSE.md. Verified against
-      black-forest-labs/FLUX.1-dev via HfApi 2026-08-22; alias "dev"
-      confirmed live in mflux-capabilities 0.19.0 output.
+      '
+  notes: 'Distilled, timestep-guided model designed for 2-4 sampling steps (source: FLUX.1-schnell
+    model card). --quantize 4 with mflux-generate. Verified against black-forest-labs/FLUX.1-schnell
+    via HfApi 2026-08-22; alias "schnell" confirmed live in mflux-capabilities 0.19.0 output.
 
-  - id: flux2-klein-4b-4bit
-    name: FLUX.2 [klein-4B] (mflux, 4-bit)
-    params: 4B
-    precision: int4
-    repo: black-forest-labs/FLUX.2-klein-4B
-    # FLUX.2 Klein has its own weight layout and its own mflux entry point
-    # (mflux-generate-flux2, not mflux-generate -- confirmed live: running it
-    # through mflux-generate fails with "FLUX.2 Klein is not supported by
-    # mflux-generate. Use mflux-generate-flux2 instead."). Download patterns
-    # confirmed against Flux2WeightDefinition.get_download_patterns() in
-    # mflux 0.19.0 (models/flux2/weights/flux2_weight_definition.py).
-    files:
-      - "vae/*.safetensors"
-      - "vae/*.json"
-      - "transformer/*.safetensors"
-      - "transformer/*.json"
-      - "text_encoder/*.safetensors"
-      - "text_encoder/*.json"
-      - "tokenizer/*"
-      - "added_tokens.json"
-      - "chat_template.jinja"
-    backends: [metal]
-    license:
-      id: apache-2.0
-      spdx: Apache-2.0
-      open_source: true
-      url: https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md
-      restrictions: []
-    download:
-      value: 15980130813
-      source: huggingface-api
-      checked: "2026-08-22"
-      note: >
-        Sum of 16 files (huggingface_hub.HfApi().model_info(files_metadata=True))
-        under vae/, transformer/, text_encoder/, tokenizer/, plus
-        added_tokens.json and chat_template.jinja -- matches mflux's own
-        download_patterns. Excludes the 7.75 GB monolithic
-        flux-2-klein-4b.safetensors also hosted in this repo, which mflux
-        never downloads.
-    working_set:
-      value: 11295763988
-      source: measured
-      checked: "2026-08-23"
-      note: >
-        mflux's own "Peak MLX memory: 10.52 GB" line, printed by
-        mflux-generate-flux2 --model flux2-klein-4b --quantize 4 --steps 4
-        --height 512 --width 512 at the end of a real run on this Mac
-        (10.52 * 1024**3 bytes). This is mlx.metal's own peak-allocation
-        counter, not an OS RSS estimate. See registry/measurements/
-        apple-m1-max-32gb/flux2-klein-4b-4bit/ for the paired load_seconds
-        and seconds_per_image samples from the same driver run; this is the
-        one working_set number in this file that is not a paper estimate.
-    notes: >
-      This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is
-      apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require
-      accepting a license gate on huggingface.co before the weights can be
-      downloaded at all, which this session could not do (accepting a
-      HuggingFace model gate is an account action requiring the user's own
-      browser session). This variant is the one actually exercised for the
-      real load/generate measurement recorded for this task -- see
-      registry/measurements/. --quantize 4 with mflux-generate-flux2.
-      Verified against black-forest-labs/FLUX.2-klein-4B via HfApi
-      2026-08-22; alias "flux2-klein-4b" confirmed live in
-      mflux-capabilities 0.19.0 output.
+    '
+- id: flux-schnell-8bit
+  name: FLUX.1 [schnell] (mflux, 8-bit)
+  params: 12B
+  precision: int8
+  repo: black-forest-labs/FLUX.1-schnell
+  files:
+  - text_encoder/*.safetensors
+  - text_encoder/*.json
+  - text_encoder_2/*.safetensors
+  - text_encoder_2/*.json
+  - transformer/*.safetensors
+  - transformer/*.json
+  - vae/*.safetensors
+  - vae/*.json
+  backends:
+  - metal
+  license:
+    id: apache-2.0
+    spdx: Apache-2.0
+    open_source: true
+    url: https://www.apache.org/licenses/LICENSE-2.0
+    restrictions: []
+  download:
+    value: 33721097067
+    source: huggingface-api
+    checked: '2026-08-22'
+    note: 'Same subtree as flux-schnell-4bit — one repo, one download, quantization happens
+      locally after the fetch. See that variant''s note for the exact file list and how it
+      was confirmed against mflux''s download_patterns.
+
+      '
+  working_set:
+    value: 18546604187
+    source: estimated
+    note: 'Estimated as download bytes scaled by the int8/bf16 width ratio (8/16) plus a 10%
+      activation margin: 33721097067 * 0.5 * 1.1. Same caveat as the 4-bit variant — derived
+      from the quantization ratio, not measured against a running process.
+
+      '
+  notes: 'Same weights as flux-schnell-4bit, --quantize 8. Fits a 32 GB Mac with real headroom;
+    the 4-bit variant exists for machines with less to spare or when speed matters more than
+    the extra fidelity.
+
+    '
+- id: flux-dev-bf16
+  name: FLUX.1 [dev] (mflux, bf16)
+  params: 12B
+  precision: bf16
+  repo: black-forest-labs/FLUX.1-dev
+  files:
+  - text_encoder/*.safetensors
+  - text_encoder/*.json
+  - text_encoder_2/*.safetensors
+  - text_encoder_2/*.json
+  - transformer/*.safetensors
+  - transformer/*.json
+  - vae/*.safetensors
+  - vae/*.json
+  backends:
+  - metal
+  download:
+    value: 33741557618
+    source: huggingface-api
+    checked: '2026-08-22'
+    note: 'Same file-pattern methodology as the schnell variants, summed against black-forest-labs/FLUX.1-dev
+      instead (13 files, same subtree layout).
+
+      '
+  working_set:
+    value: 37115713380
+    source: estimated
+    note: 'Unquantized bf16 run: download bytes (already bf16 on disk) plus a 10% activation
+      margin, no quantization ratio applied: 33741557618 * 1.1. Included for contrast against
+      the two quantized schnell variants above — at ~37 GB resident this does not comfortably
+      fit a 32 GB Mac, which is the whole point of quantizing schnell in the first place.
+
+      '
+  notes: 'Full-quality, non-distilled model; the model card recommends 20-50 steps and CFG
+    guidance schnell does not use. --quantize omitted (mflux-generate --model dev with no
+    --quantize flag). Non-commercial license — do not ship generated output from a commercial
+    product without checking LICENSE.md. Verified against black-forest-labs/FLUX.1-dev via
+    HfApi 2026-08-22; alias "dev" confirmed live in mflux-capabilities 0.19.0 output.
+
+    '
