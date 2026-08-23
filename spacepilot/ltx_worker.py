@@ -48,7 +48,11 @@ from diffusers.utils.export_utils import encode_video
 
 # Configuration
 PORT = int(os.environ.get("LTX_WORKER_PORT", "5000"))
-HOST = os.environ.get("LTX_WORKER_HOST", "0.0.0.0")
+# nosec B104 - deliberate. This worker runs on a rented GPU box and is
+# reached across the network from the controlling machine, so it must bind
+# every interface. Access is gated by LOCAL_WORKER_TOKEN (the worker exits
+# without it) and by the instance security group.
+HOST = os.environ.get("LTX_WORKER_HOST", "0.0.0.0")  # nosec B104
 TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
 OUTPUT_DIR = Path(os.environ.get("LTX_OUTPUT_DIR", "/scratch/out"))
 HF_TOKEN = os.environ.get("HF_TOKEN", "")

@@ -1,0 +1,21 @@
+# Dependabot alerts are enabled in repo settings; this file is what turns on
+# *version* updates. Kept deliberately small: every PR here costs runner
+# minutes, and this repo stays inside the free GitHub-hosted quota.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      # One PR per week for routine bumps rather than one per package.
+      python-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2

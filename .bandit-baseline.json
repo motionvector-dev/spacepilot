@@ -2,17 +2,17 @@
  "errors": [],
  "metrics": {
   "_totals": {
-   "CONFIDENCE.HIGH": 91,
+   "CONFIDENCE.HIGH": 79,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 10,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 78,
-   "SEVERITY.MEDIUM": 23,
+   "SEVERITY.LOW": 79,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 9777,
+   "loc": 11080,
    "nosec": 0,
-   "skipped_tests": 0
+   "skipped_tests": 2
   },
   "spacepilot/__init__.py": {
    "CONFIDENCE.HIGH": 0,
@@ -28,28 +28,28 @@
    "skipped_tests": 0
   },
   "spacepilot/cli.py": {
-   "CONFIDENCE.HIGH": 23,
+   "CONFIDENCE.HIGH": 19,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 19,
-   "SEVERITY.MEDIUM": 4,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 837,
+   "loc": 922,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/device_probe.py": {
-   "CONFIDENCE.HIGH": 5,
+   "CONFIDENCE.HIGH": 3,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 5,
+   "SEVERITY.LOW": 3,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 297,
+   "loc": 596,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -75,7 +75,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 78,
+   "loc": 87,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -114,7 +114,7 @@
    "SEVERITY.LOW": 3,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 223,
+   "loc": 224,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -140,33 +140,33 @@
    "SEVERITY.LOW": 3,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 145,
+   "loc": 149,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/engines/hunyuan_engine.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 2,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 2,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 152,
+   "loc": 141,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/engines/ltx_engine.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 2,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 2,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 150,
+   "loc": 139,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -186,39 +186,39 @@
   "spacepilot/engines/wan_engine.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 2,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 2,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 170,
+   "loc": 159,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/enhance_prompt.py": {
-   "CONFIDENCE.HIGH": 2,
+   "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 2,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 47,
+   "loc": 49,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/generate_music_templates.py": {
-   "CONFIDENCE.HIGH": 8,
+   "CONFIDENCE.HIGH": 7,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 7,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 105,
+   "loc": 104,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -231,7 +231,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 138,
+   "loc": 149,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -244,22 +244,22 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 179,
+   "loc": 226,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/ltx_worker.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 1,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 301,
+   "loc": 305,
    "nosec": 0,
-   "skipped_tests": 0
+   "skipped_tests": 1
   },
   "spacepilot/model_recommender.py": {
    "CONFIDENCE.HIGH": 0,
@@ -270,7 +270,20 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 156,
+   "loc": 161,
+   "nosec": 0,
+   "skipped_tests": 0
+  },
+  "spacepilot/paths.py": {
+   "CONFIDENCE.HIGH": 0,
+   "CONFIDENCE.LOW": 0,
+   "CONFIDENCE.MEDIUM": 0,
+   "CONFIDENCE.UNDEFINED": 0,
+   "SEVERITY.HIGH": 0,
+   "SEVERITY.LOW": 0,
+   "SEVERITY.MEDIUM": 0,
+   "SEVERITY.UNDEFINED": 0,
+   "loc": 87,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -387,7 +400,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 61,
+   "loc": 62,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -405,15 +418,15 @@
    "skipped_tests": 0
   },
   "spacepilot/pluto/api/routes/generate.py": {
-   "CONFIDENCE.HIGH": 3,
+   "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 3,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 560,
+   "loc": 571,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -511,15 +524,15 @@
   "spacepilot/pluto/api/security.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 1,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
    "loc": 89,
    "nosec": 0,
-   "skipped_tests": 0
+   "skipped_tests": 1
   },
   "spacepilot/pluto/app.py": {
    "CONFIDENCE.HIGH": 0,
@@ -560,6 +573,19 @@
    "nosec": 0,
    "skipped_tests": 0
   },
+  "spacepilot/pluto/core/http.py": {
+   "CONFIDENCE.HIGH": 0,
+   "CONFIDENCE.LOW": 0,
+   "CONFIDENCE.MEDIUM": 0,
+   "CONFIDENCE.UNDEFINED": 0,
+   "SEVERITY.HIGH": 0,
+   "SEVERITY.LOW": 0,
+   "SEVERITY.MEDIUM": 0,
+   "SEVERITY.UNDEFINED": 0,
+   "loc": 25,
+   "nosec": 0,
+   "skipped_tests": 0
+  },
   "spacepilot/pluto/core/utils.py": {
    "CONFIDENCE.HIGH": 3,
    "CONFIDENCE.LOW": 0,
@@ -569,7 +595,7 @@
    "SEVERITY.LOW": 3,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 44,
+   "loc": 62,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -582,7 +608,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 261,
+   "loc": 423,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -595,7 +621,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 270,
+   "loc": 324,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -608,7 +634,7 @@
    "SEVERITY.LOW": 6,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 283,
+   "loc": 284,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -626,28 +652,28 @@
    "skipped_tests": 0
   },
   "spacepilot/pluto/services/audio.py": {
-   "CONFIDENCE.HIGH": 2,
+   "CONFIDENCE.HIGH": 1,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 122,
+   "loc": 125,
    "nosec": 0,
    "skipped_tests": 0
   },
   "spacepilot/pluto/services/checkpoint_sync.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 2,
+   "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 2,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 133,
+   "loc": 141,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -660,7 +686,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 113,
+   "loc": 139,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -717,15 +743,15 @@
    "skipped_tests": 0
   },
   "spacepilot/pluto/services/model_catalog.py": {
-   "CONFIDENCE.HIGH": 1,
+   "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 211,
+   "loc": 248,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -755,6 +781,19 @@
    "nosec": 0,
    "skipped_tests": 0
   },
+  "spacepilot/pluto/sweep.py": {
+   "CONFIDENCE.HIGH": 3,
+   "CONFIDENCE.LOW": 0,
+   "CONFIDENCE.MEDIUM": 0,
+   "CONFIDENCE.UNDEFINED": 0,
+   "SEVERITY.HIGH": 0,
+   "SEVERITY.LOW": 3,
+   "SEVERITY.MEDIUM": 0,
+   "SEVERITY.UNDEFINED": 0,
+   "loc": 437,
+   "nosec": 0,
+   "skipped_tests": 0
+  },
   "spacepilot/pluto_mcp_server.py": {
    "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
@@ -764,7 +803,7 @@
    "SEVERITY.LOW": 0,
    "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 385,
+   "loc": 386,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -795,15 +834,15 @@
    "skipped_tests": 0
   },
   "spacepilot/storyboard_decomposer.py": {
-   "CONFIDENCE.HIGH": 1,
+   "CONFIDENCE.HIGH": 0,
    "CONFIDENCE.LOW": 0,
    "CONFIDENCE.MEDIUM": 0,
    "CONFIDENCE.UNDEFINED": 0,
    "SEVERITY.HIGH": 0,
    "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 1,
+   "SEVERITY.MEDIUM": 0,
    "SEVERITY.UNDEFINED": 0,
-   "loc": 230,
+   "loc": 229,
    "nosec": 0,
    "skipped_tests": 0
   },
@@ -821,474 +860,5 @@
    "skipped_tests": 0
   }
  },
- "results": [
-  {
-   "code": "132         req = urllib.request.Request(url, headers={\"User-Agent\": \"PlutoCLI/1.0\"})\n133         with urllib.request.urlopen(req, timeout=3) as resp:\n134             return json.loads(resp.read().decode())\n",
-   "col_offset": 13,
-   "end_col_offset": 51,
-   "filename": "spacepilot/cli.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 133,
-   "line_range": [
-    133
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "387     try:\n388         with urllib.request.urlopen(req, timeout=15) as resp:\n389             res = json.loads(resp.read().decode())\n",
-   "col_offset": 13,
-   "end_col_offset": 52,
-   "filename": "spacepilot/cli.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 388,
-   "line_range": [
-    388
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "406             st_req = urllib.request.Request(f\"http://{ip}:5000/status/{job_id}\", headers=worker_headers())\n407             with urllib.request.urlopen(st_req, timeout=30) as st_resp:\n408                 st_data = json.loads(st_resp.read().decode())\n",
-   "col_offset": 17,
-   "end_col_offset": 59,
-   "filename": "spacepilot/cli.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 407,
-   "line_range": [
-    407
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "420                         out_path = OUTPUTS_DIR / f\"{job_id}.mp4\"\n421                     with urllib.request.urlopen(dl_req, timeout=60) as dl_resp, open(out_path, \"wb\") as out_f:\n422                         shutil.copyfileobj(dl_resp, out_f)\n",
-   "col_offset": 25,
-   "end_col_offset": 67,
-   "filename": "spacepilot/cli.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 421,
-   "line_range": [
-    421
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "90         if output_path is None:\n91             output_dir = Path(\"/tmp/pluto_renders\")\n92             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/hunyuan_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 91,
-   "line_range": [
-    91
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "144         if output_path is None:\n145             output_dir = Path(\"/tmp/pluto_renders\")\n146             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/hunyuan_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 145,
-   "line_range": [
-    145
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "87         if output_path is None:\n88             output_dir = Path(\"/tmp/pluto_renders\")\n89             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/ltx_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 88,
-   "line_range": [
-    88
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "141         if output_path is None:\n142             output_dir = Path(\"/tmp/pluto_renders\")\n143             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/ltx_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 142,
-   "line_range": [
-    142
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "105         if output_path is None:\n106             output_dir = Path(\"/tmp/pluto_renders\")\n107             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/wan_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 106,
-   "line_range": [
-    106
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "161         if output_path is None:\n162             output_dir = Path(\"/tmp/pluto_renders\")\n163             output_dir.mkdir(parents=True, exist_ok=True)\n",
-   "col_offset": 30,
-   "end_col_offset": 50,
-   "filename": "spacepilot/engines/wan_engine.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 162,
-   "line_range": [
-    162
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "9     # Load tokenizer and model onto Apple Silicon MPS\n10     tokenizer = AutoTokenizer.from_pretrained(model_id)\n11     model = AutoModelForCausalLM.from_pretrained(\n",
-   "col_offset": 16,
-   "end_col_offset": 55,
-   "filename": "spacepilot/enhance_prompt.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 494,
-    "link": "https://cwe.mitre.org/data/definitions/494.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Unsafe Hugging Face Hub download without revision pinning in from_pretrained()",
-   "line_number": 10,
-   "line_range": [
-    10
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b615_huggingface_unsafe_download.html",
-   "test_id": "B615",
-   "test_name": "huggingface_unsafe_download"
-  },
-  {
-   "code": "10     tokenizer = AutoTokenizer.from_pretrained(model_id)\n11     model = AutoModelForCausalLM.from_pretrained(\n12         model_id, \n13         torch_dtype=torch.float16, \n14         device_map=\"mps\"\n15     )\n16 \n",
-   "col_offset": 12,
-   "end_col_offset": 5,
-   "filename": "spacepilot/enhance_prompt.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 494,
-    "link": "https://cwe.mitre.org/data/definitions/494.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Unsafe Hugging Face Hub download without revision pinning in from_pretrained()",
-   "line_number": 11,
-   "line_range": [
-    11,
-    12,
-    13,
-    14,
-    15
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b615_huggingface_unsafe_download.html",
-   "test_id": "B615",
-   "test_name": "huggingface_unsafe_download"
-  },
-  {
-   "code": "42     start = time.time()\n43     with urllib.request.urlopen(req, timeout=3600) as resp:\n44         audio = resp.read()\n",
-   "col_offset": 9,
-   "end_col_offset": 50,
-   "filename": "spacepilot/generate_music_templates.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 43,
-   "line_range": [
-    43
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "50 PORT = int(os.environ.get(\"LTX_WORKER_PORT\", \"5000\"))\n51 HOST = os.environ.get(\"LTX_WORKER_HOST\", \"0.0.0.0\")\n52 TOKEN = os.environ.get(\"LOCAL_WORKER_TOKEN\", \"\")\n",
-   "col_offset": 41,
-   "end_col_offset": 50,
-   "filename": "spacepilot/ltx_worker.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 605,
-    "link": "https://cwe.mitre.org/data/definitions/605.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Possible binding to all interfaces.",
-   "line_number": 51,
-   "line_range": [
-    51
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b104_hardcoded_bind_all_interfaces.html",
-   "test_id": "B104",
-   "test_name": "hardcoded_bind_all_interfaces"
-  },
-  {
-   "code": "226                     )\n227                     with urllib.request.urlopen(remote_req) as resp:\n228                         pass\n",
-   "col_offset": 25,
-   "end_col_offset": 59,
-   "filename": "spacepilot/pluto/api/routes/generate.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 227,
-   "line_range": [
-    227
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "232                         st_req = urllib.request.Request(f\"http://{ip}:5000/status/{current_job_id}\", headers=worker_headers())\n233                         with urllib.request.urlopen(st_req) as st_resp:\n234                             st_data = json.loads(st_resp.read().decode())\n",
-   "col_offset": 29,
-   "end_col_offset": 59,
-   "filename": "spacepilot/pluto/api/routes/generate.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 233,
-   "line_range": [
-    233
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "237                                 out_mp4 = outputs_dir / f\"{current_job_id}.mp4\"\n238                                 with urllib.request.urlopen(dl_req) as dl_resp, open(out_mp4, \"wb\") as out_f:\n239                                     shutil.copyfileobj(dl_resp, out_f)\n",
-   "col_offset": 37,
-   "end_col_offset": 67,
-   "filename": "spacepilot/pluto/api/routes/generate.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 238,
-   "line_range": [
-    238
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "32 \n33 LOOPBACK_HOSTNAMES = {\"localhost\", \"127.0.0.1\", \"::1\", \"0.0.0.0\", \"testserver\"}\n34 \n",
-   "col_offset": 55,
-   "end_col_offset": 64,
-   "filename": "spacepilot/pluto/api/security.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 605,
-    "link": "https://cwe.mitre.org/data/definitions/605.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Possible binding to all interfaces.",
-   "line_number": 33,
-   "line_range": [
-    33
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b104_hardcoded_bind_all_interfaces.html",
-   "test_id": "B104",
-   "test_name": "hardcoded_bind_all_interfaces"
-  },
-  {
-   "code": "89     )\n90     with urllib.request.urlopen(req, timeout=timeout) as resp:\n91         return resp.read()\n",
-   "col_offset": 9,
-   "end_col_offset": 53,
-   "filename": "spacepilot/pluto/services/audio.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 90,
-   "line_range": [
-    90
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  },
-  {
-   "code": "47             # Use a local directory to simulate remote storage/local storage\n48             self.base_dir = \"/tmp/pluto_checkpoints\"\n49             os.makedirs(self.base_dir, exist_ok=True)\n",
-   "col_offset": 28,
-   "end_col_offset": 52,
-   "filename": "spacepilot/pluto/services/checkpoint_sync.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 48,
-   "line_range": [
-    48
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "130             \"snapshot_id\": snapshot_id,\n131             \"target_dir\": target_dir or f\"/tmp/restore_{snapshot_id}\",\n132             \"metadata\": asdict(meta),\n",
-   "col_offset": 40,
-   "end_col_offset": 69,
-   "filename": "spacepilot/pluto/services/checkpoint_sync.py",
-   "issue_confidence": "MEDIUM",
-   "issue_cwe": {
-    "id": 377,
-    "link": "https://cwe.mitre.org/data/definitions/377.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Probable insecure usage of temp file/directory.",
-   "line_number": 131,
-   "line_range": [
-    131
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b108_hardcoded_tmp_directory.html",
-   "test_id": "B108",
-   "test_name": "hardcoded_tmp_directory"
-  },
-  {
-   "code": "172         self.MODELS_DIR.mkdir(parents=True, exist_ok=True)\n173         job.local_path = snapshot_download(\n174             repo_id=repo_id,\n175             cache_dir=str(self.MODELS_DIR),\n176             allow_patterns=allow_patterns,\n177         )\n178 \n",
-   "col_offset": 25,
-   "end_col_offset": 9,
-   "filename": "spacepilot/pluto/services/model_catalog.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 494,
-    "link": "https://cwe.mitre.org/data/definitions/494.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Unsafe Hugging Face Hub download without revision pinning in snapshot_download()",
-   "line_number": 173,
-   "line_range": [
-    173,
-    174,
-    175,
-    176,
-    177
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b615_huggingface_unsafe_download.html",
-   "test_id": "B615",
-   "test_name": "huggingface_unsafe_download"
-  },
-  {
-   "code": "206         )\n207         with urllib.request.urlopen(req, timeout=12.0) as resp:\n208             data = json.loads(resp.read().decode(\"utf-8\"))\n",
-   "col_offset": 13,
-   "end_col_offset": 54,
-   "filename": "spacepilot/storyboard_decomposer.py",
-   "issue_confidence": "HIGH",
-   "issue_cwe": {
-    "id": 22,
-    "link": "https://cwe.mitre.org/data/definitions/22.html"
-   },
-   "issue_severity": "MEDIUM",
-   "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
-   "line_number": 207,
-   "line_range": [
-    207
-   ],
-   "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen",
-   "test_id": "B310",
-   "test_name": "blacklist"
-  }
- ]
+ "results": []
 }
