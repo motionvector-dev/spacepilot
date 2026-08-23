@@ -402,3 +402,62 @@ def test_mock_mode_runs_end_to_end_with_no_network():
     assert report["claims"][0]["final_call"] == "unresolved"
     assert report["provider_failures"] == []
     assert report["cost"]["estimated_cost_usd"] == 0.0
+
+
+# --- routing: proxy vs direct -------------------------------------------------
+
+def test_proxy_pool_spreads_across_different_upstreams():
+    """Routing every verifier through one proxy is pointless if they all land on
+    the same upstream — a shared outage or bias would correlate every verdict."""
+    from tools.verify_claims import PROXY_POOL
+
+    models = [v.model for v in PROXY_POOL]
+    assert len(models) == len(set(models)), "duplicate model in the proxy pool"
+    assert all(v.api_base and v.api_base.endswith("/v1") for v in PROXY_POOL)
+    assert all(v.api_key_env == "LITELLM_MASTER_KEY" for v in PROXY_POOL)
+
+
+def test_go_routes_sort_last_because_of_the_weekly_quota():
+    """opencode go bills weekly, so a go- route can be listed and still refuse.
+    With the default n it must never be reached before a non-quota provider."""
+    from tools.verify_claims import PROXY_POOL, select_verifiers
+
+    go = [i for i, v in enumerate(PROXY_POOL) if "go-" in v.model]
+    assert go, "expected at least one go- route in the pool"
+    assert min(go) >= 3, "a quota-limited route sorted into the default n=3"
+    assert not any("go-" in v.model for v in select_verifiers(3, via="proxy"))
+
+
+def test_via_selects_the_pool_explicitly():
+    from tools.verify_claims import PROXY_POOL, VERIFIER_POOL, select_verifiers
+
+    assert select_verifiers(2, via="proxy") == PROXY_POOL[:2]
+    assert select_verifiers(2, via="direct") == VERIFIER_POOL[:2]
+    with pytest.raises(ValueError, match="via must be"):
+        select_verifiers(2, via="carrier-pigeon")
+    # "auto" is not a pool — it must be resolved before selection.
+    with pytest.raises(ValueError, match="via must be"):
+        select_verifiers(2, via="auto")
+
+
+def test_a_running_proxy_answers_401_and_that_counts_as_up():
+    """401 is health, not failure. Reading it as failure costs an hour."""
+    import urllib.error
+
+    from tools import verify_claims as vc
+
+    def four_oh_one(url, timeout=None):
+        raise urllib.error.HTTPError(url, 401, "Unauthorized", {}, None)
+
+    def refused(url, timeout=None):
+        raise ConnectionRefusedError()
+
+    import urllib.request
+    orig = urllib.request.urlopen
+    try:
+        urllib.request.urlopen = four_oh_one
+        assert vc.proxy_is_up() is True
+        urllib.request.urlopen = refused
+        assert vc.proxy_is_up() is False
+    finally:
+        urllib.request.urlopen = orig

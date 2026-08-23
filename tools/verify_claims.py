@@ -452,10 +452,77 @@ def load_claims(path: Path) -> list[dict[str, Any]]:
     return claims
 
 
-def select_verifiers(n: int) -> list[VerifierConfig]:
+PROXY_BASE = os.environ.get("LITELLM_PROXY_BASE", "http://127.0.0.1:8000/v1")
+
+# The same fan-out, reached through the local litellm proxy instead of each
+# provider directly. One base URL and one key, so a new upstream costs a line
+# here rather than a client, a key and a failure mode. Models are chosen to sit
+# on DIFFERENT upstreams — routing every verifier through one proxy does not
+# help if they all land on the same model behind it.
+#
+# go- models are deliberately last: opencode go bills on a weekly quota, so a
+# go- route can be listed and still refuse the call once the week is spent.
+PROXY_POOL: list[VerifierConfig] = [
+    VerifierConfig(name="proxy-gemini-flash", model="openai/gemini-3.7-flash",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.075, 0.30)),
+    VerifierConfig(name="proxy-cerebras-gptoss", model="openai/gpt-oss-120b-cerebras",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.25, 0.69)),
+    VerifierConfig(name="proxy-groq-gptoss", model="openai/gpt-oss-120b-groq",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.15, 0.75)),
+    VerifierConfig(name="proxy-deepseek", model="openai/deepseek-v3.2",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.21, 0.31)),
+    VerifierConfig(name="proxy-qwen", model="openai/qwen3.6-27b",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.07, 0.70)),
+    VerifierConfig(name="proxy-nim-minimax", model="openai/nim-minimax-m3",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.0, 0.0)),
+    VerifierConfig(name="proxy-go-deepseek-flash", model="openai/go-deepseek-v4-flash",
+                   api_key_env="LITELLM_MASTER_KEY", api_base=PROXY_BASE,
+                   cost_per_1m=(0.0, 0.0)),
+]
+
+
+def proxy_is_up(base: str = PROXY_BASE, timeout: float = 3.0) -> bool:
+    """A running proxy answers 401 without a key; a stopped one answers nothing.
+
+    So 401 is health, not failure — the one diagnostic that costs an hour if
+    you assume otherwise.
+    """
+    import urllib.error
+    import urllib.request
+
+    try:
+        urllib.request.urlopen(f"{base}/models", timeout=timeout)
+        return True
+    except urllib.error.HTTPError as exc:
+        return exc.code in (401, 403)
+    except Exception:
+        return False
+
+
+def resolve_via(via: str) -> str:
+    """Turn "auto" into a concrete choice. Kept out of select_verifiers so that
+    selection stays pure — a function whose result depends on whether a local
+    service happens to be running is not one tests can pin down."""
+    if via not in ("auto", "proxy", "direct"):
+        raise ValueError(f"via must be auto, proxy or direct — got {via!r}")
+    if via != "auto":
+        return via
+    return "proxy" if proxy_is_up() else "direct"
+
+
+def select_verifiers(n: int, via: str = "direct") -> list[VerifierConfig]:
+    """`via` must already be concrete: proxy | direct. Call resolve_via first."""
     if n <= 0:
         raise ValueError("n must be positive")
-    pool = VERIFIER_POOL
+    if via not in ("proxy", "direct"):
+        raise ValueError(f"via must be proxy or direct — got {via!r}")
+    pool = PROXY_POOL if via == "proxy" else VERIFIER_POOL
     if n <= len(pool):
         return pool[:n]
     # More verifiers than distinct providers: cycle, still using every
@@ -464,9 +531,10 @@ def select_verifiers(n: int) -> list[VerifierConfig]:
 
 
 async def run_all(
-    claims: list[dict[str, Any]], n: int, mock: bool = False
+    claims: list[dict[str, Any]], n: int, mock: bool = False, via: str = "auto"
 ) -> dict[str, Any]:
-    verifiers = select_verifiers(n)
+    route = resolve_via(via)
+    verifiers = select_verifiers(n, via=route)
     verifiers_by_name = {v.name: v for v in verifiers}
     started = time.time()
 
@@ -485,6 +553,7 @@ async def run_all(
         "cost": estimate_cost(verifiers_by_name, all_verdicts),
         "elapsed_seconds": round(time.time() - started, 2),
         "verifiers_used": [v.name for v in verifiers],
+        "route": route,
     }
 
 
@@ -494,10 +563,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--n", type=int, default=3, help="independent verifiers per claim")
     ap.add_argument("--out", type=Path, default=None, help="write the JSON report here")
     ap.add_argument("--mock", action="store_true", help="no network calls; verify plumbing only")
+    ap.add_argument("--via", choices=("auto", "proxy", "direct"), default="auto",
+                    help="reach models through the local litellm proxy, each provider "
+                         "directly, or auto (proxy when reachable)")
     args = ap.parse_args(argv)
 
     claims = load_claims(args.claims)
-    report = asyncio.run(run_all(claims, args.n, mock=args.mock))
+    report = asyncio.run(run_all(claims, args.n, mock=args.mock, via=args.via))
 
     out_text = json.dumps(report, indent=2)
     if args.out:
