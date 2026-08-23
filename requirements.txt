@@ -1,14 +1,26 @@
+# What the app and the test suite need. CI installs exactly this file, so a new
+# import in src/ is not usable until it appears here. Keep it light: the GPU
+# worker's heavy stack lives in requirements-gpu.txt and is never installed here.
+#
+# tests/test_dependency_declarations.py fails if this file and pyproject.toml
+# disagree, or if the CI workflow goes back to hand-listing packages.
+
 # Core Web API
 fastapi>=0.100.0
 uvicorn>=0.22.0
 pydantic>=2.0
+httpx>=0.24.0
 
-# ML and Deep Learning Frameworks
-# Note: For Apple Silicon (MPS) or CUDA, install the appropriate torch binaries.
-torch>=2.1.0
-transformers>=4.36.0
-diffusers>=0.25.0
-accelerate>=0.25.0
+# MCP server (src/pluto_mcp_server.py)
+mcp>=1.0.0
+
+# Audio. soundfile needs libsndfile1 from apt on Linux.
+soundfile>=0.12.0
+numpy>=1.24.0
+
+# Voice generation. Runs in-process on the Mac; needs kokoro-v1.0.onnx and
+# voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
+kokoro-onnx
 
 # Utilities
 pillow
@@ -16,13 +28,8 @@ huggingface_hub
 sentencepiece
 protobuf
 
-# Voice generation. Runs in-process on the Mac; needs kokoro-v1.0.onnx and
-# voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
-kokoro-onnx
-
-# GPU worker (ltx_worker.py). torch/torchao come from the DLAMI on the box.
+# GPU worker control plane (ltx_worker.py runs on the box; this is the client).
 flask
 
 # Tests
 pytest
-httpx
