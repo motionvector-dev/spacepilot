@@ -1,0 +1,54 @@
+# Overnight sweep spec for `pluto sweep run` (spacepilot/pluto/sweep.py).
+#
+# FLUX.1 [schnell], apache-2.0, mflux-generate --model schnell. Fully cached
+# locally already (31 GB, see docs/PIPELINE-STATE.md) — this spec spends no
+# new download time, only compute.
+#
+# schnell is timestep-distilled specifically for 1-4 sampling steps
+# (registry/models/flux.yaml's flux-schnell-4bit note, sourced from the
+# FLUX.1-schnell model card) and is expected to degrade, not improve, past
+# that — so steps is fixed at 4 here, not swept. Sweeping it past 4 would
+# spend a chunk of the night's compute on a curve this model was not built to
+# have. Resolution and quantisation are the axes actually worth a night on.
+#
+# 3 resolutions x 2 quantisations x 1 step count = 6 jobs.
+schema: 1
+id: flux-schnell-4bit-sweep
+model_id: flux-schnell-4bit   # registry/models/flux.yaml variant id
+runtime_id: mflux
+model_alias: schnell          # --model value for mflux-generate
+metric: seconds_per_image
+
+fixed:
+  prompt: "a lighthouse at dusk, cinematic lighting, highly detailed, 35mm photograph"
+  seed: 42
+  # Deliberately NOT an axis — see the module comment above. mflux's own
+  # --help default is 4 for schnell.
+  steps: 4
+
+axes:
+  resolution:
+    - [512, 512]
+    - [768, 768]
+    - [1024, 1024]
+  # --quantize accepts {3,4,5,6,8}; 4 and 8 are the two registry/models/flux.yaml
+  # already carries variant entries for (flux-schnell-4bit, flux-schnell-8bit).
+  quantisation: [4, 8]
+
+mflux_flags:
+  battery_percentage_stop_limit: 15
+  low_ram: false
+  vae_tiling: true
+  vae_tile_size: null
+
+job_cap:
+  timeout_seconds: 180   # schnell at <=4 steps is the fast end of this fleet
+
+runner:
+  max_jobs: 40
+  max_wall_seconds: 28800
+  idle_wait_timeout_minutes: 60
+  idle_poll_seconds: 30
+  # flux-schnell-4bit working_set is ~9 GB (estimated, registry/models/flux.yaml);
+  # the HF cache on this Mac already sits around 35 GB with schnell's 31 GB in it.
+  disk_free_floor_gb: 40
