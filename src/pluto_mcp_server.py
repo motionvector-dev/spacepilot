@@ -1,19 +1,19 @@
+# The SDK renamed FastMCP to MCPServer in mcp 2.0; the API is otherwise the same.
+# There is deliberately no fallback stub here. The old one defined run() as `pass`,
+# so a missing or moved dependency produced a server that started, served nothing,
+# and exited cleanly — an agent connecting to it saw no error at all.
 try:
-    from mcp.server.fastmcp import FastMCP
-except ImportError:
-    class FastMCP:
-        def __init__(self, name):
-            self.name = name
-        def tool(self):
-            return lambda f: f
-        def resource(self, path):
-            return lambda f: f
-        def run(self):
-            pass
+    from mcp.server import MCPServer
+except ImportError as exc:  # pragma: no cover - import guard
+    raise SystemExit(
+        "pluto_mcp_server needs the mcp SDK (>=2.0).\n"
+        "  pip install 'mcp>=2.0'\n"
+        f"import failed: {exc}"
+    ) from exc
 
 from typing import Optional, Dict, Any, List
 
-mcp = FastMCP("Pluto Studio")
+mcp = MCPServer("Pluto Studio")
 
 @mcp.tool()
 def pluto_generate_video(prompt: str, seconds: float = 4.0, camera_pan: str = None, camera_tilt: str = None, camera_zoom: str = None, camera_intensity: int = 3, draft_mode: bool = False) -> Dict[str, Any]:
@@ -165,35 +165,6 @@ def pluto_get_render_status(job_id: str) -> Dict[str, Any]:
     return {"job_id": job_id, "status": "completed"}
 
 @mcp.tool()
-def pluto_get_fleet_status() -> Dict[str, Any]:
-    """Get the status of the GPU fleet.
-    
-    Returns:
-        Dict[str, Any]: Information about vram_usage, active instances, and health status.
-    """
-    return {"vram_usage": 0.5, "instances": 10, "status": "healthy"}
-
-@mcp.tool()
-def pluto_skypilot_arbitrage(sort_by: str = "spot_price") -> Dict[str, Any]:
-    """Query real-time spot GPU prices and preemption rates across 12+ cloud providers via SkyPilot.
-    
-    Args:
-        sort_by (str, optional): Metric to sort by ("spot_price", "preemption_rate", "vram"). Defaults to "spot_price".
-        
-    Returns:
-        Dict[str, Any]: 12+ cloud arbitrage rankings and recommended spot instance.
-    """
-    try:
-        from src.skypilot_orchestrator import sky_orchestrator
-        return {
-            "status": "ok",
-            "arbitrage_matrix": sky_orchestrator.get_arbitrage_matrix(sort_by=sort_by),
-            "best_option": sky_orchestrator.get_cheapest_cloud(),
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@mcp.tool()
 def pluto_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
     """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
     
@@ -244,21 +215,6 @@ def pluto_recommend_models() -> Dict[str, Any]:
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@mcp.tool()
-def pluto_download_model(model_id: str) -> Dict[str, Any]:
-    """Download a model from the recommended catalog to the local cache.
-    
-    Args:
-        model_id (str): The ID of the model to download (e.g. 'kokoro-82m-tts', 'qwen2.5-3b-instruct-gguf').
-        
-    Returns:
-        Dict[str, Any]: Download status and destination path.
-    """
-    try:
-        from src.model_recommender import download_model_mock
-        return download_model_mock(model_id)
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 @mcp.tool()
 def pluto_get_local_status() -> Dict[str, Any]:
@@ -284,77 +240,7 @@ def pluto_get_local_status() -> Dict[str, Any]:
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@mcp.tool()
-def pluto_get_billing_usage(customer_id: str) -> Dict[str, Any]:
-    """Get billing usage, active tier, and remaining credits for a customer.
-    
-    Args:
-        customer_id (str): Customer ID.
-        
-    Returns:
-        Dict[str, Any]: Usage and tier information.
-    """
-    try:
-        from src.pluto.services.polar_billing import PolarBillingManager
-        manager = PolarBillingManager()
-        return manager.get_usage_and_tier(customer_id)
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
-@mcp.tool()
-def pluto_verify_agent_payment(signature: str, payload: dict) -> Dict[str, Any]:
-    """Validate cryptographic payment proofs for autonomous AI agents paying in USDC.
-    
-    Args:
-        signature (str): Agent x402 signature.
-        payload (dict): Payment payload containing agent_id and amount.
-        
-    Returns:
-        Dict[str, Any]: Verification status and amount credited.
-    """
-    try:
-        from src.pluto.services.polar_billing import PolarBillingManager
-        manager = PolarBillingManager()
-        return manager.verify_x402_micropayment(signature, payload)
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@mcp.resource("pluto://models/ltx25")
-def get_ltx25_model_info() -> str:
-    """Get information about the LTX25 model.
-    
-    Returns:
-        str: A markdown-formatted summary of the LTX25 model specifications.
-    """
-    return (
-        "# LTX25 Model Specifications\n"
-        "- **Format:** Float8\n"
-        "- **VRAM Requirement:** 48GB\n"
-        "- **Output Framerate:** 24fps\n"
-        "- **Description:** Advanced spatio-temporal generative model for cinematic video creation.\n"
-    )
-
-@mcp.resource("pluto://voices/catalogue")
-def get_voice_catalogue() -> str:
-    """Get the Kokoro voice catalogue.
-    
-    Returns:
-        str: A JSON-formatted string detailing the 10 available Kokoro voices.
-    """
-    import json
-    voices = [
-        {"id": "af_heart", "name": "Heart", "gender": "female"},
-        {"id": "af_alloy", "name": "Alloy", "gender": "female"},
-        {"id": "af_bella", "name": "Bella", "gender": "female"},
-        {"id": "af_jessica", "name": "Jessica", "gender": "female"},
-        {"id": "af_kore", "name": "Kore", "gender": "female"},
-        {"id": "am_michael", "name": "Michael", "gender": "male"},
-        {"id": "am_fenrir", "name": "Fenrir", "gender": "male"},
-        {"id": "am_puck", "name": "Puck", "gender": "male"},
-        {"id": "am_echo", "name": "Echo", "gender": "male"},
-        {"id": "am_onyx", "name": "Onyx", "gender": "male"}
-    ]
-    return json.dumps(voices, indent=2)
 
 @mcp.tool()
 def pluto_create_checkpoint(job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> Dict[str, Any]:
@@ -566,6 +452,18 @@ def pluto_install_runtime(runtime_id: str, allow_downgrade: bool = False) -> dic
 
     st = rt.install(r)
     return {**st.to_dict(), "changed": imp.to_dict()}
+
+# Deliberately NOT exposed as tools — each returns a plausible success with nothing
+# behind it, and an agent calling one has no way to tell:
+#   pluto_skypilot_arbitrage: no arbitrage is possible on one 8 vCPU box; the G-family spot quota permits exactly one g6e.2xlarge
+#   pluto_download_model: model_catalog._mock_download_task downloads nothing (TODO(real-download))
+#   pluto_get_billing_usage: no metering, credits or entitlements exist, so there is nothing to report usage against
+#   pluto_verify_agent_payment: same — x402 verification has no ledger behind it
+#   pluto_get_fleet_status: returned a fixed {vram_usage: 0.5, instances: 10, healthy};
+#     there is no fleet, and the one box is usually not running at all
+#   pluto://models/ltx25, pluto://voices/catalogue: hardcoded prose stating a 48GB
+#     VRAM figure and a voice list as fact, neither read from anything
+# Restore a tool here only once its implementation is real.
 
 if __name__ == "__main__":
     mcp.run()

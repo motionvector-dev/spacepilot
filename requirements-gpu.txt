@@ -1,0 +1,11 @@
+# The GPU worker's stack (src/ltx_worker.py), installed on the g6e box only.
+# torch and torchao normally come from the DLAMI image already; this file exists
+# so the versions are written down somewhere rather than assumed.
+#
+# Never installed by CI: the worker is stubbed in tests and never runs there.
+# Installing it on ubuntu-latest would pull ~2.5 GB of CUDA wheels per run.
+
+torch>=2.1.0
+transformers>=4.36.0
+diffusers>=0.25.0
+accelerate>=0.25.0

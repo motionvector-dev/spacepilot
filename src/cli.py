@@ -24,6 +24,13 @@ logger = logging.getLogger(__name__)
 
 # Paths
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
+
+# `python src/cli.py` puts src/ on sys.path, not the repo root, so every
+# `from src.<module> import ...` below raises ModuleNotFoundError: No module
+# named 'src'. `python -m src.cli` does not have the problem. Support both,
+# because the first form is what a path in a doc or a launch config looks like.
+if str(PLUTO_ROOT) not in sys.path:
+    sys.path.insert(0, str(PLUTO_ROOT))
 OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
 CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path(os.environ.get("PLUTO_SSH_KEY", Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
@@ -814,7 +821,8 @@ def main():
 
     # serve
     serve_p = subparsers.add_parser("serve", help="Start FastAPI app")
-    serve_p.add_argument("--host", type=str, default="0.0.0.0", help="Host (default: 0.0.0.0)")
+    serve_p.add_argument("--host", type=str, default="127.0.0.1",
+                         help="Host (default: 127.0.0.1, this machine only)")
     serve_p.add_argument("--port", type=int, default=8088, help="Port (default: 8088)")
     serve_p.add_argument("--reload", action="store_true", help="Enable reload")
 
