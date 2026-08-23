@@ -22,6 +22,17 @@ caller reporting its own idleness is the least reliable possible source.
 `estimated` because a capacity claim has to come from somewhere before anyone
 runs anything. This store does not: a record that was not observed does not
 belong in it.
+
+**A measurement names the weights it describes.** `runtime_version` already
+pins the software side: "mflux 0.19.0 took 23.4s" is checkable in a way that
+"mflux took 23.4s" is not. `model_revision` is the same idea for the model
+side, and it matters more, because a repo id moves under you without any
+version number changing. If the author force-pushes, re-uploads, or lands a
+new commit on main, the record still says `flux2-klein-4b-4bit` and now
+describes weights nobody can obtain again. So the revision the registry pins
+is copied onto the record at write time (see `record`), not looked up later —
+a lookup would return today's answer, which is the thing being defended
+against.
 """
 
 from __future__ import annotations
@@ -151,6 +162,11 @@ class Measurement:
     variant_id: Optional[str] = None
     runtime_id: Optional[str] = None
     runtime_version: Optional[str] = None
+    # The exact weights. None means the registry did not pin this variant when
+    # the run happened, so the record names a repo that has since been free to
+    # change. Absent rather than false, so every record written before this
+    # field existed still parses unchanged.
+    model_revision: Optional[str] = None
     quantisation: Optional[str] = None
     backend: Optional[str] = None
     interpreter: Optional[str] = None
@@ -322,6 +338,35 @@ def write_system(system: System, root: Optional[Path] = None) -> Path:
     return path
 
 
+_UNSET = object()
+
+
+def revision_for(*candidates: Optional[str]) -> Optional[str]:
+    """The registry's pinned revision for the first candidate id that matches.
+
+    Records name their subject as `variant_id`, or — for records written before
+    that field existed — as `model_id` holding the variant id. Both are tried.
+
+    Returns None when nothing matches or the registry cannot be read. A missing
+    revision is exactly what an unpinned variant should produce, and a registry
+    that fails to load must never take a real measurement down with it: the run
+    already happened, and losing the sample is strictly worse than recording it
+    without this one field.
+    """
+    try:
+        from spacepilot.pluto.registry import registry as _registry
+        reg = _registry()
+    except Exception:
+        return None
+    for cid in candidates:
+        if not cid:
+            continue
+        v = reg.variant(cid)
+        if v is not None and v.revision:
+            return v.revision
+    return None
+
+
 def record(
     *,
     system: System,
@@ -349,6 +394,12 @@ def record(
     state = contention or sample_contention()
     if state not in CONTENTION:
         raise MeasurementError(f"contention {state!r} not one of {sorted(CONTENTION)}")
+
+    # Stamped at write time from the registry, because that is when the run
+    # happened. Resolving it at read time would answer "what does this repo
+    # point at now", which is the question a pin exists to stop anyone asking.
+    if fields.get("model_revision", _UNSET) is _UNSET:
+        fields["model_revision"] = revision_for(fields.get("variant_id"), model_id)
 
     now = _dt.datetime.now(_dt.timezone.utc)
     m = Measurement(
