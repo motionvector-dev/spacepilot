@@ -7,11 +7,10 @@ producing 720p / 1080p cinematic video with high semantic alignment.
 """
 
 from typing import Dict, Any, Optional, Tuple
-from pathlib import Path
 import time
 import uuid
 
-from spacepilot.engines.base import BaseVideoEngine, EngineSpec
+from spacepilot.engines.base import BaseVideoEngine, EngineSpec, default_render_path
 
 
 class HunyuanVideoEngine(BaseVideoEngine):
@@ -87,12 +86,7 @@ class HunyuanVideoEngine(BaseVideoEngine):
         inferred_cfg = guidance_scale if guidance_scale is not None else 6.0
         inferred_seed = seed if seed is not None else int(time.time() * 1000) % 2147483647
 
-        if output_path is None:
-            output_dir = Path("/tmp/pluto_renders")
-            output_dir.mkdir(parents=True, exist_ok=True)
-            out_file = str(output_dir / f"{job_id}.mp4")
-        else:
-            out_file = output_path
+        out_file = output_path if output_path is not None else default_render_path(job_id)
 
         # Render mock video
         self._render_mock_video(
@@ -141,12 +135,7 @@ class HunyuanVideoEngine(BaseVideoEngine):
         **kwargs,
     ) -> Dict[str, Any]:
         job_id = f"hunyuan_ext_{uuid.uuid4().hex[:10]}"
-        if output_path is None:
-            output_dir = Path("/tmp/pluto_renders")
-            output_dir.mkdir(parents=True, exist_ok=True)
-            out_file = str(output_dir / f"{job_id}.mp4")
-        else:
-            out_file = output_path
+        out_file = output_path if output_path is not None else default_render_path(job_id)
 
         self._render_mock_video(
             output_path=out_file,

@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Any
 
 from fastapi import HTTPException
 
-from spacepilot.pluto.core.utils import resolve_output
+from spacepilot.pluto.core.utils import allocate_output, resolve_output
 
 @dataclass
 class CheckpointMetadata:
@@ -43,10 +43,18 @@ class CheckpointSyncEngine:
         if not hasattr(self, 'initialized'):
             self.snapshots: Dict[str, CheckpointMetadata] = {}
             self.initialized = True
-            
-            # Use a local directory to simulate remote storage/local storage
-            self.base_dir = "/tmp/pluto_checkpoints"
-            os.makedirs(self.base_dir, exist_ok=True)
+
+    @property
+    def base_dir(self) -> str:
+        """Local stand-in for remote storage, under the outputs directory.
+
+        Read from settings on every access rather than cached in __init__:
+        this class is a process-wide singleton, so a cached value would
+        outlive any change to PLUTO_OUTPUTS_DIR.
+        """
+        path = allocate_output("checkpoints")
+        path.mkdir(parents=True, exist_ok=True)
+        return str(path)
 
     def _compute_checksum(self, paths: List[str]) -> str:
         h = hashlib.sha256()
@@ -128,7 +136,7 @@ class CheckpointSyncEngine:
         return {
             "status": "success",
             "snapshot_id": snapshot_id,
-            "target_dir": target_dir or f"/tmp/restore_{snapshot_id}",
+            "target_dir": target_dir or str(allocate_output(snapshot_id, subdir="restores")),
             "metadata": asdict(meta),
             "mock": True
         }
