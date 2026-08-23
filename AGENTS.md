@@ -10,7 +10,7 @@ The repo carries no `.venv`, and bare `python3` is usually the wrong
 interpreter — on the primary dev machine it resolves to base conda, which lacks
 fastapi. Use the environment where `requirements.txt` was installed, or set
 `PLUTO_PYTHON` / `python_bin` in `.pluto_config.json` (gitignored, machine-local)
-and let the CLI resolve it. Anything that imports `src/studio_api.py` —
+and let the CLI resolve it. Anything that imports `src/web_api.py` —
 including pytest — needs that interpreter.
 
 ## Secrets
@@ -29,7 +29,7 @@ python -m pytest tests/ -q
 ```
 
 `tests/conftest.py` redirects `PLUTO_OUTPUTS_DIR` to a temp dir before
-`src.studio_api` is imported. Keep it that way — the suite used to write
+`src.web_api` is imported. Keep it that way — the suite used to write
 generated clips into the real asset library on every run.
 
 A test that passes against the broken code is not a test. When fixing a bug,
@@ -82,7 +82,7 @@ can reintroduce a shell. Never `shell=True`, never `os.system`.
 
 Anything reaching the filesystem from a request goes through `resolve_output`,
 which resolves and then checks containment in `OUTPUTS_DIR`. Anything reaching
-`innerHTML` in `studio/studio.js` goes through `esc()`; there is a regression
+`innerHTML` in `web/app.js` goes through `esc()`; there is a regression
 test that fails if server data is interpolated raw.
 
 Check subprocess return codes and record real failures. The original code sent

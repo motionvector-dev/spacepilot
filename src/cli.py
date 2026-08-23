@@ -500,7 +500,7 @@ def studio_python(cfg):
 
 def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     port = args.port or 8088
-    studio_script = PLUTO_ROOT / "src" / "studio_api.py"
+    studio_script = PLUTO_ROOT / "src" / "web_api.py"
 
     python_bin = studio_python(cfg)
     if not python_bin:

@@ -91,7 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(checkpoints_router)
 
     # Mount static frontend if available
-    if settings.studio_dir.exists():
-        app.mount("/", StaticFiles(directory=str(settings.studio_dir), html=True), name="studio")
+    if settings.web_dir.exists():
+        app.mount("/", StaticFiles(directory=str(settings.web_dir), html=True), name="web")
 
     return app

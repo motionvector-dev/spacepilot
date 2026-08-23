@@ -102,7 +102,7 @@
 **Behavior:**
 - Hover → expand with labels (200ms ease)
 - Click hamburger icon → pin expanded
-- On studio/timeline pages → auto-collapse to icon rail
+- On web/timeline pages → auto-collapse to icon rail
 - Recents section shows last 5 sessions with thumbnails
 
 ### 3.2 Top Header (SIMPLIFIED)
@@ -330,9 +330,9 @@ Transform from minimal landing into a creative hub:
 |---|---|---|
 | `sidebar.css` | **REWRITE** | Full replacement — new nav sidebar system |
 | `sidebar.js` | **REWRITE** | New sidebar: nav items, expand/collapse, recents, mode toggle |
-| `studio.css` | **MODIFY** | Add new tokens, update header, add agent panel, update timeline |
+| `app.css` | **MODIFY** | Add new tokens, update header, add agent panel, update timeline |
 | `index.html` | **MAJOR MODIFY** | Restructure layout (sidebar + header + center + agent panel) |
-| `studio.js` | **MODIFY** | Update layout state, add agent chat panel, skills system |
+| `app.js` | **MODIFY** | Update layout state, add agent chat panel, skills system |
 | `home.html` | **REWRITE** | Complete redesign to creative hub |
 | `create.html` | **MAJOR MODIFY** | New prompt input bar, skills integration, gen preferences |
 | `create.js` | **MODIFY** | Skills drawer logic, prompt tab-completion, gen prefs |
@@ -395,7 +395,7 @@ main
 
 ### Phase 1: Layout Foundation (~3-4 sessions)
 1. Rewrite `sidebar.css` + `sidebar.js` — new nav sidebar
-2. Simplify `studio-header` in `studio.css`
+2. Simplify `studio-header` in `app.css`
 3. Update `index.html` layout — three-column grid
 4. Update all pages to use new sidebar layout wrapper
 
@@ -437,7 +437,7 @@ main
 ## 9. Open Questions
 
 1. **Sidebar pinning:** Persistent expanded, or hover-expand with pin toggle?
-2. **Agent panel:** Always-visible on studio/create, or togglable?
+2. **Agent panel:** Always-visible on web/create, or togglable?
 3. **Skills:** Beyond T2V/I2V/Upscale/Loop/Director — other capabilities to surface?
 4. **Credits vs. GPU cost:** Keep GPU spot pricing, or credit abstraction?
 5. **"New Chat" concept:** Each generation as a "chat" (thread), or keep individual sessions?

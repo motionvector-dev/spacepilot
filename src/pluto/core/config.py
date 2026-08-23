@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 def _resolve_pluto_root() -> Path:
     current = Path(__file__).resolve().parent
     while current != current.parent:
-        if (current / "src").exists() and ((current / "studio").exists() or (current / "pyproject.toml").exists()):
+        if (current / "src").exists() and ((current / "web").exists() or (current / "pyproject.toml").exists()):
             return current
         current = current.parent
     return Path(__file__).resolve().parent.parent.parent.parent
@@ -47,7 +47,7 @@ class Settings(BaseModel):
     outputs_dir: Path = Field(
         default_factory=lambda: Path(os.environ.get("PLUTO_OUTPUTS_DIR", str(PLUTO_ROOT / "outputs"))).resolve()
     )
-    studio_dir: Path = Field(default_factory=lambda: PLUTO_ROOT / "studio")
+    web_dir: Path = Field(default_factory=lambda: PLUTO_ROOT / "web")
 
     studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(PLUTO_ROOT))
     local_worker_token: Optional[str] = Field(default_factory=lambda: os.environ.get("LOCAL_WORKER_TOKEN"))

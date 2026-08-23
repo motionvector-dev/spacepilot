@@ -36,7 +36,7 @@ from src.pluto_mcp_server import (
     pluto_generate_video_wan,
     pluto_generate_video_hunyuan,
 )
-from src.studio_api import app, STUDIO_TOKEN
+from src.web_api import app, STUDIO_TOKEN
 
 
 client = TestClient(app)

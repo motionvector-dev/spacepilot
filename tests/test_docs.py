@@ -12,7 +12,7 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "src"))
 
-from src.studio_api import app
+from src.web_api import app
 
 client = TestClient(app)
 
@@ -49,9 +49,9 @@ def test_docs_page_contains_core_architecture_sections():
 
 
 def test_docs_js_syntax_is_valid():
-    """Verify studio/docs.js syntax with node."""
-    docs_js_path = PLUTO_ROOT / "studio" / "docs.js"
+    """Verify web/docs.js syntax with node."""
+    docs_js_path = PLUTO_ROOT / "web" / "docs.js"
     assert docs_js_path.exists()
 
     res = subprocess.run(["node", "-c", str(docs_js_path)], capture_output=True, text=True)
-    assert res.returncode == 0, f"Syntax error in studio/docs.js: {res.stderr}"
+    assert res.returncode == 0, f"Syntax error in web/docs.js: {res.stderr}"

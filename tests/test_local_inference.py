@@ -24,7 +24,7 @@ from src.pluto_mcp_server import (
     pluto_recommend_models,
     pluto_get_local_status,
 )
-from src.studio_api import app, STUDIO_TOKEN
+from src.web_api import app, STUDIO_TOKEN
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
@@ -139,7 +139,7 @@ def test_fastmcp_tools():
     assert "vram_usable_gb" in status_res
 
 
-def test_studio_api_compute_endpoints():
+def test_web_api_compute_endpoints():
     """Test REST API compute profile, recommendation, and download endpoints."""
     r_prof = client.get("/api/compute/local-profile")
     assert r_prof.status_code == 200

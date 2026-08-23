@@ -10,7 +10,7 @@ So the *constants* travel with the data. The JS reads the thresholds from here
 rather than repeating them as literals, and a change to the reserve fraction or
 the footprint bands moves both at once.
 
-    python tools/export_registry.py [--out studio/registry.json]
+    python tools/export_registry.py [--out web/registry.json]
 """
 
 import argparse
@@ -37,7 +37,7 @@ METAL_WORKING_SET_FRACTION = 0.78
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="studio/registry.json")
+    ap.add_argument("--out", default="web/registry.json")
     args = ap.parse_args()
 
     reg = load_registry()

@@ -1,9 +1,13 @@
 # Inference fleet
 
 Every model endpoint reachable from `doppler run -p unfoundbox -c dev_personal --`
-inside `~/code`. Verified 2026-08-16 by calling each provider's `/models`, not by
-checking that a key exists. Re-verify with the script at the bottom rather than
-trusting these counts.
+inside `~/code`. Verified 2026-08-16, Groq and the litellm proxy re-verified
+2026-08-23, by calling each provider's `/models` — not by checking that a key
+exists. Re-verify with the script at the bottom rather than trusting these counts.
+
+**Model IDs go stale silently.** `llama-3.3-70b-versatile` sat in this file as a
+verified Groq ID until a live call returned `model_not_found` on 2026-08-23. A doc
+that exists so nobody re-derives IDs is worse than useless when its IDs are dead.
 
 **There is no need to ask which LLM to use, or to hunt for keys.** This is the list.
 
@@ -14,7 +18,7 @@ trusting these counts.
 | OpenRouter | `OPENROUTER_API_KEY` | 413 | anything; 16 are genuinely free |
 | NVIDIA | `NVIDIA_API_KEY` | 102 | Nemotron family, wide open-weights |
 | Gemini ×3 | `GEMINI_PRIMARY_API_KEY`, `GEMINI_SECONDARY_API_KEY`, `GOOGLE_API_KEY` | 52 each | text, video, image, music, TTS, embeddings |
-| Groq | `GROQ_API_KEY` | 15 | fastest tokens/sec; Whisper transcription |
+| Groq | `GROQ_API_KEY` | 13 | fastest tokens/sec; Whisper transcription |
 | GLM (Zhipu) | `GLM_API_KEY` | 9 | glm-4.5 → glm-5.3 |
 | Cerebras | `CEREBRAS_API_KEY` | 3 | lowest latency anywhere |
 | Mercury | `MERCURY_API_KEY` | 1 | `mercury-2`, a diffusion LLM |
@@ -86,6 +90,8 @@ closed the fleet's one diarization gap.
 - **Structured JSON output** → Gemini Flash or GLM. Small models fail at nested schemas.
 - **Transcription** → Groq, `whisper-large-v3-turbo`.
 - **Bulk / offline** → OpenRouter free tier, or `agy`.
+- **Fanning one job across many models** → the local litellm proxy. One base URL,
+  one key, 28 models; no per-provider client code and no per-provider failure mode.
 - **Never** → loading a local model through `transformers` on MPS. `src/enhance_prompt.py`
   does this with Qwen2.5-1.5B and reloads on every call; it predates the fleet and
   nothing should copy it.
@@ -97,7 +103,8 @@ gemini   gemini-3.7-flash · gemini-3.5-flash · gemini-2.5-pro · gemini-flash-
 video    veo-3.1-generate-preview · veo-3.1-fast-generate-preview · veo-3.1-lite-generate-preview
 image    imagen-4.0-{fast,ultra}-generate-001 · gemini-3-pro-image · nano-banana-pro-preview
 audio    lyria-3-pro-preview · gemini-2.5-flash-preview-tts · gemini-omni-flash-preview
-groq     openai/gpt-oss-120b · llama-3.3-70b-versatile · qwen/qwen3.6-27b · whisper-large-v3-turbo
+groq     openai/gpt-oss-120b · openai/gpt-oss-20b · qwen/qwen3.6-27b · whisper-large-v3-turbo
+         (llama-3.3-70b-versatile was here and is GONE — Groq now returns model_not_found)
 cerebras gpt-oss-120b · gemma-4-31b · zai-glm-4.7
 glm      glm-5.3 · glm-5.2 · glm-5-turbo · glm-4.5-air
 free     nvidia/nemotron-3-ultra-550b-a55b:free · openai/gpt-oss-20b:free · google/gemma-4-31b-it:free
@@ -107,6 +114,35 @@ free     nvidia/nemotron-3-ultra-550b-a55b:free · openai/gpt-oss-20b:free · go
 (720p/1080p), Fast $0.15/s, Lite from $0.03/s. A 5-second Lite clip is $0.15. Google
 Flow gives free daily credits but is a consumer web UI — it cannot be scripted, and
 its output carries a **Veo watermark**.
+
+## The local litellm proxy — 28 models behind one endpoint
+
+`http://127.0.0.1:8000/v1`, OpenAI-compatible, authenticated with
+`LITELLM_MASTER_KEY` from Doppler. This is what `opencode` routes through, and it
+is the easiest way to fan work across providers from a script: one base URL, one
+key, no per-provider client code. Verified live 2026-08-23.
+
+Three families, distinguishable by prefix:
+
+| Prefix | Source | Models |
+| --- | --- | --- |
+| none | direct provider keys | `gemini-3.7-flash` · `deepseek-v3.2` · `qwen3.6-27b` · `gpt-oss-120b-groq` · `gpt-oss-120b-cerebras` · `gpt-5.6-sol` · `gpt-5.6-luna` · `claude-{sonnet-4-6,sonnet-5,opus-5,fable-5}` |
+| `nim-` | **NVIDIA NIM** | `nim-deepseek-v4-flash` · `nim-minimax-m3` |
+| `go-` | **opencode go** | `go-deepseek-v4-flash` · `go-deepseek-v4-pro` · `go-glm-5.3` · `go-grok-4.5` · `go-hy3` · `go-kimi-k3` · `go-mimo-v2.5` · `go-minimax-m2.7` · `go-minimax-m3` · `go-qwen3.7-plus` |
+| `zen-` | **opencode zen** | `zen-big-pickle` · `zen-laguna` · `zen-nemotron-ultra` · `zen-x-preview-f` |
+
+**opencode go bills on a weekly quota**, so a `go-` model can be live in this
+listing and still refuse a call once the week's allowance is spent. Treat a
+`go-` route as best-effort and always have a non-`go-` fallback in any script
+that must finish.
+
+`opencode`'s own defaults are `opencode-go/minimax-m3` for the main model and
+`opencode-go/mimo-v2.5` for the small one, so both inherit that quota.
+
+The proxy going down looks like an auth failure, not an outage: it returns
+**401 without a key and nothing at all when stopped**. Check with
+`curl -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/v1/models` — a 401
+means it is running.
 
 ## Gotcha: Cloudflare blocks Python clients
 

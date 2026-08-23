@@ -16,8 +16,8 @@ sys.path.append(str(PLUTO_ROOT / "src"))
 
 from fastapi.testclient import TestClient
 
-import src.studio_api as studio_api
-from src.studio_api import OUTPUTS_DIR, STUDIO_TOKEN, app
+import src.web_api as web_api
+from src.web_api import OUTPUTS_DIR, STUDIO_TOKEN, app
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
@@ -40,7 +40,7 @@ def wait_for_job(job_id, timeout=60):
 def silent_wav(seconds=1):
     """A real WAV the ffmpeg stages can actually process."""
     out = OUTPUTS_DIR / "pytest_stub_source.wav"
-    studio_api.run_ffmpeg([
+    web_api.run_ffmpeg([
         "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo", "-t", str(seconds), str(out)
     ])
     data = out.read_bytes()
@@ -89,7 +89,7 @@ def test_bounds_are_enforced():
 
 def test_music_job_completes_and_normalizes(monkeypatch):
     audio = silent_wav(2)
-    monkeypatch.setattr(studio_api, "mlx_generate_audio", lambda path, payload, timeout: audio)
+    monkeypatch.setattr(web_api, "mlx_generate_audio", lambda path, payload, timeout: audio)
 
     response = client.post("/api/generate/music", json={**MUSIC_BODY, "duration_seconds": 2}, headers=AUTH)
     assert response.status_code == 200
@@ -113,7 +113,7 @@ def test_voice_synthesizes_real_speech_in_process():
 
     import pytest
 
-    if not studio_api.kokoro_assets()[0]:
+    if not web_api.kokoro_assets()[0]:
         pytest.skip("kokoro-v1.0.onnx not on this machine")
 
     response = client.post("/api/generate/voice", json=VOICE_BODY, headers=AUTH)
@@ -131,7 +131,7 @@ def test_voice_synthesizes_real_speech_in_process():
 
 def test_voice_job_completes_and_drops_its_raw(monkeypatch):
     audio = silent_wav(1)
-    monkeypatch.setattr(studio_api, "synthesize_voice",
+    monkeypatch.setattr(web_api, "synthesize_voice",
                         lambda text, voice, speed, out: out.write_bytes(audio))
 
     response = client.post("/api/generate/voice", json=VOICE_BODY, headers=AUTH)
@@ -148,7 +148,7 @@ def test_backend_failure_is_recorded_and_leaves_nothing_behind(monkeypatch):
     def boom(path, payload, timeout):
         raise OSError("connection refused")
 
-    monkeypatch.setattr(studio_api, "mlx_generate_audio", boom)
+    monkeypatch.setattr(web_api, "mlx_generate_audio", boom)
     response = client.post("/api/generate/music", json=MUSIC_BODY, headers=AUTH)
     job_id = response.json()["job_id"]
 
@@ -161,7 +161,7 @@ def test_backend_failure_is_recorded_and_leaves_nothing_behind(monkeypatch):
 
 def test_normalization_failure_keeps_the_expensive_raw_take(monkeypatch):
     """The documented exception: ~25 min of GPU time is not thrown away."""
-    monkeypatch.setattr(studio_api, "mlx_generate_audio", lambda path, payload, timeout: b"not audio")
+    monkeypatch.setattr(web_api, "mlx_generate_audio", lambda path, payload, timeout: b"not audio")
 
     response = client.post("/api/generate/music", json=MUSIC_BODY, headers=AUTH)
     job_id = response.json()["job_id"]
@@ -182,7 +182,7 @@ def test_music_payload_matches_the_backend_contract(monkeypatch):
         seen["payload"] = payload
         raise OSError("stop here")
 
-    monkeypatch.setattr(studio_api, "mlx_generate_audio", capture)
+    monkeypatch.setattr(web_api, "mlx_generate_audio", capture)
     response = client.post(
         "/api/generate/music",
         json={**MUSIC_BODY, "duration_seconds": 10, "seed": 7},
@@ -204,7 +204,7 @@ def test_voice_mlx_backend_payload_matches_the_contract(monkeypatch):
         seen.update(path=path, payload=payload)
         raise OSError("stop here")
 
-    monkeypatch.setattr(studio_api, "mlx_generate_audio", capture)
+    monkeypatch.setattr(web_api, "mlx_generate_audio", capture)
     response = client.post(
         "/api/generate/voice",
         json={**VOICE_BODY, "voice": "af_heart", "backend": "mlx"},
