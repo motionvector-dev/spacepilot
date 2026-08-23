@@ -1,0 +1,37 @@
+schema: 1
+id: kokoro
+name: Kokoro
+family: hexgrad
+kind: speech
+summary: An 82M-parameter text-to-speech model. Small enough to be the first thing anyone installs.
+homepage: https://huggingface.co/hexgrad/Kokoro-82M
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: kokoro-82m
+    name: Kokoro 82M
+    params: 82M
+    precision: fp32
+    repo: hexgrad/Kokoro-82M
+    backends: [metal, cuda, cpu]
+    download:
+      value: 366000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 751619276
+      source: estimated
+      note: weights plus a small activation margin; the ONNX build runs comfortably in well under a gigabyte
+    speed:
+      - device: Apple M1 Max 32GB
+        backend: cpu
+        metric: realtime_factor
+        value: 4.6
+        source: measured
+        measured_on: "2026-08-22"
+        note: 12.5s of speech from a single sentence in 2.7s wall clock, kokoro-v1.0.onnx via onnxruntime

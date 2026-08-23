@@ -23,6 +23,9 @@ numpy>=1.24.0
 # voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
 kokoro-onnx
 
+# Model and runtime registry (src/pluto/registry.py, src/pluto/runtimes.py)
+PyYAML>=6.0
+
 # Utilities
 pillow
 huggingface_hub

@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which AI models can this machine run? — SpacePilot</title>
+<meta name="description" content="Video, image, speech and text models checked against your actual hardware. Every number says whether it was measured, summed from the model repository, published elsewhere, or estimated.">
+<link rel="preload" href="/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<style>
+@font-face { font-family:'Geist Variable'; src:url('/fonts/geist-variable.woff2') format('woff2');
+  font-weight:100 900; font-style:normal; font-display:swap; }
+
+:root {
+  --font-sans:'Geist Variable','Geist','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'Geist Mono Variable','SF Mono',ui-monospace,monospace;
+  --weight-regular:400; --weight-medium:500;
+  --text-size-meta:11px; --text-size-sm:12px; --text-size-md:13px;
+  --text-size-xl:20px; --text-size-display:32px;
+  --tracking-display:-0.02em; --tracking-meta:-0.02em; --tracking-mono-label:0.04em;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-1:4px; --radius-2:6px; --radius-3:8px; --radius-4:12px;
+  --h-control:30px; --h-control-primary:34px;
+  --hairline:0.5px; --border-strong:1px;
+  --motion-fast:120ms; --motion-base:160ms; --motion-slow:220ms; --motion-exit:120ms;
+  --motion-loop-spin:900ms; --motion-loop-play:running;
+  --motion-rise-sm:4px; --motion-rise-md:6px; --motion-press:0.985; --motion-enter-scale:0.98;
+  --stagger-step:40ms; --ease-out:cubic-bezier(0.22,1,0.36,1); --travel:1;
+
+  color-scheme:light;
+  --app-ground:#ffffff; --surface:#f4f4f5; --surface-hover:#efeff1;
+  --surface-raised:#efeff1; --surface-raised-hover:#e9e9eb;
+  --surface-inset:#e9e9eb; --surface-strong:#e4e4e7;
+  --border-100:#f0f0f1; --border-200:#ececee; --border-300:#e4e4e7;
+  --border-400:#dadade; --border-500:#d4d4d8;
+  --text-300:#a1a1aa; --text-500:#71717a; --text-700:#52525b;
+  --text-900:#3f3f46; --text-1000:#111113;
+  --accent:var(--text-1000); --accent-contrast:var(--app-ground);
+  --accent-soft:rgba(17,17,19,.06); --accent-border:rgba(17,17,19,.16);
+  --danger:#d93036; --verify:#16a34a; --verify-soft:rgba(22,163,74,.10);
+  --agent:#7c6bb3; --agent-soft:rgba(124,107,179,.08);
+  --focus-ring:0 0 0 2px var(--accent-soft),0 0 0 1px var(--accent-border);
+  --mark-ink:#09090b; --mark-recessive:#a1a1aa;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --app-ground:#000000; --surface:#18181b; --surface-hover:#1d1d20;
+  --surface-raised:#1d1d20; --surface-raised-hover:#232326;
+  --surface-inset:#232326; --surface-strong:#27272a;
+  --border-100:#131316; --border-200:#1c1c1f; --border-300:#2a2a2d;
+  --border-400:#333338; --border-500:#3f3f46;
+  --text-300:#52525b; --text-500:#71717a; --text-700:#a1a1aa;
+  --text-900:#d4d4d8; --text-1000:#ffffff;
+  --accent-soft:rgba(250,250,250,.08); --accent-border:rgba(250,250,250,.18);
+  --danger:#e5484d; --verify:#4ade80; --verify-soft:rgba(74,222,128,.12);
+  --agent:#a396d6; --agent-soft:rgba(163,150,214,.10);
+  --mark-ink:#fafafa; --mark-recessive:#52525b;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --app-ground:#000000; --surface:#18181b; --surface-hover:#1d1d20;
+  --surface-raised:#1d1d20; --surface-raised-hover:#232326;
+  --surface-inset:#232326; --surface-strong:#27272a;
+  --border-100:#131316; --border-200:#1c1c1f; --border-300:#2a2a2d;
+  --border-400:#333338; --border-500:#3f3f46;
+  --text-300:#52525b; --text-500:#71717a; --text-700:#a1a1aa;
+  --text-900:#d4d4d8; --text-1000:#ffffff;
+  --accent-soft:rgba(250,250,250,.08); --accent-border:rgba(250,250,250,.18);
+  --danger:#e5484d; --verify:#4ade80; --verify-soft:rgba(74,222,128,.12);
+  --agent:#a396d6; --agent-soft:rgba(163,150,214,.10);
+  --mark-ink:#fafafa; --mark-recessive:#52525b;
+}
+@media (prefers-reduced-motion:reduce){ :root{
+  --motion-rise-sm:0px; --motion-rise-md:0px; --motion-press:1;
+  --motion-enter-scale:1; --stagger-step:0ms; --motion-loop-play:paused; --travel:0;
+}}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--app-ground);color:var(--text-900);
+  font-family:var(--font-sans);font-size:var(--text-size-md);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent-soft)}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+a{color:var(--text-1000)}
+
+.bar{position:sticky;top:0;z-index:50;height:52px;display:flex;align-items:center;
+  gap:var(--space-4);padding:0 var(--space-5);
+  border-bottom:var(--hairline) solid var(--border-200);
+  background:color-mix(in srgb,var(--app-ground) 82%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.bar .brand{display:flex;align-items:center;gap:var(--space-3);
+  font-weight:var(--weight-medium);color:var(--text-1000);text-decoration:none}
+.bar .sp{flex:1}
+.mark rect{fill:var(--mark-recessive)}
+.mark rect.ink{fill:var(--mark-ink)}
+.seg{display:flex;gap:3px;background:var(--surface);
+  border:var(--hairline) solid var(--border-200);border-radius:var(--radius-2);padding:3px}
+.seg button{font:inherit;height:24px;padding:0 var(--space-3);border:none;background:transparent;
+  border-radius:var(--radius-1);color:var(--text-500);font-size:var(--text-size-meta);cursor:pointer;
+  transition:background var(--motion-fast) var(--ease-out),color var(--motion-fast) var(--ease-out)}
+.seg button:hover{transition-duration:0ms;color:var(--text-1000);background:var(--surface-raised-hover)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-contrast)}
+
+.wrap{max-width:920px;margin:0 auto;padding:var(--space-8) var(--space-5)}
+h1{font-size:var(--text-size-display);letter-spacing:var(--tracking-display);
+  font-weight:var(--weight-medium);color:var(--text-1000);margin:0 0 var(--space-3);max-width:20ch}
+h2{font-size:var(--text-size-xl);letter-spacing:-0.01em;font-weight:var(--weight-medium);
+  color:var(--text-1000);margin:var(--space-7) 0 var(--space-3)}
+h3{font-size:15px;font-weight:var(--weight-medium);color:var(--text-1000);margin:0 0 var(--space-2)}
+p{margin:0 0 var(--space-4);line-height:1.5;color:var(--text-700);max-width:64ch}
+.lede{font-size:15px}
+.label{font-family:var(--font-mono);font-size:var(--text-size-meta);text-transform:uppercase;
+  letter-spacing:var(--tracking-mono-label);color:var(--text-500);margin:0 0 var(--space-3)}
+
+.card{background:var(--surface-raised);border:var(--hairline) solid var(--border-200);
+  border-radius:var(--radius-3);padding:var(--space-5);margin-bottom:var(--space-4)}
+.rise{animation:rise var(--motion-slow) var(--ease-out) both;
+  animation-delay:calc(var(--i,0) * var(--stagger-step))}
+@keyframes rise{from{opacity:0;transform:translateY(var(--motion-rise-md)) scale(var(--motion-enter-scale))}
+  to{opacity:1;transform:translateY(0) scale(1)}}
+
+.row{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:var(--text-size-md);font-weight:var(--weight-medium);
+  height:var(--h-control-primary);padding:0 var(--space-5);border-radius:var(--radius-2);
+  border:var(--hairline) solid transparent;background:var(--accent);color:var(--accent-contrast);
+  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;
+  transition:filter var(--motion-fast) var(--ease-out),scale var(--motion-fast) var(--ease-out)}
+.btn:hover{filter:brightness(1.08)} .btn:active{scale:var(--motion-press)}
+.btn.quiet{background:transparent;border-color:var(--border-300);color:var(--text-700)}
+.btn.quiet:hover{background:var(--surface-raised-hover);color:var(--text-1000);filter:none}
+
+select{font:inherit;font-size:var(--text-size-md);height:var(--h-control);
+  background:var(--surface-inset);color:var(--text-1000);
+  border:var(--hairline) solid var(--border-300);border-radius:var(--radius-2);
+  padding:0 var(--space-3);cursor:pointer;max-width:100%}
+
+/* confidence is the whole product, so it is never smaller than the number */
+.conf{font-family:var(--font-mono);font-size:var(--text-size-meta);
+  letter-spacing:var(--tracking-meta);border-radius:999px;padding:2px var(--space-2);
+  border:var(--hairline) solid var(--border-300);color:var(--text-500);white-space:nowrap}
+.conf[data-c="high"]{color:var(--verify);border-color:var(--verify)}
+.conf[data-c="medium"]{color:var(--text-900);border-color:var(--border-500)}
+.conf[data-c="low"],.conf[data-c="none"]{color:var(--text-500);border-style:dashed}
+
+.spec{display:grid;grid-template-columns:auto 1fr auto;gap:var(--space-2) var(--space-4);align-items:baseline}
+.spec dt{font-family:var(--font-mono);font-size:var(--text-size-meta);text-transform:uppercase;
+  letter-spacing:var(--tracking-mono-label);color:var(--text-500)}
+.spec dd{margin:0;color:var(--text-1000)}
+.spec dd small{color:var(--text-500)}
+.spec .unk{color:var(--text-300);font-style:italic}
+
+.matrix{width:100%;border-collapse:collapse}
+.matrix th{text-align:left;font-family:var(--font-mono);font-size:var(--text-size-meta);
+  text-transform:uppercase;letter-spacing:var(--tracking-mono-label);font-weight:var(--weight-medium);
+  color:var(--text-500);padding:0 var(--space-3) var(--space-2) 0;
+  border-bottom:var(--hairline) solid var(--border-300);white-space:nowrap}
+.matrix th.num,.matrix td.num{text-align:right}
+.matrix td{padding:var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom:var(--hairline) solid var(--border-100);vertical-align:top}
+.matrix tr[data-v="wont_fit"] td,.matrix tr[data-v="blocked"] td{opacity:.5}
+.matrix a.name{color:var(--text-1000);font-weight:var(--weight-medium);text-decoration:none}
+.matrix a.name:hover{text-decoration:underline}
+.sub{display:block;color:var(--text-500);font-size:var(--text-size-meta);
+  letter-spacing:var(--tracking-meta);margin-top:2px}
+.num{font-family:var(--font-mono);font-size:var(--text-size-sm);
+  letter-spacing:var(--tracking-meta);color:var(--text-900);white-space:nowrap}
+.verdict{display:inline-flex;align-items:center;gap:var(--space-2);white-space:nowrap}
+.verdict i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--text-300)}
+.verdict[data-v="fits"] i{background:var(--verify)}
+.verdict[data-v="tight"] i{background:var(--text-500);
+  box-shadow:0 0 0 2px var(--surface-raised),0 0 0 3px var(--text-500)}
+.verdict[data-v="wont_fit"] i,.verdict[data-v="blocked"] i{background:transparent;
+  border:var(--border-strong) solid var(--text-300)}
+.why{display:block;color:var(--text-500);font-size:var(--text-size-meta);
+  letter-spacing:var(--tracking-meta);margin-top:3px;max-width:32ch;line-height:1.4}
+.fp{width:52px;height:4px;border-radius:999px;background:var(--surface-inset);
+  overflow:hidden;margin-top:6px}
+.fp span{display:block;height:100%;background:var(--text-500);
+  transform-origin:left center;transform:scaleX(var(--r,0));
+  transition:transform var(--motion-slow) var(--ease-out)}
+.warn{color:var(--text-900)}
+.warn::after{content:" ⚠";color:var(--text-500)}
+
+.model{border-top:var(--hairline) solid var(--border-200);padding-top:var(--space-5);
+  margin-top:var(--space-6);scroll-margin-top:70px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:var(--space-4);margin:var(--space-4) 0}
+.fact{border-left:var(--border-strong) solid var(--border-300);padding-left:var(--space-3)}
+.fact b{display:block;font-family:var(--font-mono);font-size:var(--text-size-meta);
+  text-transform:uppercase;letter-spacing:var(--tracking-mono-label);
+  color:var(--text-500);font-weight:var(--weight-medium);margin-bottom:3px}
+.fact .v{color:var(--text-1000);font-size:15px}
+.fact .p{display:block;color:var(--text-500);font-size:var(--text-size-meta);
+  letter-spacing:var(--tracking-meta);margin-top:3px;line-height:1.4}
+.restrict{background:var(--surface-inset);border-radius:var(--radius-2);
+  padding:var(--space-3) var(--space-4);margin:var(--space-3) 0}
+.restrict li{color:var(--text-900);font-size:var(--text-size-sm);margin:2px 0}
+code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-inset);
+  padding:1px 5px;border-radius:var(--radius-1)}
+.limits{list-style:none;padding:0;margin:0 0 var(--space-4)}
+.limits li{display:flex;gap:var(--space-2);align-items:baseline;
+  color:var(--text-700);font-size:var(--text-size-sm);margin:var(--space-2) 0}
+.limits li::before{content:"";flex:none;width:12px;height:var(--hairline);
+  background:var(--border-500);transform:translateY(-4px)}
+footer{border-top:var(--hairline) solid var(--border-200);margin-top:var(--space-8);
+  padding:var(--space-5);text-align:center;color:var(--text-500);
+  font-size:var(--text-size-meta);letter-spacing:var(--tracking-meta)}
+.scroller{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <a class="brand" href="/">
+    <svg class="mark" width="33" height="18" viewBox="0 0 44 24" aria-hidden="true">
+      <rect x="0" y="8" width="2" height="8"/><rect x="4" y="4" width="2" height="16"/>
+      <rect x="8" y="2" width="2" height="20"/><rect class="ink" x="12" y="6" width="2" height="12"/>
+      <rect class="ink" x="16" y="0" width="2" height="24"/><rect class="ink" x="20" y="10" width="2" height="4"/>
+      <rect class="ink" x="24" y="4" width="2" height="16"/><rect class="ink" x="28" y="8" width="2" height="8"/>
+      <rect x="32" y="2" width="2" height="20"/><rect x="36" y="6" width="2" height="12"/>
+      <rect x="40" y="10" width="2" height="4"/>
+    </svg>
+    SpacePilot
+  </a>
+  <span class="sp"></span>
+  <div class="seg" role="group" aria-label="Theme">
+    <button data-theme-set="system" aria-pressed="true">System</button>
+    <button data-theme-set="light" aria-pressed="false">Light</button>
+    <button data-theme-set="dark" aria-pressed="false">Dark</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="rise" style="--i:0" id="headline">Which models can this machine run?</h1>
+  <p class="lede rise" style="--i:1">
+    Video, image, speech and text models checked against real hardware. Every number
+    below says where it came from — measured on a machine, summed from the model
+    repository, published by someone else, or estimated. They are not the same kind
+    of fact and this page will not pretend they are.
+  </p>
+
+  <div class="card rise" style="--i:2">
+    <div class="row" style="justify-content:space-between;margin-bottom:var(--space-4)">
+      <p class="label" style="margin:0">Detected from this browser</p>
+      <label class="row" style="gap:var(--space-2)">
+        <span class="conf" data-c="none" style="border:none;padding:0">or pick hardware</span>
+        <select id="device"></select>
+      </label>
+    </div>
+    <dl class="spec" id="spec"></dl>
+    <p class="why" id="spec-note" style="max-width:none;margin-top:var(--space-4)"></p>
+  </div>
+
+  <div class="card rise" style="--i:3">
+    <div class="scroller">
+      <table class="matrix">
+        <thead><tr>
+          <th>Model</th><th class="num">Download</th><th class="num">Needs</th>
+          <th>Verdict</th><th>Speed</th><th>Licence</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>What a web page cannot know</h2>
+  <p>
+    Everything above came from three browser APIs. They are enough to name the chip
+    and usually the memory, and not enough for the question that actually decides
+    whether a model runs.
+  </p>
+  <ul class="limits" id="limits"></ul>
+  <p>
+    On this machine the graphics driver reports a ceiling of about 78% of installed
+    memory — a 32&nbsp;GB Mac offers roughly 25&nbsp;GB to a model, not 32. A page can
+    estimate that ratio. Only a process on the machine can ask for the real number,
+    see how much is free right now, check the disk, and time a generation.
+  </p>
+  <div class="row">
+    <a class="btn" href="/onboard-v2.html">Set up on this machine</a>
+    <a class="btn quiet" href="#models">Read the model notes</a>
+  </div>
+
+  <h2 id="models">The models</h2>
+  <p>
+    Nine variants across seven models. Sizes are the bytes that would actually cross
+    the wire, not the size of the repository holding them — those differ by a factor
+    of forty in one case below.
+  </p>
+  <div id="detail"></div>
+
+  <h2>How the verdicts are decided</h2>
+  <p id="rule"></p>
+  <p>
+    A model has to fit inside what the driver will hand out, which is less than the
+    memory installed. <b>Fits</b> means it lands inside that with room to work.
+    <b>Tight</b> means it fits and leaves little else. <b>Won't fit</b> means the
+    peak exceeds the ceiling. <b>Not supported</b> means the precision has no path on
+    this backend at all — FP8 does not fall back gracefully on Metal, it fails.
+  </p>
+</div>
+
+<footer>
+  Registry generated <span id="gen"></span> ·
+  <a href="/onboard-v2.html">Set up locally</a>
+</footer>
+
+<script type="module">
+import { probeBrowser } from "/browser-probe.js";
+
+const $ = (id) => document.getElementById(id);
+const GIB = 1024 ** 3;
+const gb = (b, d = 1) => b == null ? "—" : (b / GIB).toFixed(d) + " GB";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const themeBtns = [...document.querySelectorAll("[data-theme-set]")];
+function setTheme(m) {
+  if (m === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", m);
+  try { localStorage.setItem("sp-theme", m); } catch {}
+  themeBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeSet === m)));
+}
+themeBtns.forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.themeSet)));
+try { setTheme(localStorage.getItem("sp-theme") || "system"); } catch { setTheme("system"); }
+
+/* Hardware anyone can select, so the page answers for a machine you do not have
+   in front of you. Memory is the shipping configuration; the ceiling is derived
+   by the same rule the local app uses until the local app can ask for real. */
+const DEVICES = [
+  { id: "auto", label: "Detected automatically" },
+  { id: "m1-max-32",  label: "Apple M1 Max · 32 GB",  chip: "Apple M1 Max",  backend: "metal", mem: 32 },
+  { id: "m1-max-64",  label: "Apple M1 Max · 64 GB",  chip: "Apple M1 Max",  backend: "metal", mem: 64 },
+  { id: "m3-max-48",  label: "Apple M3 Max · 48 GB",  chip: "Apple M3 Max",  backend: "metal", mem: 48 },
+  { id: "m4-max-64",  label: "Apple M4 Max · 64 GB",  chip: "Apple M4 Max",  backend: "metal", mem: 64 },
+  { id: "m4-pro-24",  label: "Apple M4 Pro · 24 GB",  chip: "Apple M4 Pro",  backend: "metal", mem: 24 },
+  { id: "m2-16",      label: "Apple M2 · 16 GB",      chip: "Apple M2",      backend: "metal", mem: 16 },
+  { id: "rtx-5090",   label: "NVIDIA RTX 5090 · 32 GB", chip: "NVIDIA RTX 5090", backend: "cuda", mem: 32 },
+  { id: "rtx-4090",   label: "NVIDIA RTX 4090 · 24 GB", chip: "NVIDIA RTX 4090", backend: "cuda", mem: 24 },
+  { id: "rtx-4080",   label: "NVIDIA RTX 4080 · 16 GB", chip: "NVIDIA RTX 4080", backend: "cuda", mem: 16 },
+  { id: "rtx-3060",   label: "NVIDIA RTX 3060 · 12 GB", chip: "NVIDIA RTX 3060", backend: "cuda", mem: 12 },
+];
+
+const data = await (await fetch("/registry.json")).json();
+const R = data.rules;
+const variants = data.models.flatMap((m) => m.variants.map((v) => ({ ...v, model: m })));
+
+function ceilingFor(memBytes, backend) {
+  if (!memBytes) return null;
+  if (backend === "metal") return Math.round(memBytes * R.metal_working_set_fraction);
+  const reserve = Math.max(memBytes * R.memory_reserve_fraction, R.memory_reserve_floor_bytes);
+  return Math.max(0, memBytes - reserve);
+}
+
+/* The same rule as src/pluto/services/compatibility.py, which is canonical.
+   Thresholds come from registry.json rather than being retyped here, so the two
+   cannot drift apart on the numbers. */
+function assess(v, machine) {
+  if (machine.backend && v.backends.length && !v.backends.includes(machine.backend)) {
+    return { v: "blocked", why: `needs ${v.backends.join(" or ")}; this is ${machine.backend}` };
+  }
+  if (!machine.ceiling) return { v: "unknown", why: "this machine's memory is not known" };
+  const need = v.working_set.value, ratio = need / machine.ceiling;
+  if (need > machine.ceiling) {
+    return { v: "wont_fit", ratio: 1,
+             why: `needs ${gb(need)}, ${gb(machine.ceiling)} available to models` };
+  }
+  return { v: ratio > R.tight_threshold ? "tight" : "fits", ratio,
+           why: `uses ${Math.round(ratio * 100)}% of the memory available to models` };
+}
+
+const SPEED_UNIT = {
+  tokens_per_second: (v) => `${v} tok/s`,
+  seconds_per_image: (v) => `${v}s per image`,
+  seconds_per_second_of_video: (v) => v >= 120
+    ? `${Math.round(v / 60)} min per second of video` : `${v}s per second of video`,
+  realtime_factor: (v) => `${v}× realtime`,
+};
+const speedText = (s) => (SPEED_UNIT[s.metric] || ((x) => `${x} ${s.metric}`))(s.value);
+const PROV = { measured: "measured by us", "huggingface-api": "summed from the repository",
+               declared: "published elsewhere", estimated: "estimated" };
+
+let machine = null;
+
+function machineFromProbe() {
+  const p = probeBrowser();
+  const mem = p.memoryBytes.value;
+  return {
+    chip: p.chip.value, chipConf: p.chip.confidence,
+    backend: p.backend, cores: p.cores.value,
+    mem, memConf: p.memoryBytes.confidence, memNote: p.memoryBytes.note,
+    memCandidates: p.memoryBytes.candidates,
+    ceiling: ceilingFor(mem, p.backend), limits: p.limits, auto: true,
+  };
+}
+function machineFromPreset(d) {
+  return { chip: d.chip, chipConf: "high", backend: d.backend, cores: null,
+           mem: d.mem * GIB, memConf: "high", memNote: "the configuration you selected",
+           ceiling: ceilingFor(d.mem * GIB, d.backend),
+           limits: probeBrowser().limits, auto: false };
+}
+
+function renderSpec() {
+  const conf = (c) => `<span class="conf" data-c="${c}">${c === "none" ? "unknown" : c + " confidence"}</span>`;
+  const rows = [];
+  rows.push(["Chip", machine.chip ? esc(machine.chip) : `<span class="unk">could not be read</span>`,
+             conf(machine.chip ? machine.chipConf : "none")]);
+  if (machine.cores) rows.push(["Cores", `${machine.cores} logical`, conf("high")]);
+  rows.push(["Backend", machine.backend ? esc(machine.backend) : `<span class="unk">unknown</span>`,
+             conf(machine.backend ? "high" : "none")]);
+  rows.push(["Memory", machine.mem ? gb(machine.mem)
+      : `<span class="unk">not reported${machine.memCandidates
+          ? ` — this chip ships with ${machine.memCandidates.join(", ")} GB` : ""}</span>`,
+    conf(machine.memConf)]);
+  rows.push(["To models", machine.ceiling
+      ? `${gb(machine.ceiling)} <small>of ${gb(machine.mem)}</small>`
+      : `<span class="unk">unknown</span>`, conf(machine.ceiling ? "low" : "none")]);
+  $("spec").innerHTML = rows.map(([k, v, c]) => `<dt>${k}</dt><dd>${v}</dd><dd>${c}</dd>`).join("");
+
+  $("headline").textContent = machine.chip
+    ? `What ${machine.chip} can run` : "Which models can this machine run?";
+  $("spec-note").textContent = machine.auto
+    ? (machine.memNote ? `Memory: ${machine.memNote}. ` : "") +
+      "The chip comes from the graphics renderer string, which names it outright — not from the core count, which cannot tell an M1 Pro from an M1 Max."
+    : "Showing the hardware you selected, not this browser's machine.";
+  $("limits").innerHTML = machine.limits.map((l) => `<li>${esc(l)}</li>`).join("");
+}
+
+function renderMatrix() {
+  const order = { fits: 0, tight: 1, unknown: 2, wont_fit: 3, blocked: 4 };
+  const kind = { video: 0, image: 1, vision: 2, text: 3, speech: 4, audio: 5 };
+  const rows = variants.map((v) => ({ v, a: assess(v, machine) }))
+    .sort((x, y) => (order[x.a.v] - order[y.a.v])
+      || ((kind[x.v.kind] ?? 9) - (kind[y.v.kind] ?? 9))
+      || (y.v.working_set.value - x.v.working_set.value));
+
+  $("rows").innerHTML = rows.map(({ v, a }) => {
+    const sp = v.speed.length
+      ? `<span class="num">${esc(speedText(v.speed[0]))}</span>
+         <span class="why">${esc(PROV[v.speed[0].source])} · ${esc(v.speed[0].device)}</span>`
+      : `<span class="num">—</span><span class="why">not measured anywhere yet</span>`;
+    const lic = v.license.is_permissive
+      ? `<span class="num">${esc(v.license.id)}</span>`
+      : `<span class="num warn">${esc(v.license.id)}</span>`;
+    return `<tr data-v="${a.v}">
+      <td><a class="name" href="#${esc(v.id)}">${esc(v.name)}</a>
+          <span class="sub">${esc(v.params || "")} · ${esc(v.precision || "")} · ${esc(v.kind)}</span></td>
+      <td class="num">${gb(v.download.value)}</td>
+      <td class="num">${gb(v.working_set.value)}
+          <div class="fp"><span style="--r:${(a.ratio ?? 0).toFixed(3)}"></span></div></td>
+      <td><span class="verdict" data-v="${a.v}"><i></i>${
+        { fits: "Fits", tight: "Tight", wont_fit: "Won't fit", blocked: "Not supported", unknown: "Unknown" }[a.v]
+      }</span><span class="why">${esc(a.why)}</span></td>
+      <td>${sp}</td><td>${lic}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderDetail() {
+  $("detail").innerHTML = data.models.map((m) => m.variants.map((v) => {
+    const a = assess(v, machine);
+    const fact = (k, val, prov) =>
+      `<div class="fact"><b>${k}</b><span class="v">${val}</span>
+        ${prov ? `<span class="p">${esc(prov)}</span>` : ""}</div>`;
+    const files = v.files
+      ? `<p>Fetches <code>${v.files.map(esc).join("</code>, <code>")}</code> from
+         <code>${esc(v.repo)}</code> — the repository itself holds every checkpoint the
+         project has shipped, so taking it whole would pull far more than this.</p>`
+      : `<p>Fetches the whole of <code>${esc(v.repo)}</code>.</p>`;
+    return `<section class="model" id="${esc(v.id)}">
+      <h3>${esc(v.name)}</h3>
+      <p>${esc(m.summary || "")}</p>
+      <div class="facts">
+        ${fact("Download", gb(v.download.value), `${PROV[v.download.source]}${v.download.checked ? `, ${v.download.checked}` : ""}`)}
+        ${fact("Peak memory", gb(v.working_set.value), PROV[v.working_set.source])}
+        ${fact("Runs on", v.backends.map(esc).join(", "), null)}
+        ${fact("Here", { fits: "Fits", tight: "Tight fit", wont_fit: "Won't fit", blocked: "Not supported", unknown: "Unknown" }[a.v], a.why)}
+        ${v.speed.length
+          ? fact("Speed", esc(speedText(v.speed[0])), `${PROV[v.speed[0].source]} on ${v.speed[0].device}`)
+          : fact("Speed", "not measured", "nobody has published a figure for this model on this kind of hardware")}
+      </div>
+      ${v.working_set.note ? `<p class="why" style="max-width:64ch">Peak memory: ${esc(v.working_set.note)}</p>` : ""}
+      ${files}
+      <p>Licence: <b>${esc(v.license.id)}</b>${v.license.is_permissive ? ", no restrictions on use." : ":"}</p>
+      ${v.license.restrictions.length
+        ? `<ul class="restrict">${v.license.restrictions.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+      ${v.speed.filter((s) => s.note).map((s) => `<p class="why" style="max-width:64ch">${esc(s.note)}</p>`).join("")}
+      ${v.notes ? `<p>${esc(v.notes)}</p>` : ""}
+    </section>`;
+  }).join("")).join("");
+}
+
+function render() { renderSpec(); renderMatrix(); renderDetail(); }
+
+const sel = $("device");
+sel.innerHTML = DEVICES.map((d) => `<option value="${d.id}">${esc(d.label)}</option>`).join("");
+sel.addEventListener("change", () => {
+  const d = DEVICES.find((x) => x.id === sel.value);
+  machine = d.id === "auto" ? machineFromProbe() : machineFromPreset(d);
+  render();
+});
+
+machine = machineFromProbe();
+render();
+
+$("gen").textContent = data.generated;
+$("rule").textContent =
+  `A model's peak memory is compared against what the driver will hand out. On Metal that ` +
+  `is taken as ${Math.round(R.metal_working_set_fraction * 100)}% of installed memory; ` +
+  `elsewhere it is memory less ${Math.round(R.memory_reserve_fraction * 100)}% or ` +
+  `${(R.memory_reserve_floor_bytes / GIB).toFixed(0)} GB, whichever is larger. Anything above ` +
+  `${Math.round(R.tight_threshold * 100)}% of that ceiling is called tight rather than comfortable.`;
+</script>
+</body>
+</html>

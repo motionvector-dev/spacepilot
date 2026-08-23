@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpacePilot · Set up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-root:#000; --bg-ground:#09090b; --bg-panel:#111114; --bg-card:#18181b; --bg-raised:#222226;
+    --b1:rgba(255,255,255,.08); --b2:rgba(255,255,255,.14);
+    --emerald:#10b981; --amber:#f59e0b; --rose:#f43535;
+    --t1:#fafafa; --t2:#a1a1aa; --t3:#71717a; --t4:#52525b;
+    --font-sans:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'Geist Mono','SF Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-root);color:var(--t1);font-family:var(--font-sans);
+       -webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+  .wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:28px}
+  .mono{font-family:var(--font-mono)}
+  .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--t4)}
+  h1{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.15;margin:10px 0 0}
+
+  .row{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg-panel);
+       border:1px solid var(--b1);border-radius:10px;font-size:13.5px;color:var(--t2)}
+  .row b{color:var(--t1);font-weight:600}
+  .dot{width:6px;height:6px;border-radius:9999px;flex:none;background:var(--t4)}
+  .dot.ok{background:var(--emerald)} .dot.warn{background:var(--amber)} .dot.err{background:var(--rose)}
+
+  .card{display:flex;flex-direction:column;gap:14px;padding:24px;background:var(--bg-card);
+        border:1px solid var(--b2);border-radius:14px}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  .card h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .card p{margin:5px 0 0;font-size:13.5px;color:var(--t2);line-height:1.5}
+  .pill{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+        padding:4px 8px;border-radius:6px;white-space:nowrap;
+        color:var(--emerald);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25)}
+  .facts{display:flex;gap:24px;padding-top:14px;border-top:1px solid var(--b1)}
+  .fact{display:flex;flex-direction:column;gap:3px}
+  .fact .k{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t4)}
+  .fact .v{font-size:14px;font-weight:500}
+  .free{color:var(--emerald)}
+
+  button{font-family:inherit;font-size:14.5px;font-weight:600;padding:13px;border-radius:10px;cursor:pointer;
+         background:var(--t1);color:var(--bg-ground);border:1px solid rgba(255,255,255,.9);width:100%}
+  button:hover{background:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  button.ghost{background:var(--bg-card);color:var(--t2);border-color:var(--b2);font-weight:500;font-size:13px;padding:9px}
+
+  .bar{height:4px;background:var(--bg-raised);border-radius:9999px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--t1);border-radius:9999px;width:0;transition:width .25s ease}
+  .bar.err i{background:var(--rose)}
+  .meta{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11.5px;color:var(--t3)}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .hide{display:none!important}
+  .err-box{padding:14px 16px;background:rgba(244,53,53,.06);border-left:2px solid var(--rose);
+           border-radius:0 10px 10px 0;font-size:13px;color:var(--t2);line-height:1.55;word-break:break-word}
+  .agent{padding:14px 16px;background:var(--bg-panel);border:1px solid var(--b1);border-radius:10px;
+         font-size:12.5px;color:var(--t3);line-height:1.6}
+  .agent b{color:var(--t2)}
+  @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div>
+    <div class="eyebrow">SpacePilot</div>
+    <h1 id="head">Looking at your machine…</h1>
+  </div>
+
+  <div class="row" id="hw"><span class="dot" id="hwdot"></span><span id="hwtext">Reading hardware…</span></div>
+
+  <div class="card hide" id="pick">
+    <div class="card-top">
+      <div>
+        <h2 id="mname">—</h2>
+        <p id="mdesc">—</p>
+      </div>
+      <div class="pill" id="mpill">recommended</div>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="k">download</span><span class="v" id="msize">—</span></div>
+      <div class="fact"><span class="k">needs</span><span class="v" id="mvram">—</span></div>
+      <div class="fact"><span class="k">cost</span><span class="v free">free</span></div>
+    </div>
+  </div>
+
+  <div class="hide stack" id="prog">
+    <div class="bar" id="bar"><i id="fill"></i></div>
+    <div class="meta"><span id="pstage">starting…</span><span id="pbytes"></span></div>
+  </div>
+
+  <div class="err-box hide" id="err"></div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <button id="go" disabled>Set up and start</button>
+    <button class="ghost hide" id="again">Try again</button>
+  </div>
+
+  <div class="agent" id="agent">
+    <b>Agent access</b> — checking for WebMCP…
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = b => b >= 1e9 ? (b/1e9).toFixed(2)+' GB' : b >= 1e6 ? (b/1e6).toFixed(1)+' MB' : (b/1e3).toFixed(0)+' kB';
+
+let TOKEN = null, RECIPE = null, POLL = null;
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (TOKEN) headers['X-Pluto-Token'] = TOKEN;
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const r = await fetch(path, Object.assign({}, opts, { headers }));
+  if (!r.ok) throw new Error(`${path} → HTTP ${r.status}`);
+  return r.json();
+}
+
+function fail(msg) {
+  $('err').textContent = msg;
+  $('err').classList.remove('hide');
+  $('bar').classList.add('err');
+  $('again').classList.remove('hide');
+  $('go').disabled = true;
+}
+
+// 1 — read the machine. Report what is there; never ask.
+async function probe() {
+  try { TOKEN = (await api('/api/token')).token; } catch (e) { /* open routes still work */ }
+  const p = await api('/api/compute/local-profile');
+  $('hwdot').className = 'dot ' + (p.is_local_capable ? 'ok' : 'warn');
+  $('hwtext').innerHTML =
+    `${p.device_name} · <b>${p.backend}</b> · ${p.vram_usable_gb} GB usable of ${p.vram_total_gb} GB`;
+  $('head').textContent = p.is_local_capable ? 'Ready when you are.' : 'This machine is tight on memory.';
+  return p;
+}
+
+// 2 — pick for them, from what the machine can actually run.
+async function recommend(profile) {
+  const recipes = await api('/api/compute/recipes');
+  const fits = recipes.filter(r => (r.min_vram_gb || 0) <= profile.vram_usable_gb);
+  // smallest thing that fits: fastest path to a first result
+  fits.sort((a, b) => (a.size_gb || 0) - (b.size_gb || 0));
+  const r = fits[0] || recipes[0];
+  RECIPE = r;
+  $('mname').textContent = r.name;
+  $('mdesc').textContent = `${r.family} · ${r.quantization} · runs on ${profile.backend}`;
+  $('msize').textContent = (r.size_gb || 0) < 1 ? Math.round(r.size_gb * 1000) + ' MB' : r.size_gb + ' GB';
+  $('mvram').textContent = (r.min_vram_gb || 0) === 0 ? 'any GPU' : r.min_vram_gb + ' GB';
+  $('pick').classList.remove('hide');
+  $('go').disabled = false;
+}
+
+// 3 — download, showing bytes that actually landed.
+async function download() {
+  $('go').disabled = true;
+  $('go').textContent = 'Setting up…';
+  $('prog').classList.remove('hide');
+  $('err').classList.add('hide');
+  $('bar').classList.remove('err');
+
+  try {
+    await api(`/api/compute/recipes/${RECIPE.recipe_id}/download`, { method: 'POST' });
+  } catch (e) { return fail(`Could not start the download. ${e.message}`); }
+
+  POLL = setInterval(async () => {
+    let j;
+    try { j = await api(`/api/compute/recipes/${RECIPE.recipe_id}/progress`); }
+    catch (e) { clearInterval(POLL); return fail(`Lost track of the download. ${e.message}`); }
+
+    $('fill').style.width = (j.progress_percent || 0) + '%';
+    $('pbytes').textContent = j.total_bytes
+      ? `${fmt(j.downloaded_bytes || 0)} of ${fmt(j.total_bytes)}`
+      : fmt(j.downloaded_bytes || 0);
+
+    if (j.status === 'downloading') {
+      $('pstage').textContent = j.speed_mb_s ? `downloading · ${j.speed_mb_s} MB/s` : 'downloading…';
+    } else if (j.status === 'completed') {
+      clearInterval(POLL);
+      // A warm cache downloads nothing. Saying "0 kB of 363 MB" then jumping to
+      // done describes a transfer that never happened; say what actually did.
+      const fresh = (j.downloaded_bytes || 0) > 1024;
+      $('pstage').textContent = fresh ? 'ready' : 'already on this machine';
+      if (!fresh) $('pbytes').textContent = j.total_bytes ? fmt(j.total_bytes) + ' in place' : '';
+      $('fill').style.width = '100%';
+      $('head').textContent = 'Set up. Make something.';
+      $('go').textContent = 'Open Create';
+      $('go').disabled = false;
+      $('go').onclick = () => location.href = '/create';
+    } else if (j.status === 'failed') {
+      clearInterval(POLL);
+      $('pstage').textContent = 'failed';
+      // The real reason, not a shrug. A silent failure here is the bug this replaced.
+      fail(j.error || 'The download failed and the server gave no reason.');
+      $('go').textContent = 'Set up and start';
+    }
+  }, 600);
+}
+
+// 4 — expose the same steps as tools, so an agent can do this instead of a person.
+function registerTools() {
+  const mc = document.modelContext || navigator.modelContext;
+  if (!mc || !mc.registerTool) {
+    $('agent').innerHTML =
+      '<b>Agent access</b> — WebMCP not available in this browser. ' +
+      'Ships in Chrome 157; until then enable it at chrome://flags or serve an origin-trial token.';
+    return;
+  }
+  mc.registerTool({
+    name: 'probe_hardware',
+    description: "Read this machine's GPU, memory and inference backend.",
+    inputSchema: { type: 'object', properties: {} },
+    async execute() { return { content: [{ type: 'text', text: JSON.stringify(await api('/api/compute/local-profile')) }] }; }
+  });
+  mc.registerTool({
+    name: 'recommended_model',
+    description: 'The model this machine should run, chosen from its memory.',
+    inputSchema: { type: 'object', properties: {} },
+    async execute() { return { content: [{ type: 'text', text: JSON.stringify(RECIPE) }] }; }
+  });
+  mc.registerTool({
+    name: 'install_recommended_model',
+    description: 'Download the recommended model to this machine. Returns immediately; poll download_progress.',
+    inputSchema: { type: 'object', properties: {} },
+    async execute() { download(); return { content: [{ type: 'text', text: `started ${RECIPE.recipe_id}` }] }; }
+  });
+  mc.registerTool({
+    name: 'download_progress',
+    description: 'Real bytes downloaded so far, or the reason it failed.',
+    inputSchema: { type: 'object', properties: {} },
+    async execute() {
+      const j = await api(`/api/compute/recipes/${RECIPE.recipe_id}/progress`);
+      return { content: [{ type: 'text', text: JSON.stringify(j) }] };
+    }
+  });
+  $('agent').innerHTML =
+    '<b>Agent access</b> — 4 tools registered on this page. An agent in this browser can ' +
+    'probe the hardware, read the recommendation, install it and watch the bytes.';
+}
+
+$('go').onclick = download;
+$('again').onclick = () => location.reload();
+
+(async () => {
+  try {
+    const p = await probe();
+    await recommend(p);
+    registerTools();
+  } catch (e) {
+    $('hwdot').className = 'dot err';
+    $('hwtext').textContent = 'Could not reach the local server.';
+    $('head').textContent = 'SpacePilot is not running.';
+    fail(`${e.message} — start it with: spacepilot serve`);
+  }
+})();
+</script>
+</body>
+</html>

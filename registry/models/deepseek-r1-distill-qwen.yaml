@@ -1,0 +1,29 @@
+schema: 1
+id: deepseek-r1-distill-qwen
+name: DeepSeek R1 Distill Qwen
+family: deepseek
+kind: text
+summary: Local reasoning model, used here for prompt work and shot planning rather than generation.
+homepage: https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://opensource.org/license/mit
+
+variants:
+  - id: deepseek-r1-distill-qwen-7b
+    name: DeepSeek R1 Distill Qwen 7B
+    params: 7B
+    precision: bf16
+    repo: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+    backends: [metal, cuda, cpu]
+    download:
+      value: 15240000000
+      source: huggingface-api
+      checked: "2026-08-22"
+    working_set:
+      value: 18253611008
+      source: estimated
+      note: weights plus KV cache at a short context; long contexts cost considerably more
