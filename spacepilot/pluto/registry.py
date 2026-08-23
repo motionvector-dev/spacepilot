@@ -9,11 +9,28 @@ and `working_set_bytes` guessed from a multiplier are both useful, but they are
 not the same kind of fact, and a reader has to be able to tell them apart. The
 schema makes stating the source mandatory so no estimate can quietly pass as a
 measurement.
+
+`revision` extends that idea from the numbers to the weights. A repo id names a
+moving target: the Hub lets an author force-push, re-upload, or land a new
+commit on main, and every one of those silently changes what `repo:` resolves
+to. A measurement that says "flux2-klein-4b-4bit took 23.4s" then describes
+weights nobody can fetch again, which makes it a bare number wearing a label —
+exactly what the `source` rule exists to forbid.
+
+So a variant may pin `revision:` to a commit SHA or an immutable tag. It is
+**optional but never silent**: an unpinned variant reports `is_pinned: false`
+through `to_dict()`, `Registry.unpinned()` names every one of them, and
+`tools/verify_registry.py` fails on them unless explicitly waived. Optional,
+because a variant has to be describable the day it is added and before anyone
+has resolved a SHA for it; visible, because an unpinned variant that reads like
+a pinned one is worse than no field at all. A moving ref (`main`, `master`,
+`HEAD`, a branch) is rejected outright — it looks like a pin and is not one.
 """
 
 from __future__ import annotations
 
 import datetime as _dt
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -34,6 +51,13 @@ SOURCES = {
     "huggingface-api", # summed from the Hub's file metadata
     "measured",        # somebody ran it and wrote down what happened
 }
+
+# Refs that move. Accepting one of these as a `revision:` would be worse than
+# leaving the field empty: the file would read as pinned, `is_pinned` would say
+# true, and the weights behind it would still change under the next force-push.
+MOVING_REFS = {"main", "master", "head", "latest", "default"}
+
+_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 SPEED_METRICS = {
     "tokens_per_second",
@@ -120,8 +144,16 @@ class Variant:
     working_set: Fact
     params: Optional[str] = None
     precision: Optional[str] = None
+    # The exact weights this row describes. None means the row points at
+    # whatever `repo:` resolves to today, which is not reproducible — see
+    # `is_pinned`, which is what makes that visible rather than silent.
+    revision: Optional[str] = None
     speed: List[Speed] = field(default_factory=list)
     notes: Optional[str] = None
+
+    @property
+    def is_pinned(self) -> bool:
+        return bool(self.revision)
 
     def speed_for(self, device: str) -> Optional[Speed]:
         for s in self.speed:
@@ -134,6 +166,7 @@ class Variant:
             "id": self.id, "model_id": self.model_id, "name": self.name,
             "kind": self.kind, "family": self.family, "params": self.params,
             "precision": self.precision, "repo": self.repo, "files": self.files,
+            "revision": self.revision, "is_pinned": self.is_pinned,
             "backends": list(self.backends),
             "download": self.download.to_dict(),
             "working_set": self.working_set.to_dict(),
@@ -185,6 +218,32 @@ def _fact(raw: Any, where: str) -> Fact:
     if source in ("huggingface-api", "measured") and not raw.get("checked"):
         raise RegistryError(f"{where}: source '{source}' must carry the date it was 'checked'")
     return Fact(float(value), source, raw.get("checked"), raw.get("note"))
+
+
+def _revision(raw: Any, where: str) -> Optional[str]:
+    """Validate a `revision:`. Absent is allowed; a moving ref is not.
+
+    The only two things that pin weights are a commit SHA and an immutable
+    tag. A branch name resolves to something different tomorrow while looking
+    exactly as authoritative as a SHA in the file, so it is rejected rather
+    than accepted with a warning nobody reads.
+    """
+    if raw is None:
+        return None
+    rev = str(raw).strip()
+    if not rev:
+        raise RegistryError(
+            f"{where}: revision is empty — omit the field entirely rather than "
+            f"writing a blank one, so the variant reads as unpinned")
+    if rev.lower() in MOVING_REFS or rev.startswith("refs/heads/"):
+        raise RegistryError(
+            f"{where}: revision '{rev}' is a moving ref, not a pin — it resolves "
+            f"to different weights after any push. Use the commit SHA it points "
+            f"at today, or leave the field out so the variant reads as unpinned")
+    if len(rev) == 40 and not _SHA_RE.match(rev):
+        raise RegistryError(
+            f"{where}: revision '{rev}' is 40 characters but not a hex SHA")
+    return rev
 
 
 def _license(raw: Dict[str, Any], where: str) -> License:
@@ -254,6 +313,7 @@ def parse_model(raw: Dict[str, Any], where: str) -> Model:
             working_set=_fact(_require(rv, "working_set", vw), f"{vw}.working_set"),
             params=rv.get("params"),
             precision=rv.get("precision"),
+            revision=_revision(rv.get("revision"), f"{vw}.revision"),
             speed=[_speed(s, f"{vw}.speed[{j}]") for j, s in enumerate(rv.get("speed") or [])],
             notes=rv.get("notes"),
         ))
@@ -288,6 +348,15 @@ class Registry:
 
     def model(self, model_id: str) -> Optional[Model]:
         return self.models.get(model_id)
+
+    def unpinned(self) -> List[Variant]:
+        """Every variant whose weights can change under it.
+
+        Callers use this to make the gap loud — the release gate fails on a
+        non-empty list, the export carries the count. An unpinned variant is
+        allowed; an unpinned variant nobody can see is not.
+        """
+        return [v for v in self.variants if not v.is_pinned]
 
     def by_kind(self, kind: str) -> List[Variant]:
         return [v for v in self.variants if v.kind == kind]
