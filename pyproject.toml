@@ -73,3 +73,9 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+    "packaging: builds and installs the wheel. Slow, and needs the network for the build backend.",
+]
+# Deselected from the default run, not from CI: the packaging job runs
+# `pytest -m packaging`, and a later -m on the command line overrides this one.
+addopts = "-m 'not packaging'"

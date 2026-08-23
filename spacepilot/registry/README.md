@@ -1,4 +1,16 @@
-# The model registry
+# The registry
+
+Two halves that look alike and are not.
+
+`models/`, `runtimes/` and `sweeps/` are the **catalogue**: curated content,
+versioned with the release, shipped inside the wheel, never written at runtime.
+
+`measurements/` and `systems/` are the **corpus**: produced by whatever machine
+ran the thing. Records ship too, so a fresh install is not empty, but new ones
+are written to `$SPACEPILOT_DATA_DIR`, else the platform user data directory
+(`~/Library/Application Support/spacepilot` on macOS, `~/.local/share/spacepilot`
+on Linux) — and, in a git checkout, to this directory, so a run you made can
+become a PR. See `spacepilot/paths.py`.
 
 One file per model in `models/`. One entry per thing you can actually download.
 Everything else — the CLI, the MCP server, the onboarding page, the
