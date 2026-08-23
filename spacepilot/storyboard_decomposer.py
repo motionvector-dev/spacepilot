@@ -10,10 +10,10 @@ import os
 import re
 import json
 import time
-import urllib.request
-import urllib.error
 import logging
 from typing import Dict, List, Optional, Any
+
+import httpx
 
 logger = logging.getLogger("spacepilot.storyboard")
 
@@ -198,45 +198,47 @@ def call_gemini_decompose_api(
     }
 
     try:
-        req = urllib.request.Request(
+        resp = httpx.post(
             url,
-            data=json.dumps(payload).encode("utf-8"),
+            content=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json"},
-            method="POST",
+            timeout=12.0,
         )
-        with urllib.request.urlopen(req, timeout=12.0) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            parsed = json.loads(candidate_text)
-            
-            # If Gemini returned a list of scenes or nested dict
-            if isinstance(parsed, list):
-                scenes = parsed
-            elif isinstance(parsed, dict) and "scenes" in parsed:
-                scenes = parsed["scenes"]
-            else:
-                scenes = [parsed]
+        # urlopen raised HTTPError on 4xx/5xx and the broad except below turned
+        # that into the heuristic fallback. Keep the status a raise.
+        resp.raise_for_status()
+        data = resp.json()
+        candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        parsed = json.loads(candidate_text)
+        
+        # If Gemini returned a list of scenes or nested dict
+        if isinstance(parsed, list):
+            scenes = parsed
+        elif isinstance(parsed, dict) and "scenes" in parsed:
+            scenes = parsed["scenes"]
+        else:
+            scenes = [parsed]
 
-            # Validate and normalize
-            base_seed = abs(hash(script)) % 1000000
-            for idx, sc in enumerate(scenes):
-                sc["scene_idx"] = sc.get("scene_idx", idx + 1)
-                sc["scene_id"] = sc.get("scene_id", f"scene_{idx+1:02d}")
-                sc["character_seed"] = base_seed
-                if "camera_vector" not in sc:
-                    _, sc["camera_vector"] = CAMERA_MOTIONS[idx % len(CAMERA_MOTIONS)]
+        # Validate and normalize
+        base_seed = abs(hash(script)) % 1000000
+        for idx, sc in enumerate(scenes):
+            sc["scene_idx"] = sc.get("scene_idx", idx + 1)
+            sc["scene_id"] = sc.get("scene_id", f"scene_{idx+1:02d}")
+            sc["character_seed"] = base_seed
+            if "camera_vector" not in sc:
+                _, sc["camera_vector"] = CAMERA_MOTIONS[idx % len(CAMERA_MOTIONS)]
 
-            return {
-                "status": "success",
-                "source": f"gemini_api ({model_endpoint})",
-                "original_script": script,
-                "style": style,
-                "scene_count": len(scenes),
-                "target_duration_sec": target_duration_sec,
-                "total_duration_sec": sum(s.get("duration_sec", round(target_duration_sec/len(scenes), 1)) for s in scenes),
-                "character_seed": base_seed,
-                "scenes": scenes,
-            }
+        return {
+            "status": "success",
+            "source": f"gemini_api ({model_endpoint})",
+            "original_script": script,
+            "style": style,
+            "scene_count": len(scenes),
+            "target_duration_sec": target_duration_sec,
+            "total_duration_sec": sum(s.get("duration_sec", round(target_duration_sec/len(scenes), 1)) for s in scenes),
+            "character_seed": base_seed,
+            "scenes": scenes,
+        }
     except Exception as e:
         logger.warning(f"Gemini API call failed, falling back to heuristic engine: {e}")
         return None

@@ -4,10 +4,10 @@ import os
 import json
 import time
 import uuid
-import shutil
-import urllib.request
 from pathlib import Path
 from typing import Optional, List
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 
 from spacepilot.pluto.core.config import get_settings
@@ -24,6 +24,13 @@ from spacepilot.pluto.services.generation import (
 )
 
 router = APIRouter(tags=["generate"])
+
+# The urlopen calls these replaced passed no timeout at all, so a wedged worker
+# hung the background thread forever. httpx defaults to 5s, which is too short
+# for a download; name the three bounds instead of inheriting either.
+WORKER_SUBMIT_TIMEOUT_SEC = 15.0
+WORKER_POLL_TIMEOUT_SEC = 30.0
+WORKER_DOWNLOAD_TIMEOUT_SEC = 300.0
 
 
 @router.post("/api/enhance")
@@ -217,43 +224,52 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
                         payload["image_path"] = req.image_path
                     if req.last_image_path:
                         payload["last_image_path"] = req.last_image_path
-                    data = json.dumps(payload).encode()
-                    remote_req = urllib.request.Request(
+                    submit = httpx.post(
                         f"http://{ip}:5000/generate",
-                        data=data,
+                        content=json.dumps(payload).encode(),
                         headers=worker_headers({"Content-Type": "application/json"}),
-                        method="POST"
+                        timeout=WORKER_SUBMIT_TIMEOUT_SEC,
                     )
-                    with urllib.request.urlopen(remote_req) as resp:
-                        pass
+                    submit.raise_for_status()
 
                     while True:
                         time.sleep(1.5)
-                        st_req = urllib.request.Request(f"http://{ip}:5000/status/{current_job_id}", headers=worker_headers())
-                        with urllib.request.urlopen(st_req) as st_resp:
-                            st_data = json.loads(st_resp.read().decode())
-                            if st_data.get("status") == "completed":
-                                dl_req = urllib.request.Request(f"http://{ip}:5000/download/{current_job_id}", headers=worker_headers())
-                                out_mp4 = outputs_dir / f"{current_job_id}.mp4"
-                                with urllib.request.urlopen(dl_req) as dl_resp, open(out_mp4, "wb") as out_f:
-                                    shutil.copyfileobj(dl_resp, out_f)
+                        st_resp = httpx.get(
+                            f"http://{ip}:5000/status/{current_job_id}",
+                            headers=worker_headers(),
+                            timeout=WORKER_POLL_TIMEOUT_SEC,
+                        )
+                        st_resp.raise_for_status()
+                        st_data = st_resp.json()
+                        if st_data.get("status") == "completed":
+                            out_mp4 = outputs_dir / f"{current_job_id}.mp4"
+                            with httpx.stream(
+                                "GET",
+                                f"http://{ip}:5000/download/{current_job_id}",
+                                headers=worker_headers(),
+                                timeout=WORKER_DOWNLOAD_TIMEOUT_SEC,
+                            ) as dl_resp:
+                                dl_resp.raise_for_status()
+                                with open(out_mp4, "wb") as out_f:
+                                    for chunk in dl_resp.iter_bytes():
+                                        out_f.write(chunk)
 
-                                thumb_png = outputs_dir / f"{current_job_id}.png"
-                                thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
+                            thumb_png = outputs_dir / f"{current_job_id}.png"
+                            thumb_res = run_ffmpeg(["-ss", "00:00:01", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
 
-                                current_meta["status"] = "completed"
-                                current_meta["file_path"] = str(out_mp4)
-                                if thumb_res.returncode == 0:
-                                    current_meta["thumbnail_path"] = str(thumb_png)
-                                else:
-                                    current_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
-                                write_meta(current_meta_file, current_meta)
-                                break
-                            elif st_data.get("status") == "failed":
-                                current_meta["status"] = "failed"
-                                current_meta["error"] = st_data.get("error")
-                                write_meta(current_meta_file, current_meta)
-                                break
+                            current_meta["status"] = "completed"
+                            current_meta["file_path"] = str(out_mp4)
+                            if thumb_res.returncode == 0:
+                                current_meta["thumbnail_path"] = str(thumb_png)
+                            else:
+                                current_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
+                            write_meta(current_meta_file, current_meta)
+                            break
+                        elif st_data.get("status") == "failed":
+                            current_meta["status"] = "failed"
+                            current_meta["error"] = st_data.get("error")
+                            write_meta(current_meta_file, current_meta)
+                            break
                 except Exception as e:
                     current_meta["status"] = "failed"
                     current_meta["error"] = str(e)
