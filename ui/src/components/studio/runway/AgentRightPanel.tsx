@@ -82,7 +82,7 @@ export const AgentRightPanel = () => {
       {/* Panel Header */}
       <div className="h-10 px-4 border-b border-line-200 flex items-center justify-between bg-ground/40">
         <div className="flex items-center gap-2 font-mono text-xs text-ink-900">
-          <Bot className="w-4 h-4 text-verify" />
+          <Bot className="w-4 h-4 text-agent" />
           <span className="font-bold">Director Agent Chat</span>
         </div>
         <span className="text-[10px] font-mono text-verify bg-verify-soft px-2 py-0.5 rounded border border-verify/20">
@@ -99,7 +99,7 @@ export const AgentRightPanel = () => {
               <div className={`w-5 h-5 rounded-full flex items-center justify-center border text-[10px] font-bold ${
                 msg.role === 'user'
                   ? 'bg-strong text-ink-900 border-line-400'
-                  : 'bg-verify-soft text-verify border-verify/30'
+                  : 'bg-agent-soft text-agent border-agent/30'
               }`}>
                 {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
               </div>
