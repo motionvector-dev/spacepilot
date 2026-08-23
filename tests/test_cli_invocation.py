@@ -49,3 +49,27 @@ def test_measure_needs_a_command():
     )
     assert proc.returncode == 1
     assert "Nothing to measure" in proc.stdout
+
+
+def test_a_failed_measure_leaves_no_system_record(monkeypatch):
+    """"nothing recorded" has to mean nothing.
+
+    The system record was written before the command ran, so every failed
+    measure still stamped the host into registry/systems/. On CI that put the
+    runner's own Xeon into the shipped registry and broke the export test.
+    """
+    import argparse
+
+    sys.path.insert(0, str(ROOT))
+    import src.cli as cli
+    from src.pluto import measurements as ms
+
+    written = []
+    monkeypatch.setattr(ms, "write_system", lambda s, root=None: written.append(s))
+
+    args = argparse.Namespace(
+        model="demo", metric="seconds_per_image",
+        command_argv=["--", "/bin/sh", "-c", "exit 3"],
+    )
+    assert cli.cmd_measure(args) == 3
+    assert written == []

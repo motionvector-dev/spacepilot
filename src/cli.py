@@ -835,7 +835,6 @@ def cmd_measure(args, cfg=None) -> int:
 
     profile = probe_local_device()
     system = ms.system_from_profile(profile)
-    ms.write_system(system)
 
     before = ms.sample_contention()
     rss_before = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
@@ -849,6 +848,11 @@ def cmd_measure(args, cfg=None) -> int:
         print(f"\n  command exited {proc.returncode} after {wall:.1f}s — nothing recorded.")
         print("  A failed run is not a measurement of anything.")
         return proc.returncode
+
+    # Written only once the run succeeded. Writing it up front left a system
+    # record behind on every failed measure, which contradicts "nothing
+    # recorded" and put the CI runner's own box into registry/systems/.
+    ms.write_system(system)
 
     # Busy at either end means busy: a run that started idle and ended loaded
     # was contended for part of its life, and the solo stream must stay clean.
