@@ -1,0 +1,75 @@
+# Disputed factual claims for tools/verify_claims.py.
+#
+# Each entry is one claim in dispute, with enough context for a verifier
+# model to know what is actually being contested. Research done 2026-08-23.
+#
+# Add new claims here rather than hardcoding them into the script — that is
+# the whole point of a data file.
+
+claims:
+  - id: darkbloom-provider-earnings
+    text: >
+      Darkbloom's provider earnings are $120-200/month per machine, as
+      claimed in the founder's launch thread. Determine whether this figure
+      or the competing report of the top leaderboard earner netting roughly
+      $3.50/month after electricity (against the platform's own $280-600/mo
+      calculator estimate) is actually supported by evidence.
+    context: >
+      Two numbers disagree by roughly two orders of magnitude for the same
+      platform and the same claimed activity (renting out a GPU to Darkbloom).
+      Find primary sources: the founder's launch thread/post, the platform's
+      own earnings calculator page, and any independent report of actual
+      leaderboard payouts.
+
+  - id: replicate-video-pricing
+    text: >
+      Replicate's official pricing page states Official Models cost
+      $0.09-$0.25 per second of video. A third-party aggregator instead
+      states Veo 3.1 cinematic generation on Replicate costs about
+      $0.75/sec. Determine which figure is current and accurate.
+    context: >
+      Check Replicate's own pricing/docs page for Official Models pricing,
+      and check Replicate's own Veo 3.1 model page for its actual per-second
+      or per-generation price, which may differ from the general Official
+      Models band because Veo is priced by Google, not by Replicate's
+      standard tiers.
+
+  - id: h100-hourly-rate
+    text: >
+      Individual GPU cloud providers quote H100 hourly rental rates ranging
+      $1.49-$6.50/hr (as fetched the same day across providers). A market
+      aggregator instead publishes a roughly $7.00/hr "median" H100 price.
+      Determine whether that $7.00/hr median is defensible given the
+      individual provider quotes.
+    context: >
+      Look for current H100 on-demand hourly pricing from multiple GPU cloud
+      marketplaces/providers (e.g. Lambda, CoreWeave, RunPod, Vast.ai,
+      Hyperstock-type aggregators) and compare against any published "median"
+      or "average" H100 price from a market-tracking aggregator site.
+
+  - id: salad-scale-claims
+    text: >
+      Salad (SaladCloud) claims 450,000+ earning nodes and 60,000+ daily
+      active GPUs on its network, and cites a customer serving 10M images/day
+      across 600+ consumer GPUs. All of these figures are self-reported by
+      Salad or its customer. Determine whether any of them is independently
+      corroborated by a source other than Salad's own marketing.
+    context: >
+      Check Salad's own website/blog for these numbers, then search for any
+      third-party coverage (press, analyst reports, independent benchmarks)
+      that corroborates network size or the specific customer throughput
+      claim, as opposed to just repeating Salad's press release.
+
+  - id: qualcomm-npu-latency
+    text: >
+      Qualcomm markets "under a second" on-device image generation latency
+      on its NPU. Independent measurements instead report 5-10 seconds for
+      on-device image generation on a Snapdragon 8 Gen 3 device at 512px
+      resolution and 20 diffusion steps. Determine what latency is actually
+      reproducible.
+    context: >
+      Check Qualcomm's own marketing material/press release for the "under a
+      second" claim and what conditions (model, resolution, step count,
+      device) it was measured under, then check independent
+      benchmarks/reviews for Snapdragon 8 Gen 3 on-device diffusion latency
+      at comparable settings.

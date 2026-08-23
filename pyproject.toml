@@ -16,6 +16,7 @@ dependencies = [
     "soundfile>=0.12.0",
     "numpy>=1.24.0",
     "PyYAML>=6.0",
+    "litellm>=1.98.0",
 ]
 
 [project.optional-dependencies]
