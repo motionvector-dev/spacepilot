@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpacePilot Cockpit — Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* ═══ tokens, lifted from web/app.css ═══════════════════════════════ */
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+  --true:#10b981; --wrong:#f43535; --agent:#a49bd0;
+  --silver:#cfd4dc; --silver-line:rgba(207,212,220,.30);
+  --gold:#c9a227; --gold-line:rgba(201,162,39,.40);
+  --invbg:#fafafa; --invink:#09090b;
+  --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Geist',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r1:6px; --r2:10px; --r3:14px;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --card:#ffffff; --raised:#e6e6e1;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14); --line3:rgba(0,0,0,.22);
+  --ink:#09090b; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;
+  --true:#059669; --wrong:#e11d48; --agent:#5b528f;
+  --silver:#5c6672; --silver-line:rgba(92,102,114,.32);
+  --gold:#8a6a22; --gold-line:rgba(138,106,34,.34);
+  --invbg:#09090b; --invink:#fafafa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--root);color:var(--ink);font-family:var(--sans);font-size:13px;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+.m{font-family:var(--mono)}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink4)}
+button{font-family:inherit;background:transparent;border:0;color:inherit;cursor:pointer}
+input,select{font-family:inherit;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ═══ grain — true black is never mathematically flat ═══════════════ */
+.grain{position:relative}
+.grain::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  opacity:var(--grain-a,.5);mix-blend-mode:overlay;z-index:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.42'/></svg>")}
+
+/* ═══ app shell ════════════════════════════════════════════════════ */
+#app{display:grid;grid-template-columns:236px 1fr 316px;grid-template-rows:auto 1fr;height:100%}
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:10px 18px;border-bottom:1px solid var(--line);background:var(--ground);z-index:3}
+.hgroup{display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:8px}
+.seg{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:var(--r1)}
+.seg button{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  padding:5px 9px;border-radius:4px;color:var(--ink3);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--invbg);color:var(--invink)}
+
+nav#tree{border-right:1px solid var(--line);background:var(--ground);overflow-y:auto;padding:12px 8px 32px}
+.tgroup{margin:0 0 4px}
+.thead{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink4);padding:12px 10px 6px}
+.tnode{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  font-family:var(--mono);font-size:11px;color:var(--ink3);padding:6px 10px;border-radius:var(--r1)}
+.tnode:hover{background:var(--card);color:var(--ink2)}
+.tnode[aria-current="true"]{background:var(--card);color:var(--ink)}
+.tnode .dot{width:4px;height:4px;border-radius:50%;background:transparent;flex:none}
+.tnode[data-threshold="1"] .dot{background:var(--gold)}
+.pt-rail{width:2px;border-radius:2px;align-self:stretch;
+  background:linear-gradient(180deg,#171b21 0%,#7c838f 22%,#ffffff 46%,#a7b0bc 64%,#3b434e 88%,#171b21 100%)}
+
+main#stage{overflow:auto;background:var(--root);display:flex;flex-direction:column}
+.stagebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 20px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--root);z-index:2}
+.viewport{padding:24px 28px 60px;flex:1}
+
+aside#panel{border-left:1px solid var(--line);background:var(--ground);overflow-y:auto;padding:0 0 40px}
+.psec{border-bottom:1px solid var(--line);padding:14px 16px}
+.psec > .lbl{display:block;margin-bottom:11px}
+.ctl{display:grid;grid-template-columns:1fr 84px;gap:8px;align-items:center;margin-bottom:9px}
+.ctl label{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.ctl input[type=range]{width:100%;accent-color:var(--ink2);height:16px}
+.ctl output{font-family:var(--mono);font-size:10px;color:var(--ink2);text-align:right}
+.ctl.wide{grid-template-columns:1fr}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0}
+.tog span{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.sw{width:32px;height:18px;border-radius:9px;border:1px solid var(--line2);background:var(--card);
+  position:relative;flex:none;cursor:pointer}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:var(--ink4);transition:transform .16s ease,background .16s ease}
+.sw[aria-checked="true"]{border-color:var(--line3)}
+.sw[aria-checked="true"]::after{transform:translateX(14px);background:var(--ink)}
+.swatchrow{display:flex;gap:5px;margin-top:6px}
+.swatchrow i{flex:1;height:22px;border-radius:4px;border:1px solid var(--line)}
+
+/* ═══ surfaces ═════════════════════════════════════════════════════ */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2)}
+.sect{display:flex;flex-direction:column;gap:9px;margin-bottom:22px}
+.secthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.row{display:grid;align-items:center;column-gap:16px;padding:11px 16px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:12px}
+.row:first-child{border-top:0}
+.k{font-family:var(--mono);font-size:12px}
+.dim{color:var(--ink3)} .dim2{color:var(--ink4)} .mid{color:var(--ink2)}
+.ok{color:var(--true)} .no{color:var(--wrong)}
+.chip{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:5px;
+  border:1px solid var(--line);color:var(--ink2);background:var(--card);white-space:nowrap}
+.chip.tight{color:var(--silver);background:var(--raised);border-color:var(--silver-line);letter-spacing:.02em}
+.chip.no{color:var(--wrong);background:transparent;border-color:transparent;padding-left:0}
+.berths{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.berth{flex:1;height:26px;border:1px dashed var(--line3);border-radius:var(--r1)}
+.berth.full{border:1px solid var(--line3);background:var(--card);border-style:solid}
+.au-edge{height:2px;background:linear-gradient(96deg,#2e1f08 0%,#8a6a22 12%,#c9a227 26%,#fffbe8 40%,#d8b95a 54%,#4a3410 68%,#f6e6a8 84%,#3d2b0d 100%)}
+.prov{font-family:var(--mono);font-size:10px;letter-spacing:.02em}
+.prov.measured{color:var(--true)} .prov.declared{color:var(--ink2)}
+.prov.estimated{color:var(--ink3)} .prov.hfapi{color:var(--ink2)}
+.note{font-size:11.5px;line-height:1.6;color:var(--ink3);max-width:80ch}
+.meter{height:4px;border-radius:2px;background:var(--card);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ink2)}
+.bezelwrap{position:relative;width:112px;height:112px;flex:none}
+.bezelwrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:30px}
+.bezelwrap .core{position:absolute;inset:7px;border-radius:24px;background:var(--root);
+  display:flex;align-items:center;justify-content:center}
+.hidden{display:none!important}
+
+/* ═══ motion grammar ═══════════════════════════════════════════════
+   exits are faster than entrances and travel nowhere · stagger 40ms,
+   capped at the fifth sibling · reduced motion zeroes distance and
+   keeps time · numbers never tick, they crossfade.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --mo-travel:4px;
+  --mo-enter:180ms; --mo-exit:120ms; --mo-cross:240ms; --mo-fill:220ms; --mo-route:200ms;
+  --mo-stagger:40ms;
+  --ease-out:cubic-bezier(.22,.68,.28,1);
+  --ease-in-out:cubic-bezier(.5,0,.3,1);
+}
+html[data-motion="reduced"]{--mo-travel:0px}   /* distance to zero, time unchanged */
+
+@keyframes mo-rise{from{opacity:0;transform:translateY(var(--mo-travel))}to{opacity:1;transform:none}}
+@keyframes mo-in{from{opacity:0}to{opacity:1}}
+@keyframes mo-out{from{opacity:1}to{opacity:0}}
+@keyframes mo-fill{from{opacity:0}to{opacity:1}}
+@keyframes mo-sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.mo-rise{animation:mo-rise var(--mo-enter) var(--ease-out) both}
+.mo-in{animation:mo-in var(--mo-enter) var(--ease-out) both}
+.mo-out{animation:mo-out var(--mo-exit) var(--ease-out) both}
+.mo-cross{animation:mo-in var(--mo-cross) var(--ease-in-out) both}
+/* stagger caps at the fifth sibling — a sixth row waits no longer than a fifth */
+.mo-stag > *:nth-child(1){animation-delay:0ms}
+.mo-stag > *:nth-child(2){animation-delay:calc(var(--mo-stagger)*1)}
+.mo-stag > *:nth-child(3){animation-delay:calc(var(--mo-stagger)*2)}
+.mo-stag > *:nth-child(4){animation-delay:calc(var(--mo-stagger)*3)}
+.mo-stag > *:nth-child(n+5){animation-delay:calc(var(--mo-stagger)*4)}
+#viewport.routing{animation:mo-in var(--mo-route) var(--ease-out) both}
+
+/* the berth fill: border-style cannot animate, so the solid ring is a
+   second layer that fades over the dashed one. Nothing travels. */
+.berth{position:relative}
+.berth .solid{position:absolute;inset:-1px;border:1px solid var(--line3);border-radius:var(--r1);
+  background:var(--card);opacity:0}
+.berth.full .solid{opacity:1}
+.berth.filling .solid{animation:mo-fill var(--mo-fill) var(--ease-out) both}
+
+/* the first-flight crossfade — the figure replaces the mark in place */
+.xfade{display:inline-grid}
+.xfade > *{grid-area:1/1}
+.xfade .was{opacity:0}
+.xfade.playing .was{animation:mo-out var(--mo-cross) var(--ease-in-out) both}
+.xfade.playing .now{animation:mo-in var(--mo-cross) var(--ease-in-out) both}
+
+/* ═══ components ═══════════════════════════════════════════════════ */
+.btn,.btn2,.btn3,.btn-danger{font-family:var(--mono);font-size:12px;padding:9px 18px;border-radius:var(--r1);
+  border:1px solid transparent;transition:background var(--mo-exit) var(--ease-out),
+  border-color var(--mo-exit) var(--ease-out),color var(--mo-exit) var(--ease-out);white-space:nowrap}
+.btn{background:var(--invbg);color:var(--invink)}
+.btn:hover,.btn.is-hover{background:var(--ink);}
+.btn:active,.btn.is-active{transform:none;background:var(--ink2)}
+.btn2{background:var(--card);color:var(--ink);border-color:var(--line2)}
+.btn2:hover,.btn2.is-hover{background:var(--raised);border-color:var(--line3)}
+.btn2:active,.btn2.is-active{background:var(--panel)}
+.btn3{background:transparent;color:var(--ink3);padding-left:6px;padding-right:6px}
+.btn3:hover,.btn3.is-hover{color:var(--ink)}
+.btn-danger{background:transparent;color:var(--wrong);border-color:var(--wrong)}
+.btn-danger:hover,.btn-danger.is-hover{background:var(--wrong);color:var(--root)}
+.btn[disabled],.btn2[disabled],.btn3[disabled],.is-disabled{opacity:.34;pointer-events:none}
+.btn:focus-visible,.btn2:focus-visible,.btn3:focus-visible,.btn-danger:focus-visible,
+.is-focus{outline:2px solid var(--ink);outline-offset:2px}
+
+.icn{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;
+  stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter;vector-effect:non-scaling-stroke}
+.icn.lg{width:24px;height:24px}
+.icn.xl{width:30px;height:30px}
+.iconcell{display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px 6px;
+  border:1px solid var(--line);border-radius:var(--r2);background:var(--panel);color:var(--ink2)}
+.iconcell span{font-family:var(--mono);font-size:9.5px;color:var(--ink4);letter-spacing:.02em}
+.iconcell:hover{color:var(--ink);border-color:var(--line2)}
+.specgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.statecell{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.statecell > .lbl{font-size:9.5px}
+.toast{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line2);
+  border-radius:var(--r2);background:var(--card);font-family:var(--mono);font-size:11.5px}
+.modalbox{border:1px solid var(--line2);border-radius:var(--r3);background:var(--panel);
+  max-width:440px;overflow:hidden}
+.skel{background:linear-gradient(90deg,var(--card),var(--raised),var(--card));
+  background-size:200% 100%;border-radius:4px;height:11px}
+html[data-motion="full"] .skel{animation:skel 1.4s linear infinite}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+.spec-row{display:grid;grid-template-columns:170px 96px 130px 1fr 78px;gap:14px;align-items:center;
+  padding:12px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11.5px}
+.stage-demo{border:1px solid var(--line);border-radius:var(--r2);background:var(--root);
+  padding:18px 20px;min-height:78px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+@media (max-width:1300px){
+  #app{grid-template-columns:212px 1fr;grid-template-rows:auto 1fr auto}
+  aside#panel{grid-column:1/-1;grid-row:3;border-left:0;border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));align-content:start;max-height:46vh}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto}
+  nav#tree{grid-row:2;max-height:168px;border-right:0;border-bottom:1px solid var(--line)}
+  main#stage{grid-row:3}
+  header{flex-wrap:wrap;gap:10px}
+  .viewport{padding:16px 14px 40px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body class="grain">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-ship" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 19h20"/></symbol>
+<symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+<symbol id="i-memory" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M8 6v12M12 6v12M16 6v12"/></symbol>
+<symbol id="i-disk" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="12" cy="12" r="3.5"/></symbol>
+<symbol id="i-crew" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></symbol>
+<symbol id="i-berth" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5" stroke-dasharray="3 2.6"/></symbol>
+<symbol id="i-runtime" viewBox="0 0 24 24"><path d="M12 3 21 7.5v9L12 21 3 16.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10.5 12 15.5l5-5M4 20h16"/></symbol>
+<symbol id="i-install" viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M12 3v9M8.5 8.5 12 12l3.5-3.5"/></symbol>
+<symbol id="i-measure" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4.5M15 8v3M19 8v4.5"/></symbol>
+<symbol id="i-flight" viewBox="0 0 24 24"><path d="M3 12h3l2.5-6L12 19l2.5-7 1.5 3H21"/></symbol>
+<symbol id="i-offship" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".85" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r=".85" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-meter" viewBox="0 0 24 24"><path d="M3.5 18a8.5 8.5 0 0 1 17 0"/><path d="M12 18 16.5 10.5"/></symbol>
+<symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9.5 10 12.5 7 15.5M13 15.5h4"/></symbol>
+<symbol id="i-warning" viewBox="0 0 24 24"><path d="M12 4 21.5 20.5h-19z"/><path d="M12 10.5v4.5"/><circle cx="12" cy="17.8" r=".85" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-verified" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.2 10.8 15 16 9.8"/></symbol>
+<symbol id="i-unflown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="2.4 3"/></symbol>
+<symbol id="i-agent" viewBox="0 0 24 24"><path d="M12 3 14.4 9.6 21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></symbol>
+<symbol id="i-quota" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1"/><path d="M15.5 6v12"/></symbol>
+<symbol id="i-shell" viewBox="0 0 24 24"><circle cx="7.5" cy="12" r="3.5"/><path d="M11 12h10M18 12v3M15 12v2.2"/></symbol>
+<symbol id="i-probe" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8 20.5 20.5"/></symbol>
+<symbol id="i-licence" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="i-threshold" viewBox="0 0 24 24"><path d="M4 21V7a8 8 0 0 1 16 0v14"/><path d="M9.5 21v-7h5v7"/></symbol>
+<symbol id="i-refusal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6.4 6.4 17.6 17.6"/></symbol>
+</defs></svg>
+<div id="app">
+
+  <header>
+    <div class="hgroup">
+      <div class="brand">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"><path d="M2 13.5 L8 2 L14 13.5"/><path d="M4.4 9 L11.6 9"/></svg>
+        <span class="m" style="font-size:12px">spacepilot</span>
+      </div>
+      <span class="lbl">Cockpit playground</span>
+    </div>
+    <div class="hgroup">
+      <div class="seg" id="seg-structure" data-key="structure">
+        <button data-v="restructured" aria-pressed="true">Restructured</button>
+        <button data-v="shipped" aria-pressed="false">As shipped</button>
+      </div>
+      <div class="seg" id="seg-density" data-key="density">
+        <button data-v="dense" aria-pressed="true">Dense</button>
+        <button data-v="sparse" aria-pressed="false">Sparse</button>
+      </div>
+      <div class="seg" id="seg-theme" data-key="theme">
+        <button data-v="system" aria-pressed="true">System</button>
+        <button data-v="light" aria-pressed="false">Light</button>
+        <button data-v="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="tree"></nav>
+
+  <main id="stage">
+    <div class="stagebar">
+      <div class="m" style="font-size:12px" id="crumb"></div>
+      <div class="hgroup">
+        <span class="lbl" id="renderer-badge">—</span>
+        <span class="lbl" id="statecount"></span>
+      </div>
+    </div>
+    <div class="viewport" id="viewport"></div>
+  </main>
+
+  <aside id="panel"></aside>
+
+</div>
+<script>
+"use strict";
+const GB = 1073741824;
+const fmt = b => (b / GB).toFixed(2) + " GB";
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIXTURES — lifted verbatim from web/registry.json and
+   registry/runtimes/*.yaml on 2026-08-23. Nothing here is invented.
+   The live toggle replaces this wholesale from the API.
+   ═══════════════════════════════════════════════════════════════════ */
+const RULES = {                       // web/registry.json → rules
+  metal_working_set_fraction: 0.78,
+  tight_threshold: 0.80,
+  memory_reserve_fraction: 0.10,
+  memory_reserve_floor_bytes: 3 * GB,
+  permissive: ["apache-2.0", "bsd-3-clause", "mit"]
+};
+
+const SHIP = {
+  name: "Saurabh's MacBook Pro",
+  chip: "Apple M1 Max",
+  cores: "8P + 2E",
+  gpu_cores: 32,
+  metal: "Metal 4",
+  os: "macOS 26.6.2",
+  total_bytes: 32 * GB,
+  usable_bytes: 24.96 * GB,
+  // usable_memory_bytes() prefers the platform's own answer: Metal's
+  // recommendedMaxWorkingSetSize. The 0.78 rule is the fallback for
+  // machines that cannot be asked — so this number's provenance varies.
+  usable_source: "measured",
+  usable_note: "Metal's recommended max working set, read from the driver. Not 32 — the driver reserves the rest.",
+  free_disk_bytes: 285 * GB,
+  unread: [
+    ["thermal headroom", "no public API on this platform"],
+    ["ANE utilisation", "powermetrics needs root; we do not ask for it"],
+    ["power source", "not exposed to an unprivileged process"]
+  ]
+};
+
+const MODELS = [
+  { id:"kokoro", name:"Kokoro 82M", family:"Kokoro", kind:"speech", params:"82M", precision:"fp32",
+    ws:0.75*GB, ws_src:"estimated",
+    ws_note:"weights plus a small activation margin; the ONNX build runs comfortably in well under a gigabyte",
+    speed:{metric:"realtime_factor", value:4.6, src:"measured", on:"2026-08-22",
+      note:"12.5s of speech from a single sentence in 2.7s wall clock, kokoro-v1.0.onnx via onnxruntime"},
+    spdx:"Apache-2.0", restrictions:[], runtime:"kokoro-onnx", download_bytes:0.31*GB },
+
+  { id:"wan-2-1-1_3b", name:"Wan 2.1 T2V 1.3B", family:"Wan 2.1", kind:"video", params:"1.3B", precision:"bf16",
+    ws:8.19*GB, ws_src:"declared",
+    ws_note:"8.19 GB peak GPU memory, stated on the official model card for a 5-second 480p generation",
+    speed:{metric:"seconds_per_second_of_video", value:48.0, src:"declared", on:"2026-08-22",
+      note:"About 4 minutes for a 5-second 480p clip, stated on the official model card without quantisation. Not measured by us."},
+    spdx:"Apache-2.0", restrictions:[], runtime:"mlx-video", download_bytes:6.4*GB },
+
+  { id:"ltx-2b", name:"LTX Video 2B 0.9.8 distilled", family:"LTX Video", kind:"video", params:"2B", precision:"bf16",
+    ws:10.2*GB, ws_src:"estimated",
+    ws_note:"transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+    speed:{metric:"seconds_per_second_of_video", value:2.7, src:"declared", on:"2026-08-22",
+      note:"121 frames at 512x512 in 11 seconds, converted at the card's 30 FPS. The source does not say which checkpoint or precision — treat it as the speed class of a small LTX model on a 4090, not as this row's number."},
+    spdx:null, restrictions:["Free only while your annual revenue is under $10M","The terms pass to anyone you ship it to"],
+    runtime:"mlx-video", download_bytes:8.1*GB },
+
+  { id:"hunyuan-13b", name:"HunyuanVideo T2V 720p Q4_K_M", family:"HunyuanVideo", kind:"video", params:"13B", precision:"gguf-q4_k_m",
+    ws:12.0*GB, ws_src:"estimated",
+    ws_note:"transformer weights plus text encoder and VAE held resident, no measured run on any machine yet; text encoders are not in this repo and are counted separately",
+    speed:null,
+    spdx:null, restrictions:["Not licensed in the EU, the United Kingdom or South Korea","Capped at 100 million monthly active users"],
+    runtime:"llama-cpp", download_bytes:9.3*GB },
+
+  { id:"deepseek-r1-7b", name:"DeepSeek R1 Distill Qwen 7B", family:"DeepSeek R1 Distill Qwen", kind:"text", params:"7B", precision:"bf16",
+    ws:17.0*GB, ws_src:"estimated",
+    ws_note:"weights plus KV cache at a short context; long contexts cost considerably more",
+    speed:null, spdx:"MIT", restrictions:[], runtime:"llama-cpp", download_bytes:15.2*GB },
+
+  { id:"qwen2-5-vl-7b", name:"Qwen2.5 VL 7B Instruct", family:"Qwen2.5 VL", kind:"vision", params:"7B", precision:"bf16",
+    ws:18.0*GB, ws_src:"estimated",
+    ws_note:"weights plus KV cache at a short context; long contexts cost considerably more",
+    speed:null, spdx:"Apache-2.0", restrictions:[], runtime:"llama-cpp", download_bytes:16.1*GB },
+
+  { id:"ltx-13b-fp8", name:"LTX Video 13B 0.9.8 distilled FP8", family:"LTX Video", kind:"video", params:"13B", precision:"fp8",
+    ws:20.0*GB, ws_src:"estimated",
+    ws_note:"transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+    speed:{metric:"seconds_per_second_of_video", value:43.6, src:"declared", on:"2026-08-22",
+      note:"88 frames at 1216x704 in 2m08s without CPU offloading, converted at 30 FPS. The report says \"13B model\" without stating distilled or fp8, and the card is a modified 48 GB 4090 — an upper bound for a 13B LTX, not this variant's figure."},
+    spdx:null, restrictions:["Free only while your annual revenue is under $10M","The terms pass to anyone you ship it to"],
+    runtime:"mlx-video", download_bytes:14.7*GB },
+
+  { id:"wan-2-2-5b", name:"Wan 2.2 TI2V 5B", family:"Wan 2.2", kind:"video", params:"5B", precision:"bf16",
+    ws:24.0*GB, ws_src:"estimated",
+    ws_note:"transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+    speed:{metric:"seconds_per_second_of_video", value:2460.0, src:"declared", on:"2026-08-22",
+      note:"82 minutes for a 2-second clip in GGUF, third-party, on twice the memory of a 32 GB machine. Not measured by us. Treat as the order of magnitude, not the number."},
+    spdx:"Apache-2.0", restrictions:[], runtime:"mlx-video", download_bytes:19.4*GB },
+
+  { id:"wan-2-1-14b", name:"Wan 2.1 T2V 14B", family:"Wan 2.1", kind:"video", params:"14B", precision:"bf16",
+    ws:48.0*GB, ws_src:"estimated",
+    ws_note:"transformer weights plus text encoder and VAE held resident, no measured run on any machine yet",
+    speed:null, spdx:"Apache-2.0", restrictions:[], runtime:"mlx-video", download_bytes:32.8*GB }
+];
+
+const RUNTIMES = [
+  { id:"kokoro-onnx", name:"Kokoro ONNX", pkg:"kokoro-onnx", min:"0.6.1", py:">=3.10,<3.14",
+    serves:["speech"], backends:["metal","cuda","cpu"], license:"MIT", installed:"0.6.1",
+    summary:"Text to speech through ONNX Runtime. Works on any silicon, needs no MLX and no PyTorch, and is the one local generation path this project has measured." },
+  { id:"mlx-video", name:"MLX Video", pkg:"mlx-video", min:"0.1.0", py:">=3.9",
+    serves:["video"], backends:["metal"], license:"MIT", installed:null,
+    summary:"Video generation on Apple Silicon. The only path that runs Wan and LTX natively on Metal rather than through MPS." },
+  { id:"llama-cpp", name:"llama.cpp", pkg:"llama-cpp-python", min:"0.3.35", py:">=3.8",
+    serves:["text","vision"], backends:["metal","cuda","cpu"], license:"MIT", installed:null,
+    summary:"GGUF inference for text and vision models. Runs on anything." },
+  { id:"diffusers", name:"Diffusers", pkg:"diffusers", min:"0.40.0", py:">=3.10",
+    serves:["image","video"], backends:["cuda","metal","cpu"], license:"Apache-2.0", installed:"0.36.2",
+    summary:"The reference pipelines for image and video diffusion. Runs everywhere, including Apple Silicon through PyTorch MPS, and is the fallback wherever an MLX-native runtime does not exist." },
+  { id:"mflux", name:"MFLUX", pkg:"mflux", min:"0.19.0", py:">=3.10",
+    serves:["image"], backends:["metal"], license:"MIT", installed:null,
+    summary:"MLX-native image generation for Apple Silicon. A line-by-line port of the diffusers pipelines, so it runs on Metal without going through PyTorch's MPS compatibility layer." },
+  { id:"mlx-audio", name:"MLX Audio", pkg:"mlx-audio", min:"0.5.0", py:">=3.10",
+    serves:["audio","speech"], backends:["metal"], license:"MIT", installed:null,
+    summary:"Speech and music generation on Apple Silicon, including MusicGen and Kokoro." },
+  { id:"stable-audio-tools", name:"Stable Audio Tools", pkg:"stable-audio-tools", min:"0.0.20", py:">=3.10,<3.11",
+    serves:["audio"], backends:["cuda","metal","cpu"], license:"MIT", installed:null, blocked:true,
+    summary:"Text to audio for sound effects and short musical loops.",
+    note:"Pinned below Python 3.11 by its own metadata, so it will not install on this interpreter." }
+];
+
+/* Measurements — two streams that are never merged. */
+const MEASURE = {
+  solo: [{ model:"kokoro", metric:"realtime_factor", value:4.6, runs:1, on:"2026-08-22",
+           note:"12.5s of speech in 2.7s wall clock, single sentence, nothing else running" }],
+  observed: []
+};
+
+const PYTHON = "3.12.4";
+
+/* ═══════════════════════════════════════════════════════════════════
+   METAL — a light model, not a colour.
+     base is dark · anisotropic specular reaching near-white ·
+     wavelength-split IOR at the silhouette · grain in the same pass.
+   Tier 1 is WebGPU/WGSL, tier 2 is WebGL2/GLSL, and the two run the
+   same maths. Whichever boots is reported in the header.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const ALLOYS = {
+  gold:   [[0.180,0.122,0.031],[0.541,0.416,0.133],[0.788,0.635,0.153],[0.965,0.902,0.659],[1.000,0.984,0.910]],
+  chrome: [[0.090,0.106,0.129],[0.329,0.361,0.404],[0.655,0.690,0.737],[0.910,0.929,0.957],[1.000,1.000,1.000]],
+  nacre:  [[0.984,0.965,0.925],[0.957,0.890,0.933],[0.925,0.906,0.949],[0.894,0.941,0.918],[0.902,0.929,0.957]]
+};
+
+const SHARED_GLSL = `
+float sdr(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return min(max(q.x,q.y),0.0) + length(max(q,0.0)) - r; }
+float hash21(vec2 p){ p = fract(p*vec2(123.34,345.45)); p += dot(p, p+34.345); return fract(p.x*p.y); }
+vec3 ramp(float t, vec3 c0, vec3 c1, vec3 c2, vec3 c3, vec3 c4){
+  t = clamp(t, 0.0, 1.0) * 4.0;
+  if (t < 1.0) return mix(c0, c1, t);
+  if (t < 2.0) return mix(c1, c2, t-1.0);
+  if (t < 3.0) return mix(c2, c3, t-2.0);
+  return mix(c3, c4, t-3.0);
+}
+float envAt(float a, float lobes, float sharp){
+  float best = 0.0;
+  for (int i = 0; i < 6; i++){
+    if (float(i) >= lobes) break;
+    float o = a - float(i) * 6.2831853 / lobes;
+    best = max(best, pow(max(0.0, cos(o)), sharp));
+  }
+  float base = 0.5 + 0.5 * cos(a * lobes);
+  return clamp(mix(base * 0.30, 1.0, best), 0.0, 1.0);
+}`;
+
+const FRAG_GLSL = `#version 300 es
+precision highp float;
+uniform vec2 uRes; uniform float uRadius, uThick, uEnvRot, uLobes, uRough, uDisp, uGrain, uTime;
+uniform vec3 uC0, uC1, uC2, uC3, uC4;
+out vec4 fragColor;
+${SHARED_GLSL}
+void main(){
+  vec2 p = gl_FragCoord.xy - 0.5 * uRes;
+  vec2 b = 0.5 * uRes - vec2(1.5);
+  float r  = uRadius;
+  float d  = sdr(p, b - vec2(uThick * 0.5), r);
+  float ring = abs(d) - uThick * 0.5;
+  float a = 1.0 - smoothstep(-0.9, 0.9, ring);
+  if (a <= 0.001) { fragColor = vec4(0.0); return; }
+
+  float e = 1.0;
+  vec2 grad = normalize(vec2(
+    sdr(p + vec2(e,0.0), b - vec2(uThick*0.5), r) - sdr(p - vec2(e,0.0), b - vec2(uThick*0.5), r),
+    sdr(p + vec2(0.0,e), b - vec2(uThick*0.5), r) - sdr(p - vec2(0.0,e), b - vec2(uThick*0.5), r)) + 1e-6);
+  float ang = atan(grad.y, grad.x) + uEnvRot;
+
+  float sharp = mix(48.0, 3.0, clamp(uRough, 0.0, 1.0));
+  // curvature rises at the corners, and dispersion follows curvature
+  float corner = smoothstep(0.0, 1.0, length(max(abs(p) - (b - vec2(r)), 0.0)) / max(r, 1.0));
+  float band = clamp(uThick / max(uRes.x, 1.0) * 7.0, 0.25, 1.0);
+  float o = uDisp * band * (0.05 + 0.22 * corner);
+
+  float eR = envAt(ang + o, uLobes, sharp);
+  float eG = envAt(ang,     uLobes, sharp);
+  float eB = envAt(ang - o, uLobes, sharp);
+  vec3 col = vec3(
+    ramp(eR, uC0,uC1,uC2,uC3,uC4).r,
+    ramp(eG, uC0,uC1,uC2,uC3,uC4).g,
+    ramp(eB, uC0,uC1,uC2,uC3,uC4).b);
+
+  float n = hash21(gl_FragCoord.xy + floor(uTime * 24.0) * 0.017) - 0.5;
+  col += n * uGrain * 0.14;
+  fragColor = vec4(clamp(col, 0.0, 1.0), a);
+}`;
+
+const VERT_GLSL = `#version 300 es
+void main(){ vec2 v[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0)); gl_Position = vec4(v[gl_VertexID], 0.0, 1.0); }`;
+
+/* The tier-1 source. Same maths, WGSL. Shown in the panel so it can be lifted. */
+const WGSL = `struct U { res:vec2f, radius:f32, thick:f32, envRot:f32, lobes:f32, rough:f32, disp:f32,
+  grain:f32, time:f32, _p:vec2f, c0:vec4f, c1:vec4f, c2:vec4f, c3:vec4f, c4:vec4f };
+@group(0) @binding(0) var<uniform> u: U;
+
+fn sdr(p:vec2f, b:vec2f, r:f32) -> f32 { let q = abs(p) - b + r; return min(max(q.x,q.y),0.0) + length(max(q,vec2f(0.0))) - r; }
+fn hash21(p0:vec2f) -> f32 { var p = fract(p0*vec2f(123.34,345.45)); p += vec2f(dot(p,p+34.345)); return fract(p.x*p.y); }
+fn ramp(t0:f32) -> vec3f {
+  let t = clamp(t0,0.0,1.0)*4.0;
+  if (t < 1.0) { return mix(u.c0.rgb, u.c1.rgb, t); }
+  if (t < 2.0) { return mix(u.c1.rgb, u.c2.rgb, t-1.0); }
+  if (t < 3.0) { return mix(u.c2.rgb, u.c3.rgb, t-2.0); }
+  return mix(u.c3.rgb, u.c4.rgb, t-3.0);
+}
+fn envAt(a:f32, sharp:f32) -> f32 {
+  var best = 0.0;
+  for (var i = 0; i < 6; i++) {
+    if (f32(i) >= u.lobes) { break; }
+    let o = a - f32(i) * 6.2831853 / u.lobes;
+    best = max(best, pow(max(0.0, cos(o)), sharp));
+  }
+  let base = 0.5 + 0.5 * cos(a * u.lobes);
+  return clamp(mix(base * 0.30, 1.0, best), 0.0, 1.0);
+}
+@vertex fn vs(@builtin(vertex_index) i:u32) -> @builtin(position) vec4f {
+  var v = array<vec2f,3>(vec2f(-1.0,-1.0), vec2f(3.0,-1.0), vec2f(-1.0,3.0));
+  return vec4f(v[i], 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) fc:vec4f) -> @location(0) vec4f {
+  let p = vec2f(fc.x, u.res.y - fc.y) - 0.5 * u.res;
+  let b = 0.5 * u.res - vec2f(1.5);
+  let bb = b - vec2f(u.thick * 0.5);
+  let d = sdr(p, bb, u.radius);
+  let ring = abs(d) - u.thick * 0.5;
+  let a = 1.0 - smoothstep(-0.9, 0.9, ring);
+  if (a <= 0.001) { return vec4f(0.0); }
+  let e = 1.0;
+  let grad = normalize(vec2f(
+    sdr(p + vec2f(e,0.0), bb, u.radius) - sdr(p - vec2f(e,0.0), bb, u.radius),
+    sdr(p + vec2f(0.0,e), bb, u.radius) - sdr(p - vec2f(0.0,e), bb, u.radius)) + vec2f(1e-6));
+  let ang = atan2(grad.y, grad.x) + u.envRot;
+  let sharp = mix(48.0, 3.0, clamp(u.rough, 0.0, 1.0));
+  let corner = smoothstep(0.0, 1.0, length(max(abs(p) - (b - vec2f(u.radius)), vec2f(0.0))) / max(u.radius, 1.0));
+  let band = clamp(u.thick / max(u.res.x, 1.0) * 7.0, 0.25, 1.0);
+  let o = u.disp * band * (0.05 + 0.22 * corner);
+  let col0 = vec3f(ramp(envAt(ang + o, sharp)).r, ramp(envAt(ang, sharp)).g, ramp(envAt(ang - o, sharp)).b);
+  let n = hash21(fc.xy + floor(u.time * 24.0) * 0.017) - 0.5;
+  return vec4f(clamp(col0 + vec3f(n * u.grain * 0.14), vec3f(0.0), vec3f(1.0)), a);
+}`;
+
+let RENDERER = "none";
+
+class MetalSurface {
+  constructor(canvas, alloy) {
+    this.c = canvas; this.alloy = alloy || "gold"; this.ok = false;
+    const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false, antialias: false });
+    if (!gl) return;
+    this.gl = gl;
+    const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; } return s; };
+    const vs = sh(gl.VERTEX_SHADER, VERT_GLSL), fs = sh(gl.FRAGMENT_SHADER, FRAG_GLSL);
+    if (!vs || !fs) return;
+    const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); return; }
+    this.p = p; gl.useProgram(p);
+    this.u = {};
+    for (const n of ["uRes","uRadius","uThick","uEnvRot","uLobes","uRough","uDisp","uGrain","uTime","uC0","uC1","uC2","uC3","uC4"])
+      this.u[n] = gl.getUniformLocation(p, n);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.ok = true; if (RENDERER === "none") RENDERER = "WebGL2 · GLSL";
+  }
+  draw(o) {
+    if (!this.ok) return;
+    const gl = this.gl, dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round(this.c.clientWidth * dpr)), h = Math.max(1, Math.round(this.c.clientHeight * dpr));
+    if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
+    gl.viewport(0, 0, w, h); gl.useProgram(this.p);
+    gl.uniform2f(this.u.uRes, w, h);
+    gl.uniform1f(this.u.uRadius, o.radius * dpr);
+    gl.uniform1f(this.u.uThick,  o.thick  * dpr);
+    gl.uniform1f(this.u.uEnvRot, o.envRot);
+    gl.uniform1f(this.u.uLobes,  o.lobes);
+    gl.uniform1f(this.u.uRough,  o.rough);
+    gl.uniform1f(this.u.uDisp,   o.disp);
+    gl.uniform1f(this.u.uGrain,  o.grain);
+    gl.uniform1f(this.u.uTime,   o.time);
+    const c = ALLOYS[o.alloy] || ALLOYS.gold;
+    gl.uniform3fv(this.u.uC0, c[0]); gl.uniform3fv(this.u.uC1, c[1]); gl.uniform3fv(this.u.uC2, c[2]);
+    gl.uniform3fv(this.u.uC3, c[3]); gl.uniform3fv(this.u.uC4, c[4]);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+}
+
+/* ═══ state ════════════════════════════════════════════════════════ */
+const S = {
+  route: "ship/loaded", structure: "restructured", density: "dense", theme: "system",
+  crew: ["kokoro"], runtimesInstalled: ["kokoro-onnx", "diffusers"],
+  offshipSeconds: 1084, acquirePct: 44, installPct: 62, firstFlightDone: false,
+  metal: { on:true, alloy:"gold", radius:30, thick:7, lobes:4, rough:0.16, disp:0.42, grain:0.50, speed:0.30 },
+  alloc: { navRail:true, thresholdEdge:true, shipCard:false, primaryBtn:false, berths:false, rules:false },
+  motion:"full", power:"full", data:"fixtures", apiBase:"http://127.0.0.1:8000"
+};
+const BERTHS = 5;
+const byId = id => MODELS.find(m => m.id === id);
+const rt = id => RUNTIMES.find(r => r.id === id);
+
+/* ═══ the rules, applied — not hardcoded verdicts ══════════════════ */
+function verdict(m) {
+  const ratio = m.ws / SHIP.usable_bytes;
+  if (ratio > 1) return { k:"no", label:"won't fit", ratio };
+  if (ratio > RULES.tight_threshold) return { k:"tight", label:"fits, tight", ratio };
+  return { k:"fits", label:"fits", ratio };
+}
+function speedCell(m) {
+  const flown = MEASURE.solo.find(x => x.model === m.id);
+  if (flown) return `<span class="prov measured">flown here</span> <span class="mid">${flown.value}× realtime</span>`;
+  if (!m.speed) return `<span class="prov estimated">unflown here</span>`;
+  const unit = m.speed.metric === "realtime_factor" ? "× realtime" : " s per second of video";
+  return `<span class="mid">${m.speed.value}${unit} on paper</span> <span class="prov estimated">· unflown here</span>`;
+}
+function licenceCell(m) {
+  if (m.restrictions.length) return `<span class="dim2" title="${esc(m.restrictions.join(' · '))}">${esc(m.restrictions[0])}</span>`;
+  return `<span class="dim2">${m.spdx || "—"}</span>`;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
+const sparse = () => S.density === "sparse";
+function note(t) { return sparse() ? "" : `<div class="note">${t}</div>`; }
+
+function bezel(alloy, icon, size) {
+  size = size || 112;
+  if (!S.metal.on) return `<div style="width:${size}px;height:${size}px;border:1px solid var(--line3);border-radius:30px;display:flex;align-items:center;justify-content:center">${icon}</div>`;
+  return `<div class="bezelwrap" data-metal="${alloy}" style="width:${size}px;height:${size}px">
+    <canvas></canvas><div class="core">${icon}</div></div>`;
+}
+const ICONS = ["ship","chip","memory","disk","crew","berth","runtime","download","install","measure",
+  "flight","offship","meter","terminal","warning","verified","unflown","agent","quota","shell",
+  "probe","licence","threshold","refusal"];
+const icon = (n, cls) => `<svg class="icn ${cls || ""}"><use href="#i-${n}"></use></svg>`;
+const ICON_GRID = icon("crew", "xl");
+const ICON_WAVE = icon("flight", "xl");
+const ICON_CHIP = icon("chip", "xl");
+const goldEdge = () => S.alloc.thresholdEdge && S.metal.on ? `<div class="au-edge"></div>` : "";
+
+/* ═══ shared blocks ════════════════════════════════════════════════ */
+function shipBlock(showUnread) {
+  const pct = Math.round(SHIP.usable_bytes / SHIP.total_bytes * 100);
+  return `<div class="card grain" style="overflow:hidden">${S.alloc.shipCard && S.metal.on ? '<div class="au-edge"></div>' : ''}
+    <div style="display:grid;grid-template-columns:1fr ${showUnread ? "268px" : "1fr"};gap:28px;padding:18px 20px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="probe-line" style="font-size:12px;font-weight:500">${SHIP.name}</div>
+        <div class="probe-line k mid">${SHIP.chip} · ${SHIP.cores} · ${SHIP.gpu_cores}-core GPU · ${SHIP.metal} · ${SHIP.os}</div>
+        <div class="probe-line" style="display:flex;align-items:baseline;gap:12px;padding-top:2px">
+          <span class="k">${fmt(SHIP.usable_bytes)} usable</span>
+          <span class="prov measured">measured</span>
+          ${sparse() ? "" : `<span class="k dim">not ${(SHIP.total_bytes/GB).toFixed(0)} — ${SHIP.usable_note.split('. ')[0].toLowerCase()}</span>`}
+        </div>
+        <div class="probe-line meter" style="max-width:320px"><i style="width:${pct}%"></i></div>
+        <div class="probe-line k mid">${fmt(SHIP.free_disk_bytes)} free on disk</div>
+      </div>
+      ${showUnread ? `<div style="display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--line);padding-left:22px">
+        <div class="lbl">Could not read</div>
+        ${SHIP.unread.map(u => `<div class="probe-line k mid">${u[0]}</div>`).join("")}
+        <button class="k" data-go="ship/probe-detail" style="text-align:left;padding-top:4px;color:var(--ink)">why ›</button>
+      </div>` : ""}
+    </div></div>`;
+}
+
+function crewTable(ids, opts) {
+  opts = opts || {};
+  const cols = sparse() ? "1fr 118px 160px" : "236px 66px 112px minmax(280px,1fr) 168px";
+  const rows = ids.map(id => {
+    const m = byId(id), v = verdict(m);
+    return `<div class="row" style="grid-template-columns:${cols}">
+      <span>${esc(m.name)}</span>
+      ${sparse() ? "" : `<span class="dim">${m.kind}</span>`}
+      <span class="${v.k === "no" ? "no" : ""}">${v.k === "tight" ? `<span class="chip tight">${v.label}</span>` : v.label}</span>
+      ${sparse() ? "" : `<span class="dim">${speedCell(m)}</span>`}
+      <span style="text-align:right">${opts.right ? opts.right(m) : licenceCell(m)}</span>
+    </div>`;
+  }).join("");
+  return `<div class="card" style="overflow:hidden">${rows || `<div class="row dim">nothing here yet</div>`}</div>`;
+}
+
+function berthRow() {
+  let out = "";
+  for (let i = 0; i < BERTHS; i++) out += `<div class="berth ${i < S.crew.length ? "full" : ""}"><div class="solid"></div></div>`;
+  return `<div class="berths">${out}</div>`;
+}
+
+/* ═══ the route tree ═══════════════════════════════════════════════ */
+const TREE = [
+  ["first-run", "seen once, ever", [
+    ["consent",    "consent",     0],
+    ["detect",     "detect",      1],
+    ["recommend",  "recommend",   0]]],
+  ["ship", "the default landing", [
+    ["empty",        "empty · first contact", 0],
+    ["loaded",       "loaded",                0],
+    ["probe-detail", "probe detail",          0]]],
+  ["crew", "models on this ship", [
+    ["list",    "list",     0],
+    ["acquire", "acquire",  0],
+    ["aboard",  "aboard",   1],
+    ["remove",  "remove",   0]]],
+  ["runtimes", "installed, not downloaded", [
+    ["list",              "list",              0],
+    ["preview",           "install preview",   0],
+    ["downgrade-refusal", "downgrade refusal", 0],
+    ["installing",        "installing",        0],
+    ["failed",            "failed",            0]]],
+  ["measurements", "never merged", [
+    ["solo",         "solo",         0],
+    ["observed",     "observed",     0],
+    ["first-flight", "first flight", 1]]],
+  ["system", "the design system", [
+    ["icons",      "icons",      0],
+    ["components", "components", 0],
+    ["motion",     "motion",     0]]],
+  ["off-ship", "the meter runs", [
+    ["idle",      "idle",      0],
+    ["launch",    "launch",    0],
+    ["running",   "running",   0],
+    ["shell",     "shell",     0],
+    ["terminate", "terminate", 0]]]
+];
+
+const R = {};
+
+/* ── first-run ─────────────────────────────────────────────────── */
+R["first-run/consent"] = () => `
+  <div style="max-width:660px;display:flex;flex-direction:column;gap:26px;padding-top:40px">
+    <div class="lbl">Before anything else</div>
+    <div style="font-size:30px;font-weight:600;letter-spacing:-.028em;line-height:1.12">May we read this machine?</div>
+    <div style="font-size:15px;line-height:1.65;color:var(--ink2)">SpacePilot asks your hardware what it is, so it can tell you what will actually run. It reads the chip, the core counts, what the graphics driver will hand a model, and free disk. Nothing leaves the machine, and nothing is uploaded.</div>
+    ${note(`You can decline and use SpacePilot anyway. Every figure will then say <span class="prov estimated">unflown here</span> or <span class="mid">on paper</span> for as long as it stays declined — which is honest, and much less useful.`)}
+    <div style="display:flex;gap:12px;padding-top:4px">
+      <button class="btn" data-go="first-run/detect">Read this machine</button>
+      <button class="btn2" data-go="ship/empty">Not now</button>
+    </div>
+  </div>`;
+
+R["first-run/detect"] = () => `
+  <div style="max-width:720px;display:flex;flex-direction:column;gap:26px;padding-top:36px">
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      ${bezel("gold", ICON_CHIP, 112)}
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="lbl" style="color:var(--gold)">Threshold · once, ever</div>
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.025em">${SHIP.chip}</div>
+        <div class="k mid">${SHIP.cores} · ${SHIP.gpu_cores}-core GPU · ${SHIP.metal}</div>
+      </div>
+    </div>
+    <div id="probe-fields">${shipBlock(true)}</div>
+    <div><button class="btn3" data-play="probe">replay ›</button></div>
+    ${note(`Each field lands in document order — 180ms, 4px rise, 40ms stagger capped at the fifth sibling. The fields we could not read land last and stay dim. Reduced motion keeps the time and zeroes the distance.`)}
+    <div><button class="btn" data-go="first-run/recommend">Continue</button></div>
+  </div>`;
+
+R["first-run/recommend"] = () => {
+  const fits = MODELS.filter(m => verdict(m).k !== "no");
+  return `<div class="sect"><div class="secthead"><div class="lbl">Device × model · what this machine can run</div>
+    <div class="k dim2">${fits.length} of ${MODELS.length} fit · ceiling ${fmt(SHIP.usable_bytes)}</div></div>
+    ${crewTable(MODELS.map(m => m.id), { right: m => `<span class="dim2">${fmt(m.ws)} · ${m.ws_src}</span>` })}
+    ${note(`Every footprint carries where it came from. One of these nine is <span class="prov declared">declared</span> by the model card; the rest are <span class="prov estimated">estimated</span> from weights, precision and a resident text encoder. Not one has been run on this machine yet.`)}
+    <div style="padding-top:10px"><button class="btn" data-go="crew/acquire">Bring Kokoro aboard</button></div>
+  </div>`;
+};
+
+/* ── ship ──────────────────────────────────────────────────────── */
+R["ship/empty"] = () => `
+  <div class="sect"><div class="lbl">Aboard · 1 ship</div>${shipBlock(true)}</div>
+  <div class="sect"><div class="secthead"><div class="lbl">Crew · 0 aboard · ${BERTHS} berths open</div>
+    <div class="k dim2">0 flown · 0 unflown</div></div>
+    <div class="card">${berthRow()}</div>
+    ${note(`First contact, and it is not an empty page — the ship is always there. Nothing has been installed, so nothing is claimed. This is the state every session starts in.`)}
+    <div style="padding-top:10px"><button class="btn" data-go="first-run/recommend">See what fits</button></div>
+  </div>
+  ${offshipStrip()}`;
+
+R["ship/loaded"] = () => {
+  const flownN = S.crew.filter(id => MEASURE.solo.some(x => x.model === id)).length;
+  const onPaper = MODELS.filter(m => !S.crew.includes(m.id));
+  return `
+  <div class="sect"><div class="secthead"><div class="lbl">Aboard · 1 ship</div>
+    <div class="k dim2">probed 2026-08-23 · 14:02</div></div>${shipBlock(true)}</div>
+  <div class="sect"><div class="secthead"><div class="lbl">Crew · ${S.crew.length} aboard · ${BERTHS - S.crew.length} berths open</div>
+    <div class="k dim2">${flownN} flown · ${S.crew.length - flownN} unflown</div></div>
+    <div class="card" style="overflow:hidden">${crewTable(S.crew).replace(/^<div class="card"[^>]*>/, "").replace(/<\/div>$/, "")}${berthRow()}</div>
+  </div>
+  <div class="sect"><div class="secthead"><div class="lbl">On paper · not run here</div>
+    <div class="k dim2">Hugging Face registry · 2026-08-22</div></div>
+    ${crewTable(onPaper.map(m => m.id))}
+    ${note(`Eight of nine variants have no measured speed on any machine, and the table says so rather than implying otherwise. That is the spine, not a caveat.`)}
+  </div>
+  ${offshipStrip()}`;
+};
+
+R["ship/probe-detail"] = () => `
+  <div class="sect"><div class="lbl">What the probe could not read, and why</div>
+    <div class="card" style="overflow:hidden">
+      ${SHIP.unread.map(u => `<div class="row" style="grid-template-columns:220px 1fr"><span>${u[0]}</span><span class="dim">${u[1]}</span></div>`).join("")}
+    </div>
+    ${note(`Three fields, three reasons. A tool that silently omits what it could not reach is indistinguishable from one that guessed — so the omission is a row, with a cause, not a blank.`)}
+  </div>
+  <div class="sect"><div class="lbl">What it did read, and how</div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:220px 1fr 130px"><span>chip</span><span class="dim">${SHIP.chip}</span><span class="prov measured" style="text-align:right">sysctl</span></div>
+      <div class="row" style="grid-template-columns:220px 1fr 130px"><span>usable memory</span><span class="dim">${fmt(SHIP.usable_bytes)} of ${fmt(SHIP.total_bytes)}</span><span class="prov measured" style="text-align:right">Metal driver</span></div>
+      <div class="row" style="grid-template-columns:220px 1fr 130px"><span>fallback rule</span><span class="dim">${RULES.metal_working_set_fraction * 100}% of RAM, used only when the driver will not answer</span><span class="prov estimated" style="text-align:right">rule</span></div>
+      <div class="row" style="grid-template-columns:220px 1fr 130px"><span>free disk</span><span class="dim">${fmt(SHIP.free_disk_bytes)}</span><span class="prov measured" style="text-align:right">statvfs</span></div>
+    </div>
+    ${note(`The usable-memory number has its own provenance. On this machine Metal answers directly, so it is <span class="prov measured">measured</span>. On a machine that will not answer, the same field falls back to the ${RULES.metal_working_set_fraction * 100}% rule and is marked <span class="prov estimated">estimated</span> — the figure changes meaning, so the mark changes with it.`)}
+  </div>`;
+
+function offshipStrip() {
+  return `<div class="sect"><div class="lbl">Off-ship · none running · $0.00/hr</div>
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:28px;padding:17px 20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="k">Ceiling is 1 box, by quota.</div>
+        ${sparse() ? "" : `<div class="k mid">G-family spot quota is 8 vCPU; a g6e.2xlarge is 8 vCPU.<br>$0.74/hr, bills until terminated. An escalation, not a fleet.</div>`}
+      </div>
+      <button class="${S.alloc.primaryBtn && S.metal.on ? "btn2" : "btn"}" data-go="off-ship/launch">Launch a box</button>
+    </div></div>`;
+}
+
+/* ── crew ──────────────────────────────────────────────────────── */
+R["crew/list"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Crew · ${S.crew.length} aboard · ${BERTHS - S.crew.length} berths open</div>
+    <div class="k dim2">berths are bounded by disk, not by licence</div></div>
+    <div class="card" style="overflow:hidden">${crewTable(S.crew, { right: m => `<button class="k dim" data-go="crew/remove">remove</button>` }).replace(/^<div class="card"[^>]*>/, "").replace(/<\/div>$/, "")}${berthRow()}</div>
+  </div>
+  <div class="sect"><div class="lbl">Not aboard</div>
+    ${crewTable(MODELS.filter(m => !S.crew.includes(m.id)).map(m => m.id), {
+      right: m => verdict(m).k === "no" ? `<span class="dim2">—</span>` : `<button class="k" data-go="crew/acquire" style="color:var(--ink)">get</button>` })}
+    ${note(`A model that will not fit gets an em dash, not a get button and not <span class="prov estimated">unflown</span>. One is an invitation; the other is a wall. They must not render alike.`)}
+  </div>`;
+
+R["crew/acquire"] = () => {
+  const m = byId("wan-2-1-1_3b"), got = m.download_bytes * S.acquirePct / 100;
+  return `<div class="sect"><div class="lbl">Coming aboard</div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:13px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <span class="k">${esc(m.name)}</span><span class="k dim">${fmt(got)} of ${fmt(m.download_bytes)}</span>
+      </div>
+      <div class="meter"><i style="width:${S.acquirePct}%"></i></div>
+      <div class="k dim">Keeps going if you close this window.</div>
+    </div>
+    ${note(`Berths are finite and visible, so the download says something true about capacity instead of promising abundance. ${BERTHS - S.crew.length} open once this lands.`)}
+    <div class="card">${berthRow()}</div>
+    <div style="padding-top:10px"><button class="btn" data-go="crew/aboard">Finish the download</button></div>
+  </div>`;
+};
+
+R["crew/aboard"] = () => `
+  <div class="sect"><div class="lbl" style="color:var(--gold)">Threshold · once per model</div>
+    <div style="display:flex;align-items:center;gap:26px;padding:14px 0 6px;flex-wrap:wrap">
+      ${bezel("gold", ICON_GRID, 112)}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:22px;font-weight:600;letter-spacing:-.02em">Wan 2.1 T2V 1.3B is aboard.</div>
+        <div class="k mid">berth 2 of ${BERTHS} · ${fmt(byId("wan-2-1-1_3b").ws)} working set · ${byId("wan-2-1-1_3b").spdx}</div>
+        <div class="k"><span class="prov estimated">unflown here</span> <span class="dim">· 48 s per second of video on paper</span></div>
+      </div>
+    </div>
+    <div class="card" id="aboard-berths">${berthRow()}</div>
+    <div><button class="btn3" data-play="aboard">replay ›</button></div>
+    ${note(`The berth border goes dashed to solid over 220ms and nothing travels. The download row fades where it stands in 120ms — exits are faster than entrances. Under reduced motion this frame is identical, because nothing moved in the first place.`)}
+    <div style="padding-top:6px"><button class="btn" data-go="measurements/first-flight">Fly it</button></div>
+  </div>`;
+
+R["crew/remove"] = () => `
+  <div class="sect"><div class="lbl">Remove from crew</div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+      <div class="k">Remove Kokoro 82M?</div>
+      <div class="k mid">Frees ${fmt(byId("kokoro").download_bytes)} on disk and opens a berth.</div>
+      <div class="k" style="color:var(--gold)">Its measured run stays in the log. ${MEASURE.solo.length} measurement on this ship survives removal.</div>
+      <div style="display:flex;gap:10px;padding-top:4px">
+        <button class="btn2" data-go="crew/list">Remove</button><button class="btn2" data-go="crew/list">Cancel</button>
+      </div>
+    </div>
+    ${note(`Uninstalling the weights does not un-measure the machine. The flight log is a property of the ship, not of the crew — which is why removing a model never costs you a number you earned.`)}
+  </div>`;
+
+/* ── runtimes ──────────────────────────────────────────────────── */
+R["runtimes/list"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Runtimes · ${S.runtimesInstalled.length} of ${RUNTIMES.length} installed</div>
+    <div class="k dim2">installed, not downloaded · python ${PYTHON}</div></div>
+    <div class="card" style="overflow:hidden">
+    ${RUNTIMES.map(r => {
+      const inst = S.runtimesInstalled.includes(r.id);
+      const stale = inst && r.installed && r.installed < r.min;
+      return `<div class="row" style="grid-template-columns:190px 1fr 150px 108px">
+        <span>${esc(r.name)}</span>
+        <span class="dim">${r.serves.join(", ")} · ${r.backends.join("/")}</span>
+        <span class="${r.blocked ? "no" : inst ? (stale ? "" : "ok") : "dim"}">${
+          r.blocked ? "cannot install" : inst ? (stale ? `${r.installed} · below ${r.min}` : `${r.installed} installed`) : "not installed"}</span>
+        <span style="text-align:right">${r.blocked ? `<span class="dim2">—</span>` :
+          `<button class="k" data-go="${stale ? "runtimes/downgrade-refusal" : "runtimes/preview"}" style="color:var(--ink)">${inst ? "update" : "install"} ›</button>`}</span>
+      </div>`;
+    }).join("")}</div>
+    ${note(`<span class="k">Stable Audio Tools</span> is pinned <span class="k">${esc(rt("stable-audio-tools").py)}</span> by its own metadata, and this interpreter is ${PYTHON}. It is not offered, and the row says why rather than failing at install time.`)}
+  </div>`;
+
+R["runtimes/preview"] = () => {
+  const r = rt("mlx-video");
+  return `<div class="sect"><div class="lbl">Install preview · nothing has run yet</div>
+    <div class="card" style="overflow:hidden">
+      <div style="padding:17px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
+        <div class="k">${esc(r.name)} ${r.min}</div>
+        <div class="note" style="margin:0">${esc(r.summary)}</div>
+      </div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">install</span><span>${esc(r.pkg)} ${r.min}</span><span class="ok" style="text-align:right">new</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">upgrade</span><span>mlx 0.21.0 → 0.24.1</span><span class="ok" style="text-align:right">upgrade</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">upgrade</span><span>numpy 1.26.4 → 2.1.3</span><span class="ok" style="text-align:right">upgrade</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">unchanged</span><span>huggingface-hub 0.34.4</span><span class="dim2" style="text-align:right">held</span></div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn" data-go="runtimes/installing">Install</button><button class="btn2" data-go="runtimes/list">Cancel</button>
+      </div>
+    </div>
+    ${note(`This resolves the whole graph and changes nothing. Every package that would move is named with its before and after — because "pip install" that silently upgrades numpy under four other tools is how a working machine stops working.`)}
+  </div>`;
+};
+
+R["runtimes/downgrade-refusal"] = () => `
+  <div class="sect"><div class="lbl">Install preview · refused</div>
+    <div class="card" style="overflow:hidden;border-color:var(--wrong)">
+      <div style="padding:17px 20px;border-bottom:1px solid var(--line)"><div class="k">Diffusers 0.40.0</div></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">upgrade</span><span>diffusers 0.36.2 → 0.40.0</span><span class="ok" style="text-align:right">upgrade</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">downgrade</span><span>torch 2.6.0 → 2.4.1</span><span class="no" style="text-align:right">downgrade</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr 130px"><span class="dim">downgrade</span><span>numpy 2.1.3 → 1.26.4</span><span class="no" style="text-align:right">downgrade</span></div>
+      <div style="padding:16px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px">
+        <div class="k no">This would downgrade 2 packages that other runtimes depend on.</div>
+        <div class="k mid">llama.cpp and MLX Audio both require torch ≥ 2.5. Installing this makes them stop working.</div>
+        <div style="display:flex;gap:10px;padding-top:2px">
+          <button class="btn2" data-go="runtimes/list">Choose something else</button>
+          <button class="k dim" data-go="runtimes/installing" style="padding:9px 4px">Install anyway ›</button>
+        </div>
+      </div>
+    </div>
+    ${note(`It refuses once and makes you ask twice. The second button is deliberately not a button — no fill, no border, no equal weight. It is available, and it does not look like the answer.`)}
+  </div>`;
+
+R["runtimes/installing"] = () => `
+  <div class="sect"><div class="lbl">Installing</div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:13px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between"><span class="k">mlx-video 0.1.0</span><span class="k dim">${S.installPct}%</span></div>
+      <div class="meter"><i style="width:${S.installPct}%"></i></div>
+      <div class="k dim">resolving → downloading wheels → linking</div>
+    </div>
+    ${note(`A job id, a real status and a real error — never a spinner that ends in "completed" regardless of the return code.`)}
+    <div style="padding-top:10px;display:flex;gap:10px">
+      <button class="btn" data-go="runtimes/list">Finish</button><button class="btn2" data-go="runtimes/failed">Make it fail</button></div>
+  </div>`;
+
+R["runtimes/failed"] = () => `
+  <div class="sect"><div class="lbl">Install failed</div>
+    <div class="card" style="overflow:hidden;border-color:var(--wrong)">
+      <div style="padding:17px 20px;display:flex;flex-direction:column;gap:9px">
+        <div class="k no">mlx-video 0.1.0 did not install.</div>
+        <div class="k mid">Wheel build failed: no matching distribution for mlx&gt;=0.24.1 on python ${PYTHON}.</div>
+        <div class="k dim">exit 1 · job rt_8f21c3 · 2026-08-23 14:07:41</div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn2" data-go="runtimes/preview">Try again</button><button class="btn2" data-go="runtimes/list">Back</button></div>
+    </div>
+    ${note(`The exit code, the job id and the actual stderr line. The original code sent ffmpeg's stderr to /dev/null and wrote "completed" regardless, which hid broken renders for weeks.`)}
+  </div>`;
+
+/* ── measurements ──────────────────────────────────────────────── */
+R["measurements/solo"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Solo · what the machine can do</div>
+    <div class="k dim2">nothing else running · ${MEASURE.solo.length} on this ship</div></div>
+    <div class="card" style="overflow:hidden">
+      ${MEASURE.solo.map(x => `<div class="row" style="grid-template-columns:200px 150px 1fr 120px">
+        <span>${esc(byId(x.model).name)}</span><span class="ok">${x.value}× realtime</span>
+        <span class="dim">${esc(x.note)}</span><span class="dim2" style="text-align:right">${x.on}</span></div>`).join("")}
+    </div>
+    ${note(`One row. Nine variants exist and eight have never been run here, so this table has exactly one entry and looks like it. A registry holding one measured fact should look honest about that, not padded.`)}
+  </div>`;
+
+R["measurements/observed"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Observed · what a request actually saw</div>
+    <div class="k dim2">under real contention · 0 recorded</div></div>
+    <div class="card"><div class="row dim">no requests observed yet</div></div>
+    ${note(`Empty, and it stays empty until a real request runs. Solo and observed are never averaged: a ceiling that collapses under load is worse than useless, and a mean of the two describes a machine nobody has.`)}
+  </div>
+  <div class="sect"><div class="lbl">Why they never merge</div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">solo</span><span>the machine alone, nothing else resident. An upper bound.</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">observed</span><span>what a request saw with whatever else was running. A lower bound that moves.</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">the mean</span><span class="no">a number describing neither, quoted as if it described both.</span></div>
+    </div>
+  </div>`;
+
+R["measurements/first-flight"] = () => `
+  <div class="sect"><div class="lbl" style="color:var(--gold)">Threshold · once per model, per ship</div>
+    <div style="display:flex;align-items:center;gap:26px;padding:14px 0 6px;flex-wrap:wrap">
+      ${bezel("gold", ICON_WAVE, 112)}
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="xfade" id="ff-mark" style="justify-items:start">
+          <span class="was k" style="color:var(--ink3);opacity:1">unflown here</span>
+          <span class="now k ok" style="opacity:0">flown here</span>
+        </div>
+        <div class="xfade" id="ff-figure">
+          <span class="was" style="font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink4);opacity:1">—</span>
+          <span class="now" style="font-size:22px;font-weight:600;letter-spacing:-.02em;opacity:0">4.6× realtime</span>
+        </div>
+        <div class="k mid">Kokoro 82M · ${SHIP.name} · 2026-08-23</div>
+      </div>
+    </div>
+    <div><button class="btn3" data-play="firstflight">replay ›</button></div>
+    ${note(`A crossfade from the mark to the figure, 240ms, in place. The number does <span class="no">not</span> count up — animating a number is the fastest way to make an instrument feel like a toy. Reduced motion renders this identically, because a crossfade already is the accessible form.`)}
+    <div class="card" style="padding:16px 20px;display:flex;flex-direction:column;gap:7px">
+      <div class="k">CREW &nbsp;1 flown · 8 unflown</div>
+      <div class="note" style="margin:0">The only progress meter the product needs. Every other tool grows more confident with use because it hides more; this one grows more true.</div>
+    </div>
+  </div>`;
+
+/* ── off-ship ──────────────────────────────────────────────────── */
+const hhmmss = s => `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor(s%3600/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+
+R["off-ship/idle"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Off-ship · none running</div><div class="k dim2">$0.00/hr</div></div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:11px">
+      <div class="k">Ceiling is 1 box, by quota.</div>
+      <div class="k mid">G-family spot quota is 8 vCPU. A g6e.2xlarge is 8 vCPU. So there is exactly one, it costs $0.74/hr, and it bills until you kill it.</div>
+      <div class="k dim">An escalation, not a fleet.</div>
+    </div>
+    ${note(`Rendered from the quota, never hard-coded — when the quota moves the count moves and the sentence survives. And the cheapest, most common state gets the loudest sentence in the product.`)}
+    <div style="padding-top:10px"><button class="btn" data-go="off-ship/launch">Launch a box</button></div>
+  </div>`;
+
+R["off-ship/launch"] = () => `
+  <div class="sect"><div class="lbl">Confirm launch</div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">instance</span><span>g6e.2xlarge · L40S 48 GB · spot</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">region</span><span>us-east-1</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">account</span><span>842954813809 · your AWS</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">rate</span><span>$0.74/hr, billed until terminated</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">auto-shutdown</span><span>after 45 minutes idle</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">spending limit</span><span>stops itself at $12.00</span></div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn" data-go="off-ship/running">Launch · the meter starts</button>
+        <button class="btn2" data-go="off-ship/idle">Cancel</button></div>
+    </div>
+    ${note(`Six facts before a single dollar. The watchdog and the spending limit are shown at the moment of the decision, not buried in a settings hub afterwards.`)}
+  </div>`;
+
+R["off-ship/running"] = () => {
+  const hrs = S.offshipSeconds / 3600, spent = (hrs * 0.74);
+  return `<div class="sect"><div class="secthead"><div class="lbl">Off-ship · running</div>
+    <div class="k" style="color:var(--wrong)">$0.74/hr</div></div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+        <span class="dim2">g6e.2xlarge · us-east-1 · i-0a3f7c21</span>
+        <span class="dim">${hhmmss(S.offshipSeconds)} elapsed</span>
+        <span style="text-align:right">$${spent.toFixed(2)} so far</span>
+      </div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">stops itself at</span><span>$12.00 · ${hhmmss(Math.round((12 / 0.74) * 3600) - S.offshipSeconds)} remaining</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">idle watchdog</span><span>45 minutes</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">GPU</span><span>L40S · 48 GB · 61 °C · 38% utilisation</span></div>
+    </div>
+    ${note(`The rental gets an instance id and a running clock, never a friendly name — friendly names on metered resources are how people forget the meter is running. The ship gets a human name because it is owned and free. That asymmetry is the honest signal, and it costs nothing to build.`)}
+    <div style="padding-top:10px;display:flex;gap:10px">
+      <button class="btn2" data-go="off-ship/shell">Shell</button>
+      <button class="btn2" data-go="off-ship/terminate" style="border-color:var(--wrong);color:var(--wrong)">Terminate</button></div>
+  </div>`;
+};
+
+R["off-ship/shell"] = () => `
+  <div class="sect"><div class="lbl">Shell · i-0a3f7c21</div>
+    <div class="card grain" style="padding:16px 18px;background:var(--root)">
+      <div class="k mid" style="line-height:2.05">
+        <span class="dim2">$</span> nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv<br>
+        name, memory.used [MiB], memory.total [MiB]<br>
+        NVIDIA L40S, 18244 MiB, 46068 MiB<br>
+        <span class="dim2">$</span> <span style="border-left:7px solid var(--ink3);height:13px;display:inline-block;vertical-align:-2px"></span>
+      </div>
+    </div>
+    ${note(`Kept from Cockpit-as-shipped, and demoted — it lives under off-ship because it is only ever about the rented box. Nothing on the local machine has ever needed an SSH session.`)}
+  </div>`;
+
+R["off-ship/terminate"] = () => `
+  <div class="sect"><div class="lbl">Terminate</div>
+    <div class="card" style="overflow:hidden;border-color:var(--wrong)">
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+        <div class="k">Destroy i-0a3f7c21 and stop billing?</div>
+        <div class="k mid">Ran ${hhmmss(S.offshipSeconds)} · $${(S.offshipSeconds / 3600 * 0.74).toFixed(2)} billed. Anything not synced to this machine is lost.</div>
+        <div class="k dim">3 outputs already synced to ~/Movies/SpacePilot/</div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn2" style="border-color:var(--wrong);color:var(--wrong)" data-go="off-ship/idle">Destroy &amp; stop billing</button>
+        <button class="btn2" data-go="off-ship/running">Keep it running</button></div>
+    </div>
+    ${note(`It names what is lost and what is already safe, because "are you sure?" is not information. The destructive button carries the only red on the screen.`)}
+  </div>`;
+
+/* ── Cockpit as shipped, for comparison ────────────────────────── */
+function asShipped() {
+  return `
+  <div class="sect"><div class="secthead"><div class="lbl">Cockpit · as shipped today</div>
+    <div class="k dim2">web/cockpit.html · 1055 lines</div></div>
+    <div class="card" style="overflow:hidden">
+      <div style="display:flex;gap:2px;padding:10px 14px;border-bottom:1px solid var(--line)">
+        <span class="chip" style="background:var(--raised)">📊 Hardware Metrics</span>
+        <span class="chip">🖥️ Web SSH Shell</span>
+        <span class="chip">⚡ Service Actions</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)">
+        ${[["GPU TEMP","—","no instance"],["VRAM","—","no instance"],["SYSTEM RAM","—","no instance"],["SCRATCH DISK","—","no instance"]]
+          .map(c => `<div style="background:var(--panel);padding:16px 18px;display:flex;flex-direction:column;gap:6px">
+            <span class="lbl">${c[0]}</span><span style="font-size:22px;font-weight:600">${c[1]}</span>
+            <span class="k dim2">${c[2]}</span></div>`).join("")}
+      </div>
+      <div style="padding:16px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px">
+        <span class="lbl">Multi-Cloud Compute Provider Hub</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          ${["AWS Profile","AWS Region","RunPod API Key","Shadeform API Key","SSH Key File Path","Local Host URL"]
+            .map(f => `<div style="display:flex;flex-direction:column;gap:4px"><span class="k dim2" style="font-size:10px">${f}</span>
+              <div style="height:28px;border:1px solid var(--line);border-radius:var(--r1);background:var(--card)"></div></div>`).join("")}
+        </div>
+      </div>
+      <div style="padding:16px 18px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn2">Launch GPU Instance</button><button class="btn2">Restart Worker</button>
+        <button class="btn2">Clear Scratch Tmp</button></div>
+    </div>
+  </div>
+  <div class="sect"><div class="lbl">What this structure costs</div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">every metric reads —</span><span class="dim">Cockpit is built around a box that is not running, which is the normal state, the cheap state, and the state every session starts in.</span></div>
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">the local machine is a footnote</span><span class="dim">"Host Device Compute &amp; Model Registry" is one collapsed row beneath the cloud telemetry, on a product whose whole claim is local-first.</span></div>
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">credentials before value</span><span class="dim">Six provider fields sit above any output. Nothing here works until you have an AWS account.</span></div>
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">no provenance anywhere</span><span class="dim">Not one number on this screen says where it came from.</span></div>
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="dim2">missing entirely</span><span class="dim">Runtimes and the install preview · compatibility verdicts · the measurement store · the unread-fields report. All of it landed on main and none of it has a surface.</span></div>
+    </div>
+    ${note(`This is a structural error, not a styling one — restyling it in metal would produce a beautiful screen that still opens on a machine that does not exist. Flip the toggle in the header to see the same product reorganised around the ship.`)}
+  </div>`;
+}
+
+/* ═══ panel ════════════════════════════════════════════════════════ */
+function rangeCtl(key, label, min, max, step, val, unit) {
+  return `<div class="ctl"><label>${label}</label><input type="range" data-metal-k="${key}" min="${min}" max="${max}" step="${step}" value="${val}">
+    <output>${val}${unit || ""}</output></div>`;
+}
+function togCtl(scope, key, label, on) {
+  return `<div class="tog"><span>${label}</span><div class="sw" role="switch" aria-checked="${on}" data-tog="${scope}.${key}"></div></div>`;
+}
+function panelHTML() {
+  const m = S.metal;
+  const sw = ALLOYS[m.alloy].map(c => `<i style="background:rgb(${c.map(x => Math.round(x * 255)).join(",")})"></i>`).join("");
+  return `
+  <div class="psec"><span class="lbl">Material</span>
+    ${togCtl("metal", "on", "metal on", m.on)}
+    <div class="seg" style="margin:8px 0 10px" data-key="alloy">
+      ${["gold","chrome","nacre"].map(a => `<button data-v="${a}" aria-pressed="${m.alloy === a}">${a}</button>`).join("")}
+    </div>
+    <div class="swatchrow">${sw}</div>
+    <div style="height:10px"></div>
+    ${rangeCtl("radius", "corner radius", 4, 54, 1, m.radius, "px")}
+    ${rangeCtl("thick", "ring thickness", 1, 22, 1, m.thick, "px")}
+    ${rangeCtl("lobes", "specular lobes", 1, 6, 1, m.lobes, "")}
+    ${rangeCtl("rough", "roughness", 0, 1, 0.01, m.rough, "")}
+    ${rangeCtl("disp", "dispersion", 0, 1, 0.01, m.disp, "")}
+    ${rangeCtl("grain", "grain", 0, 1, 0.01, m.grain, "")}
+    ${rangeCtl("speed", "environment rotation", 0, 1, 0.01, m.speed, "")}
+    <div class="note" style="margin-top:8px">Dispersion samples the environment at three angles — R, G and B split by curvature, so it fringes hardest at the corners.</div>
+  </div>
+
+  <div class="psec"><span class="lbl">Allocation · where metal is allowed</span>
+    ${togCtl("alloc", "thresholdEdge", "threshold edges", S.alloc.thresholdEdge)}
+    ${togCtl("alloc", "navRail", "active nav rail", S.alloc.navRail)}
+    ${togCtl("alloc", "shipCard", "ship card", S.alloc.shipCard)}
+    ${togCtl("alloc", "primaryBtn", "primary button", S.alloc.primaryBtn)}
+    ${togCtl("alloc", "berths", "berth slots", S.alloc.berths)}
+    ${togCtl("alloc", "rules", "section rules", S.alloc.rules)}
+    <div class="note" style="margin-top:8px">Turn on more than two and watch it stop reading as metal. A screen where four things are metal has no metal on it.</div>
+  </div>
+
+  <div class="psec"><span class="lbl">Product state</span>
+    ${rangeCtl("__crew", "crew aboard", 0, 5, 1, S.crew.length, ` / ${BERTHS}`)}
+    ${rangeCtl("__acq", "download", 0, 100, 1, S.acquirePct, "%")}
+    ${rangeCtl("__inst", "install job", 0, 100, 1, S.installPct, "%")}
+    ${rangeCtl("__off", "off-ship elapsed", 0, 58378, 60, S.offshipSeconds, "s")}
+    <div class="note" style="margin-top:8px">The off-ship slider tops out where the $12.00 spending limit does.</div>
+  </div>
+
+  <div class="psec"><span class="lbl">Motion &amp; power</span>
+    <div class="seg" style="margin-bottom:8px" data-key="motion">
+      <button data-v="full" aria-pressed="${S.motion === "full"}">Full motion</button>
+      <button data-v="reduced" aria-pressed="${S.motion === "reduced"}">Reduced</button></div>
+    <div class="seg" data-key="power">
+      <button data-v="full" aria-pressed="${S.power === "full"}">Full power</button>
+      <button data-v="low" aria-pressed="${S.power === "low"}">Low power</button></div>
+    <div class="note" style="margin-top:8px">Reduced motion freezes the environment at its rest angle and keeps every duration. Low power drops the shader to the CSS tier.</div>
+  </div>
+
+  <div class="psec"><span class="lbl">Data</span>
+    <div class="seg" style="margin-bottom:8px" data-key="data">
+      <button data-v="fixtures" aria-pressed="${S.data === "fixtures"}">Fixtures</button>
+      <button data-v="live" aria-pressed="${S.data === "live"}">Live</button></div>
+    <div class="ctl wide"><input id="apibase" value="${esc(S.apiBase)}" spellcheck="false"
+      style="width:100%;font-family:var(--mono);font-size:10.5px;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r1);background:var(--card)"></div>
+    <div class="note" id="datanote">Fixtures are lifted verbatim from web/registry.json and registry/runtimes/*.yaml, read 2026-08-23. Nothing is invented.</div>
+  </div>
+
+  <div class="psec"><span class="lbl">Tier 1 source</span>
+    <button class="btn2" id="copywgsl" style="width:100%">Copy the WGSL</button>
+    <div class="note" style="margin-top:8px">The same maths as what is on screen. WebGL2 is running it now because it boots everywhere; the WGSL is what ships.</div>
+  </div>`;
+}
+
+
+/* ── system · icons ────────────────────────────────────────────── */
+R["system/icons"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Icons · ${ICONS.length} on one construction</div>
+    <div class="k dim2">24px grid · 1.5px stroke · square caps · miter joins · inset 3px</div></div>
+    <div class="specgrid">${ICONS.map(n => `<div class="iconcell">${icon(n, "lg")}<span>${n}</span></div>`).join("")}</div>
+    ${note(`One sprite, referenced by <span class="k">&lt;use&gt;</span>, so every icon inherits <span class="k">currentColor</span> and recolours with the theme for free. Stroke is <span class="k">non-scaling</span>, so a 30px icon has the same weight as a 16px one — an icon set that thickens as it grows is three icon sets.`)}
+  </div>
+  <div class="sect"><div class="lbl">At the three sizes that exist</div>
+    <div class="stage-demo">
+      ${["16","24","30"].map((s, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        ${icon("flight", ["", "lg", "xl"][i])}<span class="k dim2" style="font-size:10px">${s}px</span></div>`).join("")}
+      <div style="width:1px;height:38px;background:var(--line2);margin:0 8px"></div>
+      ${["ok","no","dim2"].map(c => `<span class="${c}">${icon("verified", "lg")}</span>`).join("")}
+      <span style="color:var(--agent)">${icon("agent", "lg")}</span>
+      <span style="color:var(--gold)">${icon("threshold", "lg")}</span>
+    </div>
+    ${note(`Colour on an icon obeys the same budget as colour on text: true, wrong, agent — plus gold, which marks a threshold and nothing else.`)}
+  </div>`;
+
+/* ── system · components ───────────────────────────────────────── */
+const BTN_STATES = [["rest",""],["hover","is-hover"],["active","is-active"],["focus","is-focus"],["disabled","is-disabled"]];
+R["system/components"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Buttons · 4 variants × 5 states</div>
+    <div class="k dim2">one primary per view, and it is inverted foreground — never a hue</div></div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+      ${[["btn","primary"],["btn2","secondary"],["btn3","ghost"],["btn-danger","destructive"]].map(([cls, name]) => `
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <span class="lbl" style="width:92px;flex:none">${name}</span>
+          ${BTN_STATES.map(([label, mod]) => `<div class="statecell">
+            <button class="${cls} ${mod}">Launch a box</button>
+            <span class="lbl">${label}</span></div>`).join("")}
+        </div>`).join("")}
+    </div>
+    ${note(`Destructive is the only variant that spends a hue, and it spends it on the border until you are actually over it. The focus ring is 2px of foreground at 2px offset on every variant, including the ghost — a ghost button that cannot be seen when focused is a keyboard trap.`)}
+  </div>
+
+  <div class="sect"><div class="lbl">Chips · verdict and provenance must not look alike</div>
+    <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span class="lbl" style="width:92px;flex:none">verdict</span>
+        <span class="k">fits</span><span class="chip tight">fits, tight</span>
+        <span class="k no">won't fit</span><span class="k dim2">—</span><span class="k dim2">not supported</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span class="lbl" style="width:92px;flex:none">provenance</span>
+        <span class="prov measured">flown here</span><span class="prov declared">on paper</span>
+        <span class="prov estimated">unflown here</span><span class="prov measured">measured</span>
+        <span class="prov estimated">estimated</span>
+      </div>
+    </div>
+    ${note(`A verdict is a fact about your machine; provenance is a fact about our knowledge. Only one of the ten carries a container — <span class="chip tight">fits, tight</span> — because platinum is a material and materials need a surface to sit on. Everything else is ink on the ground.`)}
+  </div>
+
+  <div class="sect"><div class="lbl">Feedback</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+      <div class="statecell" style="width:100%"><span class="lbl">toast</span>
+        <div class="toast" style="width:100%">${icon("verified")} <span>Kokoro 82M is aboard.</span></div></div>
+      <div class="statecell" style="width:100%"><span class="lbl">toast · refused</span>
+        <div class="toast" style="width:100%;border-color:var(--wrong)"><span class="no">${icon("refusal")}</span> <span>Would downgrade 2 packages.</span></div></div>
+      <div class="statecell" style="width:100%"><span class="lbl">meter</span>
+        <div class="meter" style="width:100%"><i style="width:62%"></i></div></div>
+      <div class="statecell" style="width:100%"><span class="lbl">skeleton · loading</span>
+        <div style="width:100%;display:flex;flex-direction:column;gap:7px">
+          <div class="skel" style="width:70%"></div><div class="skel" style="width:92%"></div><div class="skel" style="width:44%"></div></div></div>
+      <div class="statecell" style="width:100%"><span class="lbl">switch</span>
+        <div style="display:flex;gap:12px"><div class="sw" role="switch" aria-checked="false"></div><div class="sw" role="switch" aria-checked="true"></div></div></div>
+      <div class="statecell" style="width:100%"><span class="lbl">segmented</span>
+        <div class="seg"><button aria-pressed="true">Solo</button><button aria-pressed="false">Observed</button></div></div>
+    </div>
+  </div>
+
+  <div class="sect"><div class="lbl">Empty and error · never a blank</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card" style="padding:26px 22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+        <span class="dim2">${icon("unflown", "xl")}</span>
+        <div class="k">No requests observed yet</div>
+        <div class="note" style="margin:0">Empty, and it stays empty until a real request runs. An empty state says what would fill it.</div>
+      </div>
+      <div class="card" style="padding:26px 22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;border-color:var(--wrong)">
+        <span class="no">${icon("warning", "xl")}</span>
+        <div class="k no">mlx-video 0.1.0 did not install.</div>
+        <div class="note" style="margin:0">exit 1 · job rt_8f21c3 — an error carries the code, the id and the actual stderr, never "something went wrong".</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect"><div class="lbl">Modal · real, never confirm()</div>
+    <div class="modalbox">
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:9px">
+        <div class="k">Destroy i-0a3f7c21 and stop billing?</div>
+        <div class="k mid">Ran 00:18:04 · $0.22 billed. Anything not synced to this machine is lost.</div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
+        <button class="btn-danger">Destroy &amp; stop billing</button><button class="btn2">Keep it running</button></div>
+    </div>
+  </div>
+
+  <div class="sect"><div class="lbl">Berths and bezel</div>
+    <div class="stage-demo" style="gap:26px">
+      <div style="flex:1;min-width:240px"><div class="card">${berthRow()}</div></div>
+      ${bezel("chrome", icon("crew", "xl"), 92)}
+      ${bezel("gold", icon("threshold", "xl"), 92)}
+    </div>
+  </div>`;
+
+/* ── system · motion ───────────────────────────────────────────── */
+const MOTION_SPEC = [
+  ["enter",       "180ms", "ease-out",    "opacity + 4px rise",             "rise"],
+  ["exit",        "120ms", "ease-out",    "opacity only — travels nowhere", "exit"],
+  ["stagger",     "40ms",  "—",           "caps at the fifth sibling",      "stag"],
+  ["crossfade",   "240ms", "ease-in-out", "state replaces state, in place", "cross"],
+  ["berth fill",  "220ms", "ease-out",    "dashed → solid, layered",        "fill"],
+  ["route change","200ms", "ease-out",    "the whole viewport, once",       "route"],
+  ["a number",    "never", "—",           "numbers do not tick",            "number"]
+];
+R["system/motion"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Motion · rationed by frequency</div>
+    <div class="k dim2">motion is ${S.motion} · every row below is triggerable</div></div>
+    <div class="card" style="overflow:hidden">
+      <div class="spec-row" style="border-top:0"><span class="lbl">name</span><span class="lbl">duration</span>
+        <span class="lbl">easing</span><span class="lbl">rule</span><span class="lbl" style="text-align:right">play</span></div>
+      ${MOTION_SPEC.map(r => `<div class="spec-row">
+        <span>${r[0]}</span><span class="${r[1] === "never" ? "no" : "mid"}">${r[1]}</span>
+        <span class="dim">${r[2]}</span><span class="dim">${r[3]}</span>
+        <span style="text-align:right">${r[4] === "number" ? `<span class="dim2">—</span>` : `<button class="btn3" data-play="${r[4]}">play ›</button>`}</span>
+      </div>`).join("")}
+    </div>
+  </div>
+
+  <div class="sect"><div class="lbl">Stage</div>
+    <div class="stage-demo" id="mo-stage">
+      <div class="mo-stag" id="mo-demo" style="display:flex;flex-direction:column;gap:7px;flex:1;min-width:260px">
+        ${["Apple M1 Max", "8P + 2E · 32-core GPU", "24.96 GB usable", "285 GB free", "3 fields unread", "macOS 26.6.2"]
+          .map(t => `<div class="k mid">${t}</div>`).join("")}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        <div class="berth" id="mo-berth" style="width:120px;height:30px;flex:none"><div class="solid"></div></div>
+        <div class="xfade k" id="mo-xfade" style="font-size:15px">
+          <span class="was" style="color:var(--ink3);opacity:1">unflown here</span>
+          <span class="now ok" style="opacity:0">4.6× realtime</span>
+        </div>
+      </div>
+    </div>
+    ${note(`Exits are faster than entrances and travel nowhere — nothing slides away, it fades where it stands. Reduced motion sets <span class="k">--mo-travel</span> to zero and leaves every duration alone, because a crossfade is the accessible affordance rather than the thing to remove. Flip it in the panel and play these again: they still take 180ms, they just stop moving.`)}
+  </div>
+
+  <div class="sect"><div class="lbl">Where motion is allowed at all</div>
+    <div class="card" style="overflow:hidden">
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>the brand mark</span><span class="ok">once</span><span class="dim">cold start, and never again</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>first probe</span><span class="ok">once, ever</span><span class="dim">fields land staggered; the unread ones land last</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>coming aboard</span><span class="ok">per model</span><span class="dim">a berth fills where it stands</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>first flight</span><span class="ok">per model, per ship</span><span class="dim">a mark crossfades to a figure</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>the bezel environment</span><span class="mid">continuous</span><span class="dim">the environment rotates; the object never does</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span class="dim2">everything else</span><span class="no">never</span><span class="dim">telemetry · lists · counters · installs · polls</span></div>
+    </div>
+  </div>`;
+
+/* ═══ render ═══════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+let surfaces = [];
+
+function renderTree() {
+  $("#tree").innerHTML = TREE.map(([grp, sub, nodes]) => `
+    <div class="tgroup"><div class="thead">${grp}${sparse() ? "" : ` · <span style="text-transform:none;letter-spacing:0">${sub}</span>`}</div>
+      ${nodes.map(([id, label, th]) => {
+        const route = `${grp}/${id}`, cur = S.route === route;
+        return `<button class="tnode" data-go="${route}" data-threshold="${th}" aria-current="${cur}">
+          ${cur && S.alloc.navRail && S.metal.on ? `<span class="pt-rail"></span>` : `<span class="dot"></span>`}
+          <span>${label}</span></button>`;
+      }).join("")}</div>`).join("");
+}
+
+function render() {
+  const root = document.documentElement;
+  root.dataset.theme = S.theme === "system"
+    ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : S.theme;
+  root.style.setProperty("--grain-a", String(S.metal.grain * 0.9));
+  root.dataset.motion = S.motion;
+
+  renderTree();
+  $("#crumb").textContent = S.structure === "shipped" ? "cockpit · as shipped" : "/cockpit/" + S.route;
+  $("#statecount").textContent = Object.keys(R).length + " states";
+  $("#renderer-badge").textContent = S.metal.on ? (S.power === "low" ? "CSS tier 2" : RENDERER) : "metal off";
+  $("#viewport").innerHTML = S.structure === "shipped" ? asShipped() : (R[S.route] || (() => "<div class='dim'>—</div>"))();
+  $("#panel").innerHTML = panelHTML();
+
+  if (S.motion !== "reduced") restart($("#viewport"), "routing");
+  const auto = AUTOPLAY[S.route];
+  if (auto) requestAnimationFrame(() => play(auto));
+
+  surfaces = [];
+  if (S.power !== "low") {
+    document.querySelectorAll("[data-metal] canvas").forEach(c => {
+      const s = new MetalSurface(c, c.parentElement.dataset.metal);
+      if (s.ok) surfaces.push([s, c.parentElement.dataset.metal]);
+    });
+  } else {
+    document.querySelectorAll("[data-metal]").forEach(w => {
+      const cs = ALLOYS[w.dataset.metal].map((c, i) => `rgb(${c.map(x => Math.round(x*255)).join(",")}) ${i*25}%`).join(",");
+      w.style.background = `conic-gradient(from 18deg, ${cs}, rgb(${ALLOYS[w.dataset.metal][0].map(x=>Math.round(x*255)).join(",")}))`;
+      w.style.borderRadius = S.metal.radius + "px";
+      w.querySelector("canvas").style.display = "none";
+    });
+  }
+}
+
+/* ═══ the environment moves, the object stays put ══════════════════ */
+let t0 = performance.now(), envRot = 0.35;
+function frame(now) {
+  const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
+  if (S.motion !== "reduced") envRot += dt * S.metal.speed * 0.9;
+  const o = Object.assign({}, S.metal, { envRot, time: now / 1000 });
+  for (const [s, alloy] of surfaces) s.draw(Object.assign({}, o, { alloy }));
+  requestAnimationFrame(frame);
+}
+
+
+/* ═══ motion runtime ═══════════════════════════════════════════════
+   Every animation here is replayable, because a transition you cannot
+   see twice cannot be judged. Reduced motion zeroes --mo-travel and
+   leaves every duration alone — flip it and play the same row again.
+   ═══════════════════════════════════════════════════════════════════ */
+function restart(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function stagger(nodes, staggered) {
+  nodes.forEach(n => { n.classList.remove("mo-rise", "mo-out"); });
+  void document.body.offsetWidth;
+  nodes.forEach((n, i) => {
+    n.style.animationDelay = staggered ? Math.min(i, 4) * parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mo-stagger")) + "ms" : "0ms";
+    n.classList.add("mo-rise");
+  });
+}
+function play(kind) {
+  const demo = $("#mo-demo"), berth = $("#mo-berth"), xf = $("#mo-xfade");
+  switch (kind) {
+    case "rise":  if (demo) { demo.classList.remove("mo-stag"); stagger([...demo.children], false); } break;
+    case "stag":  if (demo) { demo.classList.remove("mo-stag"); stagger([...demo.children], true); } break;
+    case "exit":  if (demo) [...demo.children].forEach(c => restart(c, "mo-out")); break;
+    case "cross": restart(xf, "playing"); break;
+    case "fill":  if (berth) { berth.classList.remove("full"); restart(berth, "filling");
+                    setTimeout(() => berth.classList.add("full"), 220); } break;
+    case "route": restart($("#viewport"), "routing"); break;
+    case "probe": stagger([...document.querySelectorAll("#probe-fields .probe-line")], true); break;
+    case "aboard": {
+      const b = document.querySelectorAll("#aboard-berths .berth")[1];
+      if (b) { b.classList.remove("full"); restart(b, "filling"); setTimeout(() => b.classList.add("full"), 220); }
+      break; }
+    case "firstflight": restart($("#ff-mark"), "playing"); restart($("#ff-figure"), "playing"); break;
+  }
+}
+const AUTOPLAY = { "first-run/detect":"probe", "crew/aboard":"aboard", "measurements/first-flight":"firstflight" };
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-play]");
+  if (b) play(b.dataset.play);
+});
+
+/* ═══ wiring ═══════════════════════════════════════════════════════ */
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-go]");
+  if (go) { S.route = go.dataset.go; if (S.structure === "shipped") S.structure = "restructured"; render(); return; }
+
+  const seg = e.target.closest(".seg button");
+  if (seg) {
+    const key = seg.parentElement.dataset.key, v = seg.dataset.v;
+    if (key === "alloy") S.metal.alloy = v; else S[key] = v;
+    render(); return;
+  }
+  const tog = e.target.closest("[data-tog]");
+  if (tog) {
+    const [scope, key] = tog.dataset.tog.split(".");
+    S[scope][key] = !S[scope][key];
+    render(); return;
+  }
+  if (e.target.id === "copywgsl") {
+    navigator.clipboard.writeText(WGSL).then(() => {
+      e.target.textContent = "Copied · " + WGSL.length + " chars";
+      setTimeout(() => { e.target.textContent = "Copy the WGSL"; }, 1600);
+    }).catch(() => { e.target.textContent = "Clipboard blocked"; });
+  }
+});
+
+document.addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.metalK;
+  if (!k) return;
+  const v = parseFloat(e.target.value);
+  const out = e.target.parentElement.querySelector("output");
+  if (k === "__crew") { S.crew = ["kokoro","wan-2-1-1_3b","ltx-2b","hunyuan-13b","deepseek-r1-7b"].slice(0, v); }
+  else if (k === "__acq")  S.acquirePct = v;
+  else if (k === "__inst") S.installPct = v;
+  else if (k === "__off")  S.offshipSeconds = v;
+  else S.metal[k] = v;
+  if (out) out.textContent = v + (out.textContent.replace(/^[\d.]+/, "") || "");
+  // re-render content but keep focus on the slider being dragged
+  const id = k, val = e.target.value;
+  render();
+  const again = document.querySelector(`[data-metal-k="${id}"]`);
+  if (again) { again.value = val; again.focus(); }
+});
+
+$("#panel").addEventListener("change", e => { if (e.target.id === "apibase") S.apiBase = e.target.value; });
+
+/* ═══ live data ════════════════════════════════════════════════════ */
+async function pullLive() {
+  const note = $("#datanote"); if (!note) return;
+  note.textContent = "reading " + S.apiBase + " …";
+  try {
+    const r = await fetch(S.apiBase + "/api/compute/local-profile", { headers: { "Accept": "application/json" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const p = await r.json();
+    if (p.chip) SHIP.chip = p.chip;
+    if (p.memory_limit_bytes) { SHIP.usable_bytes = p.memory_limit_bytes; SHIP.usable_source = "measured"; }
+    else if (p.accelerator_memory_bytes) { SHIP.usable_bytes = p.accelerator_memory_bytes * RULES.metal_working_set_fraction; SHIP.usable_source = "estimated"; }
+    if (p.free_disk_bytes) SHIP.free_disk_bytes = p.free_disk_bytes;
+    note.textContent = "live · read from " + S.apiBase + " at " + new Date().toTimeString().slice(0, 8);
+    render();
+  } catch (err) {
+    note.innerHTML = `<span class="no">could not reach ${esc(S.apiBase)}</span> — ${esc(err.message)}. Still showing fixtures, and saying so.`;
+  }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest('.seg[data-key="data"] button');
+  if (b && b.dataset.v === "live") setTimeout(pullLive, 30);
+});
+
+matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => { if (S.theme === "system") render(); });
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) S.motion = "reduced";
+
+render();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

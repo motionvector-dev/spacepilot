@@ -27,3 +27,6 @@ scratch/
 
 # legacy studio snapshot kept on disk only; web/ history is in git already
 studio_backup_original/
+
+# agent worktrees live here and must never be committed
+.claude/worktrees/
