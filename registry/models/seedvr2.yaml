@@ -1,0 +1,67 @@
+schema: 1
+id: seedvr2
+name: SeedVR2
+family: bytedance
+kind: video
+summary: >
+  ByteDance Seed's diffusion-based video and image upscaler/restorer, not a
+  text-to-image model — mflux runs it as a restoration pass rather than a
+  generator. Packaged for ComfyUI by numz; both the wrapper and the upstream
+  ByteDance-Seed/SeedVR project are Apache 2.0.
+homepage: https://huggingface.co/numz/SeedVR2_comfyUI
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: seedvr2-3b
+    name: SeedVR2 3B
+    params: 3B
+    precision: fp16
+    repo: numz/SeedVR2_comfyUI
+    files: ["ema_vae_fp16.safetensors", "seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]
+    backends: [metal]
+    download:
+      value: 10675888318
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 12811065982
+      source: estimated
+      note: >
+        download size (fp16 + fp8 checkpoints plus the shared VAE) plus a 20%
+        margin; no measured run on any machine. A single precision loaded at
+        once would use roughly half this.
+    notes: >
+      Faster, lower-VRAM variant. mflux aliases "seedvr2-3b", "seedvr2" (the
+      bare alias defaults to 3B).
+  - id: seedvr2-7b
+    name: SeedVR2 7B
+    params: 7B
+    precision: fp16
+    repo: numz/SeedVR2_comfyUI
+    files:
+      - ema_vae_fp16.safetensors
+      - seedvr2_ema_7b_fp16.safetensors
+      - seedvr2_ema_7b_fp8_e4m3fn.safetensors
+      - seedvr2_ema_7b_sharp_fp16.safetensors
+      - seedvr2_ema_7b_sharp_fp8_e4m3fn.safetensors
+    backends: [metal]
+    download:
+      value: 49939453070
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 59927343684
+      source: estimated
+      note: >
+        download size (fp16, fp8, and "sharp" fp16/fp8 checkpoints plus the
+        shared VAE) plus a 20% margin; no measured run on any machine. A
+        single precision loaded at once would use a fraction of this — the
+        repo carries every variant, this figure does not.
+    notes: >
+      Higher-quality, higher-VRAM variant, plus a "sharp" checkpoint. mflux
+      alias "seedvr2-7b" (and "seedvr2-7B").

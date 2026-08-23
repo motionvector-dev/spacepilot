@@ -1,0 +1,55 @@
+schema: 1
+id: qwen-image
+name: Qwen-Image
+family: alibaba
+kind: image
+summary: >
+  Alibaba's 20B text-to-image diffusion model, plus its instruction-based edit
+  sibling. Both ship under Apache 2.0 with no commercial restriction.
+homepage: https://huggingface.co/Qwen/Qwen-Image-2512
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: qwen-image
+    name: Qwen-Image 2512
+    params: 20B
+    precision: bf16
+    repo: Qwen/Qwen-Image-2512
+    backends: [metal]
+    download:
+      value: 57704595735
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 69245514882
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation, following the pattern used elsewhere in
+        this registry for single-repo diffusion checkpoints; no measured run
+        on any machine.
+    notes: mflux alias "qwen-image" (also "qwen", "qwen-image-2512", "qwen-2512").
+  - id: qwen-image-edit
+    name: Qwen-Image-Edit 2509
+    precision: bf16
+    repo: Qwen/Qwen-Image-Edit-2509
+    backends: [metal]
+    download:
+      value: 57720466551
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 69264559861
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      Instruction-based image editing, not text-to-image. mflux aliases
+      "qwen-image-edit", "qwen-edit", "qwen-edit-plus", "qwen-edit-2509",
+      "qwen-edit-2511", "qwen-image-edit-2511".
