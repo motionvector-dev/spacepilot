@@ -43,7 +43,7 @@ def attach_measurements(models: list) -> int:
 
     The public page used to carry only each variant's `speed:` block, which is
     curated prose — cited, declared, or estimated. Runs recorded by `pluto
-    measure` land in `registry/measurements/` instead, keyed by system and
+    measure` land in the measurement store instead (spacepilot.paths), keyed by system and
     metric, and nothing joined the two. So a variant could have a real timing
     on disk and still publish as having no speed data at all, which is what
     happened to every FLUX.2 Klein variant.

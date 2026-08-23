@@ -41,7 +41,7 @@ NEW_VARIANT_IDS = {
 
 
 def test_registry_files_exist_one_per_family():
-    models_dir = Path(__file__).resolve().parent.parent / "registry" / "models"
+    models_dir = Path(__file__).resolve().parent.parent / "spacepilot" / "registry" / "models"
     for fname in NEW_FAMILY_FILES:
         assert (models_dir / fname).is_file(), f"missing {fname}"
     # And no FLUX.1 file — that belongs to the other agent's workstream.
