@@ -13,12 +13,11 @@ import json
 import logging
 import uuid
 import argparse
-import shutil
 import subprocess
-import urllib.request
-import urllib.error
 from pathlib import Path
 from typing import Any, Dict
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -129,14 +128,15 @@ def fetch_worker_health(ip):
         return None
     url = f"http://{ip}:5000/health"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "PlutoCLI/1.0"})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        try:
-            return json.loads(e.read().decode())
-        except Exception:
-            return {"ok": False, "status": "http_error", "code": e.code}
+        resp = httpx.get(url, headers={"User-Agent": "PlutoCLI/1.0"}, timeout=3)
+        if resp.is_error:
+            # urlopen raised HTTPError here and the body was still readable; an
+            # unhealthy worker answers 503 with a JSON reason worth surfacing.
+            try:
+                return resp.json()
+            except Exception:
+                return {"ok": False, "status": "http_error", "code": resp.status_code}
+        return resp.json()
     except Exception:
         logger.warning("Failed to fetch worker health", exc_info=True)
         return None
@@ -377,18 +377,17 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     except RuntimeError as e:
         print(f"  Error: {e}")
         return
-    req = urllib.request.Request(
-        f"http://{ip}:5000/generate",
-        data=data,
-        headers=headers,
-        method="POST"
-    )
-
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            res = json.loads(resp.read().decode())
-            job_id = res.get("job_id")
-            print(f"  Job Queued : {job_id} (ETA: {res.get('eta_seconds', 15)}s)")
+        resp = httpx.post(
+            f"http://{ip}:5000/generate",
+            content=data,
+            headers=headers,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        res = resp.json()
+        job_id = res.get("job_id")
+        print(f"  Job Queued : {job_id} (ETA: {res.get('eta_seconds', 15)}s)")
     except Exception as e:
         print(f"  Error submitting job: {e}")
         return
@@ -403,31 +402,40 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         time.sleep(1.5)
         print("█", end="", flush=True)
         try:
-            st_req = urllib.request.Request(f"http://{ip}:5000/status/{job_id}", headers=worker_headers())
-            with urllib.request.urlopen(st_req, timeout=30) as st_resp:
-                st_data = json.loads(st_resp.read().decode())
-                retries = 0
-                if st_data.get("status") == "completed":
-                    dur = time.time() - start_t
-                    print(f"] Done in {dur:.1f}s!")
+            st_resp = httpx.get(
+                f"http://{ip}:5000/status/{job_id}", headers=worker_headers(), timeout=30
+            )
+            st_resp.raise_for_status()
+            st_data = st_resp.json()
+            retries = 0
+            if st_data.get("status") == "completed":
+                dur = time.time() - start_t
+                print(f"] Done in {dur:.1f}s!")
 
-                    # Download MP4
-                    dl_req = urllib.request.Request(f"http://{ip}:5000/download/{job_id}", headers=worker_headers())
-                    if getattr(args, "output", None):
-                        out_path = Path(args.output).resolve()
-                        out_path.parent.mkdir(parents=True, exist_ok=True)
-                    else:
-                        out_path = OUTPUTS_DIR / f"{job_id}.mp4"
-                    with urllib.request.urlopen(dl_req, timeout=60) as dl_resp, open(out_path, "wb") as out_f:
-                        shutil.copyfileobj(dl_resp, out_f)
-                    print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
-                    
-                    if args.open:
-                        subprocess.run(["open", str(out_path)])
-                    break
-                elif st_data.get("status") == "failed":
-                    print(f"\n  Error: Job failed: {st_data.get('error')}")
-                    sys.exit(1)
+                # Download MP4
+                if getattr(args, "output", None):
+                    out_path = Path(args.output).resolve()
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                else:
+                    out_path = OUTPUTS_DIR / f"{job_id}.mp4"
+                with httpx.stream(
+                    "GET",
+                    f"http://{ip}:5000/download/{job_id}",
+                    headers=worker_headers(),
+                    timeout=60,
+                ) as dl_resp:
+                    dl_resp.raise_for_status()
+                    with open(out_path, "wb") as out_f:
+                        for chunk in dl_resp.iter_bytes():
+                            out_f.write(chunk)
+                print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
+                
+                if args.open:
+                    subprocess.run(["open", str(out_path)])
+                break
+            elif st_data.get("status") == "failed":
+                print(f"\n  Error: Job failed: {st_data.get('error')}")
+                sys.exit(1)
         except Exception:
             logger.warning("Failed during worker status polling", exc_info=True)
             retries += 1

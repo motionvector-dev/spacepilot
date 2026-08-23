@@ -13,9 +13,9 @@ import math
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
+
+import httpx
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 CAPTIONS = PLUTO_ROOT / "assets" / "music_caption_refs" / "studio_bgm_captions.json"
@@ -36,12 +36,12 @@ def generate(cue: dict, out_raw: Path) -> None:
             "seed": cue["seed"],
         }
     ).encode()
-    req = urllib.request.Request(
-        SERVER, data=body, headers={"Content-Type": "application/json"}
-    )
     start = time.time()
-    with urllib.request.urlopen(req, timeout=3600) as resp:
-        audio = resp.read()
+    resp = httpx.post(
+        SERVER, content=body, headers={"Content-Type": "application/json"}, timeout=3600
+    )
+    resp.raise_for_status()
+    audio = resp.content
     out_raw.write_bytes(audio)
     print(f"  generated {len(audio) / 1e6:.1f} MB in {time.time() - start:.0f}s")
 
@@ -110,7 +110,7 @@ def main() -> int:
             generate(cue, raw)
             normalize(raw, norm)
             print(f"  normalized -> {norm.name}: {measure(norm)}")
-        except (urllib.error.URLError, subprocess.CalledProcessError, OSError) as e:
+        except (httpx.HTTPError, subprocess.CalledProcessError, OSError) as e:
             print(f"  FAILED: {e}", file=sys.stderr)
             failed.append(cue["id"])
 

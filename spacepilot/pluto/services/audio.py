@@ -4,14 +4,16 @@ import math
 import json
 import time
 import uuid
-import urllib.request
 import subprocess
 import threading
 from pathlib import Path
 from typing import Optional
 from fastapi import HTTPException
 
+import httpx
+
 from spacepilot.pluto.core.config import get_settings
+from spacepilot.pluto.core.http import require_http_url
 from spacepilot.pluto.core.utils import run_ffmpeg, discard_partial, ffmpeg_error, write_meta
 
 _kokoro = None
@@ -79,16 +81,19 @@ def synthesize_voice(text: str, voice: str, speed: float, out_path: Path) -> Non
 
 
 def mlx_generate_audio(path: str, payload: dict, timeout: int) -> bytes:
-    """POST to mlx-serve and return the WAV bytes it responds with."""
+    """POST to mlx-serve and return the WAV bytes it responds with.
+
+    `mlx_serve_url` comes from the MLX_SERVE_URL environment variable, so the
+    scheme is attacker-shaped input in any deployment where the environment is
+    not fully trusted. require_http_url rejects file:// and friends before the
+    request is built.
+    """
     settings = get_settings()
-    req = urllib.request.Request(
-        f"{settings.mlx_serve_url}{path}",
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read()
+    url = require_http_url(f"{settings.mlx_serve_url}{path}")
+    with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+        resp = client.post(url, json=payload)
+        resp.raise_for_status()
+        return resp.content
 
 
 def loudnorm_two_pass(src: Path, dst: Path, target_lufs: int) -> subprocess.CompletedProcess:
