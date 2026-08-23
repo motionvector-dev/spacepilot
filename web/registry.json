@@ -59,6 +59,8 @@
      "precision": "bf16",
      "repo": "Boogu/Boogu-Image-0.1-Turbo",
      "files": null,
+     "revision": "53ad54522023f64d049f7f38e4d679359ef3fb92",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -117,6 +119,8 @@
      "precision": "bf16",
      "repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
      "files": null,
+     "revision": "916b56a44061fd5cd7d6a8fb632557ed4f724f60",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda",
@@ -175,6 +179,8 @@
      "precision": "bf16",
      "repo": "baidu/ERNIE-Image",
      "files": null,
+     "revision": "5346b31d68c9c23758ba56ef8be5e9dc174c7f99",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -213,6 +219,8 @@
      "precision": "bf16",
      "repo": "baidu/ERNIE-Image-Turbo",
      "files": null,
+     "revision": "bc68c81e2a1730a394d5fc9fae70713dee940140",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -272,6 +280,8 @@
      "precision": "bf16",
      "repo": "briaai/FIBO",
      "files": null,
+     "revision": "7c7e00ca081f6cd24bbbd745d13cc214484c9199",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -313,6 +323,8 @@
      "precision": "bf16",
      "repo": "briaai/Fibo-lite",
      "files": null,
+     "revision": "dcd26dfe1051e59b77b88acbacc025613aaa09de",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -354,6 +366,8 @@
      "precision": "bf16",
      "repo": "briaai/Fibo-Edit",
      "files": null,
+     "revision": "1bee4ae9b119d2634ec9f378370f2a1ae49d89cc",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -395,6 +409,8 @@
      "precision": "bf16",
      "repo": "briaai/Fibo-Edit-RMBG",
      "files": null,
+     "revision": "cb134b058d1a6089fc3b9e5fc04a4511337b53ed",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -467,6 +483,8 @@
       "vae/*.safetensors",
       "vae/*.json"
      ],
+     "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -514,6 +532,8 @@
       "vae/*.safetensors",
       "vae/*.json"
      ],
+     "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -561,6 +581,8 @@
       "vae/*.safetensors",
       "vae/*.json"
      ],
+     "revision": "3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -631,6 +653,8 @@
       "added_tokens.json",
       "chat_template.jinja"
      ],
+     "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -669,6 +693,8 @@
      "precision": "bf16",
      "repo": "black-forest-labs/FLUX.2-klein-base-4B",
      "files": null,
+     "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -707,6 +733,8 @@
      "precision": "bf16",
      "repo": "black-forest-labs/FLUX.2-klein-9B",
      "files": null,
+     "revision": "92196c8e11f7b6cf2b7493e037d8c5345c559216",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -749,6 +777,8 @@
      "precision": "bf16",
      "repo": "black-forest-labs/FLUX.2-klein-9b-kv",
      "files": null,
+     "revision": "a6dfb36eca3a3906eb2fd460795adfb844e5fcce",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -791,6 +821,8 @@
      "precision": "bf16",
      "repo": "black-forest-labs/FLUX.2-klein-base-9B",
      "files": null,
+     "revision": "32773329fbe7e81a90ef971740e8ba4b0364ecf3",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -843,6 +875,8 @@
       "added_tokens.json",
       "chat_template.jinja"
      ],
+     "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -926,6 +960,8 @@
      "files": [
       "hunyuan-video-t2v-720p-Q4_K_M.gguf"
      ],
+     "revision": "6869e07d25cffdff09f7c10a79887ac24217b67b",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -989,6 +1025,8 @@
      "precision": "fp8",
      "repo": "ideogram-ai/ideogram-4-fp8",
      "files": null,
+     "revision": "ee79a7237b519f1402ceacf952f30c8a31ec5073",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1048,6 +1086,8 @@
      "precision": "fp32",
      "repo": "hexgrad/Kokoro-82M",
      "files": null,
+     "revision": "f3ff3571791e39611d31c381e3a41a3af07b4987",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda",
@@ -1118,6 +1158,8 @@
      "precision": "bf16",
      "repo": "Comfy-Org/Lens",
      "files": null,
+     "revision": "0817dc5573b589e187f072234b7ab0f074bdf3db",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1181,6 +1223,8 @@
      "files": [
       "ltxv-2b-0.9.8-distilled.safetensors"
      ],
+     "revision": "8984fa25007f376c1a299016d0957a37a2f797bb",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -1235,6 +1279,8 @@
      "files": [
       "ltxv-13b-0.9.8-distilled-fp8.safetensors"
      ],
+     "revision": "8984fa25007f376c1a299016d0957a37a2f797bb",
+     "is_pinned": true,
      "backends": [
       "cuda"
      ],
@@ -1304,6 +1350,8 @@
      "precision": "bf16",
      "repo": "Qwen/Qwen-Image-2512",
      "files": null,
+     "revision": "25468b98e3276ca6700de15c6628e51b7de54a26",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1342,6 +1390,8 @@
      "precision": "bf16",
      "repo": "Qwen/Qwen-Image-Edit-2509",
      "files": null,
+     "revision": "d3968ef930e841f4c73640fb8afa3b306a78167e",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1398,6 +1448,8 @@
      "precision": "bf16",
      "repo": "Qwen/Qwen2.5-VL-7B-Instruct",
      "files": null,
+     "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -1459,6 +1511,8 @@
       "seedvr2_ema_3b_fp16.safetensors",
       "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
      ],
+     "revision": "09ced71023636e9bc8cdf9cdecfb2625d1e691e8",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1503,6 +1557,8 @@
       "seedvr2_ema_7b_sharp_fp16.safetensors",
       "seedvr2_ema_7b_sharp_fp8_e4m3fn.safetensors"
      ],
+     "revision": "09ced71023636e9bc8cdf9cdecfb2625d1e691e8",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1559,6 +1615,8 @@
      "precision": "bf16",
      "repo": "Wan-AI/Wan2.1-T2V-1.3B",
      "files": null,
+     "revision": "37ec512624d61f7aa208f7ea8140a131f93afc9a",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -1608,6 +1666,8 @@
      "precision": "bf16",
      "repo": "Wan-AI/Wan2.1-T2V-14B",
      "files": null,
+     "revision": "a064a6c71f5be440641209c07bf2a5ce7a2ff5e4",
+     "is_pinned": true,
      "backends": [
       "cuda"
      ],
@@ -1664,6 +1724,8 @@
      "precision": "bf16",
      "repo": "Wan-AI/Wan2.2-TI2V-5B",
      "files": null,
+     "revision": "921dbaf3f1674a56f47e83fb80a34bac8a8f203e",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -1731,6 +1793,8 @@
      "precision": "bf16",
      "repo": "Tongyi-MAI/Z-Image",
      "files": null,
+     "revision": "04cc4abb7c5069926f75c9bfde9ef43d49423021",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1769,6 +1833,8 @@
      "precision": "bf16",
      "repo": "Tongyi-MAI/Z-Image-Turbo",
      "files": null,
+     "revision": "f332072aa78be7aecdf3ee76d5c247082da564a6",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],
@@ -1807,6 +1873,8 @@
      "precision": "bf16",
      "repo": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1",
      "files": null,
+     "revision": "5155fc56d17821007d6f62ac192c09e0f0e72016",
+     "is_pinned": true,
      "backends": [
       "metal"
      ],

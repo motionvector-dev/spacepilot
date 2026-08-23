@@ -27,6 +27,11 @@ class ModelRecipeSpec(BaseModel):
     quantization: str
 
     hf_repo: str
+    # The exact commit these bytes come from. None means the download follows
+    # whatever the repo's default branch points at on the day it runs, so two
+    # people asking for the same recipe can get different weights and neither
+    # can tell. The registry says which variants are in that state.
+    revision: Optional[str] = None
     # Repos hold many alternative checkpoints. LTX-Video is 236 GB whole; the
     # one file we want is 15. Never fetch a repo without narrowing it.
     allow_patterns: Optional[List[str]] = None
@@ -48,6 +53,10 @@ class ModelRecipeSpec(BaseModel):
     is_local_runnable: bool = False
 
     @property
+    def is_pinned(self) -> bool:
+        return bool(self.revision)
+
+    @property
     def size_gb(self) -> float:
         return round((self.download_bytes or 0) / GIB, 2)
 
@@ -67,6 +76,15 @@ class DownloadJob(BaseModel):
     local_path: Optional[str] = None    # set on success, so callers can find the weights
     error: Optional[str] = None         # set on failure, so a caller can tell
 
+    # What was asked for, and what the Hub actually handed back. They differ
+    # whenever `requested_revision` is None: the resolved SHA is then the only
+    # record of which weights these bytes are, and it is knowable only after
+    # the fact. Anything that later reports a number about this download —
+    # a measurement, above all — should carry `resolved_revision`, not the
+    # repo id, because the repo id will point somewhere else eventually.
+    requested_revision: Optional[str] = None
+    resolved_revision: Optional[str] = None
+
 
 def _spec_from_variant(v: Variant) -> "ModelRecipeSpec":
     """Flatten one registry variant into the shape the API and CLI already speak."""
@@ -78,6 +96,7 @@ def _spec_from_variant(v: Variant) -> "ModelRecipeSpec":
         params=v.params,
         quantization=v.precision or "unknown",
         hf_repo=v.repo,
+        revision=v.revision,
         allow_patterns=list(v.files) if v.files else None,
         download_bytes=int(v.download.value),
         working_set_bytes=int(v.working_set.value),
@@ -164,8 +183,26 @@ class ModelCatalogManager:
                       # couple of KB above the Hub's payload total. That is real
                       # disk used, which is the number a user cares about.
 
-    def _run_download(self, job_id: str, repo_id: str, allow_patterns=None) -> None:
-        """Download a repo. Runs on a worker thread."""
+    @staticmethod
+    def _revision_from_path(local_path: Optional[str]) -> Optional[str]:
+        """Read the resolved commit out of the hub cache path.
+
+        snapshot_download returns `<cache>/models--org--name/snapshots/<sha>`.
+        That last component is the commit the download actually landed on, and
+        it is the only place the answer exists when no revision was requested.
+        """
+        if not local_path:
+            return None
+        parts = Path(local_path).parts
+        if "snapshots" in parts:
+            idx = len(parts) - 1 - parts[::-1].index("snapshots")
+            if idx + 1 < len(parts):
+                return parts[idx + 1]
+        return None
+
+    def _run_download(self, job_id: str, repo_id: str, allow_patterns=None,
+                      revision: Optional[str] = None) -> None:
+        """Download a repo at a named revision. Runs on a worker thread."""
         from huggingface_hub import snapshot_download
 
         job = self.jobs[job_id]
@@ -174,9 +211,14 @@ class ModelCatalogManager:
             repo_id=repo_id,
             cache_dir=str(self.MODELS_DIR),
             allow_patterns=allow_patterns,
+            revision=revision,
         )
+        # Resolve even when a revision was requested: a tag is a pin only
+        # until somebody moves it, and the SHA says which commit it meant.
+        job.resolved_revision = self._revision_from_path(job.local_path) or revision
 
-    async def _download_task(self, job_id: str, repo_id: str, allow_patterns=None):
+    async def _download_task(self, job_id: str, repo_id: str, allow_patterns=None,
+                             revision: Optional[str] = None):
         """Run the download, reporting bytes actually on disk.
 
         Progress is measured by walking the cache directory rather than by hooking
@@ -195,7 +237,8 @@ class ModelCatalogManager:
             # Exact total from the Hub, not the recipe's size_gb estimate.
             try:
                 info = await asyncio.to_thread(
-                    lambda: HfApi().model_info(repo_id, files_metadata=True)
+                    lambda: HfApi().model_info(
+                        repo_id, revision=revision, files_metadata=True)
                 )
                 siblings = info.siblings or []
                 if allow_patterns:
@@ -211,7 +254,8 @@ class ModelCatalogManager:
 
             started = time.monotonic()
             task = asyncio.create_task(
-                asyncio.to_thread(self._run_download, job_id, repo_id, allow_patterns)
+                asyncio.to_thread(self._run_download, job_id, repo_id,
+                                  allow_patterns, revision)
             )
             while not task.done():
                 await asyncio.sleep(0.5)
@@ -228,7 +272,14 @@ class ModelCatalogManager:
             job.status = "completed"
             job.progress_percent = 100.0
             job.speed_mb_s = 0.0
-            logger.info("downloaded %s to %s (%d bytes)", repo_id, job.local_path, job.downloaded_bytes)
+            logger.info("downloaded %s@%s to %s (%d bytes)", repo_id,
+                        job.resolved_revision or "unpinned", job.local_path,
+                        job.downloaded_bytes)
+            if not job.requested_revision:
+                logger.warning(
+                    "%s was downloaded unpinned; it resolved to %s today, but "
+                    "the registry does not pin it, so this is not reproducible",
+                    repo_id, job.resolved_revision or "an unknown commit")
         except Exception as e:
             # A failed download must read as failed. The previous implementation
             # slept ten seconds and reported success regardless.
@@ -254,10 +305,12 @@ class ModelCatalogManager:
             progress_percent=0.0,
             speed_mb_s=0.0,
             total_bytes=recipe.download_bytes,
+            requested_revision=recipe.revision,
         )
         self.jobs[job_id] = job
         asyncio.create_task(
-            self._download_task(job_id, recipe.hf_repo, recipe.allow_patterns)
+            self._download_task(job_id, recipe.hf_repo, recipe.allow_patterns,
+                                recipe.revision)
         )
         return job_id
 

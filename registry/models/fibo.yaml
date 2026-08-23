@@ -24,6 +24,7 @@ variants:
     name: FIBO
     precision: bf16
     repo: briaai/FIBO
+    revision: 7c7e00ca081f6cd24bbbd745d13cc214484c9199
     backends: [metal]
     download:
       value: 25614147578
@@ -40,6 +41,7 @@ variants:
     name: FIBO Lite
     precision: bf16
     repo: briaai/Fibo-lite
+    revision: dcd26dfe1051e59b77b88acbacc025613aaa09de
     backends: [metal]
     license:
       id: cc-by-nc-4.0
@@ -64,6 +66,7 @@ variants:
     name: FIBO Edit
     precision: bf16
     repo: briaai/Fibo-Edit
+    revision: 1bee4ae9b119d2634ec9f378370f2a1ae49d89cc
     backends: [metal]
     download:
       value: 40720673054
@@ -80,6 +83,7 @@ variants:
     name: FIBO Edit RMBG
     precision: bf16
     repo: briaai/Fibo-Edit-RMBG
+    revision: cb134b058d1a6089fc3b9e5fc04a4511337b53ed
     backends: [metal]
     download:
       value: 90538294891

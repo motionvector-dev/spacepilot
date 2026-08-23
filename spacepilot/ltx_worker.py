@@ -53,6 +53,14 @@ TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
 OUTPUT_DIR = Path(os.environ.get("LTX_OUTPUT_DIR", "/scratch/out"))
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
+# The commit these weights are, not the branch they sit on. A repo id resolves
+# to whatever the author last pushed, so an unpinned worker can silently change
+# what every job it serves was rendered with. Resolved against the Hub API on
+# 2026-08-23; override only to test a newer checkpoint deliberately.
+LTX_MODEL_ID = "Lightricks/LTX-2.5-Diffusers"
+LTX_MODEL_REVISION = os.environ.get(
+    "LTX_MODEL_REVISION", "b824ee2c03547261e354576e7ac9738a90bf3e1f")
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB image upload limit
 _lock = threading.Lock()
@@ -93,7 +101,8 @@ def load_model():
     )
 
     _pipe = LTX2Pipeline.from_pretrained(
-        "Lightricks/LTX-2.5-Diffusers",
+        LTX_MODEL_ID,
+        revision=LTX_MODEL_REVISION,
         token=HF_TOKEN or True,
         torch_dtype=torch.bfloat16,
         quantization_config=quant_config,

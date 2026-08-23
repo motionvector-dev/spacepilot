@@ -70,6 +70,15 @@ def main():
         default="Lightricks/LTX-Video-0.9.8-13B-distilled", 
         help="Hugging Face model repository ID or path to local checkpoints."
     )
+    parser.add_argument(
+        "--revision",
+        type=str,
+        default=None,
+        help="Commit SHA or immutable tag to pin --model to. Without it the "
+             "download follows the repo's default branch, so the same command "
+             "can render from different weights on different days and nothing "
+             "in the output says which it used."
+    )
     
     # Generation configuration
     parser.add_argument("--width", type=int, default=512, help="Width of the output video. Must be a multiple of 32.")
@@ -119,6 +128,7 @@ def main():
         # Load pipeline
         pipeline = LTXImageToVideoPipeline.from_pretrained(
             args.model,
+            revision=args.revision,
             torch_dtype=torch.bfloat16
         )
     else:
@@ -128,6 +138,7 @@ def main():
         # Load pipeline
         pipeline = LTXPipeline.from_pretrained(
             args.model,
+            revision=args.revision,
             torch_dtype=torch.bfloat16
         )
 

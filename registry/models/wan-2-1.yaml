@@ -18,6 +18,7 @@ variants:
     params: 1.3B
     precision: bf16
     repo: Wan-AI/Wan2.1-T2V-1.3B
+    revision: 37ec512624d61f7aa208f7ea8140a131f93afc9a
     backends: [metal, cuda]
     download:
       value: 17580000000
@@ -48,6 +49,7 @@ variants:
     params: 14B
     precision: bf16
     repo: Wan-AI/Wan2.1-T2V-14B
+    revision: a064a6c71f5be440641209c07bf2a5ce7a2ff5e4
     backends: [cuda]
     download:
       value: 69050000000

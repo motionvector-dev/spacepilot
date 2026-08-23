@@ -21,6 +21,7 @@ variants:
     params: 6B
     precision: bf16
     repo: Tongyi-MAI/Z-Image
+    revision: 04cc4abb7c5069926f75c9bfde9ef43d49423021
     backends: [metal]
     download:
       value: 20547479575
@@ -38,6 +39,7 @@ variants:
     params: 6B
     precision: bf16
     repo: Tongyi-MAI/Z-Image-Turbo
+    revision: f332072aa78be7aecdf3ee76d5c247082da564a6
     backends: [metal]
     download:
       value: 32899667397
@@ -56,6 +58,7 @@ variants:
     name: Z-Image Turbo ControlNet Union 2.1
     precision: bf16
     repo: alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1
+    revision: 5155fc56d17821007d6f62ac192c09e0f0e72016
     backends: [metal]
     download:
       value: 86045989869

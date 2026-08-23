@@ -105,9 +105,17 @@ def main() -> int:
     variants = sum(len(m["variants"]) for m in payload["models"])
     measured = sum(1 for m in payload["models"] for v in m["variants"]
                    if any(s["source"] == "measured" for s in v["speed"]))
+    unpinned = sum(1 for m in payload["models"] for v in m["variants"]
+                   if not v["is_pinned"])
     print(f"{out}  {len(payload['models'])} models, {variants} variants, "
           f"{measured} with a cited speed, {measured_variants} with measured runs "
           f"({out.stat().st_size / 1024:.0f} KB)")
+    if unpinned:
+        # Said every time, not once at add-time: the page ships whatever is in
+        # the file, and a variant whose weights can move under it should not
+        # reach a reader without somebody having seen that fact.
+        print(f"  !! {unpinned} variant(s) publish unpinned — the page will describe "
+              f"weights that can change under it")
     return 0
 
 

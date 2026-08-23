@@ -23,6 +23,7 @@ variants:
     params: 13B
     precision: gguf-q4_k_m
     repo: city96/HunyuanVideo-gguf
+    revision: 6869e07d25cffdff09f7c10a79887ac24217b67b
     files: ["hunyuan-video-t2v-720p-Q4_K_M.gguf"]
     backends: [metal, cuda]
     download:

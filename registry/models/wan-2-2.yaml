@@ -20,6 +20,7 @@ variants:
     params: 5B
     precision: bf16
     repo: Wan-AI/Wan2.2-TI2V-5B
+    revision: 921dbaf3f1674a56f47e83fb80a34bac8a8f203e
     backends: [metal, cuda]
     download:
       value: 34200000000

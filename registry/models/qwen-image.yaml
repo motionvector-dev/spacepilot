@@ -20,6 +20,7 @@ variants:
     params: 20B
     precision: bf16
     repo: Qwen/Qwen-Image-2512
+    revision: 25468b98e3276ca6700de15c6628e51b7de54a26
     backends: [metal]
     download:
       value: 57704595735
@@ -38,6 +39,7 @@ variants:
     name: Qwen-Image-Edit 2509
     precision: bf16
     repo: Qwen/Qwen-Image-Edit-2509
+    revision: d3968ef930e841f4c73640fb8afa3b306a78167e
     backends: [metal]
     download:
       value: 57720466551

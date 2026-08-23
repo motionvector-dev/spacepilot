@@ -21,6 +21,7 @@ variants:
     params: 8B
     precision: bf16
     repo: baidu/ERNIE-Image
+    revision: 5346b31d68c9c23758ba56ef8be5e9dc174c7f99
     backends: [metal]
     download:
       value: 31648078640
@@ -38,6 +39,7 @@ variants:
     params: 8B
     precision: bf16
     repo: baidu/ERNIE-Image-Turbo
+    revision: bc68c81e2a1730a394d5fc9fae70713dee940140
     backends: [metal]
     download:
       value: 31648078746

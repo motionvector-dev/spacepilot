@@ -3,15 +3,23 @@ import torch
 import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
+
+# The commit these weights are, not the branch they happen to sit on today.
+# An unpinned repo id lets the author change the model under every prompt this
+# file has ever rewritten, with nothing in the output saying so. Resolved
+# against the Hub API on 2026-08-23.
+MODEL_REVISION = "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
+
+
 def enhance(prompt):
-    model_id = "Qwen/Qwen2.5-1.5B-Instruct"
-    
     # Load tokenizer and model onto Apple Silicon MPS
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
     model = AutoModelForCausalLM.from_pretrained(
-        model_id, 
-        torch_dtype=torch.float16, 
-        device_map="mps"
+        MODEL_ID,
+        revision=MODEL_REVISION,
+        torch_dtype=torch.float16,
+        device_map="mps",
     )
 
     system_prompt = """You are an expert cinematographer and prompt engineer for LTX-Video, an advanced AI video generation model.
