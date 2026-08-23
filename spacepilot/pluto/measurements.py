@@ -32,11 +32,18 @@ import os
 import platform
 import re
 import statistics
+import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import yaml
+
+try:
+    import psutil
+except ImportError:  # pragma: no cover - psutil is a declared dependency; this
+    # only guards a broken/partial environment, not an expected path.
+    psutil = None
 
 SCHEMA_VERSION = 1
 
@@ -53,10 +60,30 @@ CONTENTION = {
     "unknown",  # could not sample; treated as `loaded` by every summary
 }
 
-# Above this 1-minute load average per core the box is not idle. Deliberately
-# low: the cost of calling a busy machine idle is a permanently wrong ceiling,
-# and the cost of calling an idle machine busy is one discarded sample.
+# Above this per-core share of CPU, attributable to processes OUTSIDE our own
+# tree, the box is not idle. Deliberately low: the cost of calling a busy
+# machine idle is a permanently wrong ceiling, and the cost of calling an idle
+# machine busy is one discarded sample.
+#
+# This used to be `os.getloadavg()[0] / cpu_count`, which made `solo`
+# unreachable by construction: load average counts every process on the box,
+# ours included, so a measurement heavy enough to be worth taking always
+# pushed its own load average over the threshold by the time it finished.
+# Contention means another party competing for the machine, not this process
+# doing the work it was asked to do — so this now excludes our own process
+# tree (this process plus every descendant, including a subprocess we spawn
+# such as the mflux driver's `mflux-generate*` child) and asks only what
+# *everyone else* is doing. See `_external_cpu_percent`.
 _LOAD_PER_CORE_IDLE = 0.4
+
+# How long to sample CPU% over. psutil.Process.cpu_percent reports "percent
+# since the last call", so telling solo from loaded needs two reads spaced
+# apart; too short and a competitor between the reads is invisible, too long
+# and every `sample_contention()` call (two of which bracket every `pluto
+# measure` run) adds real wall time. 150ms is long enough for `ps`-scale
+# sampling to be meaningful and short enough not to matter next to the runs
+# it brackets, which are seconds to minutes.
+_CONTENTION_SAMPLE_SECONDS = 0.15
 
 
 class MeasurementError(ValueError):
@@ -98,9 +125,22 @@ class System:
         return asdict(self)
 
 
+STATUS = {
+    "ok",      # the run completed and `value` is a real speed number
+    "failed",  # the run did not complete; `value` is not a speed number
+}
+
+
 @dataclass(frozen=True)
 class Measurement:
-    """One run, on one machine, with the knobs it was given."""
+    """One run, on one machine, with the knobs it was given.
+
+    `status` defaults to "ok" so every record written before this field
+    existed still parses and still counts, unchanged, in every summary. A
+    "failed" record is a real observation too — an OOM at 1024²/int8 says
+    exactly where this machine stops — but its `value` is not a speed number
+    (see `record`'s docstring), so `summarise` excludes it from both streams.
+    """
     schema: int
     system_id: str
     model_id: str
@@ -118,30 +158,117 @@ class Measurement:
     wall_seconds: Optional[float] = None
     knobs: Dict[str, Any] = field(default_factory=dict)
     note: Optional[str] = None
+    status: str = "ok"
+    error: Optional[str] = None
 
     @property
     def is_solo(self) -> bool:
         return self.contention == "solo"
 
+    @property
+    def is_ok(self) -> bool:
+        return self.status == "ok"
+
     def to_dict(self) -> Dict[str, Any]:
         return {k: v for k, v in asdict(self).items() if v not in (None, {}, [])}
 
 
-def sample_contention(profile: Optional[Any] = None) -> str:
-    """Ask the OS whether this machine is busy, rather than asking the caller.
+def _own_tree_pids(root_pid: Optional[int] = None) -> Set[int]:
+    """This process, plus every descendant — recursively.
 
-    Load average is a blunt instrument and says nothing about GPU contention,
-    so this can call a GPU-saturated box `solo`. It is still better than a
-    self-report, and a wrong answer here degrades a sample rather than a
-    conclusion — summaries report the two streams separately and never merge
-    them.
+    Descendants matter because the heaviest thing this repo ever measures is
+    not this process: it's a subprocess it spawns (mflux, ffmpeg). A tree that
+    only excluded our own pid would count that subprocess as "someone else"
+    and call every real measurement `loaded`, which is the exact bug this
+    function exists to close.
     """
+    pid = root_pid if root_pid is not None else os.getpid()
+    if psutil is None:
+        return {pid}
     try:
-        one_minute = os.getloadavg()[0]
-    except (OSError, AttributeError):
+        me = psutil.Process(pid)
+    except psutil.Error:
+        return {pid}
+    pids = {me.pid}
+    try:
+        pids.update(child.pid for child in me.children(recursive=True))
+    except psutil.Error:
+        pass
+    return pids
+
+
+def _external_cpu_percent(own_pids: Set[int], interval: float) -> Optional[float]:
+    """Sum of CPU% used by every process outside `own_pids`, over `interval`.
+
+    psutil.Process.cpu_percent(None) reports percent-since-the-last-call, so a
+    given process's first read is always 0.0 — this "primes" every process,
+    sleeps, then reads it back, the standard psutil two-call pattern. A
+    process that starts or exits mid-window is skipped rather than raising:
+    this only decides one measurement's contention label, not a standing fact
+    about the machine, so missing one transient process for one sample is a
+    degraded sample, not a wrong conclusion.
+
+    Returns None (→ "unknown") if the process list cannot be read at all.
+    """
+    if psutil is None:
+        return None
+    try:
+        procs = []
+        for p in psutil.process_iter(["pid"]):
+            if p.pid in own_pids:
+                continue
+            try:
+                p.cpu_percent(None)  # prime; discard the meaningless first read
+                procs.append(p)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+    except Exception:
+        return None
+    time.sleep(interval)
+    total = 0.0
+    for p in procs:
+        try:
+            total += p.cpu_percent(None)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+    return total
+
+
+def sample_contention(
+    profile: Optional[Any] = None,
+    *,
+    own_pids: Optional[Set[int]] = None,
+    interval: float = _CONTENTION_SAMPLE_SECONDS,
+) -> str:
+    """Ask the OS whether something ELSE is busy, rather than asking the caller.
+
+    "Solo" means nothing outside our own process tree is meaningfully
+    competing for CPU; "loaded" means something is. It does not mean the box
+    is quiet in some absolute sense — our own work, however heavy, is never
+    what makes a measurement of that work `loaded`. See `_LOAD_PER_CORE_IDLE`
+    for why this replaced a plain load-average check.
+
+    This still says nothing about GPU or memory contention, so it can call a
+    GPU-saturated box `solo` if nothing else is fighting for CPU. That is the
+    same limitation the load-average version had; a wrong answer here
+    degrades a sample rather than a conclusion, because summaries report the
+    two streams separately and never merge them.
+
+    `profile` is accepted and ignored — kept for call-site compatibility; it
+    was never read even before this fix. `own_pids` overrides what counts as
+    "us"; the default is this process's own tree. Tests use the override to
+    simulate a genuine external competitor without needing to launch a process
+    that is actually outside CI's own process tree.
+    """
+    if psutil is None:
         return "unknown"
     cores = os.cpu_count() or 1
-    return "solo" if (one_minute / cores) <= _LOAD_PER_CORE_IDLE else "loaded"
+    pids = own_pids if own_pids is not None else _own_tree_pids()
+    external = _external_cpu_percent(pids, interval)
+    if external is None:
+        return "unknown"
+    external_load_per_core = (external / 100.0) / cores
+    return "solo" if external_load_per_core <= _LOAD_PER_CORE_IDLE else "loaded"
 
 
 def system_id_for(profile: Any) -> str:
@@ -203,11 +330,22 @@ def record(
     value: float,
     contention: Optional[str] = None,
     root: Optional[Path] = None,
+    status: str = "ok",
     **fields: Any,
 ) -> Path:
-    """Append one observation. Contention is sampled unless explicitly passed."""
+    """Append one observation. Contention is sampled unless explicitly passed.
+
+    `status="failed"` records a run that did not complete — a crash, an OOM,
+    a timeout. `value` still has to be a float (the schema requires one); the
+    convention is wall time elapsed before the failure, which is informative
+    without being a claim that this is a speed the model achieved. A failed
+    record is excluded from both streams in `summarise` — it must never
+    pollute a speed summary, only ever explain why one sample is missing.
+    """
     if metric not in SPEED_METRICS:
         raise MeasurementError(f"metric {metric!r} not one of {sorted(SPEED_METRICS)}")
+    if status not in STATUS:
+        raise MeasurementError(f"status {status!r} not one of {sorted(STATUS)}")
     state = contention or sample_contention()
     if state not in CONTENTION:
         raise MeasurementError(f"contention {state!r} not one of {sorted(CONTENTION)}")
@@ -222,6 +360,7 @@ def record(
         contention=state,
         measured_on=now.isoformat(timespec="seconds"),
         backend=fields.pop("backend", system.backend),
+        status=status,
         **fields,
     )
     directory = (root or MEASUREMENTS_DIR) / system.id / _slug(model_id)
@@ -256,6 +395,8 @@ def parse_measurement(raw: Dict[str, Any], where: str) -> Measurement:
             f"{where}: contention {raw['contention']!r} not one of {sorted(CONTENTION)} — "
             f"a sample that does not say whether the machine was busy cannot be "
             f"summarised, because the two streams are never merged")
+    if raw.get("status") is not None and raw["status"] not in STATUS:
+        raise MeasurementError(f"{where}: status {raw['status']!r} not one of {sorted(STATUS)}")
     known = {f for f in Measurement.__dataclass_fields__}
     return Measurement(**{k: v for k, v in raw.items() if k in known})
 
@@ -300,6 +441,7 @@ class Summary:
     solo_samples: int
     observed_median: Optional[float]
     observed_samples: int
+    failed_samples: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -309,13 +451,16 @@ def summarise(measurements: List[Measurement], system_id: str,
               model_id: str, metric: str) -> Summary:
     rows = [m for m in measurements if m.system_id == system_id
             and m.model_id == model_id and m.metric == metric]
-    solo = [m.value for m in rows if m.is_solo]
+    ok = [m for m in rows if m.is_ok]
+    failed = [m for m in rows if not m.is_ok]
+    solo = [m.value for m in ok if m.is_solo]
     return Summary(
         system_id=system_id,
         model_id=model_id,
         metric=metric,
         solo_median=statistics.median(solo) if solo else None,
         solo_samples=len(solo),
-        observed_median=statistics.median([m.value for m in rows]) if rows else None,
-        observed_samples=len(rows),
+        observed_median=statistics.median([m.value for m in ok]) if ok else None,
+        observed_samples=len(ok),
+        failed_samples=len(failed),
     )

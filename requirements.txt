@@ -26,6 +26,10 @@ kokoro-onnx
 # Model and runtime registry (spacepilot/pluto/registry.py, spacepilot/pluto/runtimes.py)
 PyYAML>=6.0
 
+# Contention sampling (src/pluto/measurements.py): sums CPU% of processes
+# outside our own process tree, which os.getloadavg() cannot distinguish.
+psutil>=5.9.0
+
 # Claim verifier (tools/verify_claims.py): fans a claim out to N cheap models
 # across providers through one interface.
 litellm>=1.98.0
