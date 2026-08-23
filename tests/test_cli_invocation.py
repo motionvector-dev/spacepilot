@@ -27,3 +27,25 @@ def test_runtimes_list_runs_both_ways(argv):
     proc = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert proc.returncode == 0, proc.stderr[-2000:]
     assert "No module named 'src'" not in proc.stderr
+
+
+def test_measure_refuses_to_record_a_failed_run(tmp_path):
+    """A command that exited non-zero measured nothing; recording it would poison
+    the store with the duration of a crash."""
+    proc = subprocess.run(
+        [sys.executable, "src/cli.py", "measure", "--model", "demo",
+         "--metric", "seconds_per_image", "--", "/bin/sh", "-c", "exit 3"],
+        cwd=ROOT, capture_output=True, text=True, timeout=120,
+    )
+    assert proc.returncode == 3
+    assert "nothing recorded" in proc.stdout
+
+
+def test_measure_needs_a_command():
+    proc = subprocess.run(
+        [sys.executable, "src/cli.py", "measure", "--model", "demo",
+         "--metric", "seconds_per_image"],
+        cwd=ROOT, capture_output=True, text=True, timeout=120,
+    )
+    assert proc.returncode == 1
+    assert "Nothing to measure" in proc.stdout

@@ -811,6 +811,83 @@ def cmd_runtimes(args, cfg=None) -> int:
     return 1
 
 
+def cmd_measure(args, cfg=None) -> int:
+    """Time a real command and write down what happened.
+
+    Measurements gathered on purpose are rare and biased toward whatever the
+    person wanted to prove. Measurements that fall out of ordinary use are
+    neither, so this wraps the command you were going to run anyway.
+    """
+    import resource
+    import time
+
+    from src.device_probe import probe_local_device
+    from src.pluto import measurements as ms
+
+    command = list(getattr(args, "command_argv", []) or [])
+    if command and command[0] == "--":   # REMAINDER keeps the separator
+        command = command[1:]
+    if not command:
+        print("Nothing to measure. Put the command after --, e.g.")
+        print("  pluto measure --model flux --metric seconds_per_image -- "
+              "mflux-generate --model schnell --steps 4")
+        return 1
+
+    profile = probe_local_device()
+    system = ms.system_from_profile(profile)
+    ms.write_system(system)
+
+    before = ms.sample_contention()
+    rss_before = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    started = time.perf_counter()
+    proc = subprocess.run(command)
+    wall = time.perf_counter() - started
+    after = ms.sample_contention()
+    rss_after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+
+    if proc.returncode != 0:
+        print(f"\n  command exited {proc.returncode} after {wall:.1f}s — nothing recorded.")
+        print("  A failed run is not a measurement of anything.")
+        return proc.returncode
+
+    # Busy at either end means busy: a run that started idle and ended loaded
+    # was contended for part of its life, and the solo stream must stay clean.
+    contention = "solo" if before == after == "solo" else (
+        "unknown" if "unknown" in (before, after) else "loaded")
+
+    value = wall / args.units if getattr(args, "units", None) else wall
+    # ru_maxrss is bytes on macOS and kibibytes on Linux.
+    peak = (rss_after - rss_before) if rss_after > rss_before else None
+    if peak and sys.platform != "darwin":
+        peak *= 1024
+
+    knobs = {}
+    for pair in getattr(args, "knob", None) or []:
+        key, _, val = pair.partition("=")
+        knobs[key.strip()] = val.strip() if val else True
+    if getattr(args, "units", None):
+        knobs["units"] = args.units
+
+    path = ms.record(
+        system=system, model_id=args.model, metric=args.metric, value=value,
+        contention=contention, runtime_id=getattr(args, "runtime", None),
+        quantisation=getattr(args, "quantisation", None),
+        interpreter=sys.executable, wall_seconds=wall,
+        peak_memory_bytes=peak, knobs=knobs,
+        note=" ".join(command)[:300],
+    )
+
+    print(f"\n  {args.metric.replace('_', ' ')}  {value:.3f}")
+    print(f"  wall              {wall:.1f}s")
+    if peak:
+        print(f"  peak child RSS    {peak / 1024 ** 3:.2f} GB")
+    print(f"  machine was       {contention}")
+    if contention != "solo":
+        print("  ↳ excluded from the solo ceiling; run again on an idle box for that")
+    print(f"  recorded          {path.relative_to(PLUTO_ROOT)}")
+    return 0
+
+
 def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(prog="pluto", description="Pluto Remote GPU Box & Video Generation Tool")
@@ -858,6 +935,21 @@ def main():
 
     models_p = subparsers.add_parser("models", help="List models and whether they run here")
     models_p.add_argument("model_id", nargs="?", help="A variant id, for detail")
+
+    meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
+    meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
+    meas_p.add_argument("--metric", required=True,
+                        help="seconds_per_image, tokens_per_second, realtime_factor, "
+                             "seconds_per_second_of_video")
+    meas_p.add_argument("--runtime", default=None, help="Runtime id, e.g. mflux")
+    meas_p.add_argument("--quantisation", default=None, help="e.g. 4bit, 8bit, bf16")
+    meas_p.add_argument("--units", type=float, default=None,
+                        help="Divide wall time by this many units (images, seconds of "
+                             "video) to get a per-unit rate")
+    meas_p.add_argument("--knob", action="append", metavar="KEY=VALUE",
+                        help="Record a setting that changes the number (repeatable)")
+    meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
+                        help="The command to run, after --")
 
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
@@ -914,6 +1006,7 @@ def main():
         "studio": cmd_studio,
         "models": cmd_models,
         "runtimes": cmd_runtimes,
+        "measure": cmd_measure,
         "status": cmd_status,
         "launch": cmd_launch,
         "deploy": cmd_deploy,
