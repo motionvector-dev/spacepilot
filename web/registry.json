@@ -878,7 +878,8 @@
        "solo_median": null,
        "solo_samples": 0,
        "observed_median": 24.51,
-       "observed_samples": 1
+       "observed_samples": 1,
+       "failed_samples": 0
       },
       {
        "system_id": "apple-m1-max-32gb",
@@ -887,7 +888,8 @@
        "solo_median": null,
        "solo_samples": 0,
        "observed_median": 32.985,
-       "observed_samples": 1
+       "observed_samples": 1,
+       "failed_samples": 0
       }
      ]
     }
