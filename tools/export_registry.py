@@ -24,6 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.device_probe import (  # noqa: E402
     MEMORY_RESERVE_FLOOR_BYTES, MEMORY_RESERVE_FRACTION,
 )
+from src.pluto.measurements import (  # noqa: E402
+    load_measurements, load_systems, summarise,
+)
 from src.pluto.registry import load_registry  # noqa: E402
 from src.pluto.services.compatibility import (  # noqa: E402
     FOOTPRINT_BANDS, PERMISSIVE_LICENSES, TIGHT_THRESHOLD,
@@ -34,6 +37,45 @@ from src.pluto.services.compatibility import (  # noqa: E402
 # confidence and says the exact figure needs the local app.
 METAL_WORKING_SET_FRACTION = 0.78
 
+
+def attach_measurements(models: list) -> int:
+    """Fold the measurement store into the variants it describes.
+
+    The public page used to carry only each variant's `speed:` block, which is
+    curated prose — cited, declared, or estimated. Runs recorded by `pluto
+    measure` land in `registry/measurements/` instead, keyed by system and
+    metric, and nothing joined the two. So a variant could have a real timing
+    on disk and still publish as having no speed data at all, which is what
+    happened to every FLUX.2 Klein variant.
+
+    Summaries stay two-streamed. `solo` is what the machine can do; `observed`
+    includes runs that met a busy box. Collapsing them into one number is how a
+    ceiling quietly disappears under load, so they travel separately and each
+    carries its own sample count.
+    """
+    rows = load_measurements()
+    if not rows:
+        return 0
+
+    # A record names the variant it ran; older ones only carry model_id, which
+    # for those was set to the variant id.
+    keyed: dict = {}
+    for m in rows:
+        keyed.setdefault(m.variant_id or m.model_id, []).append(m)
+
+    attached = 0
+    for model in models:
+        for variant in model["variants"]:
+            mine = keyed.get(variant["id"])
+            if not mine:
+                continue
+            pairs = sorted({(m.system_id, m.metric) for m in mine})
+            variant["measurements"] = [
+                summarise(mine, system_id, variant["id"], metric).to_dict()
+                for system_id, metric in pairs
+            ]
+            attached += 1
+    return attached
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -53,6 +95,8 @@ def main() -> int:
         },
         "models": [m.to_dict() for m in reg.models.values()],
     }
+    measured_variants = attach_measurements(payload["models"])
+    payload["systems"] = [s.to_dict() for s in load_systems().values()]
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -62,7 +106,8 @@ def main() -> int:
     measured = sum(1 for m in payload["models"] for v in m["variants"]
                    if any(s["source"] == "measured" for s in v["speed"]))
     print(f"{out}  {len(payload['models'])} models, {variants} variants, "
-          f"{measured} with a measured speed  ({out.stat().st_size / 1024:.0f} KB)")
+          f"{measured} with a cited speed, {measured_variants} with measured runs "
+          f"({out.stat().st_size / 1024:.0f} KB)")
     return 0
 
 

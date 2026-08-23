@@ -835,7 +835,6 @@ def cmd_measure(args, cfg=None) -> int:
 
     profile = probe_local_device()
     system = ms.system_from_profile(profile)
-    ms.write_system(system)
 
     before = ms.sample_contention()
     rss_before = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
@@ -849,6 +848,11 @@ def cmd_measure(args, cfg=None) -> int:
         print(f"\n  command exited {proc.returncode} after {wall:.1f}s — nothing recorded.")
         print("  A failed run is not a measurement of anything.")
         return proc.returncode
+
+    # Written only once the run succeeded. Writing it up front left a system
+    # record behind on every failed measure, which contradicts "nothing
+    # recorded" and put the CI runner's own box into registry/systems/.
+    ms.write_system(system)
 
     # Busy at either end means busy: a run that started idle and ended loaded
     # was contended for part of its life, and the solo stream must stay clean.
@@ -886,6 +890,57 @@ def cmd_measure(args, cfg=None) -> int:
         print("  ↳ excluded from the solo ceiling; run again on an idle box for that")
     print(f"  recorded          {path.relative_to(PLUTO_ROOT)}")
     return 0
+
+
+def cmd_sweep(args, cfg=None) -> int:
+    """Run (or dry-run) a declarative measurement sweep spec, unattended."""
+    from src.pluto.sweep import load_spec, expand_jobs, run_sweep, SweepSpecError
+
+    action = getattr(args, "sweep_action", None) or "run"
+    if action != "run":
+        print(f"Unknown action '{action}'.")
+        return 1
+
+    try:
+        spec = load_spec(args.spec)
+    except SweepSpecError as exc:
+        print(f"Bad sweep spec: {exc}")
+        return 1
+
+    if getattr(args, "max_jobs", None) is not None:
+        spec = replace_dataclass(spec, max_jobs=args.max_jobs)
+    if getattr(args, "max_wall_seconds", None) is not None:
+        spec = replace_dataclass(spec, max_wall_seconds=args.max_wall_seconds)
+
+    jobs = expand_jobs(spec)
+    print(f"{spec.id}  [{spec.model_id} via {spec.runtime_id}, model_alias={spec.model_alias}]")
+    print(f"  {len(jobs)} jobs in the grid  ·  max_jobs={spec.max_jobs}  "
+          f"max_wall_seconds={spec.max_wall_seconds:.0f}  disk_floor={spec.disk_free_floor_gb:.0f}GB")
+
+    if getattr(args, "dry_run", False):
+        for job in jobs:
+            print(f"    {job.slug}")
+        return 0
+
+    record = run_sweep(
+        spec,
+        outputs_dir=Path(args.outputs_dir) if getattr(args, "outputs_dir", None) else None,
+        caffeinate=not getattr(args, "no_caffeinate", False),
+    )
+    print(f"\n  stopped: {record.stopped_reason}")
+    print(f"  ran {record.jobs_run} ({record.jobs_succeeded} ok, {record.jobs_failed} failed), "
+          f"skipped {record.jobs_skipped} of {record.jobs_total}")
+    if record.last_job_slug:
+        print(f"  last job: {record.last_job_slug}")
+    return 0 if record.stopped_reason in ("completed", "max_jobs", "max_wall_seconds",
+                                           "human_returned") else 1
+
+
+def replace_dataclass(instance, **changes):
+    """dataclasses.replace, imported lazily so cmd_sweep stays self-contained
+    next to the rest of this file's handler functions."""
+    import dataclasses
+    return dataclasses.replace(instance, **changes)
 
 
 def main():
@@ -951,6 +1006,22 @@ def main():
     meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
                         help="The command to run, after --")
 
+    # sweep
+    sweep_p = subparsers.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
+    sweep_sub = sweep_p.add_subparsers(dest="sweep_action")
+    sweep_run = sweep_sub.add_parser("run", help="Run (or dry-run) a sweep spec")
+    sweep_run.add_argument("spec", help="Path to a registry/sweeps/*.yaml spec")
+    sweep_run.add_argument("--dry-run", action="store_true",
+                           help="Print the job grid and exit without running anything")
+    sweep_run.add_argument("--max-jobs", type=int, default=None,
+                           help="Override the spec's runner.max_jobs")
+    sweep_run.add_argument("--max-wall-seconds", type=float, default=None,
+                           help="Override the spec's runner.max_wall_seconds")
+    sweep_run.add_argument("--outputs-dir", default=None,
+                           help="Override where generated images land (default: outputs/)")
+    sweep_run.add_argument("--no-caffeinate", action="store_true",
+                           help="Do not keep the Mac awake (for debugging only)")
+
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
     # launch
@@ -1007,6 +1078,7 @@ def main():
         "models": cmd_models,
         "runtimes": cmd_runtimes,
         "measure": cmd_measure,
+        "sweep": cmd_sweep,
         "status": cmd_status,
         "launch": cmd_launch,
         "deploy": cmd_deploy,
