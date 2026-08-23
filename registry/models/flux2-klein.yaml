@@ -1,0 +1,140 @@
+schema: 1
+id: flux2-klein
+name: FLUX.2 Klein
+family: black-forest-labs
+kind: image
+summary: >
+  Black Forest Labs' small FLUX.2 distillations. Despite the FLUX name this
+  is a separate family from FLUX.1 (owned by a different agent's registry
+  work) — Klein licensing is split down the middle: the 4B models are Apache
+  2.0, the 9B models are the FLUX Non-Commercial License and gated.
+homepage: https://huggingface.co/black-forest-labs/FLUX.2-klein-4B
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: flux2-klein-4b
+    name: FLUX.2 Klein 4B
+    params: 4B
+    precision: bf16
+    repo: black-forest-labs/FLUX.2-klein-4B
+    backends: [metal]
+    download:
+      value: 23740007447
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 28488008936
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      Distilled, deployment-ready. mflux aliases "flux2-klein-4b",
+      "flux2-klein-4B", "flux2-klein", "klein-4b", "klein-4B".
+  - id: flux2-klein-base-4b
+    name: FLUX.2 Klein Base 4B
+    params: 4B
+    precision: bf16
+    repo: black-forest-labs/FLUX.2-klein-base-4B
+    backends: [metal]
+    download:
+      value: 23740007506
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 28488009007
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      Undistilled base, meant for fine-tuning and research rather than direct
+      deployment. mflux aliases for the base-4B checkpoint.
+  - id: flux2-klein-9b
+    name: FLUX.2 Klein 9B
+    params: 9B
+    precision: bf16
+    repo: black-forest-labs/FLUX.2-klein-9B
+    backends: [metal]
+    license:
+      id: FLUX Non-Commercial License
+      spdx: null
+      open_source: false
+      url: https://huggingface.co/black-forest-labs/FLUX.2-klein-9B
+      restrictions:
+        - Non-commercial use only, for third-party research and development
+        - Also bound by the FLUX Acceptable Use Policy
+        - Gated — requires a Hugging Face account, accepting the license, and sharing contact information to download
+    download:
+      value: 52888736795
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 63466484154
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux aliases "flux2-klein-9b", "flux2-klein-9B", "klein-9b", "klein-9B".
+  - id: flux2-klein-9b-kv
+    name: FLUX.2 Klein 9B KV
+    params: 9B
+    precision: bf16
+    repo: black-forest-labs/FLUX.2-klein-9b-kv
+    backends: [metal]
+    license:
+      id: FLUX Non-Commercial License
+      spdx: null
+      open_source: false
+      url: https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv
+      restrictions:
+        - Non-commercial use only, for third-party research and development
+        - Also bound by the FLUX Acceptable Use Policy
+        - Gated — requires a Hugging Face account, accepting the license, and sharing contact information to download
+    download:
+      value: 52886252700
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 63463503240
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      "KV" caches reference-image key/value pairs once, speeding up
+      multi-reference editing by up to 2.5x. Not the aliases used by the
+      other agent's FLUX.1 registry work.
+  - id: flux2-klein-base-9b
+    name: FLUX.2 Klein Base 9B
+    params: 9B
+    precision: bf16
+    repo: black-forest-labs/FLUX.2-klein-base-9B
+    backends: [metal]
+    license:
+      id: FLUX Non-Commercial License
+      spdx: null
+      open_source: false
+      url: https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B
+      restrictions:
+        - Non-commercial use only, for third-party research and development
+        - Also bound by the FLUX Acceptable Use Policy
+        - Gated — requires a Hugging Face account, accepting the license, and sharing contact information to download
+    download:
+      value: 52888736752
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 63466484102
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      Undistilled base, meant for fine-tuning and research rather than direct
+      deployment.

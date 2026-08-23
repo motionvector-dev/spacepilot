@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-22",
+ "generated": "2026-08-23",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -31,6 +31,66 @@
   ]
  },
  "models": [
+  {
+   "id": "boogu",
+   "name": "Boogu Image",
+   "family": "boogu",
+   "kind": "image",
+   "summary": "A small independent text-to-image project, released under Apache 2.0 but explicitly labeled by its own authors as \"a research project only, and not an official model release\" \u2014 worth flagging even though the license itself is permissive.\n",
+   "homepage": "https://huggingface.co/Boogu/Boogu-Image-0.1-Turbo",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [
+     "Author's own note: research project only, not an official model release; no production safety guarantees"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "boogu-image-turbo",
+     "model_id": "boogu",
+     "name": "Boogu Image 0.1 Turbo",
+     "kind": "image",
+     "family": "boogu",
+     "params": null,
+     "precision": "bf16",
+     "repo": "Boogu/Boogu-Image-0.1-Turbo",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 38552157959.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 46262589551.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [
+       "Author's own note: research project only, not an official model release; no production safety guarantees"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "mflux aliases \"boogu-image-turbo\", \"boogu-turbo\", \"boogu-image\", \"boogu\"."
+    }
+   ]
+  },
   {
    "id": "deepseek-r1-distill-qwen",
    "name": "DeepSeek R1 Distill Qwen",
@@ -86,6 +146,505 @@
      },
      "speed": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "ernie-image",
+   "name": "ERNIE-Image",
+   "family": "baidu",
+   "kind": "image",
+   "summary": "Baidu's 8B DiT text-to-image model, plus a guidance-distilled Turbo variant. Both tagged Apache 2.0 on the Hub, ungated, with no commercial restriction found on the model card.\n",
+   "homepage": "https://huggingface.co/baidu/ERNIE-Image",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "ernie-image",
+     "model_id": "ernie-image",
+     "name": "ERNIE-Image",
+     "kind": "image",
+     "family": "baidu",
+     "params": "8B",
+     "precision": "bf16",
+     "repo": "baidu/ERNIE-Image",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 31648078640.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 37977694368.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "mflux alias \"ernie-image\"."
+    },
+    {
+     "id": "ernie-image-turbo",
+     "model_id": "ernie-image",
+     "name": "ERNIE-Image Turbo",
+     "kind": "image",
+     "family": "baidu",
+     "params": "8B",
+     "precision": "bf16",
+     "repo": "baidu/ERNIE-Image-Turbo",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 31648078746.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 37977694495.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Guidance-distilled \u2014 the CLI errors on any guidance value but 1.0. mflux alias \"ernie-image-turbo\".\n"
+    }
+   ]
+  },
+  {
+   "id": "fibo",
+   "name": "FIBO",
+   "family": "bria",
+   "kind": "image",
+   "summary": "Bria's FIBO family: a base text-to-image model, a lighter Lite variant, an instruction-based editor, and an editor with built-in background removal. Every variant here is non-commercial only and gated behind a Hugging Face login \u2014 commercial use requires a separate agreement with Bria.\n",
+   "homepage": "https://huggingface.co/briaai/FIBO",
+   "license": {
+    "id": "Bria FIBO Non-Commercial",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/briaai/FIBO",
+    "restrictions": [
+     "Non-commercial use only; commercial use requires contacting Bria directly",
+     "Gated \u2014 requires a Hugging Face account and accepting the license to download"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "fibo",
+     "model_id": "fibo",
+     "name": "FIBO",
+     "kind": "image",
+     "family": "bria",
+     "params": null,
+     "precision": "bf16",
+     "repo": "briaai/FIBO",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 25614147578.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 30736977094.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Bria FIBO Non-Commercial",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/briaai/FIBO",
+      "restrictions": [
+       "Non-commercial use only; commercial use requires contacting Bria directly",
+       "Gated \u2014 requires a Hugging Face account and accepting the license to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "mflux alias \"fibo\"."
+    },
+    {
+     "id": "fibo-lite",
+     "model_id": "fibo",
+     "name": "FIBO Lite",
+     "kind": "image",
+     "family": "bria",
+     "params": null,
+     "precision": "bf16",
+     "repo": "briaai/Fibo-lite",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 24163989797.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 28996787756.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "cc-by-nc-4.0",
+      "open_source": false,
+      "spdx": "CC-BY-NC-4.0",
+      "url": "https://creativecommons.org/licenses/by-nc/4.0/deed.en",
+      "restrictions": [
+       "Non-commercial use only; commercial use requires contacting Bria directly",
+       "Gated \u2014 requires a Hugging Face account and accepting the license to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "mflux aliases \"fibo-lite\", \"fibo_lite\"."
+    },
+    {
+     "id": "fibo-edit",
+     "model_id": "fibo",
+     "name": "FIBO Edit",
+     "kind": "image",
+     "family": "bria",
+     "params": null,
+     "precision": "bf16",
+     "repo": "briaai/Fibo-Edit",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 40720673054.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 48864807665.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Bria FIBO Non-Commercial",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/briaai/FIBO",
+      "restrictions": [
+       "Non-commercial use only; commercial use requires contacting Bria directly",
+       "Gated \u2014 requires a Hugging Face account and accepting the license to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"fibo-edit\", \"fiboedit\"."
+    },
+    {
+     "id": "fibo-edit-rmbg",
+     "model_id": "fibo",
+     "name": "FIBO Edit RMBG",
+     "kind": "image",
+     "family": "bria",
+     "params": null,
+     "precision": "bf16",
+     "repo": "briaai/Fibo-Edit-RMBG",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 90538294891.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 108645953869.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine. The repo is unusually large (90 GB) because it carries multiple precisions \u2014 the actual working set for one loaded precision will be well under this figure.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Bria FIBO Non-Commercial",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/briaai/FIBO",
+      "restrictions": [
+       "Non-commercial use only; commercial use requires contacting Bria directly",
+       "Gated \u2014 requires a Hugging Face account and accepting the license to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "FIBO Edit with built-in background removal. mflux aliases \"fibo-edit-rmbg\", \"fiboedit-rmbg\".\n"
+    }
+   ]
+  },
+  {
+   "id": "flux2-klein",
+   "name": "FLUX.2 Klein",
+   "family": "black-forest-labs",
+   "kind": "image",
+   "summary": "Black Forest Labs' small FLUX.2 distillations. Despite the FLUX name this is a separate family from FLUX.1 (owned by a different agent's registry work) \u2014 Klein licensing is split down the middle: the 4B models are Apache 2.0, the 9B models are the FLUX Non-Commercial License and gated.\n",
+   "homepage": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "flux2-klein-4b",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 Klein 4B",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "4B",
+     "precision": "bf16",
+     "repo": "black-forest-labs/FLUX.2-klein-4B",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 23740007447.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 28488008936.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Distilled, deployment-ready. mflux aliases \"flux2-klein-4b\", \"flux2-klein-4B\", \"flux2-klein\", \"klein-4b\", \"klein-4B\".\n"
+    },
+    {
+     "id": "flux2-klein-base-4b",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 Klein Base 4B",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "4B",
+     "precision": "bf16",
+     "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 23740007506.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 28488009007.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Undistilled base, meant for fine-tuning and research rather than direct deployment. mflux aliases for the base-4B checkpoint.\n"
+    },
+    {
+     "id": "flux2-klein-9b",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 Klein 9B",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "9B",
+     "precision": "bf16",
+     "repo": "black-forest-labs/FLUX.2-klein-9B",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 52888736795.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 63466484154.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "FLUX Non-Commercial License",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-9B",
+      "restrictions": [
+       "Non-commercial use only, for third-party research and development",
+       "Also bound by the FLUX Acceptable Use Policy",
+       "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "mflux aliases \"flux2-klein-9b\", \"flux2-klein-9B\", \"klein-9b\", \"klein-9B\"."
+    },
+    {
+     "id": "flux2-klein-9b-kv",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 Klein 9B KV",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "9B",
+     "precision": "bf16",
+     "repo": "black-forest-labs/FLUX.2-klein-9b-kv",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 52886252700.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 63463503240.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "FLUX Non-Commercial License",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv",
+      "restrictions": [
+       "Non-commercial use only, for third-party research and development",
+       "Also bound by the FLUX Acceptable Use Policy",
+       "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "\"KV\" caches reference-image key/value pairs once, speeding up multi-reference editing by up to 2.5x. Not the aliases used by the other agent's FLUX.1 registry work.\n"
+    },
+    {
+     "id": "flux2-klein-base-9b",
+     "model_id": "flux2-klein",
+     "name": "FLUX.2 Klein Base 9B",
+     "kind": "image",
+     "family": "black-forest-labs",
+     "params": "9B",
+     "precision": "bf16",
+     "repo": "black-forest-labs/FLUX.2-klein-base-9B",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 52888736752.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 63466484102.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "FLUX Non-Commercial License",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B",
+      "restrictions": [
+       "Non-commercial use only, for third-party research and development",
+       "Also bound by the FLUX Acceptable Use Policy",
+       "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "Undistilled base, meant for fine-tuning and research rather than direct deployment.\n"
     }
    ]
   },
@@ -155,6 +714,68 @@
    ]
   },
   {
+   "id": "ideogram",
+   "name": "Ideogram 4",
+   "family": "ideogram",
+   "kind": "image",
+   "summary": "Ideogram's 4th-generation text-to-image model, released as an FP8-quantized local checkpoint. Non-commercial only and gated \u2014 you must accept the license and share contact information before Hugging Face will serve the weights.\n",
+   "homepage": "https://huggingface.co/ideogram-ai/ideogram-4-fp8",
+   "license": {
+    "id": "Ideogram 4 Non-Commercial",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/ideogram-ai/ideogram-4-fp8",
+    "restrictions": [
+     "Non-commercial use only",
+     "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "ideogram-4-fp8",
+     "model_id": "ideogram",
+     "name": "Ideogram 4 FP8",
+     "kind": "image",
+     "family": "ideogram",
+     "params": null,
+     "precision": "fp8",
+     "repo": "ideogram-ai/ideogram-4-fp8",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 27549627282.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 33059552738.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Ideogram 4 Non-Commercial",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/ideogram-ai/ideogram-4-fp8",
+      "restrictions": [
+       "Non-commercial use only",
+       "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "mflux aliases \"ideogram-4-fp8\", \"ideogram4-fp8\", \"ideogram4\", \"ideogram-4\", \"ideogram\".\n"
+    }
+   ]
+  },
+  {
    "id": "kokoro",
    "name": "Kokoro",
    "family": "hexgrad",
@@ -219,6 +840,66 @@
       }
      ],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "lens",
+   "name": "Lens",
+   "family": "microsoft",
+   "kind": "image",
+   "summary": "A 3.8B dual-stream MMDiT text-to-image Turbo model built over FLUX.2 latents, combining Microsoft Lens, an OpenAI GPT-OSS-20B text encoder, and Black Forest Labs' FLUX.2-dev. Hugging Face tags the repo's license as \"other\" rather than naming one of its component licenses.\n",
+   "homepage": "https://huggingface.co/Comfy-Org/Lens",
+   "license": {
+    "id": "other (composite: Microsoft Lens MIT + GPT-OSS-20B Apache-2.0 + FLUX.2-dev Apache-2.0)",
+    "open_source": true,
+    "spdx": null,
+    "url": "https://huggingface.co/Comfy-Org/Lens",
+    "restrictions": [
+     "Repackages three components under their own licenses (MIT, Apache-2.0, Apache-2.0); each is individually permissive, but the Hub lists the combined repo as \"other\" rather than stating unified terms. Verify against the model card before relying on this for commercial use.\n"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "lens-turbo",
+     "model_id": "lens",
+     "name": "Lens Turbo",
+     "kind": "image",
+     "family": "microsoft",
+     "params": "3.8B",
+     "precision": "bf16",
+     "repo": "Comfy-Org/Lens",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 41107648787.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 49329178544.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "other (composite: Microsoft Lens MIT + GPT-OSS-20B Apache-2.0 + FLUX.2-dev Apache-2.0)",
+      "open_source": true,
+      "spdx": null,
+      "url": "https://huggingface.co/Comfy-Org/Lens",
+      "restrictions": [
+       "Repackages three components under their own licenses (MIT, Apache-2.0, Apache-2.0); each is individually permissive, but the Hub lists the combined repo as \"other\" rather than stating unified terms. Verify against the model card before relying on this for commercial use.\n"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "notes": "4-step distillation with CFG internalized \u2014 guidance and negative prompt are never applied. mflux aliases \"lens-turbo\", \"lens\".\n"
     }
    ]
   },
@@ -351,6 +1032,100 @@
    ]
   },
   {
+   "id": "qwen-image",
+   "name": "Qwen-Image",
+   "family": "alibaba",
+   "kind": "image",
+   "summary": "Alibaba's 20B text-to-image diffusion model, plus its instruction-based edit sibling. Both ship under Apache 2.0 with no commercial restriction.\n",
+   "homepage": "https://huggingface.co/Qwen/Qwen-Image-2512",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen-image",
+     "model_id": "qwen-image",
+     "name": "Qwen-Image 2512",
+     "kind": "image",
+     "family": "alibaba",
+     "params": "20B",
+     "precision": "bf16",
+     "repo": "Qwen/Qwen-Image-2512",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 57704595735.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 69245514882.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation, following the pattern used elsewhere in this registry for single-repo diffusion checkpoints; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "mflux alias \"qwen-image\" (also \"qwen\", \"qwen-image-2512\", \"qwen-2512\")."
+    },
+    {
+     "id": "qwen-image-edit",
+     "model_id": "qwen-image",
+     "name": "Qwen-Image-Edit 2509",
+     "kind": "image",
+     "family": "alibaba",
+     "params": null,
+     "precision": "bf16",
+     "repo": "Qwen/Qwen-Image-Edit-2509",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 57720466551.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 69264559861.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"qwen-image-edit\", \"qwen-edit\", \"qwen-edit-plus\", \"qwen-edit-2509\", \"qwen-edit-2511\", \"qwen-image-edit-2511\".\n"
+    }
+   ]
+  },
+  {
    "id": "qwen2-5-vl",
    "name": "Qwen2.5 VL",
    "family": "qwen",
@@ -404,6 +1179,110 @@
      },
      "speed": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "seedvr2",
+   "name": "SeedVR2",
+   "family": "bytedance",
+   "kind": "video",
+   "summary": "ByteDance Seed's diffusion-based video and image upscaler/restorer, not a text-to-image model \u2014 mflux runs it as a restoration pass rather than a generator. Packaged for ComfyUI by numz; both the wrapper and the upstream ByteDance-Seed/SeedVR project are Apache 2.0.\n",
+   "homepage": "https://huggingface.co/numz/SeedVR2_comfyUI",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "seedvr2-3b",
+     "model_id": "seedvr2",
+     "name": "SeedVR2 3B",
+     "kind": "video",
+     "family": "bytedance",
+     "params": "3B",
+     "precision": "fp16",
+     "repo": "numz/SeedVR2_comfyUI",
+     "files": [
+      "ema_vae_fp16.safetensors",
+      "seedvr2_ema_3b_fp16.safetensors",
+      "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
+     ],
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 10675888318.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 12811065982.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size (fp16 + fp8 checkpoints plus the shared VAE) plus a 20% margin; no measured run on any machine. A single precision loaded at once would use roughly half this.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Faster, lower-VRAM variant. mflux aliases \"seedvr2-3b\", \"seedvr2\" (the bare alias defaults to 3B).\n"
+    },
+    {
+     "id": "seedvr2-7b",
+     "model_id": "seedvr2",
+     "name": "SeedVR2 7B",
+     "kind": "video",
+     "family": "bytedance",
+     "params": "7B",
+     "precision": "fp16",
+     "repo": "numz/SeedVR2_comfyUI",
+     "files": [
+      "ema_vae_fp16.safetensors",
+      "seedvr2_ema_7b_fp16.safetensors",
+      "seedvr2_ema_7b_fp8_e4m3fn.safetensors",
+      "seedvr2_ema_7b_sharp_fp16.safetensors",
+      "seedvr2_ema_7b_sharp_fp8_e4m3fn.safetensors"
+     ],
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 49939453070.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 59927343684.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size (fp16, fp8, and \"sharp\" fp16/fp8 checkpoints plus the shared VAE) plus a 20% margin; no measured run on any machine. A single precision loaded at once would use a fraction of this \u2014 the repo carries every variant, this figure does not.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Higher-quality, higher-VRAM variant, plus a \"sharp\" checkpoint. mflux alias \"seedvr2-7b\" (and \"seedvr2-7B\").\n"
     }
    ]
   },
@@ -576,6 +1455,138 @@
       }
      ],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "z-image",
+   "name": "Z-Image",
+   "family": "tongyi-mai",
+   "kind": "image",
+   "summary": "Alibaba Tongyi's 6B text-to-image family: a base model, a distilled Turbo variant, and a ControlNet for the Turbo variant. All three ship under Apache 2.0.\n",
+   "homepage": "https://huggingface.co/Tongyi-MAI/Z-Image",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "z-image",
+     "model_id": "z-image",
+     "name": "Z-Image",
+     "kind": "image",
+     "family": "tongyi-mai",
+     "params": "6B",
+     "precision": "bf16",
+     "repo": "Tongyi-MAI/Z-Image",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 20547479575.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 24656975490.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "mflux aliases \"z-image\", \"zimage\"."
+    },
+    {
+     "id": "z-image-turbo",
+     "model_id": "z-image",
+     "name": "Z-Image Turbo",
+     "kind": "image",
+     "family": "tongyi-mai",
+     "params": "6B",
+     "precision": "bf16",
+     "repo": "Tongyi-MAI/Z-Image-Turbo",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 32899667397.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 39479600876.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "4-step distilled, guidance internalized (CFG is not applied). mflux aliases \"z-image-turbo\", \"zimage-turbo\".\n"
+    },
+    {
+     "id": "z-image-turbo-controlnet-union-2.1",
+     "model_id": "z-image",
+     "name": "Z-Image Turbo ControlNet Union 2.1",
+     "kind": "image",
+     "family": "tongyi-mai",
+     "params": null,
+     "precision": "bf16",
+     "repo": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1",
+     "files": null,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 86045989869.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 103255187843.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "base Z-Image-Turbo repo (32899667397 bytes) plus this ControlNet repo (53146322472 bytes), plus a 20% margin for encoders held resident; no measured run on any machine.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "notes": "Requires both this repo and the base Tongyi-MAI/Z-Image-Turbo weights \u2014 the `repo` field here names the ControlNet only, and `download` is the sum of both. mflux aliases \"z-image-turbo-controlnet-union-2.1\", \"z-image-controlnet-union-2.1\", \"z-image-controlnet\", \"z-image-turbo-controlnet\".\n"
     }
    ]
   }

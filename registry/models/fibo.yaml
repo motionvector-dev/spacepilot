@@ -1,0 +1,99 @@
+schema: 1
+id: fibo
+name: FIBO
+family: bria
+kind: image
+summary: >
+  Bria's FIBO family: a base text-to-image model, a lighter Lite variant, an
+  instruction-based editor, and an editor with built-in background removal.
+  Every variant here is non-commercial only and gated behind a Hugging Face
+  login — commercial use requires a separate agreement with Bria.
+homepage: https://huggingface.co/briaai/FIBO
+
+license:
+  id: Bria FIBO Non-Commercial
+  spdx: null
+  open_source: false
+  url: https://huggingface.co/briaai/FIBO
+  restrictions:
+    - Non-commercial use only; commercial use requires contacting Bria directly
+    - Gated — requires a Hugging Face account and accepting the license to download
+
+variants:
+  - id: fibo
+    name: FIBO
+    precision: bf16
+    repo: briaai/FIBO
+    backends: [metal]
+    download:
+      value: 25614147578
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 30736977094
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux alias "fibo".
+  - id: fibo-lite
+    name: FIBO Lite
+    precision: bf16
+    repo: briaai/Fibo-lite
+    backends: [metal]
+    license:
+      id: cc-by-nc-4.0
+      spdx: CC-BY-NC-4.0
+      open_source: false
+      url: https://creativecommons.org/licenses/by-nc/4.0/deed.en
+      restrictions:
+        - Non-commercial use only; commercial use requires contacting Bria directly
+        - Gated — requires a Hugging Face account and accepting the license to download
+    download:
+      value: 24163989797
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 28996787756
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux aliases "fibo-lite", "fibo_lite".
+  - id: fibo-edit
+    name: FIBO Edit
+    precision: bf16
+    repo: briaai/Fibo-Edit
+    backends: [metal]
+    download:
+      value: 40720673054
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 48864807665
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: Instruction-based image editing, not text-to-image. mflux aliases "fibo-edit", "fiboedit".
+  - id: fibo-edit-rmbg
+    name: FIBO Edit RMBG
+    precision: bf16
+    repo: briaai/Fibo-Edit-RMBG
+    backends: [metal]
+    download:
+      value: 90538294891
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 108645953869
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine. The repo
+        is unusually large (90 GB) because it carries multiple precisions —
+        the actual working set for one loaded precision will be well under
+        this figure.
+    notes: >
+      FIBO Edit with built-in background removal. mflux aliases
+      "fibo-edit-rmbg", "fiboedit-rmbg".

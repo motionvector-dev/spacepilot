@@ -1,0 +1,40 @@
+schema: 1
+id: ideogram
+name: Ideogram 4
+family: ideogram
+kind: image
+summary: >
+  Ideogram's 4th-generation text-to-image model, released as an FP8-quantized
+  local checkpoint. Non-commercial only and gated — you must accept the
+  license and share contact information before Hugging Face will serve the
+  weights.
+homepage: https://huggingface.co/ideogram-ai/ideogram-4-fp8
+
+license:
+  id: Ideogram 4 Non-Commercial
+  spdx: null
+  open_source: false
+  url: https://huggingface.co/ideogram-ai/ideogram-4-fp8
+  restrictions:
+    - Non-commercial use only
+    - Gated — requires a Hugging Face account, accepting the license, and sharing contact information to download
+
+variants:
+  - id: ideogram-4-fp8
+    name: Ideogram 4 FP8
+    precision: fp8
+    repo: ideogram-ai/ideogram-4-fp8
+    backends: [metal]
+    download:
+      value: 27549627282
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 33059552738
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      mflux aliases "ideogram-4-fp8", "ideogram4-fp8", "ideogram4",
+      "ideogram-4", "ideogram".
