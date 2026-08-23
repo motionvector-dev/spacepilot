@@ -320,7 +320,7 @@ const RULES = {                       // web/registry.json → rules
 };
 
 const SHIP = {
-  name: "Saurabh's MacBook Pro",
+  name: "MacBook Pro",
   chip: "Apple M1 Max",
   cores: "8P + 2E",
   gpu_cores: 32,
@@ -333,12 +333,10 @@ const SHIP = {
   // machines that cannot be asked — so this number's provenance varies.
   usable_source: "measured",
   usable_note: "Metal's recommended max working set, read from the driver. Not 32 — the driver reserves the rest.",
-  free_disk_bytes: 285 * GB,
-  unread: [
-    ["thermal headroom", "no public API on this platform"],
-    ["ANE utilisation", "powermetrics needs root; we do not ask for it"],
-    ["power source", "not exposed to an unprivileged process"]
-  ]
+  free_disk_bytes: 182942253056,   // live: /Users/saurabh/.spacepilot/models
+  // The live probe returns unknown:{} on this machine — it read every field
+  // it looks for. The mechanism stays; the honest count today is zero.
+  unread: []
 };
 
 const MODELS = [
@@ -404,25 +402,25 @@ const MODELS = [
 
 const RUNTIMES = [
   { id:"kokoro-onnx", name:"Kokoro ONNX", pkg:"kokoro-onnx", min:"0.6.1", py:">=3.10,<3.14",
-    serves:["speech"], backends:["metal","cuda","cpu"], license:"MIT", installed:"0.6.1",
+    serves:["speech"], backends:["metal","cuda","cpu"], license:"MIT", installed:"unknown", reason:null,
     summary:"Text to speech through ONNX Runtime. Works on any silicon, needs no MLX and no PyTorch, and is the one local generation path this project has measured." },
   { id:"mlx-video", name:"MLX Video", pkg:"mlx-video", min:"0.1.0", py:">=3.9",
-    serves:["video"], backends:["metal"], license:"MIT", installed:null,
+    serves:["video"], backends:["metal"], license:"MIT", installed:null, reason:"ModuleNotFoundError: No module named 'mlx_video'",
     summary:"Video generation on Apple Silicon. The only path that runs Wan and LTX natively on Metal rather than through MPS." },
   { id:"llama-cpp", name:"llama.cpp", pkg:"llama-cpp-python", min:"0.3.35", py:">=3.8",
-    serves:["text","vision"], backends:["metal","cuda","cpu"], license:"MIT", installed:null,
+    serves:["text","vision"], backends:["metal","cuda","cpu"], license:"MIT", installed:null, reason:"ModuleNotFoundError",
     summary:"GGUF inference for text and vision models. Runs on anything." },
   { id:"diffusers", name:"Diffusers", pkg:"diffusers", min:"0.40.0", py:">=3.10",
-    serves:["image","video"], backends:["cuda","metal","cpu"], license:"Apache-2.0", installed:"0.36.2",
+    serves:["image","video"], backends:["cuda","metal","cpu"], license:"Apache-2.0", installed:"0.39.0", reason:"0.39.0 is older than the 0.40.0 this registry was checked against",
     summary:"The reference pipelines for image and video diffusion. Runs everywhere, including Apple Silicon through PyTorch MPS, and is the fallback wherever an MLX-native runtime does not exist." },
   { id:"mflux", name:"MFLUX", pkg:"mflux", min:"0.19.0", py:">=3.10",
-    serves:["image"], backends:["metal"], license:"MIT", installed:null,
+    serves:["image"], backends:["metal"], license:"MIT", installed:null, reason:"ModuleNotFoundError",
     summary:"MLX-native image generation for Apple Silicon. A line-by-line port of the diffusers pipelines, so it runs on Metal without going through PyTorch's MPS compatibility layer." },
   { id:"mlx-audio", name:"MLX Audio", pkg:"mlx-audio", min:"0.5.0", py:">=3.10",
-    serves:["audio","speech"], backends:["metal"], license:"MIT", installed:null,
+    serves:["audio","speech"], backends:["metal"], license:"MIT", installed:null, reason:"ModuleNotFoundError",
     summary:"Speech and music generation on Apple Silicon, including MusicGen and Kokoro." },
   { id:"stable-audio-tools", name:"Stable Audio Tools", pkg:"stable-audio-tools", min:"0.0.20", py:">=3.10,<3.11",
-    serves:["audio"], backends:["cuda","metal","cpu"], license:"MIT", installed:null, blocked:true,
+    serves:["audio"], backends:["cuda","metal","cpu"], license:"MIT", installed:null, reason:"ModuleNotFoundError", blocked:true,
     summary:"Text to audio for sound effects and short musical loops.",
     note:"Pinned below Python 3.11 by its own metadata, so it will not install on this interpreter." }
 ];
@@ -434,7 +432,7 @@ const MEASURE = {
   observed: []
 };
 
-const PYTHON = "3.12.4";
+const PYTHON = "3.11.15";   // live interpreter
 
 /* ═══════════════════════════════════════════════════════════════════
    METAL — a light model, not a colour.
@@ -615,7 +613,7 @@ const S = {
   offshipSeconds: 1084, acquirePct: 44, installPct: 62, firstFlightDone: false,
   metal: { on:true, alloy:"gold", radius:30, thick:7, lobes:4, rough:0.16, disp:0.42, grain:0.50, speed:0.30 },
   alloc: { navRail:true, thresholdEdge:true, shipCard:false, primaryBtn:false, berths:false, rules:false },
-  motion:"full", power:"full", data:"fixtures", apiBase:"http://127.0.0.1:8000"
+  motion:"full", power:"full", data:"fixtures", apiBase:"http://127.0.0.1:8100", liveNote:null
 };
 const BERTHS = 5;
 const byId = id => MODELS.find(m => m.id === id);
@@ -675,9 +673,11 @@ function shipBlock(showUnread) {
         <div class="probe-line k mid">${fmt(SHIP.free_disk_bytes)} free on disk</div>
       </div>
       ${showUnread ? `<div style="display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--line);padding-left:22px">
-        <div class="lbl">Could not read</div>
-        ${SHIP.unread.map(u => `<div class="probe-line k mid">${u[0]}</div>`).join("")}
-        <button class="k" data-go="ship/probe-detail" style="text-align:left;padding-top:4px;color:var(--ink)">why ›</button>
+        <div class="lbl">${SHIP.unread.length ? "Could not read" : "Fields unread"}</div>
+        ${SHIP.unread.length
+          ? SHIP.unread.map(u => `<div class="probe-line k mid">${u[0]}</div>`).join("")
+          : `<div class="probe-line k ok">none — every field read</div>`}
+        <button class="k" data-go="ship/probe-detail" style="text-align:left;padding-top:4px;color:var(--ink)">${SHIP.unread.length ? "why" : "what it read"} ›</button>
       </div>` : ""}
     </div></div>`;
 }
@@ -1215,7 +1215,7 @@ function panelHTML() {
       <button data-v="live" aria-pressed="${S.data === "live"}">Live</button></div>
     <div class="ctl wide"><input id="apibase" value="${esc(S.apiBase)}" spellcheck="false"
       style="width:100%;font-family:var(--mono);font-size:10.5px;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r1);background:var(--card)"></div>
-    <div class="note" id="datanote">Fixtures are lifted verbatim from web/registry.json and registry/runtimes/*.yaml, read 2026-08-23. Nothing is invented.</div>
+    <div class="note" id="datanote">${S.liveNote || "Fixtures are lifted verbatim from web/registry.json and registry/runtimes/*.yaml, read 2026-08-23. Nothing is invented."}</div>
   </div>
 
   <div class="psec"><span class="lbl">Tier 1 source</span>
@@ -1527,20 +1527,57 @@ $("#panel").addEventListener("change", e => { if (e.target.id === "apibase") S.a
 
 /* ═══ live data ════════════════════════════════════════════════════ */
 async function pullLive() {
-  const note = $("#datanote"); if (!note) return;
-  note.textContent = "reading " + S.apiBase + " …";
+  const el = $("#datanote"); if (!el) return;
+  el.textContent = "reading " + S.apiBase + " …";
+  const get = async path => {
+    const r = await fetch(S.apiBase + path, { headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error(path + " → HTTP " + r.status);
+    return r.json();
+  };
   try {
-    const r = await fetch(S.apiBase + "/api/compute/local-profile", { headers: { "Accept": "application/json" } });
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const p = await r.json();
-    if (p.chip) SHIP.chip = p.chip;
-    if (p.memory_limit_bytes) { SHIP.usable_bytes = p.memory_limit_bytes; SHIP.usable_source = "measured"; }
-    else if (p.accelerator_memory_bytes) { SHIP.usable_bytes = p.accelerator_memory_bytes * RULES.metal_working_set_fraction; SHIP.usable_source = "estimated"; }
-    if (p.free_disk_bytes) SHIP.free_disk_bytes = p.free_disk_bytes;
-    note.textContent = "live · read from " + S.apiBase + " at " + new Date().toTimeString().slice(0, 8);
+    const p = await get("/api/compute/local-profile");
+    SHIP.name    = p.machine_name || SHIP.name;
+    SHIP.chip    = p.chip || SHIP.chip;
+    SHIP.os      = "macOS " + (p.os_version || "");
+    SHIP.metal   = p.backend_detail || SHIP.metal;
+    SHIP.gpu_cores = p.gpu_cores ?? SHIP.gpu_cores;
+    if (p.cpu_cores_performance) SHIP.cores = p.cpu_cores_performance + "P + " + p.cpu_cores_efficiency + "E";
+    if (p.memory_total_bytes) SHIP.total_bytes = p.memory_total_bytes;
+    if (p.memory_limit_bytes) {
+      SHIP.usable_bytes  = p.memory_limit_bytes;
+      SHIP.usable_source = p.memory_limit_source === "metal" ? "measured" : "estimated";
+      SHIP.usable_note   = p.memory_limit_source === "metal"
+        ? "Metal's recommended max working set, read from the driver."
+        : "derived from the " + RULES.metal_working_set_fraction * 100 + "% rule — the driver would not answer.";
+    }
+    if (p.disk_free_bytes) SHIP.free_disk_bytes = p.disk_free_bytes;
+    // the unknown map IS the unread list — never a hand-written one
+    SHIP.unread = Object.entries(p.unknown || {}).map(([k, v]) => [k, String(v)]);
+
+    let rn = "";
+    try {
+      const raw = await get("/api/runtimes");
+      const items = Array.isArray(raw) ? raw : (raw.runtimes || raw.items || []);
+      for (const it of items) {
+        const st = it.status || it, local = RUNTIMES.find(r => r.id === (it.id || st.runtime_id));
+        if (!local) continue;
+        local.installed = st.installed ? (st.version || "unknown") : null;
+        local.reason    = st.reason || null;
+        local.blocked   = st.python_compatible === false;
+        local.note      = st.python_note || local.note;
+      }
+      S.runtimesInstalled = RUNTIMES.filter(r => r.installed).map(r => r.id);
+      rn = " · " + items.length + " runtimes checked";
+    } catch (e) { rn = " · runtimes: " + e.message; }
+
+    S.liveNote = `<span class="ok">live</span> — ${esc(S.apiBase)} at ${new Date().toTimeString().slice(0,8)}${esc(rn)}.
+      Usable memory is <span class="prov measured">${p.memory_limit_source}</span>, ${SHIP.unread.length} field${SHIP.unread.length === 1 ? "" : "s"} unread.`;
+    el.innerHTML = S.liveNote;
     render();
   } catch (err) {
-    note.innerHTML = `<span class="no">could not reach ${esc(S.apiBase)}</span> — ${esc(err.message)}. Still showing fixtures, and saying so.`;
+    S.liveNote = `<span class="no">could not reach ${esc(S.apiBase)}</span> — ${esc(err.message)}.
+      Still showing fixtures, and saying so rather than blanking the screen.`;
+    el.innerHTML = S.liveNote;
   }
 }
 document.addEventListener("click", e => {
