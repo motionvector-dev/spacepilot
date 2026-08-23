@@ -461,3 +461,27 @@ def test_a_running_proxy_answers_401_and_that_counts_as_up():
         assert vc.proxy_is_up() is False
     finally:
         urllib.request.urlopen = orig
+
+
+def test_free_pool_is_free_and_spread_across_upstreams():
+    """A run on this pool must cost nothing, and must not put every verifier on
+    one upstream — five free models from one lab correlate their mistakes."""
+    from tools.verify_claims import FREE_POOL, select_verifiers
+
+    assert all(v.cost_per_1m == (0.0, 0.0) for v in FREE_POOL)
+    assert all(v.api_key_env == "OPENROUTER_API_KEY" for v in FREE_POOL)
+    models = [v.model for v in FREE_POOL]
+    assert len(models) == len(set(models))
+    labs = {m.split("/")[1] for m in models}
+    assert len(labs) >= 4, f"free pool leans on too few upstreams: {labs}"
+    assert select_verifiers(3, via="free") == FREE_POOL[:3]
+
+
+def test_a_stealth_model_is_never_the_only_route():
+    """Stealth models are pre-releases under an alias — they change or vanish
+    without notice, so a run must not depend on one."""
+    from tools.verify_claims import FREE_POOL
+
+    stealth = [v for v in FREE_POOL if "stealth/" in v.model]
+    assert stealth, "expected a stealth route in the free pool"
+    assert len(FREE_POOL) - len(stealth) >= 3, "too few non-stealth fallbacks"

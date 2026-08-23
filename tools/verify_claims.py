@@ -505,12 +505,36 @@ def proxy_is_up(base: str = PROXY_BASE, timeout: float = 3.0) -> bool:
         return False
 
 
+# OpenRouter's free tier. Verification is high-volume, low-judgment work — read a
+# page, decide whether it says the thing — so it is exactly what a free model is
+# for, and a run across five of these costs nothing.
+#
+# Two things to know before routing anything else here. Free and stealth models on
+# OpenRouter log prompts as the price of access, so this pool is fine for checking
+# public claims against public URLs and wrong for anything proprietary. And a
+# stealth model is a pre-release under an alias: it can change behaviour or vanish
+# without notice, so never let it be the only route.
+FREE_POOL: list[VerifierConfig] = [
+    VerifierConfig(name="or-ox-alpha", model="openrouter/stealth/ox-alpha",
+                   api_key_env="OPENROUTER_API_KEY", cost_per_1m=(0.0, 0.0)),
+    VerifierConfig(name="or-nemotron-ultra",
+                   model="openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+                   api_key_env="OPENROUTER_API_KEY", cost_per_1m=(0.0, 0.0)),
+    VerifierConfig(name="or-gemma-4-31b", model="openrouter/google/gemma-4-31b-it:free",
+                   api_key_env="OPENROUTER_API_KEY", cost_per_1m=(0.0, 0.0)),
+    VerifierConfig(name="or-glm-5.2", model="openrouter/z-ai/glm-5.2:free",
+                   api_key_env="OPENROUTER_API_KEY", cost_per_1m=(0.0, 0.0)),
+    VerifierConfig(name="or-inkling", model="openrouter/thinkingmachines/inkling:free",
+                   api_key_env="OPENROUTER_API_KEY", cost_per_1m=(0.0, 0.0)),
+]
+
+
 def resolve_via(via: str) -> str:
     """Turn "auto" into a concrete choice. Kept out of select_verifiers so that
     selection stays pure — a function whose result depends on whether a local
     service happens to be running is not one tests can pin down."""
-    if via not in ("auto", "proxy", "direct"):
-        raise ValueError(f"via must be auto, proxy or direct — got {via!r}")
+    if via not in ("auto", "proxy", "direct", "free"):
+        raise ValueError(f"via must be auto, proxy, direct or free — got {via!r}")
     if via != "auto":
         return via
     return "proxy" if proxy_is_up() else "direct"
@@ -520,9 +544,9 @@ def select_verifiers(n: int, via: str = "direct") -> list[VerifierConfig]:
     """`via` must already be concrete: proxy | direct. Call resolve_via first."""
     if n <= 0:
         raise ValueError("n must be positive")
-    if via not in ("proxy", "direct"):
-        raise ValueError(f"via must be proxy or direct — got {via!r}")
-    pool = PROXY_POOL if via == "proxy" else VERIFIER_POOL
+    if via not in ("proxy", "direct", "free"):
+        raise ValueError(f"via must be proxy, direct or free — got {via!r}")
+    pool = {"proxy": PROXY_POOL, "free": FREE_POOL, "direct": VERIFIER_POOL}[via]
     if n <= len(pool):
         return pool[:n]
     # More verifiers than distinct providers: cycle, still using every
@@ -563,9 +587,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--n", type=int, default=3, help="independent verifiers per claim")
     ap.add_argument("--out", type=Path, default=None, help="write the JSON report here")
     ap.add_argument("--mock", action="store_true", help="no network calls; verify plumbing only")
-    ap.add_argument("--via", choices=("auto", "proxy", "direct"), default="auto",
+    ap.add_argument("--via", choices=("auto", "proxy", "direct", "free"), default="auto",
                     help="reach models through the local litellm proxy, each provider "
-                         "directly, or auto (proxy when reachable)")
+                         "directly, OpenRouter's free tier, or auto (proxy when reachable)")
     args = ap.parse_args(argv)
 
     claims = load_claims(args.claims)
