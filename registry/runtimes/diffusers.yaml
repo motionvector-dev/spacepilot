@@ -1,0 +1,31 @@
+schema: 1
+id: diffusers
+name: Diffusers
+summary: >
+  The reference pipelines for image and video diffusion. Runs everywhere,
+  including Apple Silicon through PyTorch MPS, and is the fallback wherever an
+  MLX-native runtime does not exist.
+homepage: https://github.com/huggingface/diffusers
+serves: [image, video]
+backends: [cuda, metal, cpu]
+license: Apache-2.0
+
+install:
+  method: pip
+  package: diffusers
+  min_version: "0.40.0"
+  checked: "2026-08-22"
+python_requires: ">=3.10"
+
+verify:
+  import: diffusers
+
+runs:
+  - wan-2-1
+  - wan-2-2
+  - ltx-video
+  - flux
+notes: >
+  On Metal this goes through MPS, which is materially slower than an MLX-native
+  runtime and has no FP8 path at all — an fp8 checkpoint fails rather than
+  falling back.

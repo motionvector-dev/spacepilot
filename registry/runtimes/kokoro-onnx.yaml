@@ -1,0 +1,27 @@
+schema: 1
+id: kokoro-onnx
+name: Kokoro ONNX
+summary: >
+  Text to speech through ONNX Runtime. Works on any silicon, needs no MLX and no
+  PyTorch, and is the one local generation path this project has measured.
+homepage: https://github.com/thewh1teagle/kokoro-onnx
+serves: [speech]
+backends: [metal, cuda, cpu]
+license: MIT
+
+install:
+  method: pip
+  package: kokoro-onnx
+  min_version: "0.6.1"
+  checked: "2026-08-22"
+python_requires: ">=3.10,<3.14"
+
+verify:
+  import: kokoro_onnx
+
+runs:
+  - kokoro
+notes: >
+  Measured at 4.6x realtime on an Apple M1 Max, CPU execution provider, using
+  kokoro-v1.0.onnx. Needs the model file and a voices file, which are weights
+  rather than package data.
