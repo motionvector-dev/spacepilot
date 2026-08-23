@@ -91,8 +91,9 @@ def test_usable_memory_prefers_the_platforms_own_limit():
         memory_total_bytes=8 * GIB, memory_unified=True, backend="metal")
     assert usable_memory_bytes(small) == 8 * GIB - 3 * GIB  # floor, not 10%
 
-    # Nothing measured: promise nothing.
-    assert usable_memory_bytes(DeviceProfile()) == 0
+    # Nothing measured: promise nothing. None, not 0 — 0 is a measurement, and
+    # a caller handed 0 computes a confident ratio against a number we lack.
+    assert usable_memory_bytes(DeviceProfile()) is None
 
 
 def test_model_recommender_task_routing():

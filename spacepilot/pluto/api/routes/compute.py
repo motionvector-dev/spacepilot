@@ -62,6 +62,7 @@ def get_local_compute_status():
             "backend": profile.backend,
             "device_name": profile.device_name,
             "vram_usable_gb": profile.vram_usable_gb,
+            "vram_usable_known": profile.usable_memory_known,
             "loaded_models": downloaded,
             "is_local_capable": profile.is_local_capable,
         }

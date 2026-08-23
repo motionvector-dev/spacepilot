@@ -51,18 +51,24 @@ PCI_VENDORS = {
 }
 
 
-def usable_memory_bytes(profile: "DeviceProfile") -> int:
-    """How much memory a model may actually occupy.
+def usable_memory_bytes(profile: "DeviceProfile") -> Optional[int]:
+    """How much memory a model may actually occupy, or None when unknown.
 
     Prefer the platform's own answer. Metal reports a recommended max working
     set (78% of RAM on an M1 Max, not the 90% a flat reserve would assume), and
     guessing past it is how you get a confident recommendation that swaps.
+
+    None and 0 are different claims and every caller must keep them apart.
+    None is "nobody measured this machine's accelerator memory". 0 is "we
+    measured it, and after the reserve there is nothing left". Returning 0 for
+    both is how a CPU-only Linux box came to refuse a CPU-only TTS model it had
+    already been measured running.
     """
     if profile.memory_limit_bytes:
         return profile.memory_limit_bytes
-    capacity = profile.accelerator_memory_bytes or 0
+    capacity = profile.accelerator_memory_bytes
     if not capacity:
-        return 0
+        return None
     reserve = max(int(capacity * MEMORY_RESERVE_FRACTION), MEMORY_RESERVE_FLOOR_BYTES)
     return max(0, capacity - reserve)
 
@@ -181,9 +187,18 @@ class DeviceProfile:
         return round((self.accelerator_memory_bytes or 0) / GIB, 2)
 
     @property
+    def usable_memory_known(self) -> bool:
+        return usable_memory_bytes(self) is not None
+
+    @property
     def vram_usable_gb(self) -> float:
-        """0.0 means *not measured*, not "zero bytes" — check `unknown` for why."""
-        return round(usable_memory_bytes(self) / GIB, 2)
+        """0.0 means *not measured*, not "zero bytes" — check `unknown` for why.
+
+        This one is for display and for the JSON surfaces that have always
+        carried a float. Anything making a decision reads `usable_memory_bytes`
+        instead, so that unknown can stay unknown.
+        """
+        return round((usable_memory_bytes(self) or 0) / GIB, 2)
 
     @property
     def isa_flags(self) -> Optional[str]:
@@ -207,7 +222,8 @@ class DeviceProfile:
         """
         if self.backend not in ACCELERATED_BACKENDS:
             return False
-        return usable_memory_bytes(self) >= MIN_USABLE_MEMORY_BYTES
+        usable = usable_memory_bytes(self)
+        return usable is not None and usable >= MIN_USABLE_MEMORY_BYTES
 
     @property
     def status(self) -> str:
@@ -226,7 +242,7 @@ class DeviceProfile:
         for name in (
             "os_type", "architecture", "device_name", "ram_total_gb", "ram_free_gb",
             "vram_total_gb", "vram_usable_gb", "isa_flags", "is_local_capable", "status",
-            "accelerator_memory_known",
+            "accelerator_memory_known", "usable_memory_known",
         ):
             d[name] = getattr(self, name)
         return d
@@ -723,9 +739,11 @@ def probe_local_device() -> DeviceProfile:
         profile.unknown["probe"] = str(e)
 
     _probe_disk(profile)
-    if profile.memory_limit_bytes is None and profile.accelerator_memory_bytes:
-        profile.memory_limit_bytes = usable_memory_bytes(profile)
-        profile.memory_limit_source = "heuristic"
+    if profile.memory_limit_bytes is None:
+        heuristic = usable_memory_bytes(profile)
+        if heuristic is not None:
+            profile.memory_limit_bytes = heuristic
+            profile.memory_limit_source = "heuristic"
     return profile
 
 

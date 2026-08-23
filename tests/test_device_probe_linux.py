@@ -159,7 +159,7 @@ def test_no_gpu_at_all_reports_accelerator_memory_as_unknown(tmp_path):
 
     assert p.accelerator_memory_bytes is None
     assert p.vram_total_bytes is None
-    assert usable_memory_bytes(p) == 0
+    assert usable_memory_bytes(p) is None
     assert "vram_total_bytes" in p.unknown
 
 

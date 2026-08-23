@@ -5,7 +5,7 @@ import os
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from spacepilot.device_probe import DeviceProfile, probe_local_device
+from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
 
 PLUTO_MODELS_CACHE = Path.home() / ".cache" / "pluto" / "models"
 
@@ -114,13 +114,21 @@ def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict
     if profile is None:
         profile = probe_local_device()
 
-    usable_vram = profile.vram_usable_gb
+    usable_bytes = usable_memory_bytes(profile)
+    usable_vram = 0.0 if usable_bytes is None else usable_bytes / GIB
     recommendations = []
 
     for entry in RECOMMENDED_MODEL_CATALOG:
         is_downloaded = is_model_downloaded(entry.model_id)
-        
-        if usable_vram >= entry.recommended_vram_gb:
+
+        if usable_bytes is None:
+            # Nobody measured this machine's accelerator memory. Routing every
+            # model to cloud on the strength of that is a recommendation built
+            # on a number we do not have.
+            fit_score = None
+            route = "unknown"
+            fit_label = "Not enough is known about this machine"
+        elif usable_vram >= entry.recommended_vram_gb:
             fit_score = 1.0
             route = "local"
             fit_label = "Optimal Local Execution"
