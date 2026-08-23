@@ -394,6 +394,10 @@ def aggregate_claim(claim: dict[str, Any], verdicts: list[Verdict]) -> dict[str,
         "id": claim["id"],
         "text": claim["text"],
         "final_call": final_call,
+        # Per-verifier attribution. Counting fabrications without naming who
+        # produced them means a model that invents citations cannot be dropped
+        # from the pool — you can see the rot but not its source.
+        "verdicts": [v.to_dict() for v in verdicts],
         "counts": {
             "supported": len(supported),
             "refuted": len(refuted),
@@ -401,7 +405,6 @@ def aggregate_claim(claim: dict[str, Any], verdicts: list[Verdict]) -> dict[str,
             "fabricated_citation": len(fabricated),
         },
         "surviving_citations": surviving_citations,
-        "verdicts": [v.to_dict() for v in verdicts],
     }
 
 
