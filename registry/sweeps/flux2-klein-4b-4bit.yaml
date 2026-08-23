@@ -1,0 +1,59 @@
+# Overnight sweep spec for `pluto sweep run` (src/pluto/sweep.py).
+#
+# FLUX.2 Klein 4B, apache-2.0, mflux-generate-flux2 --model flux2-klein-4b.
+# registry/models/flux2-klein.yaml's flux2-klein-4b-4bit variant already
+# carries one measured working_set sample (~10.5 GB peak MLX memory, 512x512,
+# 4 steps, int4) — this spec is what turns that one point into a curve across
+# resolution, quantisation and steps, on this machine, unattended overnight.
+#
+# 3 resolutions x 2 quantisations x 3 step counts = 18 jobs, well inside
+# runner.max_jobs. Review the grid before letting this run overnight — that
+# review is the whole reason the spec is declarative and checked in rather
+# than a one-off script.
+schema: 1
+id: flux2-klein-4b-4bit-sweep
+model_id: flux2-klein-4b-4bit   # registry/models/flux2-klein.yaml variant id
+runtime_id: mflux
+model_alias: flux2-klein-4b     # --model value for mflux-generate-flux2
+metric: seconds_per_image
+
+fixed:
+  prompt: "a lighthouse at dusk, cinematic lighting, highly detailed, 35mm photograph"
+  seed: 42
+
+axes:
+  # width, height pairs. 512^2 is the size the one existing measured sample
+  # used; 768 and 1024 are the next two sizes worth knowing the cost of.
+  resolution:
+    - [512, 512]
+    - [768, 768]
+    - [1024, 1024]
+  # mflux-generate-flux2 --quantize accepts {3,4,5,6,8}; 4 and 8 are the two
+  # that actually get used elsewhere in this registry (int4 measured,
+  # int8 the fallback for machines with headroom to spare) — see
+  # registry/models/flux.yaml's flux-schnell-8bit variant for the same
+  # reasoning applied to FLUX.1.
+  quantisation: [4, 8]
+  # No published step recommendation for Klein the way schnell has one
+  # (timestep-distilled for 1-4) — this range is exploratory, not a claim
+  # about where quality plateaus.
+  steps: [4, 8, 16]
+
+mflux_flags:
+  battery_percentage_stop_limit: 15   # mflux -B; stop rather than drain a laptop on battery
+  low_ram: false
+  vae_tiling: true                    # decode in tiles at the 1024^2 end of the grid
+  vae_tile_size: null                 # mflux default
+
+job_cap:
+  timeout_seconds: 240   # a single 4B-parameter image job; generous but bounded
+
+runner:
+  max_jobs: 40
+  max_wall_seconds: 28800        # 8 hours — the idle window this exists to fill
+  idle_wait_timeout_minutes: 60  # give up and exit if the Mac never goes idle
+  idle_poll_seconds: 30
+  # working_set for this variant is ~11-28 GB (registry/models/flux2-klein.yaml)
+  # and the HF cache here already sits around 35 GB (docs/PIPELINE-STATE.md) —
+  # 40 GB free headroom is not generous, it is the actual constraint.
+  disk_free_floor_gb: 40
