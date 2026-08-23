@@ -1,0 +1,37 @@
+schema: 1
+id: boogu
+name: Boogu Image
+family: boogu
+kind: image
+summary: >
+  A small independent text-to-image project, released under Apache 2.0 but
+  explicitly labeled by its own authors as "a research project only, and not
+  an official model release" — worth flagging even though the license itself
+  is permissive.
+homepage: https://huggingface.co/Boogu/Boogu-Image-0.1-Turbo
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+  restrictions:
+    - "Author's own note: research project only, not an official model release; no production safety guarantees"
+
+variants:
+  - id: boogu-image-turbo
+    name: Boogu Image 0.1 Turbo
+    precision: bf16
+    repo: Boogu/Boogu-Image-0.1-Turbo
+    backends: [metal]
+    download:
+      value: 38552157959
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 46262589551
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux aliases "boogu-image-turbo", "boogu-turbo", "boogu-image", "boogu".

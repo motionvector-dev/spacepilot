@@ -1,0 +1,76 @@
+schema: 1
+id: z-image
+name: Z-Image
+family: tongyi-mai
+kind: image
+summary: >
+  Alibaba Tongyi's 6B text-to-image family: a base model, a distilled Turbo
+  variant, and a ControlNet for the Turbo variant. All three ship under
+  Apache 2.0.
+homepage: https://huggingface.co/Tongyi-MAI/Z-Image
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: z-image
+    name: Z-Image
+    params: 6B
+    precision: bf16
+    repo: Tongyi-MAI/Z-Image
+    backends: [metal]
+    download:
+      value: 20547479575
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 24656975490
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux aliases "z-image", "zimage".
+  - id: z-image-turbo
+    name: Z-Image Turbo
+    params: 6B
+    precision: bf16
+    repo: Tongyi-MAI/Z-Image-Turbo
+    backends: [metal]
+    download:
+      value: 32899667397
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 39479600876
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      4-step distilled, guidance internalized (CFG is not applied). mflux
+      aliases "z-image-turbo", "zimage-turbo".
+  - id: z-image-turbo-controlnet-union-2.1
+    name: Z-Image Turbo ControlNet Union 2.1
+    precision: bf16
+    repo: alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1
+    backends: [metal]
+    download:
+      value: 86045989869
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 103255187843
+      source: estimated
+      note: >
+        base Z-Image-Turbo repo (32899667397 bytes) plus this ControlNet repo
+        (53146322472 bytes), plus a 20% margin for encoders held resident;
+        no measured run on any machine.
+    notes: >
+      Requires both this repo and the base Tongyi-MAI/Z-Image-Turbo weights —
+      the `repo` field here names the ControlNet only, and `download` is the
+      sum of both. mflux aliases "z-image-turbo-controlnet-union-2.1",
+      "z-image-controlnet-union-2.1", "z-image-controlnet",
+      "z-image-turbo-controlnet".

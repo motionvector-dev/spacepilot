@@ -1,0 +1,54 @@
+schema: 1
+id: ernie-image
+name: ERNIE-Image
+family: baidu
+kind: image
+summary: >
+  Baidu's 8B DiT text-to-image model, plus a guidance-distilled Turbo variant.
+  Both tagged Apache 2.0 on the Hub, ungated, with no commercial restriction
+  found on the model card.
+homepage: https://huggingface.co/baidu/ERNIE-Image
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: ernie-image
+    name: ERNIE-Image
+    params: 8B
+    precision: bf16
+    repo: baidu/ERNIE-Image
+    backends: [metal]
+    download:
+      value: 31648078640
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 37977694368
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: mflux alias "ernie-image".
+  - id: ernie-image-turbo
+    name: ERNIE-Image Turbo
+    params: 8B
+    precision: bf16
+    repo: baidu/ERNIE-Image-Turbo
+    backends: [metal]
+    download:
+      value: 31648078746
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 37977694495
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held
+        resident during generation; no measured run on any machine.
+    notes: >
+      Guidance-distilled — the CLI errors on any guidance value but 1.0.
+      mflux alias "ernie-image-turbo".
