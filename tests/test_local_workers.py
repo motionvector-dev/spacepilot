@@ -275,7 +275,11 @@ def test_local_worker_manager_telemetry():
     assert status["status"] == "online"
     assert "device" in status
     assert status["resident_vram_gb"] > 0
-    assert status["usable_vram_gb"] > 0
+    # None here means the machine's accelerator memory was never measured — a
+    # CPU-only CI runner reports exactly that, and it is not the same as 0.
+    usable = status["usable_vram_gb"]
+    assert usable is None or usable > 0
+    assert isinstance(status["has_accelerator"], bool)
     assert status["loaded_drivers_count"] >= 1
     assert any(d["driver_id"] == "kokoro-82m-onnx" for d in status["loaded_drivers"])
 

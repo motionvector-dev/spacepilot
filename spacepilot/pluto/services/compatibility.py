@@ -14,7 +14,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from spacepilot.device_probe import DeviceProfile, GIB, usable_memory_bytes
+from spacepilot.device_probe import (
+    MEMORY_RESERVE_FLOOR_BYTES,
+    DeviceProfile,
+    GIB,
+    usable_memory_bytes,
+)
 
 # A model held at "tight" is one that fits but leaves little room. Past this
 # fraction of usable memory, expect swapping under real workloads.
@@ -84,7 +89,7 @@ def assess(recipe, profile: DeviceProfile) -> Verdict:
         return v
 
     capacity = profile.accelerator_memory_bytes
-    if not capacity:
+    if capacity is None:
         v.reason = "could not read this machine's memory, so nothing can be promised"
         return v
     if working_set is None:
@@ -92,8 +97,37 @@ def assess(recipe, profile: DeviceProfile) -> Verdict:
         return v
 
     usable = usable_memory_bytes(profile)
+    if usable is None:
+        v.reason = "could not read this machine's memory, so nothing can be promised"
+        return v
+
+    # A model bigger than the whole card is settled by capacity alone, and the
+    # reserve never gets a say. Check that before trusting `usable`.
+    if working_set > capacity:
+        v.usable_memory_bytes = usable
+        v.verdict = "wont_fit"
+        v.deficit_bytes = working_set - capacity
+        v.memory_use_ratio = 1.0
+        v.footprint = "tight"
+        v.reason = (
+            f"needs {working_set / GIB:.1f} GB, this machine has "
+            f"{capacity / GIB:.1f} GB in total"
+        )
+        return v
+
+    if not usable:
+        # The reserve floor is larger than the card. That clamps to 0, which is
+        # arithmetic and not a measurement — grading a model against it told an
+        # Intel MacBook Air that all twelve recipes wont_fit, one of which ran.
+        v.reason = (
+            f"{capacity / GIB:.1f} GB is smaller than the "
+            f"{MEMORY_RESERVE_FLOOR_BYTES / GIB:.0f} GB reserve, so how much a "
+            "model may occupy here has not been established"
+        )
+        return v
+
     v.usable_memory_bytes = usable
-    ratio = working_set / usable if usable else float("inf")
+    ratio = working_set / usable
     v.memory_use_ratio = round(min(ratio, 1.0), 4)
     v.footprint = _footprint(ratio)
 

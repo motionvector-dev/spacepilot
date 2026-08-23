@@ -34,7 +34,14 @@ def test_device_probe_returns_valid_profile():
     profile = probe_local_device()
     assert isinstance(profile, DeviceProfile)
     assert profile.os_type in ["darwin", "linux", "windows"]
-    assert profile.vram_total_gb > 0
+    # Accelerator memory is either measured or unknown. A machine with no
+    # detectable accelerator reports None here and says why in `unknown` — it
+    # does not report its system RAM under a VRAM label.
+    if profile.accelerator_memory_bytes is None:
+        assert profile.vram_total_gb == 0.0
+        assert profile.unknown, "unmeasured accelerator memory must be explained"
+    else:
+        assert profile.vram_total_gb > 0
     assert profile.vram_usable_gb >= 0
     assert profile.backend in ["metal", "cuda", "cpu", "rocm"]
     assert isinstance(profile.is_local_capable, bool)
@@ -84,8 +91,9 @@ def test_usable_memory_prefers_the_platforms_own_limit():
         memory_total_bytes=8 * GIB, memory_unified=True, backend="metal")
     assert usable_memory_bytes(small) == 8 * GIB - 3 * GIB  # floor, not 10%
 
-    # Nothing measured: promise nothing.
-    assert usable_memory_bytes(DeviceProfile()) == 0
+    # Nothing measured: promise nothing. None, not 0 — 0 is a measurement, and
+    # a caller handed 0 computes a confident ratio against a number we lack.
+    assert usable_memory_bytes(DeviceProfile()) is None
 
 
 def test_model_recommender_task_routing():

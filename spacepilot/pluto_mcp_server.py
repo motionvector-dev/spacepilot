@@ -234,6 +234,7 @@ def pluto_get_local_status() -> Dict[str, Any]:
             "status": "online",
             "backend": profile.backend,
             "vram_usable_gb": profile.vram_usable_gb,
+            "vram_usable_known": profile.usable_memory_known,
             "loaded_models": downloaded,
             "is_local_capable": profile.is_local_capable,
         }

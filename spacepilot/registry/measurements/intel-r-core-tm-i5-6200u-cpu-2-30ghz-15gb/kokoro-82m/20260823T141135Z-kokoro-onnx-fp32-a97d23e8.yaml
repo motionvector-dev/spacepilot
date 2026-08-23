@@ -1,0 +1,23 @@
+schema: 1
+system_id: intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb
+model_id: kokoro-82m
+metric: realtime_factor
+value: 0.8920811586885874
+contention: solo
+measured_on: '2026-08-23T14:11:35+00:00'
+runtime_id: kokoro-onnx
+quantisation: fp32
+backend: cpu
+interpreter: /home/saurabh/spacepilot-recon/venv/bin/python3
+peak_memory_bytes: 847847424
+wall_seconds: 27.056821543024853
+knobs:
+  voice: af_heart
+  speed: '1.0'
+  synths: '3'
+  includes_model_load: 'true'
+  onnxruntime: 1.29.0
+  providers: CPUExecutionProvider
+  units: 30.33
+note: ./venv/bin/python bench_kokoro3.py
+status: ok
