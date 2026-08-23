@@ -64,7 +64,7 @@ export function RuntimeManager() {
         <p className="font-mono text-[11px] text-ink-500 text-right">
           {data.chip || 'this machine'} · {data.backend || 'no backend'}
           <br />
-          <span className="text-ink-300">{data.interpreter}</span>
+          <span className="text-ink-500">{data.interpreter}</span>
         </p>
       </header>
 
