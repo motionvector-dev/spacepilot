@@ -21,11 +21,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.device_probe import (  # noqa: E402
+from spacepilot.device_probe import (  # noqa: E402
     MEMORY_RESERVE_FLOOR_BYTES, MEMORY_RESERVE_FRACTION,
 )
-from src.pluto.registry import load_registry  # noqa: E402
-from src.pluto.services.compatibility import (  # noqa: E402
+from spacepilot.pluto.registry import load_registry  # noqa: E402
+from spacepilot.pluto.services.compatibility import (  # noqa: E402
     FOOTPRINT_BANDS, PERMISSIVE_LICENSES, TIGHT_THRESHOLD,
 )
 

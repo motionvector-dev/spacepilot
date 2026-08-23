@@ -11,7 +11,7 @@ uvicorn>=0.22.0
 pydantic>=2.0
 httpx>=0.24.0
 
-# MCP server (src/pluto_mcp_server.py). Spec kept identical to pyproject.toml:
+# MCP server (spacepilot/pluto_mcp_server.py). Spec kept identical to pyproject.toml:
 # 2.0 renamed FastMCP to MCPServer, so 1.x will not import.
 mcp>=2.0,<3
 
@@ -23,7 +23,7 @@ numpy>=1.24.0
 # voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
 kokoro-onnx
 
-# Model and runtime registry (src/pluto/registry.py, src/pluto/runtimes.py)
+# Model and runtime registry (spacepilot/pluto/registry.py, spacepilot/pluto/runtimes.py)
 PyYAML>=6.0
 
 # Claim verifier (tools/verify_claims.py): fans a claim out to N cheap models
