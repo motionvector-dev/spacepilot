@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpacePilot — you already own the hardware</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --root:#000; --ground:#050506; --panel:#0d0d10; --card:#141417; --raised:#1d1d21;
+  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#4a4a52;
+  --true:#10b981; --wrong:#f43535;
+  --silver:#cfd4dc; --silver-line:rgba(207,212,220,.28);
+  --gold:#c9a227; --gold-line:rgba(201,162,39,.38);
+  --invbg:#fafafa; --invink:#09090b;
+  --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Geist',-apple-system,BlinkMacSystemFont,sans-serif;
+  --mo-travel:14px; --mo-enter:620ms; --ease:cubic-bezier(.16,.84,.34,1);
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --root:#fbfaf8; --ground:#f5f4f1; --panel:#fff; --card:#fff; --raised:#eceae5;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.13); --line3:rgba(0,0,0,.2);
+  --ink:#0b0b0d; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;
+  --true:#059669; --wrong:#e11d48; --silver:#5c6672; --silver-line:rgba(92,102,114,.3);
+  --gold:#8a6a22; --gold-line:rgba(138,106,34,.32); --invbg:#0b0b0d; --invink:#fafafa;
+}}
+:root[data-theme="light"]{
+  --root:#fbfaf8; --ground:#f5f4f1; --panel:#fff; --card:#fff; --raised:#eceae5;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.13); --line3:rgba(0,0,0,.2);
+  --ink:#0b0b0d; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;
+  --true:#059669; --wrong:#e11d48; --silver:#5c6672; --silver-line:rgba(92,102,114,.3);
+  --gold:#8a6a22; --gold-line:rgba(138,106,34,.32); --invbg:#0b0b0d; --invink:#fafafa;
+}
+html[data-motion="reduced"]{--mo-travel:0px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);font-size:15px;
+  line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.m{font-family:var(--mono)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,4vw,44px);position:relative;z-index:2}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4)}
+a{color:var(--ink2);text-decoration:none;transition:color .2s} a:hover{color:var(--ink)}
+button{font-family:inherit;background:transparent;border:0;color:inherit;cursor:pointer}
+
+/* ── grain, everywhere. a black that is mathematically flat looks dead ── */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.4;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.4'/></svg>")}
+
+/* ── reveal: landing is a rare surface, so it earns motion ── */
+html.js .rv{opacity:0;transform:translateY(var(--mo-travel))}
+.rv.now{transition:none!important}
+html.js .rv.in{opacity:1;transform:none;transition:opacity var(--mo-enter) var(--ease),transform var(--mo-enter) var(--ease)}
+.rv.in:nth-child(2){transition-delay:60ms} .rv.in:nth-child(3){transition-delay:120ms}
+.rv.in:nth-child(4){transition-delay:180ms} .rv.in:nth-child(n+5){transition-delay:240ms}
+
+/* ── nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(14px);
+  background:color-mix(in srgb,var(--root) 78%,transparent);border-bottom:1px solid transparent;transition:border-color .3s}
+nav.stuck{border-bottom-color:var(--line)}
+.navin{display:flex;align-items:center;justify-content:space-between;padding:15px 0}
+.mark{display:flex;align-items:center;gap:10px}
+.mark canvas{width:22px;height:22px;display:block}
+.seg{display:flex;gap:2px;padding:2px;border:1px solid var(--line2);border-radius:7px}
+.seg button{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 10px;border-radius:5px;color:var(--ink3)}
+.seg button[aria-pressed="true"]{background:var(--invbg);color:var(--invink)}
+
+/* ── hero ── */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden;padding:120px 0 80px}
+.hero .glow{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(58% 46% at 50% 42%,rgba(201,162,39,.13),transparent 68%),
+             radial-gradient(46% 38% at 76% 66%,rgba(207,212,220,.09),transparent 70%)}
+.hero .vign{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(70% 60% at 50% 45%,transparent 40%,var(--root) 100%)}
+#ring{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:0;
+  width:min(760px,92vw);aspect-ratio:1;opacity:.92}
+.wordmark{position:relative;z-index:3;display:block;width:min(1080px,100%);height:auto}
+.heroline{margin:30px 0 0;font-size:clamp(19px,2.5vw,27px);font-weight:500;letter-spacing:-.024em;
+  line-height:1.24;max-width:23ch;text-wrap:balance}
+.herosub{margin:16px 0 0;font-size:clamp(14px,1.5vw,16px);color:var(--ink2);max-width:52ch;line-height:1.65}
+.install{display:inline-flex;align-items:center;gap:16px;background:var(--panel);
+  border:1px solid var(--line2);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:14.5px;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.install button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)}
+.install button:hover{color:var(--ink)}
+.scrollcue{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:9px}
+.scrollcue i{display:block;width:1px;height:38px;background:linear-gradient(var(--line3),transparent)}
+
+/* ── sections ── */
+section{position:relative;padding:clamp(80px,11vw,150px) 0}
+.eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.eyebrow i{display:block;width:26px;height:1px;background:var(--gold)}
+h2{font-size:clamp(28px,4.4vw,50px);font-weight:600;letter-spacing:-.035em;line-height:1.06;margin:0;text-wrap:balance}
+.lede{font-size:clamp(15px,1.7vw,18px);line-height:1.62;color:var(--ink2);max-width:56ch;margin:22px 0 0}
+.note{font-size:13px;line-height:1.68;color:var(--ink3);max-width:72ch}
+
+/* ── the decision: three ships, one wearing gold ── */
+.ships{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:16px;margin-top:44px}
+.ship{position:relative;border-radius:16px;padding:26px 24px 24px;background:var(--panel);
+  border:1px solid var(--line);display:flex;flex-direction:column;gap:16px;overflow:hidden;
+  transition:transform .4s var(--ease),border-color .3s}
+.ship:hover{transform:translateY(-3px)}
+.ship .edge{position:absolute;top:0;left:0;right:0;height:2px;opacity:0}
+.ship.win{border-color:var(--gold-line);background:var(--card)}
+.ship.win .edge{opacity:1;background:linear-gradient(96deg,#2e1f08,#8a6a22 14%,#c9a227 30%,#fffbe8 44%,#d8b95a 58%,#4a3410 72%,#f6e6a8 88%,#3d2b0d)}
+.ship.win::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(80% 60% at 50% 0%,rgba(201,162,39,.09),transparent 70%)}
+.shipname{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.shipname b{font-family:var(--mono);font-size:15px;font-weight:500;letter-spacing:-.01em}
+.silicon{font-family:var(--mono);font-size:11.5px;color:var(--ink3);line-height:1.5}
+.stat{display:flex;align-items:baseline;gap:9px}
+.stat b{font-family:var(--mono);font-size:clamp(28px,3.4vw,38px);font-weight:500;letter-spacing:-.03em;line-height:1}
+.stat span{font-family:var(--mono);font-size:11px;color:var(--ink4);letter-spacing:.06em;text-transform:uppercase}
+.verdict{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 10px;border-radius:5px;border:1px solid var(--line2);color:var(--ink3);align-self:flex-start}
+.verdict.win{color:var(--gold);border-color:var(--gold-line)}
+.verdict.no{color:var(--wrong);border-color:transparent;padding-left:0}
+.formula{font-family:var(--mono);font-size:clamp(12px,1.4vw,14.5px);color:var(--ink2);
+  border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:0 12px 12px 0;
+  padding:20px 24px;margin-top:40px;background:var(--panel);overflow-x:auto}
+
+/* ── the product shot ── */
+.shot{position:relative;margin-top:52px;perspective:1800px}
+.shotframe{border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--ground);
+  transform:rotateX(7deg) rotateZ(-.5deg);transform-origin:50% 0;
+  box-shadow:0 60px 120px -50px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.06) inset}
+.shotbar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.shotbar i{width:9px;height:9px;border-radius:50%;background:var(--line3);display:block}
+.shotbar span{font-family:var(--mono);font-size:10.5px;color:var(--ink4);margin-left:8px}
+.shotbody{display:grid;grid-template-columns:150px 1fr;min-height:330px}
+.shotrail{border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:3px;background:var(--panel)}
+.shotrail div{font-family:var(--mono);font-size:10.5px;color:var(--ink4);padding:6px 9px;border-radius:5px}
+.shotrail div.on{background:var(--card);color:var(--ink)}
+.shotmain{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.srow{display:grid;grid-template-columns:1fr 88px 116px 92px;gap:14px;align-items:center;
+  font-family:var(--mono);font-size:11.5px;padding:9px 0;border-top:1px solid var(--line)}
+.shotglow{position:absolute;inset:-6% -4% -18% -4%;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 50% at 50% 20%,rgba(207,212,220,.10),transparent 70%)}
+
+/* ── provenance: one enormous number ── */
+.ratio{display:flex;align-items:flex-end;gap:clamp(14px,3vw,34px);flex-wrap:wrap;margin-top:40px}
+.ratio .n{font-family:var(--mono);font-size:clamp(76px,13vw,168px);font-weight:500;letter-spacing:-.05em;line-height:.84}
+.ratio .of{font-family:var(--mono);font-size:clamp(20px,2.6vw,30px);color:var(--ink4);letter-spacing:-.02em;padding-bottom:.5em}
+.marks{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:44px}
+.mark2{border:1px solid var(--line);border-radius:13px;padding:20px 21px;display:flex;flex-direction:column;gap:9px;background:var(--panel)}
+.mark2 .k{font-family:var(--mono);font-size:12.5px}
+.mark2 p{margin:0;font-size:12.5px;line-height:1.6;color:var(--ink3)}
+
+/* ── fleet diagram ── */
+.fleet{margin-top:48px;border:1px solid var(--line);border-radius:16px;background:var(--panel);
+  padding:clamp(24px,4vw,44px);position:relative;overflow:hidden}
+.fleet::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(50% 70% at 50% 0%,rgba(207,212,220,.06),transparent 70%)}
+.peers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;position:relative;z-index:1}
+.peer{border:1px solid var(--line2);border-radius:12px;padding:17px 16px;display:flex;flex-direction:column;gap:9px;background:var(--card)}
+.peer .dot{width:6px;height:6px;border-radius:50%;flex:none}
+.peer .hd{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px}
+.peer .sub{font-family:var(--mono);font-size:10.5px;color:var(--ink4);line-height:1.55}
+.peer .warm{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+
+/* ── closing cta ── */
+.close{text-align:center;padding:clamp(90px,13vw,170px) 0}
+.close h2{max-width:20ch;margin:0 auto}
+.close .install{margin-top:38px}
+footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);font-size:12px}
+.frow{display:flex;justify-content:space-between;gap:22px;flex-wrap:wrap;align-items:center}
+@media (max-width:760px){
+  .shotbody{grid-template-columns:1fr}.shotrail{display:none}
+  .srow{grid-template-columns:1fr 84px}.srow>:nth-child(n+3){display:none}
+  .shotframe{transform:none}
+}
+</style>
+</head>
+<body>
+<nav id="nav"><div class="wrap navin">
+  <div class="mark"><canvas id="favmark" width="44" height="44"></canvas>
+    <span class="m" style="font-size:13px;letter-spacing:.02em">spacepilot</span></div>
+  <div style="display:flex;align-items:center;gap:clamp(14px,2.4vw,28px)">
+    <a href="#decision" class="m" style="font-size:12.5px">How it picks</a>
+    <a href="#cockpit" class="m" style="font-size:12.5px">Cockpit</a>
+    <a href="#proof" class="m" style="font-size:12.5px">Proof</a>
+    <div class="seg" id="theme">
+      <button data-t="system" aria-pressed="true">Sys</button>
+      <button data-t="light" aria-pressed="false">Light</button>
+      <button data-t="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</div></nav>
+
+<!-- ══ HERO ══ a chrome torus, a wordmark milled from the same metal ══ -->
+<header class="hero">
+  <div class="glow"></div>
+  <canvas id="ring"></canvas>
+  <div class="vign"></div>
+  <div class="wrap">
+    <canvas class="wordmark rv" id="wordmark" height="200"></canvas>
+    <p class="heroline rv">You already own the hardware.<br>SpacePilot flies it.</p>
+    <p class="herosub rv">This laptop. The box under your desk. A friend's rig. A spot instance you rent for nine minutes. One fleet, and every job goes to whichever ship is already holding the model <em style="font-style:normal;color:var(--ink)">warm</em>.</p>
+    <div class="rv" style="margin-top:34px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div class="install"><span style="color:var(--ink4)">$</span><span>pip install spacepilot</span>
+        <button data-copy="pip install spacepilot">copy</button></div>
+      <span class="m" style="font-size:12.5px;color:var(--ink3)">then open 127.0.0.1</span>
+    </div>
+    <p class="note rv" style="margin-top:20px">No account. No API key. No port opened. Nothing to sign up for, because there is nothing to sign up to.</p>
+  </div>
+  <div class="scrollcue"><i></i><span class="lbl">scroll</span></div>
+</header>
+
+<!-- ══ THE DECISION ══ -->
+<section id="decision">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span class="lbl">The whole product, in three cards</span></div>
+    <h2 class="rv">The cheapest machine<br>is usually the wrong one.</h2>
+    <p class="lede rv">Every scheduler you have used sorts by price. That is the wrong sort. Weights already sitting in memory answer now; the same weights on better silicon spend a minute arriving. Nothing else in your stack knows which of your machines is warm. This does, and it is the only thing it sells.</p>
+
+    <div class="ships">
+      <div class="ship win rv"><div class="edge"></div>
+        <div class="shipname"><b>studio</b><span class="lbl">this mac</span></div>
+        <div class="silicon">Apple M1 Max<br>24.96 GB usable</div>
+        <div class="stat"><b style="color:var(--true)">0s</b><span>to first frame</span></div>
+        <div class="stat"><b>$0.00</b><span>loaded already</span></div>
+        <span class="verdict win">chosen</span>
+      </div>
+      <div class="ship rv">
+        <div class="shipname"><b>lenovo</b><span class="lbl">under the desk</span></div>
+        <div class="silicon">RTX 5090<br>32 GB VRAM</div>
+        <div class="stat"><b>14s</b><span>cold start</span></div>
+        <div class="stat"><b>$0.00</b><span>free, but cold</span></div>
+        <span class="verdict">faster silicon, still loses</span>
+      </div>
+      <div class="ship rv">
+        <div class="shipname"><b>aws-spot</b><span class="lbl">rented</span></div>
+        <div class="silicon">L40S · 48 GB<br>us-east-1</div>
+        <div class="stat"><b>92s</b><span>cold start</span></div>
+        <div class="stat"><b style="color:var(--wrong)">$0.31</b><span>and it bills</span></div>
+        <span class="verdict">last resort</span>
+      </div>
+    </div>
+    <p class="note rv" style="margin-top:22px">Wan 2.1 T2V 1.3B, one five-second clip. The 5090 is faster silicon <em style="font-style:normal;color:var(--ink2)">and</em> free to run, and it still loses — fourteen seconds of nothing happening is worse than zero. Sort that column by price and you would have picked it.</p>
+
+    <div class="formula rv">score = price + (cold ? load_seconds × value_of_latency : 0)</div>
+    <p class="note rv" style="margin-top:16px">That is the entire ranking. <span class="m" style="color:var(--ink2)">value_of_latency</span> is a dial you own: at zero it buys the cheapest seconds available, turned up it stops making you wait. There is no second scoring pass you cannot see, and no sponsored tier.</p>
+  </div>
+</section>
+
+<!-- ══ PRODUCT SHOT ══ -->
+<section id="cockpit">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span class="lbl">First run</span></div>
+    <h2 class="rv">It opens on your hardware,<br>not on a login screen.</h2>
+    <p class="lede rv">One command and a cockpit at 127.0.0.1 — no tenant, no onboarding, no trial. It asks the graphics driver what it will really surrender, judges every model against that number, and shows its working. Most tools guess your ceiling from the sticker on the box. Yours is 24.96 GB, not 32.</p>
+
+    <div class="shot rv">
+      <div class="shotglow"></div>
+      <div class="shotframe">
+        <div class="shotbar"><i></i><i></i><i></i><span class="m">127.0.0.1:8100 — spacepilot cockpit</span></div>
+        <div class="shotbody">
+          <div class="shotrail">
+            <div class="on">ship</div><div>crew</div><div>runtimes</div>
+            <div>measurements</div><div>fleet</div><div>connections</div>
+          </div>
+          <div class="shotmain">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span class="lbl">Aboard</span><span class="m" style="font-size:10.5px;color:var(--ink4)">probed 14:02</span></div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <span class="m" style="font-size:13px">MacBook Pro</span>
+              <span class="m" style="font-size:11.5px;color:var(--ink2)">Apple M1 Max · 8P + 2E · 32-core GPU · Metal 4</span>
+              <span style="display:flex;gap:12px;align-items:baseline">
+                <span class="m" style="font-size:13px">24.96 GB usable</span>
+                <span class="m" style="font-size:10.5px;color:var(--true)">measured</span>
+                <span class="m" style="font-size:11px;color:var(--ink4)">not 32 — asked the driver</span></span>
+            </div>
+            <div>
+              <div class="srow" style="border-top:0;color:var(--ink4);font-size:10px;letter-spacing:.12em;text-transform:uppercase">
+                <span>model</span><span>kind</span><span>working set</span><span>verdict</span></div>
+              <div class="srow"><span>FLUX.2 klein-4B · 4-bit</span><span style="color:var(--ink3)">image</span><span style="color:var(--ink2)">10.52 GB</span><span>fits</span></div>
+              <div class="srow"><span>Wan 2.1 T2V 1.3B</span><span style="color:var(--ink3)">video</span><span style="color:var(--ink2)">8.19 GB</span><span>fits</span></div>
+              <div class="srow"><span>LTX Video 13B · FP8</span><span style="color:var(--ink3)">video</span><span style="color:var(--ink2)">20.00 GB</span>
+                <span style="color:var(--silver)">fits, tight</span></div>
+              <div class="srow"><span>FLUX.2 Klein 9B</span><span style="color:var(--ink3)">image</span><span style="color:var(--ink2)">59.11 GB</span>
+                <span style="color:var(--wrong)">won't fit</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROOF ══ -->
+<section id="proof">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span class="lbl">The uncomfortable slide</span></div>
+    <h2 class="rv">Thirty-four model variants.<br>Two numbers we measured ourselves.</h2>
+    <div class="ratio rv"><span class="n" style="color:var(--true)">2</span><span class="of">of 34 measured</span></div>
+    <p class="lede rv">Most of this registry is other people's arithmetic, and we would rather print that on the homepage than let you find out later. Provenance sits at the same weight as the number it qualifies — never a tooltip, never a footnote, never grey. An instrument that flatters you is a decoration.</p>
+
+    <div class="marks">
+      <div class="mark2 rv"><span class="k" style="color:var(--true)">measured</span>
+        <p>We ran it. On this machine. On a date you can read. Two of thirty-four, and the count only goes up by working.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink2)">declared</span>
+        <p>Their number, cited and dated. Measured on a machine that is not yours, under conditions nobody wrote down.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink2)">huggingface-api</span>
+        <p>Summed from the Hub. Real bytes, honestly added up, and still not a measurement.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink3)">estimated</span>
+        <p>A rule applied to a parameter count. The note names the rule. This is most of the registry and we are not hiding it.</p></div>
+    </div>
+
+    <div class="marks" style="margin-top:16px">
+      <div class="mark2 rv" style="border-color:var(--silver-line)">
+        <span class="lbl">Measured · speech</span>
+        <span class="m" style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;color:var(--true)">4.6× realtime</span>
+        <p>Kokoro 82M through ONNX. 12.5 seconds of speech from one sentence in 2.7 seconds of wall clock, M1 Max, nothing else running.</p></div>
+      <div class="mark2 rv" style="border-color:var(--silver-line)">
+        <span class="lbl">Measured · image</span>
+        <span class="m" style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;color:var(--true)">10.52 GB</span>
+        <p>FLUX.2 klein-4B at 4-bit through MFLUX — the working set we observed, not a figure derived from parameter count.</p></div>
+    </div>
+    <p class="note rv" style="margin-top:26px">And when a call fails, you get the failure. Not a plausible number wearing its clothes.</p>
+  </div>
+</section>
+
+<!-- ══ FLEET ══ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span class="lbl">The fleet</span></div>
+    <h2 class="rv">Not local versus cloud.<br>Ships, and one of them is rented.</h2>
+    <p class="lede rv">Local-versus-cloud is a distinction that mattered when you owned one machine. You own four. They find each other over your own tailnet, they keep their own crews warm, and the rented one is just the ship with a meter running. No port is opened. We never hold your identity, and we never see your work.</p>
+
+    <div class="fleet rv">
+      <div class="peers">
+        <div class="peer"><div class="hd"><span class="dot" style="background:var(--true)"></span>studio</div>
+          <div class="sub">M1 Max · 24.96 GB</div><div class="warm">2 models warm</div></div>
+        <div class="peer"><div class="hd"><span class="dot" style="background:var(--true)"></span>lenovo</div>
+          <div class="sub">RTX 5090 · 32 GB</div><div class="warm">1 model warm</div></div>
+        <div class="peer"><div class="hd"><span class="dot" style="background:var(--ink4)"></span>air</div>
+          <div class="sub">M2 · 16 GB</div><div class="warm">asleep</div></div>
+        <div class="peer"><div class="hd"><span class="dot" style="background:var(--ink4)"></span>aws-spot</div>
+          <div class="sub">L40S · 48 GB · rented</div><div class="warm">not running · $0.00/hr</div></div>
+        <div class="peer"><div class="hd"><span class="dot" style="background:var(--ink4)"></span>proxy</div>
+          <div class="sub">provider APIs · litellm</div><div class="warm">12 providers</div></div>
+      </div>
+      <p class="note" style="margin:26px 0 0;position:relative;z-index:1">Identity and transport belong to Tailscale and Cloudflare, deliberately. Two things we will never be good at, and two things we therefore refuse to store. That is why this page has no login button — not as a growth tactic, as an architecture.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHERE IT IS ══ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span class="lbl">Where it is today</span></div>
+    <h2 class="rv">Early, and saying so<br>where you can see it.</h2>
+    <div class="marks" style="margin-top:40px">
+      <div class="mark2 rv"><span class="k" style="color:var(--true)">Works now</span>
+        <p>Probing, and the real ceiling rather than the advertised one. Compatibility across 34 variants. Runtime install that shows every package it would move before it moves one. Speech, locally, at 4.6× realtime. An MCP server, so an agent can fly this without ever opening a window.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink3)">Not yet</span>
+        <p>Video and image generation on your own silicon. Scheduling across more than one ship at a time. You will not find any of it above, written as though it already worked. Resisting that is the product.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="wrap">
+    <div class="eyebrow rv" style="justify-content:center"><i></i><span class="lbl">One command</span></div>
+    <h2 class="rv">Find out what your own<br>machines can actually do.</h2>
+    <div class="rv" style="display:flex;justify-content:center">
+      <div class="install"><span style="color:var(--ink4)">$</span><span>pip install spacepilot</span>
+        <button data-copy="pip install spacepilot">copy</button></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap frow">
+  <span>SpacePilot — an instrument that does not flatter you</span>
+  <span class="m">registry 2026-08-23 · 17 models · 34 variants · 2 measured</span>
+</div></footer>
+
+<script>
+"use strict";
+/* ═══ metal — the same light model the product uses, two modes ═══════
+   mode 0: a torus (the hero ring)   mode 1: a brushed plane (masked into type)
+   dark base · anisotropic specular to near-white · RGB split by curvature. */
+const ALLOY = {
+  gold:  [[.18,.122,.031],[.541,.416,.133],[.788,.635,.153],[.965,.902,.659],[1,.984,.91]],
+  chrome:[[.09,.106,.129],[.329,.361,.404],[.655,.69,.737],[.91,.929,.957],[1,1,1]]
+};
+const FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes; uniform float uMode,uRadius,uThick,uEnvRot,uLobes,uRough,uDisp,uGrain,uTime;
+uniform vec3 c0,c1,c2,c3,c4;
+out vec4 o;
+float sdr(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return min(max(q.x,q.y),0.)+length(max(q,0.))-r;}
+float h21(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
+vec3 ramp(float t){t=clamp(t,0.,1.)*4.;
+  if(t<1.)return mix(c0,c1,t); if(t<2.)return mix(c1,c2,t-1.);
+  if(t<3.)return mix(c2,c3,t-2.); return mix(c3,c4,t-3.);}
+float env(float a,float s){float b=0.;
+  for(int i=0;i<6;i++){ if(float(i)>=uLobes)break;
+    b=max(b,pow(max(0.,cos(a-float(i)*6.2831853/uLobes)),s)); }
+  return clamp(mix((.5+.5*cos(a*uLobes))*.3,1.,b),0.,1.);}
+float lift(float e){return uMode<.5?e:(.36+.64*e);}
+void main(){
+  vec2 p=gl_FragCoord.xy-.5*uRes; float a,al=1.,cur=0.;
+  if(uMode<.5){
+    vec2 b=.5*uRes-vec2(2.); vec2 bb=b-vec2(uThick*.5);
+    float d=sdr(p,bb,uRadius); float ring=abs(d)-uThick*.5;
+    al=1.-smoothstep(-1.,1.,ring); if(al<=.002){o=vec4(0.);return;}
+    vec2 g=normalize(vec2(sdr(p+vec2(1,0),bb,uRadius)-sdr(p-vec2(1,0),bb,uRadius),
+                          sdr(p+vec2(0,1),bb,uRadius)-sdr(p-vec2(0,1),bb,uRadius))+1e-6);
+    a=atan(g.y,g.x)+uEnvRot;
+    cur=smoothstep(0.,1.,length(max(abs(p)-(b-vec2(uRadius)),0.))/max(uRadius,1.));
+  } else {
+    a=(p.x/uRes.x)*6.2831853*1.15+sin(p.y/max(uRes.y,1.)*3.4)*.22+uEnvRot;
+    cur=smoothstep(.28,.5,abs(p.y)/max(uRes.y,1.));
+  }
+  float s=mix(46.,3.,clamp(uRough,0.,1.));
+  float band = uMode<.5 ? clamp(uThick/max(uRes.x,1.)*7.,.22,1.) : 1.;
+  float off=uDisp*band*(.04+.2*cur);
+  vec3 col=vec3(ramp(lift(env(a+off,s))).r,ramp(lift(env(a,s))).g,ramp(lift(env(a-off,s))).b);
+  col+=(h21(gl_FragCoord.xy+floor(uTime*24.)*.017)-.5)*uGrain*.13;
+  o=vec4(clamp(col,0.,1.),al);}`;
+const VS = `#version 300 es
+void main(){vec2 v[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(v[gl_VertexID],0,1);}`;
+
+function makeGL(cv){
+  const gl=cv.getContext("webgl2",{alpha:true,premultipliedAlpha:false,antialias:false});
+  if(!gl)return null;
+  const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(s));return null;}return s;};
+  const v=sh(gl.VERTEX_SHADER,VS),f=sh(gl.FRAGMENT_SHADER,FS); if(!v||!f)return null;
+  const pr=gl.createProgram();gl.attachShader(pr,v);gl.attachShader(pr,f);gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(pr));return null;}
+  gl.useProgram(pr);
+  const u={};["uRes","uMode","uRadius","uThick","uEnvRot","uLobes","uRough","uDisp","uGrain","uTime","c0","c1","c2","c3","c4"]
+    .forEach(n=>u[n]=gl.getUniformLocation(pr,n));
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  return {gl,pr,u};
+}
+function draw(ctx,w,h,o){
+  const {gl,pr,u}=ctx; if(gl.canvas.width!==w||gl.canvas.height!==h){gl.canvas.width=w;gl.canvas.height=h;}
+  gl.viewport(0,0,w,h);gl.useProgram(pr);
+  gl.uniform2f(u.uRes,w,h);
+  gl.uniform1f(u.uMode,o.mode);gl.uniform1f(u.uRadius,o.radius);gl.uniform1f(u.uThick,o.thick);
+  gl.uniform1f(u.uEnvRot,o.envRot);gl.uniform1f(u.uLobes,o.lobes);gl.uniform1f(u.uRough,o.rough);
+  gl.uniform1f(u.uDisp,o.disp);gl.uniform1f(u.uGrain,o.grain);gl.uniform1f(u.uTime,o.time);
+  const c=ALLOY[o.alloy];
+  gl.uniform3fv(u.c0,c[0]);gl.uniform3fv(u.c1,c[1]);gl.uniform3fv(u.c2,c[2]);
+  gl.uniform3fv(u.c3,c[3]);gl.uniform3fv(u.c4,c[4]);
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+const DPR=()=>Math.min(devicePixelRatio||1,2);
+const ringCv=document.getElementById("ring"), ringCtx=makeGL(ringCv);
+const plate=document.createElement("canvas"), plateCtx=makeGL(plate);       // brushed metal source
+const wm=document.getElementById("wordmark"), wm2=wm.getContext("2d");
+const fav=document.getElementById("favmark"), fav2=fav.getContext("2d");
+
+function paintMasked(target2d, tw, th, drawMask){
+  const d=DPR(); target2d.canvas.width=tw*d; target2d.canvas.height=th*d;
+  target2d.setTransform(d,0,0,d,0,0);
+  target2d.clearRect(0,0,tw,th);
+  drawMask(target2d,tw,th);                      // 1 · the shape
+  target2d.globalCompositeOperation="source-in"; // 2 · keep metal only inside it
+  target2d.drawImage(plate,0,0,tw,th);
+  target2d.globalCompositeOperation="source-over";
+}
+function wordmarkMask(c,w,h){
+  const txt="SPACEPILOT"; let size=h*0.86;
+  c.textBaseline="middle"; c.fillStyle="#fff";
+  for(let i=0;i<24;i++){ c.font=`900 ${size}px Geist, sans-serif`;
+    const tw=c.measureText(txt).width + size*0.06*(txt.length-1);
+    if(tw<=w*0.995) break; size*=w*0.995/tw; }
+  c.font=`900 ${size}px Geist, sans-serif`;
+  const track=size*0.06; let x=0;
+  const total=c.measureText(txt).width+track*(txt.length-1);
+  x=(w-total)/2;
+  for(const ch of txt){ c.fillText(ch,x,h/2+size*0.02); x+=c.measureText(ch).width+track; }
+}
+function favMask(c,w,h){
+  c.strokeStyle="#fff";c.lineWidth=w*0.085;c.lineCap="square";c.lineJoin="miter";
+  c.beginPath();c.moveTo(w*.14,h*.84);c.lineTo(w*.5,h*.15);c.lineTo(w*.86,h*.84);c.stroke();
+  c.beginPath();c.moveTo(w*.3,h*.55);c.lineTo(w*.7,h*.55);c.stroke();
+}
+
+/* ═══ the environment moves, the objects stay put ═══════════════════ */
+const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+if (reduced.matches) document.documentElement.dataset.motion = "reduced";
+let rot = 0.4, last = performance.now();
+function frame(now){
+  const dt = Math.min(.05,(now-last)/1000); last = now;
+  if (!reduced.matches) rot += dt * 0.16;
+  const t = now/1000, d = DPR();
+
+  if (ringCtx){
+    const w = Math.round(ringCv.clientWidth*d), h = Math.round(ringCv.clientHeight*d);
+    if (w>0) draw(ringCtx, w, h, {mode:0, radius:Math.min(w,h)*0.49, thick:Math.min(w,h)*0.052,
+      envRot:rot, lobes:4, rough:.17, disp:.85, grain:.35, time:t, alloy:"chrome"});
+  }
+  if (plateCtx){
+    const pw = Math.max(2,Math.round(wm.clientWidth*d)), ph = Math.max(2,Math.round(200*d));
+    draw(plateCtx, pw, ph, {mode:1, radius:0, thick:0, envRot:rot*1.9, lobes:4,
+      rough:.2, disp:.3, grain:.4, time:t, alloy:"chrome"});
+    paintMasked(wm2, wm.clientWidth, 200, wordmarkMask);
+    paintMasked(fav2, 22, 22, favMask);
+  }
+  requestAnimationFrame(frame);
+}
+if (ringCtx || plateCtx) requestAnimationFrame(frame);
+else document.querySelectorAll("#ring").forEach(c=>c.style.display="none");
+
+/* ═══ reveals — landing is a rare surface, so it earns them ═══════════ */
+document.documentElement.classList.add("js");
+const hidden = () => document.visibilityState !== "visible";
+// A hidden document does not run transitions, so a reveal that only ever
+// happens through one can strand content at opacity 0 — in a background tab,
+// on a throttled device, or any time paint is interrupted. Decoration must
+// never be load-bearing for whether words are on the screen.
+const reveal = el => { if (hidden() || reduced.matches) el.classList.add("now"); el.classList.add("in"); };
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting){ reveal(e.target); io.unobserve(e.target); }
+}), { rootMargin: "0px 0px -8% 0px", threshold: .08 });
+document.querySelectorAll(".rv").forEach(el => io.observe(el));
+addEventListener("visibilitychange", () => {
+  if (!hidden()) document.querySelectorAll(".rv:not(.in)").forEach(el => {
+    if (el.getBoundingClientRect().top < innerHeight) reveal(el);
+  });
+});
+// last resort: nothing stays invisible past this, whatever happened
+setTimeout(() => document.querySelectorAll(".rv:not(.in)").forEach(el => { el.classList.add("now","in"); }), 2600);
+
+/* ═══ chrome ═══ */
+const nav = document.getElementById("nav");
+addEventListener("scroll", () => nav.classList.toggle("stuck", scrollY > 12), { passive:true });
+document.querySelectorAll("#theme button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#theme button").forEach(x => x.setAttribute("aria-pressed", String(x===b)));
+  if (b.dataset.t === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.dataset.theme = b.dataset.t;
+}));
+document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => {
+  navigator.clipboard.writeText(b.dataset.copy)
+    .then(() => { const o=b.textContent; b.textContent="copied"; setTimeout(()=>b.textContent=o,1500); })
+    .catch(() => { b.textContent="blocked"; });
+}));
+addEventListener("resize", () => { if (plateCtx) paintMasked(wm2, wm.clientWidth, 200, wordmarkMask); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {
+  if (plateCtx) paintMasked(wm2, wm.clientWidth, 200, wordmarkMask);
+});
+</script>
+</body>
+</html>
