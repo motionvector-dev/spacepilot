@@ -77,6 +77,59 @@ class TestCliDoctor(unittest.TestCase):
         self.assertIn("FFmpeg   : ❌ NOT FOUND", output)
         self.assertIn("AWS Auth : ❌ NOT AUTHENTICATED", output)
 
+    @patch('spacepilot.device_probe.probe_local_device')
+    @patch('subprocess.run')
+    def test_doctor_never_prints_system_ram_as_vram(self, mock_subprocess_run, mock_probe):
+        """The Lenovo ideapad line: "12.5GB usable / 15.5GB total" was RAM."""
+        from spacepilot.device_probe import DeviceProfile
+        profile = DeviceProfile(
+            os_name="Linux", arch="x86_64", backend="cpu",
+            memory_total_bytes=16_231_648 * 1024,
+        )
+        profile.unknown["vram_total_bytes"] = "no GPU was detected"
+        mock_probe.return_value = profile
+        mock_subprocess_run.side_effect = Exception("no tools here")
+
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        try:
+            cmd_doctor(MagicMock(), {"aws_profile": "default"})
+        finally:
+            sys.stdout = sys.__stdout__
+        output = captured_output.getvalue()
+
+        vram_line = next(l for l in output.splitlines() if "VRAM" in l)
+        self.assertIn("unknown", vram_line)
+        # 15.48 GiB is this machine's RAM. It must appear on the RAM line only.
+        self.assertNotIn("15.5", vram_line)
+        self.assertNotIn("12.5", vram_line)
+        self.assertIn("15.5GB total", next(l for l in output.splitlines() if l.strip().startswith("RAM")))
+        self.assertIn("Status   : partial", output)
+        self.assertIn("[Not measured]", output)
+
+    @patch('spacepilot.device_probe.probe_local_device')
+    @patch('subprocess.run')
+    def test_doctor_reports_a_card_with_no_runtime_as_unusable(self, mock_subprocess_run, mock_probe):
+        from spacepilot.device_probe import GIB, DeviceProfile
+        profile = DeviceProfile(
+            os_name="Linux", arch="x86_64", backend="cpu",
+            memory_total_bytes=16_231_648 * 1024, vram_total_bytes=4 * GIB,
+            gpu_name="Topaz XT [Radeon R7 M260/M340/M360]",
+        )
+        mock_probe.return_value = profile
+        mock_subprocess_run.side_effect = Exception("no tools here")
+
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        try:
+            cmd_doctor(MagicMock(), {"aws_profile": "default"})
+        finally:
+            sys.stdout = sys.__stdout__
+        output = captured_output.getvalue()
+
+        self.assertIn("4.0GB present, 0GB usable", output)
+        self.assertIn("no compute runtime can reach this card", output)
+
     def test_default_config_sizing(self):
         from spacepilot.cli import DEFAULT_CONFIG
         self.assertEqual(DEFAULT_CONFIG["instance_type"], "g6e.2xlarge")

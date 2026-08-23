@@ -561,11 +561,15 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print(f"  Backend  : {profile.backend.upper()}")
     if profile.device_name:
         print(f"  Device   : {profile.device_name}")
+    from spacepilot.device_probe import ACCELERATED_BACKENDS
     if profile.accelerator_memory_bytes is None:
         # Never print system RAM on this line. A machine whose GPU we could not
         # read has unknown accelerator memory, and saying "12.5GB usable" there
         # is a number the user cannot check and we cannot defend.
         print("  VRAM     : unknown — not measured (system RAM is not a substitute)")
+    elif profile.backend not in ACCELERATED_BACKENDS:
+        print(f"  VRAM     : {profile.vram_total_gb:.1f}GB present, 0GB usable "
+              "— no compute runtime can reach this card")
     else:
         print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total (Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
     print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")

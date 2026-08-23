@@ -420,9 +420,15 @@ def _lspci_names(src: LinuxSources) -> Optional[Dict[str, str]]:
         return None
     names: Dict[str, str] = {}
     for line in out.splitlines():
-        m = re.search(r"^\S+\s+[^:]+:\s+(.*?)\s*\[([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\]\s*$", line)
-        if m:
-            names[f"{m.group(2).lower()}:{m.group(3).lower()}"] = m.group(1).strip()
+        # "01:00.0 Display controller [0380]: AMD/ATI Topaz XT [...] [1002:6900] (rev 83)"
+        # The class code [0380] carries no colon, so only the vendor:device id
+        # matches; take the last one in case a device name contains another.
+        ids = list(re.finditer(r"\[([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\]", line))
+        head = re.match(r"^\S+\s+[^\[]*\[[0-9a-fA-F]{4}\]:\s*", line)
+        if not ids or not head:
+            continue
+        name = line[head.end():ids[-1].start()].strip()
+        names[f"{ids[-1].group(1).lower()}:{ids[-1].group(2).lower()}"] = name
     return names
 
 
