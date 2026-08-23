@@ -428,7 +428,8 @@ function renderSpec() {
 
 function renderMatrix() {
   const order = { fits: 0, tight: 1, unknown: 2, wont_fit: 3, blocked: 4 };
-  const kind = { video: 0, image: 1, vision: 2, text: 3, speech: 4, audio: 5 };
+  const kind = { video: 0, image: 1, vision: 2, text: 3, speech: 4,
+                 transcription: 5, audio: 6 };
   const rows = variants.map((v) => ({ v, a: assess(v, machine) }))
     .sort((x, y) => (order[x.a.v] - order[y.a.v])
       || ((kind[x.v.kind] ?? 9) - (kind[y.v.kind] ?? 9))
@@ -484,6 +485,11 @@ function renderDetail() {
       <p>Licence: <b>${esc(v.license.id)}</b>${v.license.is_permissive ? ", no restrictions on use." : ":"}</p>
       ${v.license.restrictions.length
         ? `<ul class="restrict">${v.license.restrictions.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+      ${v.caveats && v.caveats.length
+        ? `<p>What this build does to the model it came from:</p>
+           <ul class="restrict">${v.caveats.map((c) =>
+             `<li><b>${esc(c.capability)}</b> — ${esc(c.status)}. ${esc(c.detail)}</li>`).join("")}</ul>`
+        : ""}
       ${v.speed.filter((s) => s.note).map((s) => `<p class="why" style="max-width:64ch">${esc(s.note)}</p>`).join("")}
       ${v.notes ? `<p>${esc(v.notes)}</p>` : ""}
     </section>`;

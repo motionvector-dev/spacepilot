@@ -20,6 +20,30 @@ undiscoverable.
 
 ## Open
 
+### `caveats:` on a variant — is a capability ledger the registry's job?
+
+- **Shipped 2026-08-23, deliberately reversible** (PR: transcription entries).
+  A variant may now carry `caveats:`, a list of `{capability, status, detail}`
+  with status in `preserved | degraded | untrained | absent` and `detail`
+  required. It is modelled on `license.restrictions`: the same argument that
+  put "SOTA but you may not ship it" in a machine-readable field applies to
+  "fast, and the word timestamps were never trained".
+- **The case that forced it**: distil-whisper distilled only segment-level
+  output. Its word timestamps are inherited from the parent's attention heads
+  with no dedicated training — right for subtitles, wrong for cutting filler
+  words. Nothing in size, licence, speed or precision can say that, and to a
+  reader skimming the table it is simply the smaller, faster large-v3.
+  Quantised whisper.cpp builds are the opposite case and say so: whisper.cpp
+  computes timestamps in its own decoder logic, so q5_1 aligns as well as f16.
+- **What is open**: whether a per-variant capability ledger belongs in this
+  registry at all, or whether it is the first plank of a capability matrix that
+  should be its own thing. Four statuses and one sentence is the smallest
+  version that is still honest; it could as easily have been a prose `notes:`
+  line, which is cheaper and unqueryable.
+- **Cost of reversing**: two YAML blocks, one parser function, one render block
+  in `web/models.html`, one test file. No caller depends on it yet.
+- **Close when**: Saurabh says keep it, drop it to prose, or grow it.
+
 ### SpacePilot public claim — timing, not direction
 
 - **Direction is decided** (Saurabh, 2026-08-23): SpacePilot is a federated

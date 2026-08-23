@@ -336,7 +336,7 @@ def _caveat(raw: Dict[str, Any], where: str) -> Caveat:
     status = str(_require(raw, "status", where))
     if status not in CAVEAT_STATUSES:
         raise RegistryError(f"{where}: status '{status}' not one of {sorted(CAVEAT_STATUSES)}")
-    detail = str(_require(raw, "detail", where)).strip()
+    detail = str(raw.get("detail") or "").strip()
     if not detail:
         raise RegistryError(
             f"{where}: a caveat must say what the effect is — a bare status "
