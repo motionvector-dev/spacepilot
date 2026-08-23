@@ -62,6 +62,37 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -q
 
+  # The gate the other 369 tests could not be. Everything else runs against a
+  # source checkout, which is why v2.8.0 shipped with a CLI whose main commands
+  # exited 1 on a real install. Its own job because it builds a wheel and makes
+  # a venv, and because a red here means "the release is broken", not "a test
+  # is broken".
+  packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # -m packaging overrides the `not packaging` in pyproject's addopts.
+      - name: Install the wheel and run the CLI
+        run: python -m pytest tests/test_wheel_install.py -m packaging -q
+
   # Two gates the repo went 38 merged PRs without. Both are free on
   # ubuntu-latest and finish in seconds, so they run as their own job rather
   # than lengthening the one people wait on.

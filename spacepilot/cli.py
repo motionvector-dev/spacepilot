@@ -153,7 +153,7 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst:
         print("  AWS Instance : [STOPPED / NONE] No active GPU instance found.")
-        print("  Launch with  : pluto launch")
+        print("  Launch with  : spacepilot launch")
         print("──────────────────────────────────────────────────────────────────────────")
         return
 
@@ -186,7 +186,7 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             print(f"  Worker State : [WARMING UP] Loading 78 GB model into VRAM (~170s)...")
         else:
             print(f"  Worker State : [OFFLINE / STARTING] Server not responding on port 5000.")
-            print(f"                 Check logs with: pluto logs")
+            print("                 Check logs with: spacepilot logs")
     print("──────────────────────────────────────────────────────────────────────────")
 
 
@@ -245,7 +245,7 @@ def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     run_cmd(["ssh", "-i", key, f"ubuntu@{ip}",
              "cd /scratch/worker && while IFS= read -r line; do export \"$line\"; done && bash setup.sh"],
             stdin_text=token_payload)
-    print("\n  Deployment complete! Check status with: pluto status")
+    print("\n  Deployment complete! Check status with: spacepilot status")
 
 
 def cmd_ssh(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
@@ -274,7 +274,7 @@ def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     inst = get_instance_info(cfg)
     if not inst or not inst["ip"]:
-        print("  Error: No running GPU box. Run 'pluto launch' first.")
+        print("  Error: No running GPU box. Run 'spacepilot launch' first.")
         return
 
     ip = inst["ip"]
@@ -588,7 +588,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             break
     if not kokoro_found:
         print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
-        print("             Download with: pluto recipes download kokoro-82m")
+        print("             Download with: spacepilot recipes download kokoro-82m")
         
     print("")
 
@@ -647,10 +647,13 @@ def cmd_models(args, cfg=None) -> int:
     reg = registry()
     profile = probe_local_device()
 
-    if getattr(args, "model_id", None):
-        v = reg.variant(args.model_id)
+    # `list` is reserved, so this reads the same way as `runtimes list`; no
+    # variant may be named that.
+    model_id = getattr(args, "model_id", None)
+    if model_id and model_id != "list":
+        v = reg.variant(model_id)
         if not v:
-            print(f"No variant '{args.model_id}'. Run `pluto models` to list them.")
+            print(f"No variant '{model_id}'. Run `spacepilot models` to list them.")
             return 1
         verdict = assess(catalog_manager.recipes[v.id], profile)
         print(f"{v.name}  [{v.id}]")
@@ -690,7 +693,7 @@ def cmd_models(args, cfg=None) -> int:
         lic = v.license.id + ("" if v.license.is_permissive else "  !")
         print(f"  {verdict.verdict:10s}{v.id:36s}{_gb(v.download.value):>10s}"
               f"{_gb(v.working_set.value):>9s}   {speed:<11s}{lic}")
-    print("\n  `pluto models <id>` for detail.  ! marks a licence with restrictions.")
+    print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
     print("  SPEED is how the number was obtained, not how fast it is — most are unmeasured.")
     return 0
 
@@ -725,7 +728,7 @@ def cmd_runtimes(args, cfg=None) -> int:
                   f"{','.join(r.backends):20s}{st.version or '-'}")
             if not st.python_compatible:
                 print(f"  {'':11s}{'':20s}{st.python_note}")
-        print("\n  `pluto runtimes check <id>` for detail, `install <id>` to add one.")
+        print("\n  `spacepilot runtimes check <id>` for detail, `install <id>` to add one.")
         print("  n/a here means it needs silicon this machine does not have.")
         return 0
 
@@ -896,7 +899,13 @@ def cmd_measure(args, cfg=None) -> int:
     print(f"  machine was       {contention}")
     if contention != "solo":
         print("  ↳ excluded from the solo ceiling; run again on an idle box for that")
-    print(f"  recorded          {path.relative_to(PLUTO_ROOT)}")
+    # Records land outside the repo on an installed copy (spacepilot.paths),
+    # where relative_to raises rather than shortening anything.
+    try:
+        shown = path.relative_to(PLUTO_ROOT)
+    except ValueError:
+        shown = path
+    print(f"  recorded          {shown}")
     return 0
 
 
@@ -1000,7 +1009,8 @@ def main():
                          help="Proceed even if it lowers a package other work may need")
 
     models_p = subparsers.add_parser("models", help="List models and whether they run here")
-    models_p.add_argument("model_id", nargs="?", help="A variant id, for detail")
+    models_p.add_argument("model_id", nargs="?",
+                          help="`list` for the table (the default), or a variant id for detail")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")

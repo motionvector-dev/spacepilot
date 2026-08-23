@@ -37,9 +37,14 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from spacepilot.paths import shipped_dir
+
 SCHEMA_VERSION = 1
 
-REGISTRY_DIR = Path(__file__).resolve().parents[2] / "registry" / "models"
+# Shipped catalogue: read-only package data, resolved by the package rather
+# than by walking up from __file__ (which pointed at site-packages/ once
+# installed, where nothing was).
+REGISTRY_DIR = shipped_dir("models")
 
 KINDS = {"video", "image", "audio", "speech", "text", "vision"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}

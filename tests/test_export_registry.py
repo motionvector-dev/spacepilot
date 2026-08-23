@@ -49,7 +49,10 @@ def store(tmp_path, monkeypatch):
     root = tmp_path / "measurements"
     root.mkdir()
     import spacepilot.pluto.measurements as ms
+    # Both roots: readers merge the shipped corpus with this machine's own,
+    # so pointing only the writable one at tmp still let the repo's records in.
     monkeypatch.setattr(ms, "MEASUREMENTS_DIR", root)
+    monkeypatch.setattr(ms, "SHIPPED_MEASUREMENTS_DIR", root)
     return root
 
 
