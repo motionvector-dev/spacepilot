@@ -1,0 +1,23 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: flux2-klein-4b-4bit
+metric: load_seconds
+value: 24.51
+contention: loaded
+measured_on: '2026-08-23T08:10:09+00:00'
+variant_id: flux2-klein-4b-4bit
+runtime_id: mflux
+runtime_version: 0.19.0
+quantisation: int4
+backend: metal
+interpreter: mflux-conda-env
+knobs:
+  quantisation: int4
+  steps: 4
+  height: 512
+  width: 512
+  seed: 42
+  model_alias: flux2-klein-4b
+note: Weights already cached on disk from a prior run in this session (cache hit) --
+  quantize + MLX graph build only, no network download, timed as wall time
+  before the first denoising-step progress line.
