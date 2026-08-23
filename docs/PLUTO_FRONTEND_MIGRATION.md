@@ -3,7 +3,7 @@
 ## Current State
 
 ```
-studio/
+web/
 ├── index.html      (993 lines)   ← Studio main: Director + Vibe Editor
 ├── create.html     (1,832 lines) ← Create page
 ├── blueprint.html  (1,488 lines) ← Blueprint editor
@@ -11,12 +11,12 @@ studio/
 ├── home.html       (357 lines)   ← Landing
 ├── onboarding.html (482 lines)   ← Onboarding
 ├── oven.html       (650 lines)   ← Render queue
-├── studio.js       (1,977 lines, 54 functions) ← ALL studio logic
+├── app.js       (1,977 lines, 54 functions) ← ALL studio logic
 ├── create.js       (1,347 lines)
 ├── cockpit.js      (845 lines)
 ├── sidebar.js      (607 lines)
 ├── theme.js        (84 lines)
-├── studio.css      (3,402 lines)
+├── app.css      (3,402 lines)
 └── sidebar.css     (501 lines)
 ```
 
@@ -176,7 +176,7 @@ npm i react-router-dom zustand @tanstack/react-query tailwindcss @tailwindcss/vi
 npm i -D @types/react @types/react-dom
 ```
 
-- Port CSS variables from `studio.css :root` → `tailwind.config.ts` theme tokens
+- Port CSS variables from `app.css :root` → `tailwind.config.ts` theme tokens
 - Set up Vite proxy to `localhost:8088` for API calls
 - Add `pluto studio` to serve both API + Vite dev server
 
@@ -214,8 +214,8 @@ npm i -D @types/react @types/react-dom
 
 ### Phase 7: Cleanup
 
-- Remove `studio/` directory
-- Update `studio_api.py` to serve Vite build output from `ui/dist/`
+- Remove `web/` directory
+- Update `web_api.py` to serve Vite build output from `ui/dist/`
 - Delete legacy HTML/JS/CSS
 
 ---

@@ -417,7 +417,7 @@
         });
         if (res.ok) {
           toast('Settings saved');
-          // Broadcast to page-level components (create.js, studio.js) via event
+          // Broadcast to page-level components (create.js, app.js) via event
           window.dispatchEvent(new CustomEvent('pluto:config-saved', { detail: body.config }));
         } else {
           toast('Save failed', true);

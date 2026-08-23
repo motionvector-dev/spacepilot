@@ -318,7 +318,7 @@ function initHotReload() {
         // CSS HMR: swap stylesheet without touching JS state
         const links = document.querySelectorAll('link[rel="stylesheet"]');
         links.forEach(link => {
-          if (link.href.includes('studio.css')) {
+          if (link.href.includes('app.css')) {
             const url = new URL(link.href);
             url.searchParams.set('t', Date.now());
             link.href = url.toString();

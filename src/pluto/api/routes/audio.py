@@ -90,7 +90,7 @@ def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: 
         write_meta(meta_file, meta)
         start_t = time.time()
         try:
-            api_mod = sys.modules.get("src.studio_api")
+            api_mod = sys.modules.get("src.web_api")
             gen_fn = getattr(api_mod, "mlx_generate_audio", mlx_generate_audio) if api_mod else mlx_generate_audio
             audio = gen_fn(
                 "/v1/audio/music-generations",
@@ -112,7 +112,7 @@ def generate_music_api(req: MusicRequest, background_tasks: BackgroundTasks, _: 
             return
 
         meta["generate_sec"] = round(time.time() - start_t, 1)
-        api_mod = sys.modules.get("src.studio_api")
+        api_mod = sys.modules.get("src.web_api")
         ln_fn = getattr(api_mod, "loudnorm_two_pass", loudnorm_two_pass) if api_mod else loudnorm_two_pass
         norm = ln_fn(raw_wav, out_wav, settings.music_target_lufs)
         if norm.returncode != 0:
@@ -172,13 +172,13 @@ def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: 
                 }
                 if req.seed is not None:
                     payload["seed"] = req.seed
-                api_mod = sys.modules.get("src.studio_api")
+                api_mod = sys.modules.get("src.web_api")
                 gen_fn = getattr(api_mod, "mlx_generate_audio", mlx_generate_audio) if api_mod else mlx_generate_audio
                 raw_wav.write_bytes(
                     gen_fn("/v1/audio/speech", payload, timeout=settings.ffmpeg_timeout_sec)
                 )
             else:
-                api_mod = sys.modules.get("src.studio_api")
+                api_mod = sys.modules.get("src.web_api")
                 syn_fn = getattr(api_mod, "synthesize_voice", synthesize_voice) if api_mod else synthesize_voice
                 syn_fn(req.text, req.voice, req.speed, raw_wav)
         except Exception as e:
@@ -189,7 +189,7 @@ def generate_voice_api(req: VoiceRequest, background_tasks: BackgroundTasks, _: 
             return
 
         meta["generate_sec"] = round(time.time() - start_t, 1)
-        api_mod = sys.modules.get("src.studio_api")
+        api_mod = sys.modules.get("src.web_api")
         pn_fn = getattr(api_mod, "peak_normalize", peak_normalize) if api_mod else peak_normalize
         limit = pn_fn(raw_wav, out_wav, settings.voice_peak_dbfs)
         if limit.returncode != 0:

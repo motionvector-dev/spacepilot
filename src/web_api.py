@@ -93,7 +93,7 @@ from src.pluto.api.deps import require_token  # re-export for backward compat
 _settings = get_settings()
 OUTPUTS_DIR = _settings.outputs_dir
 UPLOADS_DIR = OUTPUTS_DIR / "uploads"
-STUDIO_DIR = _settings.studio_dir
+WEB_DIR = _settings.web_dir
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -122,7 +122,7 @@ def update_activity() -> None:
 
 def _build_status(cfg: dict) -> dict:
     """Build one status snapshot; callers must enforce refresh single-flight."""
-    api_mod = sys.modules.get("src.studio_api")
+    api_mod = sys.modules.get("src.web_api")
     gi_fn = getattr(api_mod, "get_instance_info", get_instance_info) if api_mod else get_instance_info
     inst = gi_fn(cfg)
     if not inst:
@@ -170,7 +170,7 @@ def _build_status(cfg: dict) -> dict:
 def get_status() -> dict:
     """Retrieve bounded, single-flight status of the GPU box and worker."""
     global _status_cache, _status_cache_at
-    api_mod = sys.modules.get("src.studio_api")
+    api_mod = sys.modules.get("src.web_api")
     lc_fn = getattr(api_mod, "load_config", load_config) if api_mod else load_config
     cfg = lc_fn()
     now = time.monotonic()
@@ -213,7 +213,7 @@ def has_active_jobs() -> bool:
 
 async def idle_watchdog_loop():
     global _watchdog_event, _last_activity_time
-    api_mod = sys.modules.get("src.studio_api")
+    api_mod = sys.modules.get("src.web_api")
     while True:
         try:
             sl_fn = getattr(api_mod.asyncio if api_mod else asyncio, "sleep", asyncio.sleep)

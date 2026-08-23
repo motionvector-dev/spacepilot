@@ -42,7 +42,7 @@ class SkyFailoverRequest(BaseModel):
 
 
 def _get_api_attr(name, default):
-    api_mod = sys.modules.get("src.studio_api")
+    api_mod = sys.modules.get("src.web_api")
     return getattr(api_mod, name, default) if api_mod else default
 
 

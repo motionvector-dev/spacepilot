@@ -1,6 +1,6 @@
 """Shared test setup.
 
-Point the API at a throwaway outputs directory before src.studio_api is
+Point the API at a throwaway outputs directory before src.web_api is
 imported. Without this the suite writes generated clips into the real
 asset library and every run leaves more junk behind.
 """

@@ -15,8 +15,8 @@
 
 | Layer | Files | Lines | Problem |
 |-------|-------|-------|---------|
-| **Backend** | 13 loose `.py` in `src/` | 6,023 | `studio_api.py` is 2,577 lines. No package, no service layer, no schemas module. |
-| **Frontend** | 14 files in `studio/` | 15,561 | Vanilla JS, no components, no reactivity, no build step. |
+| **Backend** | 13 loose `.py` in `src/` | 6,023 | `web_api.py` is 2,577 lines. No package, no service layer, no schemas module. |
+| **Frontend** | 14 files in `web/` | 15,561 | Vanilla JS, no components, no reactivity, no build step. |
 | **Infra/DX** | `requirements.txt` + shell scripts | — | No lockfile, no `pyproject.toml`, loose mp4s in root. |
 | **Tests** | 8 test files | 42 tests | ✅ Solid coverage — preserve this. |
 
@@ -36,7 +36,7 @@ To guarantee zero breakage, this refactor follows a **surgical extraction** appr
    - No module is committed until 100% of corresponding tests pass without altering test assertions.
 
 3. **Parallel Strangler Fig Pattern (Zero UI Downtime)**:
-   - The existing `studio/` vanilla UI remains live and fully functional throughout development.
+   - The existing `web/` vanilla UI remains live and fully functional throughout development.
    - The new React + Vite app is developed under `ui/`, hitting the exact same backend endpoints in parallel.
    - We only cut over to the new frontend once all features, canvas interactions, and keyboard shortcuts (JKL, ⌘K) match the baseline.
 
@@ -97,7 +97,7 @@ src/pluto/
 
 ### 1B. Key Refactors
 
-**Split `studio_api.py` (2,577 lines) → routes + services:**
+**Split `web_api.py` (2,577 lines) → routes + services:**
 
 | Current function cluster | Target module |
 |--------------------------|---------------|
@@ -296,7 +296,7 @@ interface TimelineStore {
 | Vibe Editor | 6–7 | Canvas, inspector, asset library |
 | Timeline | 7–8 | Transport, ruler, waveform, scrubbing |
 | Remaining pages | 8–9 | Create, Cockpit, Blueprint, Oven |
-| Cutover | 10 | Delete `studio/`, serve from `ui/dist/` |
+| Cutover | 10 | Delete `web/`, serve from `ui/dist/` |
 
 ### 3E. Project Structure
 
@@ -305,7 +305,7 @@ pluto/ui/
 ├── src/
 │   ├── components/
 │   │   ├── layout/       (AppShell, Header, Sidebar)
-│   │   ├── studio/       (DirectorView, SceneCard, VibeEditor, Canvas, Inspector)
+│   │   ├── web/       (DirectorView, SceneCard, VibeEditor, Canvas, Inspector)
 │   │   ├── timeline/     (Timeline, Track, Transport, Ruler)
 │   │   ├── gpu/          (Telemetry, LaunchButton)
 │   │   └── shared/       (CommandPalette, ExportDrawer, ThemeSwitcher)
@@ -374,7 +374,7 @@ class PlutoError(Exception):
 Phase 1 (Backend)           Phase 3 (Frontend)
     │                            │
     ├── 1A: Package layout       │    ← can run in parallel
-    ├── 1B: Split studio_api     │
+    ├── 1B: Split web_api     │
     ├── 1C: Cleanup              │
     │                            │
 Phase 2 (DX)                     │
@@ -391,4 +391,4 @@ Phase 4 (Production)  ← depends on Phase 1 + 3
 
 > **Phases 1–2 and 3 can run in parallel.** The API surface doesn't change — just the internal organization.
 
-> **Highest ROI single change**: Split `studio_api.py`. Even alone, going from 1×2,577 lines to 8×~300 lines makes every future change dramatically easier.
+> **Highest ROI single change**: Split `web_api.py`. Even alone, going from 1×2,577 lines to 8×~300 lines makes every future change dramatically easier.
