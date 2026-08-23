@@ -50,6 +50,8 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
+from spacepilot.paths import shipped_dir, writable_dir
+
 try:
     import psutil
 except ImportError:  # pragma: no cover - psutil is a declared dependency; this
@@ -58,9 +60,23 @@ except ImportError:  # pragma: no cover - psutil is a declared dependency; this
 
 SCHEMA_VERSION = 1
 
-_ROOT = Path(__file__).resolve().parents[2]
-SYSTEMS_DIR = _ROOT / "registry" / "systems"
-MEASUREMENTS_DIR = _ROOT / "registry" / "measurements"
+# Records are written by the machine that made them, so they never go inside
+# the installed package — see spacepilot.paths. Reads merge what shipped with
+# what this machine has recorded; in a checkout the two are the same directory
+# and the merge dedupes them.
+SHIPPED_SYSTEMS_DIR = shipped_dir("systems")
+SHIPPED_MEASUREMENTS_DIR = shipped_dir("measurements")
+SYSTEMS_DIR = writable_dir("systems")
+MEASUREMENTS_DIR = writable_dir("measurements")
+
+
+def _roots(shipped: Path, writable: Path) -> List[Path]:
+    out: List[Path] = []
+    for candidate in (shipped, writable):
+        resolved = Path(candidate).resolve()
+        if resolved not in out:
+            out.append(resolved)
+    return out
 
 # Reuse the model registry's vocabulary rather than inventing a parallel one.
 from spacepilot.pluto.registry import SPEED_METRICS, BACKENDS  # noqa: E402
@@ -453,27 +469,34 @@ def parse_measurement(raw: Dict[str, Any], where: str) -> Measurement:
 
 
 def load_measurements(root: Optional[Path] = None) -> List[Measurement]:
-    directory = root or MEASUREMENTS_DIR
-    if not directory.exists():
-        return []
+    """Every record this machine can see: the corpus that shipped, plus the
+    records it made itself. An explicit `root` reads only that directory."""
+    directories = [Path(root)] if root else _roots(SHIPPED_MEASUREMENTS_DIR, MEASUREMENTS_DIR)
     out = []
-    for path in sorted(directory.rglob("*.yaml")):
-        raw = yaml.safe_load(path.read_text()) or {}
-        out.append(parse_measurement(raw, str(path)))
+    for directory in directories:
+        if not directory.exists():
+            continue
+        for path in sorted(directory.rglob("*.yaml")):
+            raw = yaml.safe_load(path.read_text()) or {}
+            out.append(parse_measurement(raw, str(path)))
     return out
 
 
 def load_systems(root: Optional[Path] = None) -> Dict[str, System]:
-    directory = root or SYSTEMS_DIR
-    if not directory.exists():
-        return {}
+    """Shipped systems first, so a locally rewritten record wins on id — the
+    machine you are sitting at knows its own memory better than a file that
+    shipped six weeks ago."""
+    directories = [Path(root)] if root else _roots(SHIPPED_SYSTEMS_DIR, SYSTEMS_DIR)
     out = {}
-    for path in sorted(directory.glob("*.yaml")):
-        raw = yaml.safe_load(path.read_text()) or {}
-        raw.pop("schema", None)
-        known = {f for f in System.__dataclass_fields__}
-        s = System(**{k: v for k, v in raw.items() if k in known})
-        out[s.id] = s
+    for directory in directories:
+        if not directory.exists():
+            continue
+        for path in sorted(directory.glob("*.yaml")):
+            raw = yaml.safe_load(path.read_text()) or {}
+            raw.pop("schema", None)
+            known = {f for f in System.__dataclass_fields__}
+            s = System(**{k: v for k, v in raw.items() if k in known})
+            out[s.id] = s
     return out
 
 

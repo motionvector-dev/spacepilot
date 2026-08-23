@@ -896,7 +896,13 @@ def cmd_measure(args, cfg=None) -> int:
     print(f"  machine was       {contention}")
     if contention != "solo":
         print("  ↳ excluded from the solo ceiling; run again on an idle box for that")
-    print(f"  recorded          {path.relative_to(PLUTO_ROOT)}")
+    # Records land outside the repo on an installed copy (spacepilot.paths),
+    # where relative_to raises rather than shortening anything.
+    try:
+        shown = path.relative_to(PLUTO_ROOT)
+    except ValueError:
+        shown = path
+    print(f"  recorded          {shown}")
     return 0
 
 
