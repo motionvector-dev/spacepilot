@@ -26,6 +26,10 @@ kokoro-onnx
 # Model and runtime registry (src/pluto/registry.py, src/pluto/runtimes.py)
 PyYAML>=6.0
 
+# Claim verifier (tools/verify_claims.py): fans a claim out to N cheap models
+# across providers through one interface.
+litellm>=1.98.0
+
 # Utilities
 pillow
 huggingface_hub
