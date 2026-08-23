@@ -13,6 +13,13 @@ fastapi. Use the environment where `requirements.txt` was installed, or set
 and let the CLI resolve it. Anything that imports `src/web_api.py` —
 including pytest — needs that interpreter.
 
+mflux (`src/drivers/mflux_driver.py`) is a second, separate interpreter on
+purpose: installing mflux into the repo env downgrades opencv-python from 5.0
+to 4.14, so it lives in its own conda env and is only ever invoked as a
+subprocess, never imported. Point the driver at it with `PLUTO_MFLUX_BIN` or
+`"mflux_bin_dir"` in `.pluto_config.json` — the bin/ directory of that env
+(default guess: `~/miniconda3/envs/mflux/bin`).
+
 ## Secrets
 
 Doppler, project `unfoundbox`, config `dev_personal`, scoped at `~/code`. Prefix
