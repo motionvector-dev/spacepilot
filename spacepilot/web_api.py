@@ -261,8 +261,14 @@ async def idle_watchdog_loop():
 app = create_app(_settings)
 
 if __name__ == "__main__":
-    host = os.environ.get("PLUTO_STUDIO_HOST", "0.0.0.0")
+    # Loopback by default. LocalOnlyMiddleware already rejects a non-loopback
+    # Host header, but a default that binds every interface means one
+    # middleware bug is the only thing between this and the network.
+    host = os.environ.get("PLUTO_STUDIO_HOST", "127.0.0.1")
     port = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
     print(f"\n✨ SpacePilot Studio API running on http://{host}:{port} (and http://spacepilot.localhost:{port})")
-    print(f"🔑 Studio Token: {STUDIO_TOKEN[:8]}...{STUDIO_TOKEN[-8:]}\n")
+    # The token is never printed. Sixteen characters of it used to go to
+    # stdout on every start, which means terminal scrollback, log files and
+    # any CI that ran the server. Read it from the environment instead.
+    print("🔑 Studio token loaded from the environment\n")
     uvicorn.run(app, host=host, port=port, log_level="info")

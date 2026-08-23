@@ -61,3 +61,39 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -q
+
+  # Two gates the repo went 38 merged PRs without. Both are free on
+  # ubuntu-latest and finish in seconds, so they run as their own job rather
+  # than lengthening the one people wait on.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # Pinned, because a bandit upgrade can change finding ids and make the
+      # baseline below stop matching for reasons that have nothing to do with
+      # the code under test.
+      - name: Install scanners
+        run: python -m pip install --upgrade pip "bandit==1.9.4" pip-audit
+
+      # Known CVEs in what we actually declare. If this goes red on a
+      # dependency you did not touch, that is the tool working: a new advisory
+      # landed. Fix by upgrading, or add --ignore-vuln <ID> with a comment
+      # saying why it does not reach us.
+      - name: Audit dependencies
+        run: pip-audit -r requirements.txt
+
+      # Fails on findings that are NOT in .bandit-baseline.json. The baseline
+      # is 23 pre-existing medium-severity findings, recorded rather than
+      # waved away — it is a debt list, and the gate stops it growing.
+      # Regenerate deliberately, never to make a red run green:
+      #   bandit -r spacepilot/ -ll -f json -o .bandit-baseline.json
+      - name: Scan for new security findings
+        run: bandit -r spacepilot/ -ll --baseline .bandit-baseline.json

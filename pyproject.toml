@@ -52,7 +52,9 @@ spacepilot = "spacepilot.cli:main"
 include = ["spacepilot*"]
 
 [build-system]
-requires = ["setuptools>=77.0"]
+# 77.0 is the floor for PEP 639 license expressions; 83.0 is the floor for
+# PYSEC-2026-3447. Take the higher one.
+requires = ["setuptools>=83.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
