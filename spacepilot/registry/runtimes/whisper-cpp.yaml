@@ -1,0 +1,39 @@
+schema: 1
+id: whisper-cpp
+name: whisper.cpp
+summary: >
+  GGML speech-to-text. Metal on Apple silicon, CPU everywhere else, and fast
+  enough on a decade-old laptop that transcription needs no GPU at all.
+homepage: https://github.com/absadiki/pywhispercpp
+serves: [transcription]
+backends: [metal, cuda, cpu]
+license: MIT
+
+install:
+  method: pip
+  package: pywhispercpp
+  min_version: "1.5.1"
+  checked: "2026-08-23"
+python_requires: ">=3.8"
+
+verify:
+  import: pywhispercpp
+
+runs:
+  - whisper
+  - distil-whisper
+notes: >
+  The upstream project is ggml-org/whisper.cpp (MIT); pywhispercpp is the pip
+  binding that makes it installable without a source build, and like
+  llama-cpp-python it builds for the platform it installs on, so a successful
+  install does not by itself prove Metal or CUDA is in use.
+
+  Word-level timestamps come from `-ml 1 -sow -oj`. True DTW alignment needs
+  `--dtw`, and `--dtw` requires `-nfa`: flash attention is on by default and
+  silently disables DTW, so `--dtw` without `-nfa` returns the ordinary
+  timestamps and no warning that the alignment never ran.
+
+  Two neighbours that look like alternatives and are not, on Apple silicon:
+  faster-whisper has no Metal backend at all, because CTranslate2 has none, so
+  it runs on CPU; WhisperX has no MLX or Metal backend upstream either. Both
+  cost a real user a day before this note existed.

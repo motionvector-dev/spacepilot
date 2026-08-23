@@ -89,6 +89,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux aliases \"boogu-image-turbo\", \"boogu-turbo\", \"boogu-image\", \"boogu\"."
     }
    ]
@@ -149,6 +151,87 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "distil-whisper",
+   "name": "Distil-Whisper",
+   "family": "distil-whisper",
+   "kind": "transcription",
+   "summary": "A distilled Whisper large-v3 in the GGML build whisper.cpp reads. Faster than its parent at transcription, and the wrong tool for anything that cuts on a word boundary \u2014 see the caveats, which is the only place that fact exists.\n",
+   "homepage": "https://huggingface.co/distil-whisper/distil-large-v3-ggml",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://opensource.org/license/mit",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "distil-large-v3-ggml",
+     "model_id": "distil-whisper",
+     "name": "Distil-Whisper large-v3 (f16, GGML)",
+     "kind": "transcription",
+     "family": "distil-whisper",
+     "params": "756M",
+     "precision": "f16",
+     "repo": "distil-whisper/distil-large-v3-ggml",
+     "files": [
+      "ggml-distil-large-v3.bin"
+     ],
+     "revision": "0d78dd96ed9fc152325f63b53788fec3b43de031",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 1519521155.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1729521155.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside Whisper base.en f16 on the i5-6200U\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [
+      {
+       "capability": "transcription",
+       "status": "preserved",
+       "detail": "Segment-level transcription is what the distillation was trained on, and it is the reason to reach for this model at all.",
+       "is_safe": true
+      },
+      {
+       "capability": "word_timestamps",
+       "status": "untrained",
+       "detail": "Only segment-level output was distilled. Word timestamps are inherited from the parent's attention heads with no dedicated training, so they are unvalidated rather than merely less accurate. Fine for subtitles; wrong for cutting filler words, where the cut lands on a word boundary this model was never taught to place.",
+       "is_safe": false
+      }
+     ],
+     "compromised": [
+      "word_timestamps"
+     ],
      "notes": null
     }
    ]
@@ -207,6 +290,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux alias \"ernie-image\"."
     },
     {
@@ -247,6 +332,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Guidance-distilled \u2014 the CLI errors on any guidance value but 1.0. mflux alias \"ernie-image-turbo\".\n"
     }
    ]
@@ -311,6 +398,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux alias \"fibo\"."
     },
     {
@@ -354,6 +443,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux aliases \"fibo-lite\", \"fibo_lite\"."
     },
     {
@@ -397,6 +488,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"fibo-edit\", \"fiboedit\"."
     },
     {
@@ -440,6 +533,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "FIBO Edit with built-in background removal. mflux aliases \"fibo-edit-rmbg\", \"fiboedit-rmbg\".\n"
     }
    ]
@@ -511,6 +606,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Distilled, timestep-guided model designed for 2-4 sampling steps (source: FLUX.1-schnell model card). --quantize 4 with mflux-generate. Verified against black-forest-labs/FLUX.1-schnell via HfApi 2026-08-22; alias \"schnell\" confirmed live in mflux-capabilities 0.19.0 output.\n"
     },
     {
@@ -560,6 +657,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Same weights as flux-schnell-4bit, --quantize 8. Fits a 32 GB Mac with real headroom; the 4-bit variant exists for machines with less to spare or when speed matters more than the extra fidelity.\n"
     },
     {
@@ -613,6 +712,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Full-quality, non-distilled model; the model card recommends 20-50 steps and CFG guidance schnell does not use. --quantize omitted (mflux-generate --model dev with no --quantize flag). Non-commercial license \u2014 do not ship generated output from a commercial product without checking LICENSE.md. Verified against black-forest-labs/FLUX.1-dev via HfApi 2026-08-22; alias \"dev\" confirmed live in mflux-capabilities 0.19.0 output.\n"
     }
    ]
@@ -681,6 +782,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Distilled, deployment-ready. mflux aliases \"flux2-klein-4b\", \"flux2-klein-4B\", \"flux2-klein\", \"klein-4b\", \"klein-4B\".\n"
     },
     {
@@ -721,6 +824,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Undistilled base, meant for fine-tuning and research rather than direct deployment. mflux aliases for the base-4B checkpoint.\n"
     },
     {
@@ -765,6 +870,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux aliases \"flux2-klein-9b\", \"flux2-klein-9B\", \"klein-9b\", \"klein-9B\"."
     },
     {
@@ -809,6 +916,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "\"KV\" caches reference-image key/value pairs once, speeding up multi-reference editing by up to 2.5x. Not the aliases used by the other agent's FLUX.1 registry work.\n"
     },
     {
@@ -853,6 +962,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Undistilled base, meant for fine-tuning and research rather than direct deployment.\n"
     },
     {
@@ -903,6 +1014,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "This repo (black-forest-labs/FLUX.2-klein-4B) is NOT gated and is apache-2.0 -- unlike FLUX.1-schnell/dev above, both of which require accepting a license gate on huggingface.co before the weights can be downloaded at all, which this session could not do (accepting a HuggingFace model gate is an account action requiring the user's own browser session). This variant is the one actually exercised for the real load/generate measurement recorded for this task -- see registry/measurements/. --quantize 4 with mflux-generate-flux2. Verified against black-forest-labs/FLUX.2-klein-4B via HfApi 2026-08-22; alias \"flux2-klein-4b\" confirmed live in mflux-capabilities 0.19.0 output.\n",
      "measurements": [
       {
@@ -992,6 +1105,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": null
     }
    ]
@@ -1056,6 +1171,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux aliases \"ideogram-4-fp8\", \"ideogram4-fp8\", \"ideogram4\", \"ideogram-4\", \"ideogram\".\n"
     }
    ]
@@ -1126,6 +1243,8 @@
        "note": "12.5s of speech from a single sentence in 2.7s wall clock, kokoro-v1.0.onnx via onnxruntime"
       }
      ],
+     "caveats": [],
+     "compromised": [],
      "notes": null,
      "measurements": [
       {
@@ -1220,6 +1339,8 @@
       "is_permissive": false
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "4-step distillation with CFG internalized \u2014 guidance and negative prompt are never applied. mflux aliases \"lens-turbo\", \"lens\".\n"
     }
    ]
@@ -1297,6 +1418,8 @@
        "note": "121 frames at 512x512 in 11 seconds, reported at https://huggingface.co/Lightricks/LTX-Video/discussions/6 and converted at the model card's 30 FPS. The source does not say which checkpoint or precision was used, so this may not be this exact variant \u2014 treat it as the speed class of a small LTX model on a 4090, not as this row's number.\n"
       }
      ],
+     "caveats": [],
+     "compromised": [],
      "notes": null
     },
     {
@@ -1352,6 +1475,8 @@
        "note": "88 frames at 1216x704 in 2 minutes 8 seconds without CPU offloading, reported at https://github.com/Lightricks/LTX-Video/issues/166 and converted at the model card's 30 FPS. The report says \"13B model\" without stating distilled or fp8, and the card is a modified 48 GB 4090, so this is an upper bound for a 13B LTX rather than this variant's figure.\n"
       }
      ],
+     "caveats": [],
+     "compromised": [],
      "notes": "FP8 has no Metal path and fails rather than falling back, so this is CUDA on Ada or newer. Reported independently at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen\n"
     }
    ]
@@ -1410,6 +1535,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux alias \"qwen-image\" (also \"qwen\", \"qwen-image-2512\", \"qwen-2512\")."
     },
     {
@@ -1450,6 +1577,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"qwen-image-edit\", \"qwen-edit\", \"qwen-edit-plus\", \"qwen-edit-2509\", \"qwen-edit-2511\", \"qwen-image-edit-2511\".\n"
     }
    ]
@@ -1509,6 +1638,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": null
     }
    ]
@@ -1571,6 +1702,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Faster, lower-VRAM variant. mflux aliases \"seedvr2-3b\", \"seedvr2\" (the bare alias defaults to 3B).\n"
     },
     {
@@ -1617,6 +1750,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Higher-quality, higher-VRAM variant, plus a \"sharp\" checkpoint. mflux alias \"seedvr2-7b\" (and \"seedvr2-7B\").\n"
     }
    ]
@@ -1686,6 +1821,8 @@
        "note": "About 4 minutes for a 5-second 480p clip, stated on the official model card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B without quantisation or other optimisation. Not measured by us.\n"
       }
      ],
+     "caveats": [],
+     "compromised": [],
      "notes": null
     },
     {
@@ -1726,6 +1863,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Beyond any single consumer card and beyond every Apple Silicon configuration currently sold."
     }
    ]
@@ -1795,6 +1934,377 @@
        "note": "82 minutes for a 2-second clip in GGUF, reported at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen \u2014 third-party, on twice the memory of a 32 GB machine. Not measured by us. Treat as the order of magnitude, not the number.\n"
       }
      ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "whisper",
+   "name": "Whisper",
+   "family": "openai",
+   "kind": "transcription",
+   "summary": "Speech to text, in the GGML builds whisper.cpp reads. One of these plus a VAD is the whole of subtitles, burn-in captions, filler-word removal and silence trimming \u2014 none of which needs a GPU.\n",
+   "homepage": "https://huggingface.co/ggerganov/whisper.cpp",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://opensource.org/license/mit",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "whisper-base-en",
+     "model_id": "whisper",
+     "name": "Whisper base.en (f16)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "74M",
+     "precision": "f16",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-base.en.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 147964211.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 359661568.0,
+      "source": "measured",
+      "checked": "2026-08-23",
+      "note": "peak RSS, 343 MiB, whisper.cpp CPU-only greedy decode on the i5-6200U",
+      "is_measured": true
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
+       "backend": "cpu",
+       "metric": "realtime_factor",
+       "value": 8.4,
+       "source": "measured",
+       "measured_on": "2026-08-23",
+       "note": "180s of speech, greedy decode, median of 3, CPU only. This is a floor, not a ceiling \u2014 the machine is a 2015 two-core laptop with no GPU.\n"
+      },
+      {
+       "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
+       "backend": "cpu",
+       "metric": "realtime_factor",
+       "value": 6.48,
+       "source": "measured",
+       "measured_on": "2026-08-23",
+       "note": "same clip and machine, beam search with 5 beams"
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "whisper-base-en-q5-1",
+     "model_id": "whisper",
+     "name": "Whisper base.en (q5_1)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "74M",
+     "precision": "q5_1",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-base.en-q5_1.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 59721011.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 269721011.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside base.en f16 on the same machine\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [
+      {
+       "capability": "word_timestamps",
+       "status": "preserved",
+       "detail": "whisper.cpp computes timestamps in its own decoder logic, independent of the quantisation level of the weights, so q5_1 aligns as well as f16 does. This is what separates quantisation from distillation here.",
+       "is_safe": true
+      },
+      {
+       "capability": "transcription_accuracy",
+       "status": "degraded",
+       "detail": "q5_1 costs under 1% WER against the f16 build. q4_0 roughly doubles that cost for a modest further size saving, which is why q5_1 is the quantisation carried here and q4_0 is not.",
+       "is_safe": false
+      }
+     ],
+     "compromised": [
+      "transcription_accuracy"
+     ],
+     "notes": "The default choice on a small machine: a third of the download, and the timestamps a caption or a filler-word cut depends on are unaffected.\n"
+    },
+    {
+     "id": "whisper-small-en",
+     "model_id": "whisper",
+     "name": "Whisper small.en (f16)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "244M",
+     "precision": "f16",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-small.en.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 487614201.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 697614201.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside base.en f16 on the same machine\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
+       "backend": "cpu",
+       "metric": "realtime_factor",
+       "value": 2.41,
+       "source": "measured",
+       "measured_on": "2026-08-23",
+       "note": "180s of speech, greedy decode, median of 3, CPU only"
+      },
+      {
+       "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
+       "backend": "cpu",
+       "metric": "realtime_factor",
+       "value": 1.88,
+       "source": "measured",
+       "measured_on": "2026-08-23",
+       "note": "same clip and machine, beam search with 5 beams"
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "whisper-small-en-q5-1",
+     "model_id": "whisper",
+     "name": "Whisper small.en (q5_1)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "244M",
+     "precision": "q5_1",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-small.en-q5_1.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 190098681.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 400098681.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside base.en f16 on the same machine\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [
+      {
+       "capability": "word_timestamps",
+       "status": "preserved",
+       "detail": "Timestamps come from whisper.cpp's own decoder logic rather than from the weights' precision, so quantisation does not move them.",
+       "is_safe": true
+      },
+      {
+       "capability": "transcription_accuracy",
+       "status": "degraded",
+       "detail": "q5_1 costs under 1% WER against the f16 build.",
+       "is_safe": false
+      }
+     ],
+     "compromised": [
+      "transcription_accuracy"
+     ],
+     "notes": null
+    },
+    {
+     "id": "whisper-large-v3-turbo",
+     "model_id": "whisper",
+     "name": "Whisper large-v3-turbo (f16)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "809M",
+     "precision": "f16",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-large-v3-turbo.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 1624555275.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1834555275.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside base.en f16 on the same machine\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Multilingual, and the first leg of dubbing. Nobody here has timed it; the only speed figures in this file are base.en and small.en on one CPU.\n"
+    },
+    {
+     "id": "whisper-large-v3-turbo-q5-0",
+     "model_id": "whisper",
+     "name": "Whisper large-v3-turbo (q5_0)",
+     "kind": "transcription",
+     "family": "openai",
+     "params": "809M",
+     "precision": "q5_0",
+     "repo": "ggerganov/whisper.cpp",
+     "files": [
+      "ggml-large-v3-turbo-q5_0.bin"
+     ],
+     "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 574041195.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-23",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 784041195.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "weights plus the ~210 MB of decoder state and audio buffers measured alongside base.en f16 on the same machine\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [
+      {
+       "capability": "word_timestamps",
+       "status": "preserved",
+       "detail": "Quantisation does not touch whisper.cpp's timestamp logic. The alignment is as good as the f16 build's.",
+       "is_safe": true
+      }
+     ],
+     "compromised": [],
      "notes": null
     }
    ]
@@ -1853,6 +2363,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "mflux aliases \"z-image\", \"zimage\"."
     },
     {
@@ -1893,6 +2405,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "4-step distilled, guidance internalized (CFG is not applied). mflux aliases \"z-image-turbo\", \"zimage-turbo\".\n"
     },
     {
@@ -1933,6 +2447,8 @@
       "is_permissive": true
      },
      "speed": [],
+     "caveats": [],
+     "compromised": [],
      "notes": "Requires both this repo and the base Tongyi-MAI/Z-Image-Turbo weights \u2014 the `repo` field here names the ControlNet only, and `download` is the sum of both. mflux aliases \"z-image-turbo-controlnet-union-2.1\", \"z-image-controlnet-union-2.1\", \"z-image-controlnet\", \"z-image-turbo-controlnet\".\n"
     }
    ]

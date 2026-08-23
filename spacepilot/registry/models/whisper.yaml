@@ -1,0 +1,196 @@
+schema: 1
+id: whisper
+name: Whisper
+family: openai
+kind: transcription
+summary: >
+  Speech to text, in the GGML builds whisper.cpp reads. One of these plus a VAD
+  is the whole of subtitles, burn-in captions, filler-word removal and silence
+  trimming — none of which needs a GPU.
+homepage: https://huggingface.co/ggerganov/whisper.cpp
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://opensource.org/license/mit
+
+variants:
+  - id: whisper-base-en
+    name: Whisper base.en (f16)
+    params: 74M
+    precision: f16
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-base.en.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 147964211
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 359661568
+      source: measured
+      checked: "2026-08-23"
+      note: peak RSS, 343 MiB, whisper.cpp CPU-only greedy decode on the i5-6200U
+    speed:
+      - device: Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
+        backend: cpu
+        metric: realtime_factor
+        value: 8.40
+        source: measured
+        measured_on: "2026-08-23"
+        note: >
+          180s of speech, greedy decode, median of 3, CPU only. This is a floor,
+          not a ceiling — the machine is a 2015 two-core laptop with no GPU.
+      - device: Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
+        backend: cpu
+        metric: realtime_factor
+        value: 6.48
+        source: measured
+        measured_on: "2026-08-23"
+        note: same clip and machine, beam search with 5 beams
+
+  - id: whisper-base-en-q5-1
+    name: Whisper base.en (q5_1)
+    params: 74M
+    precision: q5_1
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-base.en-q5_1.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 59721011
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 269721011
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside base.en f16 on the same machine
+    caveats:
+      - capability: word_timestamps
+        status: preserved
+        detail: >
+          whisper.cpp computes timestamps in its own decoder logic, independent
+          of the quantisation level of the weights, so q5_1 aligns as well as
+          f16 does. This is what separates quantisation from distillation here.
+      - capability: transcription_accuracy
+        status: degraded
+        detail: >
+          q5_1 costs under 1% WER against the f16 build. q4_0 roughly doubles
+          that cost for a modest further size saving, which is why q5_1 is the
+          quantisation carried here and q4_0 is not.
+    notes: >
+      The default choice on a small machine: a third of the download, and the
+      timestamps a caption or a filler-word cut depends on are unaffected.
+
+  - id: whisper-small-en
+    name: Whisper small.en (f16)
+    params: 244M
+    precision: f16
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-small.en.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 487614201
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 697614201
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside base.en f16 on the same machine
+    speed:
+      - device: Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
+        backend: cpu
+        metric: realtime_factor
+        value: 2.41
+        source: measured
+        measured_on: "2026-08-23"
+        note: 180s of speech, greedy decode, median of 3, CPU only
+      - device: Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
+        backend: cpu
+        metric: realtime_factor
+        value: 1.88
+        source: measured
+        measured_on: "2026-08-23"
+        note: same clip and machine, beam search with 5 beams
+
+  - id: whisper-small-en-q5-1
+    name: Whisper small.en (q5_1)
+    params: 244M
+    precision: q5_1
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-small.en-q5_1.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 190098681
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 400098681
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside base.en f16 on the same machine
+    caveats:
+      - capability: word_timestamps
+        status: preserved
+        detail: >
+          Timestamps come from whisper.cpp's own decoder logic rather than from
+          the weights' precision, so quantisation does not move them.
+      - capability: transcription_accuracy
+        status: degraded
+        detail: q5_1 costs under 1% WER against the f16 build.
+
+  - id: whisper-large-v3-turbo
+    name: Whisper large-v3-turbo (f16)
+    params: 809M
+    precision: f16
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-large-v3-turbo.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 1624555275
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 1834555275
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside base.en f16 on the same machine
+    notes: >
+      Multilingual, and the first leg of dubbing. Nobody here has timed it; the
+      only speed figures in this file are base.en and small.en on one CPU.
+
+  - id: whisper-large-v3-turbo-q5-0
+    name: Whisper large-v3-turbo (q5_0)
+    params: 809M
+    precision: q5_0
+    repo: ggerganov/whisper.cpp
+    revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+    files: ["ggml-large-v3-turbo-q5_0.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 574041195
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 784041195
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside base.en f16 on the same machine
+    caveats:
+      - capability: word_timestamps
+        status: preserved
+        detail: >
+          Quantisation does not touch whisper.cpp's timestamp logic. The
+          alignment is as good as the f16 build's.
