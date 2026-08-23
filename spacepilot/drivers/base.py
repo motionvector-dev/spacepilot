@@ -16,12 +16,17 @@ class DriverSpec:
         backend: Runtime engine ('onnx', 'gguf', 'metal_mps', 'cuda', 'cpu').
         resident_vram_gb: Approximate resident VRAM/RAM footprint in GB when loaded.
         is_loaded: Whether the driver's weights and execution session are currently resident in memory.
+        requires_accelerator: Whether the driver cannot run at all without a GPU
+            compute runtime. False for anything that executes on CPU — ONNX and
+            GGUF both do — so a machine with no accelerator, or with accelerator
+            memory nobody could measure, still runs them.
     """
     driver_id: str
     task: str
     backend: str
     resident_vram_gb: float
     is_loaded: bool = False
+    requires_accelerator: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize specification to dictionary."""
@@ -58,6 +63,11 @@ class InferenceDriver(ABC):
     def resident_vram_gb(self) -> float:
         """Resident memory footprint in GB."""
         return self.spec.resident_vram_gb
+
+    @property
+    def requires_accelerator(self) -> bool:
+        """Whether this driver needs a GPU compute runtime to run at all."""
+        return self.spec.requires_accelerator
 
     @property
     def is_loaded(self) -> bool:

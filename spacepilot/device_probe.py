@@ -9,6 +9,7 @@ to catch.
 
 from __future__ import annotations
 
+import glob as globlib
 import json
 import os
 import platform
@@ -16,7 +17,7 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 GIB = 1024 ** 3
 
@@ -25,19 +26,49 @@ GIB = 1024 ** 3
 MEMORY_RESERVE_FRACTION = 0.10
 MEMORY_RESERVE_FLOOR_BYTES = 3 * GIB
 
+# Backends a recipe in registry/models/*.yaml can name for accelerated work.
+# `cpu` is deliberately absent: of everything in the registry only kokoro (TTS)
+# lists cpu among its backends, and no video recipe lists it at all.
+ACCELERATED_BACKENDS = ("metal", "cuda", "rocm")
 
-def usable_memory_bytes(profile: "DeviceProfile") -> int:
-    """How much memory a model may actually occupy.
+# The floor for calling a machine locally capable. Not a feel-good round
+# number: it is the working set of the lightest video recipe the registry
+# carries, ltx-video 2b distilled — registry/models/ltx-video.yaml,
+# `working_set.value`, read 2026-08-23. A machine that cannot hold that cannot
+# run any video model we ship, so it is not "optimal" whatever else is true of
+# it. When the registry's floor moves, move this with it. Never adjust it to
+# make a particular machine pass.
+MIN_USABLE_MEMORY_BYTES = 10_200_547_430
+
+# PCI vendor ids, from the pci.ids database. Used only to name the maker of a
+# card found in sysfs — never to infer anything about its capability.
+PCI_VENDORS = {
+    "0x1002": "AMD",
+    "0x10de": "NVIDIA",
+    "0x8086": "Intel",
+    "0x1af4": "Virtio",
+    "0x15ad": "VMware",
+}
+
+
+def usable_memory_bytes(profile: "DeviceProfile") -> Optional[int]:
+    """How much memory a model may actually occupy, or None when unknown.
 
     Prefer the platform's own answer. Metal reports a recommended max working
     set (78% of RAM on an M1 Max, not the 90% a flat reserve would assume), and
     guessing past it is how you get a confident recommendation that swaps.
+
+    None and 0 are different claims and every caller must keep them apart.
+    None is "nobody measured this machine's accelerator memory". 0 is "we
+    measured it, and after the reserve there is nothing left". Returning 0 for
+    both is how a CPU-only Linux box came to refuse a CPU-only TTS model it had
+    already been measured running.
     """
     if profile.memory_limit_bytes:
         return profile.memory_limit_bytes
-    capacity = profile.accelerator_memory_bytes or 0
+    capacity = profile.accelerator_memory_bytes
     if not capacity:
-        return 0
+        return None
     reserve = max(int(capacity * MEMORY_RESERVE_FRACTION), MEMORY_RESERVE_FLOOR_BYTES)
     return max(0, capacity - reserve)
 
@@ -77,11 +108,20 @@ class DeviceProfile:
     cpu_cores: Optional[int] = None
     cpu_cores_performance: Optional[int] = None
     cpu_cores_efficiency: Optional[int] = None
+    cpu_cores_physical: Optional[int] = None
+    cpu_cores_logical: Optional[int] = None
 
     gpu_name: Optional[str] = None
     gpu_cores: Optional[int] = None
     backend: Optional[str] = None           # metal | cuda | rocm | cpu
     backend_detail: Optional[str] = None    # "Metal 4" / "sm_89" / None
+
+    # Every display adapter the probe found, whether or not it is usable for
+    # compute. A card with no runtime still belongs here: "4 GiB present, no
+    # usable compute runtime" is an answer, and silence is not.
+    gpus: List[Dict[str, Any]] = field(default_factory=list)
+    compute_runtime: Optional[str] = None        # "rocm" | "cuda" | "metal"
+    compute_runtime_detail: Optional[str] = None
 
     memory_total_bytes: Optional[int] = None
     memory_free_bytes: Optional[int] = None
@@ -100,12 +140,18 @@ class DeviceProfile:
 
     @property
     def accelerator_memory_bytes(self) -> Optional[int]:
-        """Memory a model's weights actually have to fit inside."""
+        """Memory a model's weights actually have to fit inside.
+
+        None when no accelerator memory could be measured. System RAM is NOT a
+        substitute: it used to be returned here, so a laptop with a 4 GiB
+        Radeon the probe never looked for was told it had 15.5 GB of "VRAM".
+        Unknown is the honest answer, and every caller already handles it.
+        """
         if self.vram_total_bytes:
             return self.vram_total_bytes
         if self.memory_unified:
             return self.memory_total_bytes
-        return self.memory_total_bytes
+        return None
 
 
     # ---- Names the rest of the codebase still uses. Derived, never invented:
@@ -132,12 +178,27 @@ class DeviceProfile:
         return round((self.memory_free_bytes or 0) / GIB, 2)
 
     @property
+    def accelerator_memory_known(self) -> bool:
+        return self.accelerator_memory_bytes is not None
+
+    @property
     def vram_total_gb(self) -> float:
+        """0.0 means *not measured*, not "zero bytes" — check `unknown` for why."""
         return round((self.accelerator_memory_bytes or 0) / GIB, 2)
 
     @property
+    def usable_memory_known(self) -> bool:
+        return usable_memory_bytes(self) is not None
+
+    @property
     def vram_usable_gb(self) -> float:
-        return round(usable_memory_bytes(self) / GIB, 2)
+        """0.0 means *not measured*, not "zero bytes" — check `unknown` for why.
+
+        This one is for display and for the JSON surfaces that have always
+        carried a float. Anything making a decision reads `usable_memory_bytes`
+        instead, so that unknown can stay unknown.
+        """
+        return round((usable_memory_bytes(self) or 0) / GIB, 2)
 
     @property
     def isa_flags(self) -> Optional[str]:
@@ -145,10 +206,32 @@ class DeviceProfile:
 
     @property
     def is_local_capable(self) -> bool:
-        return self.backend in ("metal", "cuda", "rocm") or self.ram_total_gb >= 16.0
+        """Can this machine actually run the lightest local video recipe?
+
+        Two conditions, both measured, both required:
+
+          * the backend is one the recipes name (ACCELERATED_BACKENDS). A GPU
+            with no compute runtime does not count — the probe leaves `backend`
+            at "cpu" in that case, which is what "present but unusable" means.
+          * usable accelerator memory covers MIN_USABLE_MEMORY_BYTES.
+
+        The old rule was `backend in (...) or ram_total_gb >= 16.0`. That bare
+        16.0 came from nowhere, and it meant a 2015 dual-core i5-6200U with no
+        usable GPU was one firmware reservation (15.48 GiB reported, not 16.0)
+        away from being declared `optimal`. RAM alone can no longer earn that.
+        """
+        if self.backend not in ACCELERATED_BACKENDS:
+            return False
+        usable = usable_memory_bytes(self)
+        return usable is not None and usable >= MIN_USABLE_MEMORY_BYTES
 
     @property
     def status(self) -> str:
+        """partial > optimal > constrained.
+
+        `partial` wins over everything: if any field went unread we do not know
+        enough to grade the machine, and saying so is the whole point.
+        """
         if self.unknown:
             return "partial"
         return "optimal" if self.is_local_capable else "constrained"
@@ -159,6 +242,7 @@ class DeviceProfile:
         for name in (
             "os_type", "architecture", "device_name", "ram_total_gb", "ram_free_gb",
             "vram_total_gb", "vram_usable_gb", "isa_flags", "is_local_capable", "status",
+            "accelerator_memory_known", "usable_memory_known",
         ):
             d[name] = getattr(self, name)
         return d
@@ -249,6 +333,15 @@ def _probe_darwin(profile: DeviceProfile) -> None:
 
     profile.backend = "metal" if profile.gpu_name else "cpu"
 
+    if not apple_silicon and profile.vram_total_bytes is None:
+        # Intel Mac: memory is not unified, so system RAM is not the model's
+        # working set and must not be reported as though it were.
+        profile.unknown.setdefault(
+            "vram_total_bytes",
+            "this Mac has no unified memory and SPDisplaysDataType reported no "
+            "VRAM size, so accelerator memory is unknown — not the machine's RAM",
+        )
+
     if profile.backend == "metal":
         try:
             import torch
@@ -278,8 +371,8 @@ def _darwin_free_memory() -> Optional[int]:
         return None
 
 
-def _probe_nvidia(profile: DeviceProfile) -> bool:
-    out = _run([
+def _probe_nvidia(profile: DeviceProfile, run: Callable[..., Optional[str]] = _run) -> bool:
+    out = run([
         "nvidia-smi",
         "--query-gpu=name,memory.total,memory.free,compute_cap",
         "--format=csv,noheader,nounits",
@@ -292,55 +385,338 @@ def _probe_nvidia(profile: DeviceProfile) -> bool:
         profile.vram_total_bytes = int(float(total_mib)) * 1024 ** 2
         profile.backend = "cuda"
         profile.backend_detail = f"compute {cap}"
+        profile.compute_runtime = "cuda"
+        profile.compute_runtime_detail = f"nvidia-smi reports compute {cap}"
         return True
     except Exception as e:
         profile.unknown["nvidia_smi"] = str(e)
         return False
 
 
-def _probe_linux(profile: DeviceProfile) -> None:
+class LinuxSources:
+    """Everything the Linux probe reads, in one injectable place.
+
+    The probe runs on machines we do not have — a laptop with a discrete
+    Radeon, a headless server, a container with no /sys/class/drm at all. The
+    only way to test that it stays honest on those is to point it at a fixture
+    tree, so every path is relative to `root` and every command goes through
+    `run`.
+    """
+
+    def __init__(self, root: str = "/", run: Optional[Callable[..., Optional[str]]] = None):
+        self.root = root
+        self.run = run or _run
+
+    def path(self, *parts: str) -> str:
+        return os.path.join(self.root, *parts)
+
+    def read_text(self, *parts: str) -> Optional[str]:
+        try:
+            with open(self.path(*parts)) as f:
+                return f.read()
+        except Exception:
+            return None
+
+    def read_stripped(self, *parts: str) -> Optional[str]:
+        raw = self.read_text(*parts)
+        return raw.strip("\x00 \n\t") if raw is not None else None
+
+    def glob(self, pattern: str) -> List[str]:
+        return sorted(globlib.glob(os.path.join(self.root, pattern)))
+
+
+def _lspci_names(src: LinuxSources) -> Optional[Dict[str, str]]:
+    """{"1002:6900": "Topaz XT [Radeon R7 M260/M340/M360]"} from `lspci -nn`.
+
+    None — not {} — when lspci is absent, so the caller can tell "no such tool"
+    apart from "tool ran, said nothing about this card".
+    """
+    out = src.run(["lspci", "-nn"], timeout=6.0)
+    if not out:
+        return None
+    names: Dict[str, str] = {}
+    for line in out.splitlines():
+        # "01:00.0 Display controller [0380]: AMD/ATI Topaz XT [...] [1002:6900] (rev 83)"
+        # The class code [0380] carries no colon, so only the vendor:device id
+        # matches; take the last one in case a device name contains another.
+        ids = list(re.finditer(r"\[([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\]", line))
+        head = re.match(r"^\S+\s+[^\[]*\[[0-9a-fA-F]{4}\]:\s*", line)
+        if not ids or not head:
+            continue
+        name = line[head.end():ids[-1].start()].strip()
+        names[f"{ids[-1].group(1).lower()}:{ids[-1].group(2).lower()}"] = name
+    return names
+
+
+def _drm_cards(src: LinuxSources) -> List[str]:
+    """/sys/class/drm/cardN, excluding the cardN-HDMI-A-1 connector entries."""
+    return [p for p in src.glob("sys/class/drm/card*")
+            if re.fullmatch(r"card\d+", os.path.basename(p))]
+
+
+def _card_driver(src: LinuxSources, card: str) -> Optional[str]:
+    uevent = src.read_text(card, "device", "uevent") or ""
+    m = re.search(r"^DRIVER=(\S+)", uevent, re.MULTILINE)
+    if m:
+        return m.group(1)
+    try:
+        return os.path.basename(os.path.realpath(src.path(card, "device", "driver"))) or None
+    except Exception:
+        return None
+
+
+def _detect_linux_gpus(src: LinuxSources, profile: DeviceProfile) -> List[Dict[str, Any]]:
+    """Read every DRM card out of sysfs. Absent facts become named unknowns.
+
+    Nothing here is inferred from a model name. VRAM comes from amdgpu's own
+    `mem_info_vram_total`; the vendor and device ids come from sysfs; the human
+    name comes from lspci or not at all.
+    """
+    cards = _drm_cards(src)
+    if not cards:
+        profile.unknown["gpu"] = (
+            f"no {src.path('sys/class/drm')}/card* entries; the kernel exposes no "
+            "DRM device, so no GPU could be looked for"
+        )
+        return []
+
+    names = _lspci_names(src)
+    gpus: List[Dict[str, Any]] = []
+    for card in cards:
+        node = os.path.basename(card)
+        vendor_id = (src.read_stripped(card, "device", "vendor") or "").lower() or None
+        device_id = (src.read_stripped(card, "device", "device") or "").lower() or None
+        vendor = PCI_VENDORS.get(vendor_id or "")
+        driver = _card_driver(src, card)
+
+        name = None
+        if names is not None and vendor_id and device_id:
+            name = names.get(f"{vendor_id[2:]}:{device_id[2:]}")
+        if not name:
+            # Measured, not invented: this is the PCI id, said out loud.
+            name = " ".join(filter(None, [vendor, f"device {device_id}" if device_id else None])) or None
+            if names is None:
+                profile.unknown.setdefault(
+                    "gpu_name",
+                    "lspci is not installed, so only the PCI vendor:device id could be read; "
+                    "the card's marketing name is unknown",
+                )
+            else:
+                profile.unknown.setdefault(
+                    "gpu_name",
+                    f"lspci lists no entry for {vendor_id}:{device_id}; "
+                    "the card's marketing name is unknown",
+                )
+
+        vram = None
+        vram_source = None
+        raw_vram = src.read_stripped(card, "device", "mem_info_vram_total")
+        if raw_vram is not None:
+            try:
+                vram = int(raw_vram)
+                vram_source = f"{node}/device/mem_info_vram_total"
+            except ValueError:
+                profile.unknown[f"vram_{node}"] = (
+                    f"{node}/device/mem_info_vram_total held {raw_vram!r}, which is not a byte count"
+                )
+        else:
+            profile.unknown.setdefault(
+                f"vram_{node}",
+                f"the {driver or 'unknown'} driver exports no mem_info_vram_total for {node}, "
+                "so this card's memory size could not be read",
+            )
+
+        gpus.append({
+            "node": node,
+            "vendor": vendor,
+            "vendor_id": vendor_id,
+            "device_id": device_id,
+            "driver": driver,
+            "name": name,
+            "vram_total_bytes": vram,
+            "vram_source": vram_source,
+        })
+    return gpus
+
+
+def _linux_compute_runtime(src: LinuxSources, profile: DeviceProfile, gpus: List[Dict[str, Any]]) -> None:
+    """Decide whether any detected card has a runtime that can actually reach it.
+
+    Presence of silicon is not capability. A gfx8 Radeon is real, has real
+    VRAM, and is years past ROCm support — "4 GiB present, no usable compute
+    runtime" is the correct and useful answer, so this reports the card and
+    still leaves the backend at cpu.
+    """
+    amd = [g for g in gpus if g.get("vendor") == "AMD"]
+    if not amd:
+        return
+
+    product = src.run(["rocm-smi", "--showproductname"], timeout=8.0)
+    if product:
+        profile.backend = "rocm"
+        profile.compute_runtime = "rocm"
+        profile.compute_runtime_detail = "rocm-smi reports the device"
+        if profile.vram_total_bytes is None:
+            profile.unknown.setdefault(
+                "vram_total_bytes",
+                "rocm-smi is present but no card exported mem_info_vram_total, "
+                "so the VRAM size was not read",
+            )
+        return
+
+    agents = src.run(["rocminfo"], timeout=8.0)
+    if agents and "gfx" in agents:
+        profile.backend = "rocm"
+        profile.compute_runtime = "rocm"
+        m = re.search(r"(gfx\d+\w*)", agents)
+        profile.compute_runtime_detail = f"rocminfo reports agent {m.group(1)}" if m else "rocminfo reports an agent"
+        return
+
+    profile.unknown["compute_runtime"] = (
+        "an AMD card was detected but neither rocm-smi nor rocminfo is installed, "
+        "so no runtime was found that can reach it; the card is present and not usable "
+        "for compute until one is"
+    )
+
+
+def _linux_machine_name(src: LinuxSources, profile: DeviceProfile) -> None:
+    """DMI product_name is often the SKU code ("80NT"), not a name anyone types.
+
+    product_version carries the friendly string on Lenovo, and product_family
+    on some others. Take the first candidate that reads like a name; if none
+    does, say unknown rather than handing the user a part number.
+    """
+    dmi = "sys/devices/virtual/dmi/id"
+    product_name = src.read_stripped(dmi, "product_name")
+    profile.machine_model = product_name or profile.machine_model
+
+    def looks_human(v: Optional[str]) -> bool:
+        if not v or len(v) < 4:
+            return False
+        if v.lower() in ("to be filled by o.e.m.", "system product name", "default string", "none"):
+            return False
+        # A SKU is short, uppercase and unspaced: "80NT", "10M8S0X600".
+        return bool(re.search(r"[a-z]", v)) and (" " in v or len(v.split("-")) > 1)
+
+    for value in (
+        src.read_stripped(dmi, "product_version"),
+        product_name,
+        src.read_stripped(dmi, "product_family"),
+        src.read_stripped("proc/device-tree/model"),
+    ):
+        if looks_human(value):
+            profile.machine_name = value
+            return
+
+    profile.unknown["machine_name"] = (
+        f"DMI reports only {product_name!r} for product_name and no friendly "
+        "product_version or product_family, so this machine's name is unknown"
+    )
+
+
+def _linux_cpu_cores(src: LinuxSources, profile: DeviceProfile) -> None:
+    """Physical cores and threads are different numbers; report both or neither.
+
+    os.cpu_count() counts threads. On a 2-core i5-6200U with SMT that is 4, and
+    calling it "4 cores" overstates the machine by exactly a factor of two.
+    """
+    cpuinfo = src.read_text("proc", "cpuinfo")
+    logical = None
+    physical = None
+    chip = None
+    if cpuinfo:
+        blocks = [b for b in cpuinfo.split("\n\n") if "processor" in b]
+        logical = len(blocks) or None
+        pairs = set()
+        for b in blocks:
+            pid = re.search(r"^physical id\s*:\s*(\d+)", b, re.MULTILINE)
+            cid = re.search(r"^core id\s*:\s*(\d+)", b, re.MULTILINE)
+            if pid and cid:
+                pairs.add((pid.group(1), cid.group(1)))
+        physical = len(pairs) or None
+        m = re.search(r"^model name\s*:\s*(.+)$", cpuinfo, re.MULTILINE)
+        if m:
+            chip = m.group(1).strip()
+
+    if logical is None:
+        logical = os.cpu_count()
+    profile.cpu_cores_logical = logical
+    profile.cpu_cores = logical
+    profile.cpu_cores_physical = physical
+    profile.chip = chip or profile.chip
+
+    if logical is None:
+        profile.unknown["cpu_cores"] = "neither /proc/cpuinfo nor os.cpu_count() gave a thread count"
+    if physical is None:
+        profile.unknown["cpu_cores_physical"] = (
+            "/proc/cpuinfo carries no physical id / core id pairs, so physical cores "
+            "could not be told apart from threads"
+        )
+    if not profile.chip:
+        profile.unknown["chip"] = "/proc/cpuinfo has no model name line"
+
+
+def _probe_linux(profile: DeviceProfile, src: Optional[LinuxSources] = None) -> None:
+    src = src or LinuxSources()
     profile.os_name = "Linux"
     profile.os_version = platform.release()
 
-    try:
-        with open("/proc/meminfo") as f:
+    meminfo = src.read_text("proc", "meminfo")
+    if meminfo:
+        try:
             mem = dict(
                 (k.strip(), v.strip()) for k, v in
-                (line.split(":", 1) for line in f if ":" in line)
+                (line.split(":", 1) for line in meminfo.splitlines() if ":" in line)
             )
-        total_kb = int(mem["MemTotal"].split()[0])
-        profile.memory_total_bytes = total_kb * 1024
-        avail = mem.get("MemAvailable")
-        if avail:
-            profile.memory_free_bytes = int(avail.split()[0]) * 1024
-    except Exception as e:
-        profile.unknown["memory_total_bytes"] = str(e)
+            profile.memory_total_bytes = int(mem["MemTotal"].split()[0]) * 1024
+            avail = mem.get("MemAvailable")
+            if avail:
+                profile.memory_free_bytes = int(avail.split()[0]) * 1024
+            else:
+                profile.unknown["memory_free_bytes"] = "/proc/meminfo has no MemAvailable line"
+        except Exception as e:
+            profile.unknown["memory_total_bytes"] = f"/proc/meminfo unparseable: {e}"
+    else:
+        profile.unknown["memory_total_bytes"] = f"{src.path('proc/meminfo')} could not be read"
 
-    profile.cpu_cores = os.cpu_count()
+    _linux_cpu_cores(src, profile)
+    _linux_machine_name(src, profile)
 
-    for path in ("/sys/devices/virtual/dmi/id/product_name", "/proc/device-tree/model"):
-        try:
-            with open(path) as f:
-                profile.machine_name = f.read().strip("\x00 \n")
-                break
-        except Exception:
-            continue
+    # NVIDIA first and on its own terms: nvidia-smi answers name, VRAM and
+    # compute capability in one call, and its cards need no sysfs archaeology.
+    if _probe_nvidia(profile, run=src.run):
+        return
 
-    try:
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if line.startswith("model name"):
-                    profile.chip = line.split(":", 1)[1].strip()
-                    break
-    except Exception:
-        pass
+    profile.backend = "cpu"
+    profile.gpus = _detect_linux_gpus(src, profile)
 
-    if not _probe_nvidia(profile):
-        if _run(["rocm-smi", "--showproductname"], timeout=8.0):
-            profile.backend = "rocm"
-            profile.unknown["vram_total_bytes"] = "rocm-smi present, VRAM not parsed"
-        else:
-            profile.backend = "cpu"
+    with_vram = [g for g in profile.gpus if g.get("vram_total_bytes")]
+    if with_vram:
+        best = max(with_vram, key=lambda g: g["vram_total_bytes"])
+        profile.vram_total_bytes = best["vram_total_bytes"]
+        profile.gpu_name = best.get("name") or profile.gpu_name
+    elif profile.gpus:
+        named = next((g for g in profile.gpus if g.get("name")), None)
+        if named:
+            profile.gpu_name = named["name"]
+        profile.unknown["vram_total_bytes"] = (
+            "a GPU was detected but no driver exported its memory size, so the "
+            "amount of accelerator memory is unknown — it is NOT this machine's RAM"
+        )
+    else:
+        profile.unknown["vram_total_bytes"] = (
+            "no GPU was detected, so there is no accelerator memory to report — "
+            "system RAM is not a substitute for it"
+        )
+
+    _linux_compute_runtime(src, profile, profile.gpus)
+
+    if profile.backend == "cpu" and profile.gpus and "compute_runtime" not in profile.unknown:
+        profile.unknown.setdefault(
+            "compute_runtime",
+            "a display adapter was detected but no compute runtime (CUDA or ROCm) "
+            "was found that can reach it",
+        )
 
 
 def probe_local_device() -> DeviceProfile:
@@ -363,9 +739,11 @@ def probe_local_device() -> DeviceProfile:
         profile.unknown["probe"] = str(e)
 
     _probe_disk(profile)
-    if profile.memory_limit_bytes is None and profile.accelerator_memory_bytes:
-        profile.memory_limit_bytes = usable_memory_bytes(profile)
-        profile.memory_limit_source = "heuristic"
+    if profile.memory_limit_bytes is None:
+        heuristic = usable_memory_bytes(profile)
+        if heuristic is not None:
+            profile.memory_limit_bytes = heuristic
+            profile.memory_limit_source = "heuristic"
     return profile
 
 

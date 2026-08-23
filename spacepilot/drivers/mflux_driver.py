@@ -106,6 +106,7 @@ class MfluxDriver(InferenceDriver):
             backend="metal",
             resident_vram_gb=resident_vram_gb,
             is_loaded=False,
+            requires_accelerator=True,
         )
         super().__init__(spec)
         self.bin_dir = bin_dir or mflux_bin_dir()
