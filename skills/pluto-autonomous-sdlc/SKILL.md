@@ -55,4 +55,4 @@ This skill dictates the autonomous lifecycle execution for Pluto Studio when the
 5. **Merge, Verification & Clean Up**:
    - Merge approved branches into `main`, resolve any textual conflicts, run the 100% test suite, force-clean the worktree, and push to `origin/main`.
 6. **Artifact & Kanban Synchronization**:
-   - Immediately update `studio/blueprint.html`, bump versions, and sync Downloads.
+   - Immediately update `web/blueprint.html`, bump versions, and sync Downloads.

@@ -12,9 +12,9 @@ What is deployed is the **landing page**. PR #16 fixes a star badge in `LandingP
 
 ## What actually happened
 
-The vanilla `studio/` app worked. It was the frontend until 2026-08-21.
+The vanilla `web/` app worked. It was the frontend until 2026-08-21.
 
-The problem with it was file length, not function: `studio.css` is 3,402 lines, `studio.js` 1,977, `create.html` 1,848, `create.js` 1,375. Files that size are hard for agents to work in. On the night of 2026-08-21 the migration to React was handed to agy/Gemini to fix exactly that.
+The problem with it was file length, not function: `app.css` is 3,402 lines, `app.js` 1,977, `create.html` 1,848, `create.js` 1,375. Files that size are hard for agents to work in. On the night of 2026-08-21 the migration to React was handed to agy/Gemini to fix exactly that.
 
 The migration is incomplete. It delivered the decomposition — 55 modules, average 198 lines, largest 677 — and a correct token-aware API layer in `ui/src/hooks/`. It did not connect the screens to it.
 
@@ -34,7 +34,7 @@ Neither "React won" nor "React failed" is right. The expensive half — decompos
 
 `docs/REDESIGN-PLAN.md` remains superseded, but not because React shipped. It proposes a vanilla redesign, and the vanilla stack is the thing being migrated away from for a reason that still holds: agents cannot work well in 3,400-line files.
 
-Until the five files are connected, `studio/` is still the working app and `ui/` is an unfinished migration whose landing page happens to be deployed.
+Until the five files are connected, `web/` is still the working app and `ui/` is an unfinished migration whose landing page happens to be deployed.
 
 ## What is still open
 
@@ -43,7 +43,7 @@ These are the real decisions left, and they are smaller than the one this file u
 1. **`main` does not contain the production frontend.** `ui/` exists only on `feat/frontend-react-ui`. The site people can visit is built from a branch, not from the default branch. Merging PR #14 fixes that; leaving it open means `main` does not describe the product.
 2. **CI has no coverage of `ui/`.** 12,765 lines of TypeScript with nothing gating build, typecheck, or lint. See PR #18, which scopes CI spend and deliberately leaves this gap open rather than deciding it in passing.
 3. **Deploy config is not in the repo.** Committing a `vercel.json` would make the domain-to-repo link auditable.
-4. **`studio/` has no stated end date.** It is legacy by description, but nothing says when it goes.
+4. **`web/` has no stated end date.** It is legacy by description, but nothing says when it goes.
 
 ## What this does not settle
 

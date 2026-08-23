@@ -12,7 +12,7 @@
 
 ## 1. Architecture & Package Structure
 
-The legacy monolith in `src/studio_api.py` has been refactored into the structured, extensible `src.pluto` package layout while preserving 100% backwards compatibility for existing imports and CLI tools:
+The legacy monolith in `src/web_api.py` has been refactored into the structured, extensible `src.pluto` package layout while preserving 100% backwards compatibility for existing imports and CLI tools:
 
 ```
 pluto/
@@ -41,11 +41,11 @@ pluto/
 │   │           ├── gpu.py            # /api/gpu/launch, /api/gpu/terminate, spot failover
 │   │           ├── assets.py         # /api/assets/list, /api/assets/delete
 │   │           └── views.py          # Static files & /ws/cockpit Web SSH PTY bridge
-│   ├── studio_api.py                 # Backwards-compatible facade importing from src.pluto
+│   ├── web_api.py                 # Backwards-compatible facade importing from src.pluto
 │   ├── cli.py                        # spacepilot CLI entrypoint
 │   └── skypilot_orchestrator.py      # SkyPilot YAML generator & spot broker
 ├── tests/                            # 142 Pytest unit & integration tests
-└── studio/                           # Legacy HTML files (also backed up in studio_backup_original/)
+└── web/                           # Legacy HTML files (also backed up in studio_backup_original/)
 ```
 
 ---
@@ -143,7 +143,7 @@ pluto/
 ## 4. Immediate Action Item for Backend Session
 
 * **Test Compatibility Import Fix**:
-  In `src/studio_api.py`, ensure `require_token` is explicitly imported from `src.pluto.api.deps` so legacy tests in `tests/test_studio_api.py` pass cleanly:
+  In `src/web_api.py`, ensure `require_token` is explicitly imported from `src.pluto.api.deps` so legacy tests in `tests/test_web_api.py` pass cleanly:
   ```python
   from src.pluto.api.deps import require_token, update_activity
   ```
@@ -153,5 +153,5 @@ pluto/
   ```
 * **Command to Start Backend**:
   ```bash
-  python3 -m uvicorn src.studio_api:create_app --factory --port 8080 --host 0.0.0.0
+  python3 -m uvicorn src.web_api:create_app --factory --port 8080 --host 0.0.0.0
   ```

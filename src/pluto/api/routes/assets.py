@@ -124,7 +124,7 @@ def get_asset_thumbnail_file(asset_id: str):
     try:
         file_path = resolve_output(f"{clean_id}.png")
     except HTTPException:
-        fallback = settings.studio_dir / "assets" / "placeholder.png"
+        fallback = settings.web_dir / "assets" / "placeholder.png"
         if fallback.exists():
             return FileResponse(fallback, media_type="image/png")
         raise HTTPException(status_code=404, detail=f"Asset thumbnail '{asset_id}' not found")

@@ -17,7 +17,7 @@ from src.drivers.base import DriverSpec, InferenceDriver
 from src.drivers.kokoro_driver import KokoroDriver, VOICE_CATALOGUE
 from src.drivers.gguf_driver import GGUFDriver
 from src.local_workers import LocalWorkerManager, local_worker_manager
-from src.studio_api import app, STUDIO_TOKEN, OUTPUTS_DIR
+from src.web_api import app, STUDIO_TOKEN, OUTPUTS_DIR
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
@@ -282,7 +282,7 @@ def test_local_worker_manager_telemetry():
     mgr.unload_all()
 
 
-def test_studio_api_local_synthesize_endpoint_security_and_execution():
+def test_web_api_local_synthesize_endpoint_security_and_execution():
     """Verify /api/audio/synthesize-local auth gating, validation, and generation."""
     payload = {"text": "Local in-process Kokoro synthesis test.", "voice": "af_heart", "speed": 1.0}
 
@@ -316,7 +316,7 @@ def test_studio_api_local_synthesize_endpoint_security_and_execution():
     json_file.unlink(missing_ok=True)
 
 
-def test_studio_api_local_decompose_endpoint_security_and_execution():
+def test_web_api_local_decompose_endpoint_security_and_execution():
     """Verify /api/narrative/decompose-local auth gating, validation, and scene decomposition."""
     payload = {
         "script": "Deep sea research submarine discovers an underwater alien structure.",

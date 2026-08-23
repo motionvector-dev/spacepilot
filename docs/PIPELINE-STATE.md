@@ -120,5 +120,5 @@ UI-complete and storage-incomplete until those five markers clear.
 - No CI ran on PR #1. `.github/workflows/tests.yml` reported no checks — confirm it
   fires on pull requests before relying on it.
 - **Pluto is not on the launch path.** The studio is the product, and the AI Director
-  concept is specced in `motionvector/studio/docs/agentic-studio-direction.md`. Do not
+  concept is specced in `motionvector/web/docs/agentic-studio-direction.md`. Do not
   grow a second director, or a second provider router, inside this repo.

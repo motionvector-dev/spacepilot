@@ -21,7 +21,7 @@ sys.path.append(str(PLUTO_ROOT / "src"))
 import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
-from src.studio_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
+from src.web_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
 
 client = TestClient(app)
 
@@ -111,9 +111,9 @@ def test_healthz_is_dependency_free_liveness():
 
 def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
     """An adversarial poll burst must produce one AWS refresh, not one per call."""
-    import src.studio_api as studio_api
+    import src.web_api as web_api
 
-    monkeypatch.setattr(studio_api, "_status_cache", None)
+    monkeypatch.setattr(web_api, "_status_cache", None)
     calls = 0
     calls_lock = threading.Lock()
 
@@ -124,9 +124,9 @@ def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
         time.sleep(0.05)
         return None
 
-    monkeypatch.setattr(studio_api, "get_instance_info", fake_instance_info)
+    monkeypatch.setattr(web_api, "get_instance_info", fake_instance_info)
     with ThreadPoolExecutor(max_workers=20) as pool:
-        results = list(pool.map(lambda _n: studio_api.get_status(), range(20)))
+        results = list(pool.map(lambda _n: web_api.get_status(), range(20)))
 
     assert calls == 1
     assert all(result["gpu_online"] is False for result in results)
@@ -331,7 +331,7 @@ def test_resolve_output_blocks_escapes_from_outputs_dir():
     """Verify the containment check itself rejects anything outside OUTPUTS_DIR."""
     from fastapi import HTTPException
 
-    from src.studio_api import OUTPUTS_DIR, resolve_output
+    from src.web_api import OUTPUTS_DIR, resolve_output
 
     outside = PLUTO_ROOT / "pytest_outside_marker.txt"
     outside.write_text("should never be served")
@@ -365,7 +365,7 @@ def test_media_route_refuses_symlink_out_of_outputs_dir():
     path and answers 404 itself. A symlink inside OUTPUTS_DIR has an ordinary
     name, so it routes fine and only the resolved-path check stops it.
     """
-    from src.studio_api import OUTPUTS_DIR
+    from src.web_api import OUTPUTS_DIR
 
     secret = OUTPUTS_DIR.parent / "pytest_symlink_target.txt"
     secret.write_text("should never be served")
@@ -403,7 +403,7 @@ def test_asset_file_route_requires_exact_name():
 
 def test_failed_ffmpeg_is_recorded_as_failed():
     """Verify a bad ffmpeg run records status 'failed' instead of 'completed'."""
-    from src.studio_api import ffmpeg_error, run_ffmpeg
+    from src.web_api import ffmpeg_error, run_ffmpeg
 
     res = run_ffmpeg(["-i", str(OUTPUTS_DIR / "definitely_missing_source.mp4"), "-f", "null", "-"])
     assert res.returncode != 0
@@ -442,7 +442,7 @@ def test_malformed_headers_and_names_do_not_500():
 
 def test_failed_render_leaves_no_partial_video():
     """A failed render must not leave a 0-byte mp4 that the library then lists."""
-    from src.studio_api import OUTPUTS_DIR, discard_partial
+    from src.web_api import OUTPUTS_DIR, discard_partial
 
     corrupt = OUTPUTS_DIR / "pytest_corrupt.mp4"
     corrupt.write_bytes(b"not a video")
@@ -483,21 +483,21 @@ def test_run_cmd_rejects_shell_strings():
 
 def test_worker_headers_require_token():
     """Verify the studio refuses to call the GPU worker without a token."""
-    import src.studio_api as studio_api
+    import src.web_api as web_api
 
-    original = studio_api.WORKER_TOKEN
+    original = web_api.WORKER_TOKEN
     try:
-        studio_api.WORKER_TOKEN = ""
+        web_api.WORKER_TOKEN = ""
         try:
-            studio_api.worker_headers()
+            web_api.worker_headers()
             assert False, "worker_headers should refuse an empty token"
         except RuntimeError:
             pass
 
-        studio_api.WORKER_TOKEN = "secret"
-        assert studio_api.worker_headers()["Authorization"] == "Bearer secret"
+        web_api.WORKER_TOKEN = "secret"
+        assert web_api.worker_headers()["Authorization"] == "Bearer secret"
     finally:
-        studio_api.WORKER_TOKEN = original
+        web_api.WORKER_TOKEN = original
 
 
 def test_multi_view_routes():
@@ -527,7 +527,7 @@ def test_generate_request_supports_ltx25_fields():
 
 def test_static_asset_routing():
     """Verify static JS and CSS files are properly served."""
-    for asset in ["/studio.css", "/studio.js"]:
+    for asset in ["/app.css", "/app.js"]:
         res = client.get(asset)
         assert res.status_code == 200
         assert len(res.text) > 0
@@ -741,13 +741,13 @@ def test_generate_with_image_path():
 
 def test_inspect_metrics_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     import subprocess
     
-    client = TestClient(studio_api.app)
+    client = TestClient(web_api.app)
     
     # Mock instance info
-    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
     
     # Mock subprocess.run
     def mock_run(cmd, *args, **kwargs):
@@ -766,11 +766,11 @@ def test_inspect_metrics_endpoint(monkeypatch):
     
 def test_inspect_action_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     import subprocess
     
-    client = TestClient(studio_api.app)
-    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    client = TestClient(web_api.app)
+    monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
     
     def mock_run(cmd, *args, **kwargs):
         class MockCompletedProcess:
@@ -791,7 +791,7 @@ def test_inspect_action_endpoint(monkeypatch):
     
 def test_inspect_shell_ws_valid_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     import asyncio
     
     # Mock async subprocess
@@ -816,21 +816,21 @@ def test_inspect_shell_ws_valid_auth(monkeypatch):
     async def mock_exec(*args, **kwargs):
         return MockProcess()
         
-    monkeypatch.setattr(studio_api.asyncio, "create_subprocess_exec", mock_exec)
-    monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
+    monkeypatch.setattr(web_api.asyncio, "create_subprocess_exec", mock_exec)
+    monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running", "ip": "1.2.3.4"})
     
-    client = TestClient(studio_api.app)
+    client = TestClient(web_api.app)
     
     with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
-        websocket.send_json({"type": "auth", "token": studio_api.STUDIO_TOKEN})
+        websocket.send_json({"type": "auth", "token": web_api.STUDIO_TOKEN})
         websocket.send_json({"type": "resize", "cols": 80, "rows": 24})
         
 def test_inspect_shell_ws_invalid_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     from starlette.websockets import WebSocketDisconnect
     
-    client = TestClient(studio_api.app)
+    client = TestClient(web_api.app)
     with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
         websocket.send_json({"type": "auth", "token": "invalid_token"})
         try:
@@ -841,10 +841,10 @@ def test_inspect_shell_ws_invalid_auth(monkeypatch):
 
 def test_inspect_shell_ws_null_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     from starlette.websockets import WebSocketDisconnect
     
-    client = TestClient(studio_api.app)
+    client = TestClient(web_api.app)
     with client.websocket_connect("/api/gpu/inspect/shell") as websocket:
         websocket.send_json({"type": "auth", "token": None})
         try:
@@ -935,10 +935,10 @@ if __name__ == "__main__":
 
 def test_cockpit_status_includes_launch_time(monkeypatch):
     """Verify that instance.launch_time propagates up through the status endpoint."""
-    import src.studio_api as studio_api
+    import src.web_api as web_api
     from fastapi.testclient import TestClient
     
-    monkeypatch.setattr(studio_api, "_status_cache", None)
+    monkeypatch.setattr(web_api, "_status_cache", None)
     
     def fake_instance_info(_cfg):
         return {
@@ -949,10 +949,10 @@ def test_cockpit_status_includes_launch_time(monkeypatch):
             "launch_time": "2026-08-21T10:00:00Z"
         }
         
-    monkeypatch.setattr(studio_api, "get_instance_info", fake_instance_info)
-    monkeypatch.setattr(studio_api, "fetch_worker_health", lambda ip: {"ok": True})
+    monkeypatch.setattr(web_api, "get_instance_info", fake_instance_info)
+    monkeypatch.setattr(web_api, "fetch_worker_health", lambda ip: {"ok": True})
     
-    client = TestClient(studio_api.app)
+    client = TestClient(web_api.app)
     res = client.get("/api/cockpit/status")
     assert res.status_code == 200
     data = res.json()
@@ -1047,15 +1047,15 @@ def test_watchdog_update_config():
 def test_watchdog_logic_trigger(monkeypatch):
     """Verify watchdog triggers auto-termination when idle exceeds threshold."""
     async def run_test():
-        import src.studio_api as studio_api
+        import src.web_api as web_api
         fake_time = [1000.0]
-        monkeypatch.setattr(studio_api.time, "time", lambda: fake_time[0])
-        studio_api._last_activity_time = 1000.0
-        monkeypatch.setattr(studio_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
-        monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
+        monkeypatch.setattr(web_api.time, "time", lambda: fake_time[0])
+        web_api._last_activity_time = 1000.0
+        monkeypatch.setattr(web_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
+        monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
         
         term_calls = []
-        monkeypatch.setattr(studio_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
+        monkeypatch.setattr(web_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
         
         sleep_calls = [0]
         async def mock_sleep(secs):
@@ -1063,12 +1063,12 @@ def test_watchdog_logic_trigger(monkeypatch):
             if sleep_calls[0] > 1:
                 raise asyncio.CancelledError()
             
-        monkeypatch.setattr(studio_api.asyncio, "sleep", mock_sleep)
+        monkeypatch.setattr(web_api.asyncio, "sleep", mock_sleep)
         
         # 10 mins idle -> no termination
         fake_time[0] = 1000.0 + (10 * 60)
         try:
-            await studio_api.idle_watchdog_loop()
+            await web_api.idle_watchdog_loop()
         except asyncio.CancelledError:
             pass
         assert len(term_calls) == 0
@@ -1077,39 +1077,39 @@ def test_watchdog_logic_trigger(monkeypatch):
         sleep_calls[0] = 0
         fake_time[0] = 1000.0 + (21 * 60)
         try:
-            await studio_api.idle_watchdog_loop()
+            await web_api.idle_watchdog_loop()
         except asyncio.CancelledError:
             pass
         assert len(term_calls) == 1
-        assert studio_api._watchdog_event["event"] == "auto_shutdown"
+        assert web_api._watchdog_event["event"] == "auto_shutdown"
 
     asyncio.run(run_test())
 
 def test_watchdog_activity_reset(monkeypatch):
     """Verify activity updates reset the watchdog timer."""
     async def run_test():
-        import src.studio_api as studio_api
-        studio_api._last_activity_time = 1000.0
-        monkeypatch.setattr(studio_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
-        monkeypatch.setattr(studio_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
+        import src.web_api as web_api
+        web_api._last_activity_time = 1000.0
+        monkeypatch.setattr(web_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
+        monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
         
         term_calls = []
-        monkeypatch.setattr(studio_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
+        monkeypatch.setattr(web_api, "run_cmd", lambda cmd, **kwargs: term_calls.append(cmd))
         sleep_calls = [0]
         async def mock_sleep(secs):
             sleep_calls[0] += 1
             if sleep_calls[0] > 1:
                 raise asyncio.CancelledError()
-        monkeypatch.setattr(studio_api.asyncio, "sleep", mock_sleep)
+        monkeypatch.setattr(web_api.asyncio, "sleep", mock_sleep)
         
         fake_time = [2000.0]
-        monkeypatch.setattr(studio_api.time, "time", lambda: fake_time[0])
-        studio_api.update_activity()
-        assert studio_api._last_activity_time == fake_time[0]
+        monkeypatch.setattr(web_api.time, "time", lambda: fake_time[0])
+        web_api.update_activity()
+        assert web_api._last_activity_time == fake_time[0]
         
         fake_time[0] = 2000.0 + (10 * 60)
         try:
-            await studio_api.idle_watchdog_loop()
+            await web_api.idle_watchdog_loop()
         except asyncio.CancelledError:
             pass
         
