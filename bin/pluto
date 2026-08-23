@@ -7,4 +7,4 @@ while [ -L "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$(cd -P "$(dirname "$SOURCE")/.." >/dev/null 2>&1 && pwd)"
-exec python3 "$DIR/src/cli.py" "$@"
+exec python3 "$DIR/spacepilot/cli.py" "$@"

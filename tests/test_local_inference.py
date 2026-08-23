@@ -9,22 +9,22 @@ from fastapi.testclient import TestClient
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
-from src.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
-from src.model_recommender import (
+from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
+from spacepilot.model_recommender import (
     ModelEntry,
     RECOMMENDED_MODEL_CATALOG,
     recommend_models_for_device,
     download_model_mock,
     PLUTO_MODELS_CACHE,
 )
-from src.pluto_mcp_server import (
+from spacepilot.pluto_mcp_server import (
     pluto_probe_hardware,
     pluto_recommend_models,
     pluto_get_local_status,
 )
-from src.web_api import app, STUDIO_TOKEN
+from spacepilot.web_api import app, STUDIO_TOKEN
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}

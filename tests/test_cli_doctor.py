@@ -2,10 +2,10 @@ import unittest
 from unittest.mock import patch, MagicMock
 from io import StringIO
 import sys
-from src.cli import cmd_doctor
+from spacepilot.cli import cmd_doctor
 
 class TestCliDoctor(unittest.TestCase):
-    @patch('src.device_probe.probe_local_device')
+    @patch('spacepilot.device_probe.probe_local_device')
     @patch('subprocess.run')
     def test_cmd_doctor_success(self, mock_subprocess_run, mock_probe):
         # Mock device profile
@@ -46,7 +46,7 @@ class TestCliDoctor(unittest.TestCase):
         self.assertIn("FFmpeg   : ✅ Installed", output)
         self.assertIn("AWS Auth : ✅ Valid", output)
 
-    @patch('src.device_probe.probe_local_device')
+    @patch('spacepilot.device_probe.probe_local_device')
     @patch('subprocess.run')
     def test_cmd_doctor_missing_deps(self, mock_subprocess_run, mock_probe):
         mock_profile = MagicMock()
@@ -78,14 +78,14 @@ class TestCliDoctor(unittest.TestCase):
         self.assertIn("AWS Auth : ❌ NOT AUTHENTICATED", output)
 
     def test_default_config_sizing(self):
-        from src.cli import DEFAULT_CONFIG
+        from spacepilot.cli import DEFAULT_CONFIG
         self.assertEqual(DEFAULT_CONFIG["instance_type"], "g6e.2xlarge")
         self.assertEqual(DEFAULT_CONFIG["spot_hourly_rate"], 0.75)
 
-    @patch('src.cli.get_instance_info')
-    @patch('src.cli.run_cmd')
+    @patch('spacepilot.cli.get_instance_info')
+    @patch('spacepilot.cli.run_cmd')
     def test_cmd_deploy_token_forwarding(self, mock_run_cmd, mock_inst_info):
-        from src.cli import cmd_deploy
+        from spacepilot.cli import cmd_deploy
         mock_inst_info.return_value = {"id": "i-12345", "ip": "1.2.3.4", "state": "running"}
         
         args = MagicMock()
@@ -104,13 +104,13 @@ class TestCliDoctor(unittest.TestCase):
 
     def test_cmd_generate_custom_output_arg(self):
         import argparse
-        from src.cli import main
+        from spacepilot.cli import main
         # Verify parser handles --output, --stg, and --image-noise-scale without error
         parser = argparse.ArgumentParser()
         # Test cli argument parsing logic via sys.argv mock
         with patch('sys.argv', ['pluto', 'generate', 'test prompt', '--output', '/tmp/test.mp4', '--stg', '0.8', '--image-noise-scale', '0.03']):
-            with patch('src.cli.cmd_generate') as mock_gen:
-                with patch('src.cli.get_instance_info') as mock_inst:
+            with patch('spacepilot.cli.cmd_generate') as mock_gen:
+                with patch('spacepilot.cli.get_instance_info') as mock_inst:
                     mock_inst.return_value = {"id": "i-123", "ip": "1.2.3.4", "state": "running"}
                     main()
                     self.assertTrue(mock_gen.called)

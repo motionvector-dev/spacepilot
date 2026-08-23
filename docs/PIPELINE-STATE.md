@@ -2,8 +2,8 @@
 
 **Status**: Current
 **Verified**: 2026-08-22 (re-verified by running `pytest tests/ -q`, reading
-`src/pluto/services/checkpoint_sync.py` and `src/pluto/api/routes/recipes.py`
-and `src/pluto/services/model_catalog.py`, and checking `outputs/` metadata)
+`spacepilot/pluto/services/checkpoint_sync.py` and `spacepilot/pluto/api/routes/recipes.py`
+and `spacepilot/pluto/services/model_catalog.py`, and checking `outputs/` metadata)
 **Supersedes / Superseded by**: none
 
 Read this before assuming any part of the pipeline has been exercised. First
@@ -93,11 +93,11 @@ is a quality-evaluation path, not a production one.
 
 Five `TODO(real-*)` markers, all on main right now:
 
-- `src/pluto/api/routes/recipes.py:36` — `TODO(real-download)`
-- `src/pluto/services/model_catalog.py:155` — `TODO(real-download)`
-- `src/pluto/services/model_catalog.py:188` — `TODO(real-download)`
-- `src/pluto/services/checkpoint_sync.py:87` — `TODO(real-sync)`, storage upload
-- `src/pluto/services/checkpoint_sync.py:127` — `TODO(real-sync)`, storage download
+- `spacepilot/pluto/api/routes/recipes.py:36` — `TODO(real-download)`
+- `spacepilot/pluto/services/model_catalog.py:155` — `TODO(real-download)`
+- `spacepilot/pluto/services/model_catalog.py:188` — `TODO(real-download)`
+- `spacepilot/pluto/services/checkpoint_sync.py:87` — `TODO(real-sync)`, storage upload
+- `spacepilot/pluto/services/checkpoint_sync.py:127` — `TODO(real-sync)`, storage download
 
 That splits into two mocked layers: model download (recipes and
 `model_catalog`) and checkpoint storage sync (upload and download).
@@ -114,7 +114,7 @@ UI-complete and storage-incomplete until those five markers clear.
   `target_duration` and `style`. Docstring carries the TODO. Finishing it makes the
   route spend compute, which means `Depends(require_token)` and removal from
   `UNGATED_BY_DESIGN` — and the route guard exempts it by name, so nothing will flag it.
-- `src/enhance_prompt.py` loads Qwen2.5-1.5B through transformers on MPS and is called
+- `spacepilot/enhance_prompt.py` loads Qwen2.5-1.5B through transformers on MPS and is called
   by nothing. `/api/enhance` is rule-based string concatenation. Two divergent paths,
   the LLM one orphaned. Point both at the fleet in `INFERENCE.md` instead.
 - No CI ran on PR #1. `.github/workflows/tests.yml` reported no checks — confirm it

@@ -92,7 +92,7 @@ closed the fleet's one diarization gap.
 - **Bulk / offline** → OpenRouter free tier, or `agy`.
 - **Fanning one job across many models** → the local litellm proxy. One base URL,
   one key, 28 models; no per-provider client code and no per-provider failure mode.
-- **Never** → loading a local model through `transformers` on MPS. `src/enhance_prompt.py`
+- **Never** → loading a local model through `transformers` on MPS. `spacepilot/enhance_prompt.py`
   does this with Qwen2.5-1.5B and reloads on every call; it predates the fleet and
   nothing should copy it.
 

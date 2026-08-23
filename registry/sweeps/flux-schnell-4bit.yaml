@@ -1,4 +1,4 @@
-# Overnight sweep spec for `pluto sweep run` (src/pluto/sweep.py).
+# Overnight sweep spec for `pluto sweep run` (spacepilot/pluto/sweep.py).
 #
 # FLUX.1 [schnell], apache-2.0, mflux-generate --model schnell. Fully cached
 # locally already (31 GB, see docs/PIPELINE-STATE.md) — this spec spends no

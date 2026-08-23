@@ -1,7 +1,7 @@
 # LTX-2.5 Deep Dive, Experimentation Matrix & Pluto CLI Audit
 
 **Status**: Superseded (in part) — two findings below are resolved on main; the rest are still open.
-**Verified**: 2026-08-22, by reading `src/ltx_worker.py` on main @ c6b99c4 and checking commit history (`git log`).
+**Verified**: 2026-08-22, by reading `spacepilot/ltx_worker.py` on main @ c6b99c4 and checking commit history (`git log`).
 **Supersedes / Superseded by**: none
 
 This document provides a technical reference for **LTX-2.5** (Lightricks' 22B parameter multi-modal diffusion transformer for synchronized video and audio), a complete **configuration experimentation matrix**, and an architectural audit of the **Pluto CLI / Worker** codebase.
@@ -66,7 +66,7 @@ Here is the parameter reference for testing and tuning LTX-2.5 generation qualit
 
 ### B. Multi-Modal Guidance Controls
 
-**SUPERSEDED BY CODE.** This table states general LTX-2.5 guidance theory. The shipped worker does not follow the "distilled" defaults below — it sets `guidance_scale=3.0` and `audio_guidance_scale=7.0` deliberately, per commit `cc0303c` ("set official LTX-2.5 guidance_scale=3.0 and disable prompt enhancement"). The source of truth for current defaults is `src/ltx_worker.py:145-148`, not this table. The reasoning here is kept because it may still be useful for tuning experiments away from the shipped defaults.
+**SUPERSEDED BY CODE.** This table states general LTX-2.5 guidance theory. The shipped worker does not follow the "distilled" defaults below — it sets `guidance_scale=3.0` and `audio_guidance_scale=7.0` deliberately, per commit `cc0303c` ("set official LTX-2.5 guidance_scale=3.0 and disable prompt enhancement"). The source of truth for current defaults is `spacepilot/ltx_worker.py:145-148`, not this table. The reasoning here is kept because it may still be useful for tuning experiments away from the shipped defaults.
 
 | Parameter | Type | Range | Recommended | Description & Tuning Guide |
 | :--- | :--- | :--- | :--- | :--- |
@@ -171,18 +171,18 @@ Here is the parameter reference for testing and tuning LTX-2.5 generation qualit
 
 ## 4. Pluto CLI & Worker Architecture Audit
 
-We conducted an in-depth audit of [`src/cli.py`](file:///Users/saurabh/code/motionvector/pluto-i2v/src/cli.py), [`src/ltx_worker.py`](file:///Users/saurabh/code/motionvector/pluto-i2v/src/ltx_worker.py), and [`infra/setup_ltx_ec2.sh`](file:///Users/saurabh/code/motionvector/pluto-i2v/infra/setup_ltx_ec2.sh).
+We conducted an in-depth audit of [`spacepilot/cli.py`](file:///Users/saurabh/code/motionvector/pluto-i2v/src/cli.py), [`spacepilot/ltx_worker.py`](file:///Users/saurabh/code/motionvector/pluto-i2v/src/ltx_worker.py), and [`infra/setup_ltx_ec2.sh`](file:///Users/saurabh/code/motionvector/pluto-i2v/infra/setup_ltx_ec2.sh).
 
 ### Key Findings & Vulnerability Matrix
 
 | Severity | Component | Finding | Architectural Impact |
 | :--- | :--- | :--- | :--- |
-| ✅ **RESOLVED** | `src/ltx_worker.py` | **Duplicate Model VRAM Allocation** — fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). Line 121 now reads `LTX2ImageToVideoPipeline(**_pipe.components)`, so the I2V pipeline shares the T2V pipeline's components instead of loading a second 22B copy. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` was also added at line 16 by commit `c6b99c4`. See Finding 1 in Section 5 for detail. | Was: risked CUDA OOM on 48GB cards from double-loading. Now: components are shared, no second load. |
+| ✅ **RESOLVED** | `spacepilot/ltx_worker.py` | **Duplicate Model VRAM Allocation** — fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). Line 121 now reads `LTX2ImageToVideoPipeline(**_pipe.components)`, so the I2V pipeline shares the T2V pipeline's components instead of loading a second 22B copy. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` was also added at line 16 by commit `c6b99c4`. See Finding 1 in Section 5 for detail. | Was: risked CUDA OOM on 48GB cards from double-loading. Now: components are shared, no second load. |
 | 🔴 **CRITICAL** | `infra/setup_ltx_ec2.sh` | **Unpinned Dependencies** | `pip install torchao` installs bleeding-edge versions that break on DLAMI PyTorch (`ScalingType` error). |
-| 🟡 **MAJOR** | `src/ltx_worker.py` & `cli.py` | **Hardcoded Invariants** | `stg_scale`, `modality_scale`, `negative_prompt`, and guidance settings are hardcoded in the worker and inaccessible from `pluto generate`. |
-| 🟡 **MAJOR** | `src/ltx_worker.py` | **Rigid Concurrency Lock** | Returns HTTP `409 Busy` when `_active >= 1`, rejecting requests instead of using an in-memory queue. |
-| 🟢 **MINOR** | `src/cli.py` | **Multipart Upload Implementation** | Uses manual `http.client` string formatting for image upload instead of `urllib3` / standard multipart streams. |
-| 🟢 **MINOR** | `src/cli.py` | **Silent Polling Failures** | Polling loop in `cmd_generate` contains empty `except Exception: pass`, masking network drops. |
+| 🟡 **MAJOR** | `spacepilot/ltx_worker.py` & `cli.py` | **Hardcoded Invariants** | `stg_scale`, `modality_scale`, `negative_prompt`, and guidance settings are hardcoded in the worker and inaccessible from `pluto generate`. |
+| 🟡 **MAJOR** | `spacepilot/ltx_worker.py` | **Rigid Concurrency Lock** | Returns HTTP `409 Busy` when `_active >= 1`, rejecting requests instead of using an in-memory queue. |
+| 🟢 **MINOR** | `spacepilot/cli.py` | **Multipart Upload Implementation** | Uses manual `http.client` string formatting for image upload instead of `urllib3` / standard multipart streams. |
+| 🟢 **MINOR** | `spacepilot/cli.py` | **Silent Polling Failures** | Polling loop in `cmd_generate` contains empty `except Exception: pass`, masking network drops. |
 
 ---
 
@@ -190,7 +190,7 @@ We conducted an in-depth audit of [`src/cli.py`](file:///Users/saurabh/code/moti
 
 ### Finding 1: Shared Transformer Memory (Fixing VRAM Double-Allocation) — RESOLVED
 
-**RESOLVED.** Fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). `src/ltx_worker.py:121` now reads `LTX2ImageToVideoPipeline(**_pipe.components)` — the I2V pipeline shares the T2V pipeline's already-resident components instead of loading a second 22B copy. Commit `c6b99c4` (`fix(worker): enable expandable_segments and VAE slicing to prevent OOM fragmentation`) further hardens this by setting `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` at line 16. The problem statement and patch sketch below are kept for the historical record of what was wrong and why; the code now differs from the "Currently loads TWO separate model copies" snippet.
+**RESOLVED.** Fixed by commit `85e7115` (`fix(worker): initialize LTX2ImageToVideoPipeline with _pipe.components`). `spacepilot/ltx_worker.py:121` now reads `LTX2ImageToVideoPipeline(**_pipe.components)` — the I2V pipeline shares the T2V pipeline's already-resident components instead of loading a second 22B copy. Commit `c6b99c4` (`fix(worker): enable expandable_segments and VAE slicing to prevent OOM fragmentation`) further hardens this by setting `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` at line 16. The problem statement and patch sketch below are kept for the historical record of what was wrong and why; the code now differs from the "Currently loads TWO separate model copies" snippet.
 
 **Problem (historical)**: In `ltx_worker.py`:
 ```python
@@ -218,7 +218,7 @@ def load_i2v_model():
 ---
 
 ### Finding 2: Exposing Advanced LTX-2.5 Controls to CLI
-Update `src/cli.py` to expose the new parameter matrix:
+Update `spacepilot/cli.py` to expose the new parameter matrix:
 ```python
 gen_p.add_argument("--negative-prompt", type=str, default="blurry, distorted, low quality")
 gen_p.add_argument("--stg", type=float, default=0.0, help="Spatio-Temporal Guidance scale (0.0 - 1.5)")

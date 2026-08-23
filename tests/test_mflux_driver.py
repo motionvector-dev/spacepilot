@@ -1,5 +1,5 @@
 """mflux is a subprocess dependency, never an in-process import — see the
-module docstring on src/drivers/mflux_driver.py for why. These tests mock the
+module docstring on spacepilot/drivers/mflux_driver.py for why. These tests mock the
 subprocess boundary; none of them may invoke real mflux or spend real GPU time.
 """
 
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.drivers.mflux_driver import (
+from spacepilot.drivers.mflux_driver import (
     MfluxDriver, MfluxSubprocessError, command_for_alias, mflux_bin_dir,
 )
 
@@ -103,7 +103,7 @@ def test_missing_executable_raises_rather_than_silently_failing(tmp_path):
 def test_infer_rejects_a_string_for_extra_args(tmp_path):
     """The one place a caller could turn a real argv list into per-character
     tokens by accident — list("--low-ram") explodes into ['-','-','l',...].
-    This must be rejected the same way src.cli.run_cmd rejects a shell string."""
+    This must be rejected the same way spacepilot.cli.run_cmd rejects a shell string."""
     driver = _driver(tmp_path)
     with pytest.raises(TypeError, match="not a string"):
         driver.infer(prompt="a cat", model="schnell", extra_args="--low-ram")

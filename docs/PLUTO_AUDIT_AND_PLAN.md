@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Root Cause Audit
 
-Following a deep-dive audit of `src/web_api.py`, `web/create.html`, `web/create.js`, `web/index.html`, and `web/app.css`, we have identified the root causes across the 4 reported issues:
+Following a deep-dive audit of `spacepilot/web_api.py`, `web/create.html`, `web/create.js`, `web/index.html`, and `web/app.css`, we have identified the root causes across the 4 reported issues:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -36,7 +36,7 @@ Following a deep-dive audit of `src/web_api.py`, `web/create.html`, `web/create.
 ## 2. Implementation Blueprint
 
 ### Phase 1: Robust Image Upload & Aspect-Aware Dropzone
-1. **Backend Endpoint (`src/web_api.py`)**:
+1. **Backend Endpoint (`spacepilot/web_api.py`)**:
    - Add `POST /api/upload-image` (and multipart form support):
      - Validates image MIME types (`image/jpeg`, `image/png`, `image/webp`).
      - Extracts image metadata (`natural_width`, `natural_height`, `aspect_ratio`).

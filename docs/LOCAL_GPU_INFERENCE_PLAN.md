@@ -122,7 +122,7 @@ Pluto evaluates probed hardware against the task taxonomy to recommend optimized
 
 ## 4. FastMCP Tools & CLI Interface Specifications
 
-### 4.1 FastMCP Tool Specifications (`src/pluto_mcp_server.py`)
+### 4.1 FastMCP Tool Specifications (`spacepilot/pluto_mcp_server.py`)
 
 1. **`pluto_probe_hardware()`**:
    - Returns: `{ "os": "darwin", "device": "Apple M3 Max", "vram_total_gb": 64.0, "vram_usable_gb": 49.7, "backend": "metal_mps", "cuda_cores": null, "status": "optimal" }`
@@ -165,7 +165,7 @@ $ pluto models pull ltx-2.5-nf4
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  Phase 1: Hardware Telemetry & Capability Probe                             │
-│  ├── Deliver src/device_probe.py & src/model_recommender.py                 │
+│  ├── Deliver spacepilot/device_probe.py & spacepilot/model_recommender.py                 │
 │  ├── Expose GET /api/compute/profile & GET /api/compute/models/recommended  │
 │  └── Register FastMCP tools: pluto_probe_hardware & pluto_recommend_models  │
 │                                                                             │

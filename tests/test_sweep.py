@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from src.pluto import measurements as ms
-from src.pluto.sweep import (
+from spacepilot.pluto import measurements as ms
+from spacepilot.pluto.sweep import (
     Job,
     RunRecord,
     SweepSpec,
@@ -239,7 +239,7 @@ def test_a_failed_job_is_recorded_and_excluded_from_the_speed_summary(tmp_path):
 # ------------------------------------------------------------------ disk guard
 
 def test_disk_guard_refuses_to_start(tmp_path, monkeypatch):
-    import src.pluto.sweep as sweep_mod
+    import spacepilot.pluto.sweep as sweep_mod
     monkeypatch.setattr(sweep_mod, "disk_free_gb", lambda path: 1.0)
 
     spec = _spec(disk_free_floor_gb=999.0)
@@ -258,7 +258,7 @@ def test_disk_guard_refuses_to_start(tmp_path, monkeypatch):
 def test_disk_guard_aborts_mid_sweep(tmp_path, monkeypatch):
     """Free space measured fresh, and low, before the second job — the guard
     must catch a disk that filled up mid-run, not only an already-full one."""
-    import src.pluto.sweep as sweep_mod
+    import spacepilot.pluto.sweep as sweep_mod
     readings = iter([500.0, 500.0, 0.5, 0.5, 0.5])  # plenty, then it drops
     monkeypatch.setattr(sweep_mod, "disk_free_gb", lambda path: next(readings, 0.5))
 
@@ -335,8 +335,8 @@ def test_caffeinate_is_started_and_released(tmp_path, monkeypatch):
         calls["popen"] += 1
         return _FakeProc()
 
-    monkeypatch.setattr("src.pluto.sweep.subprocess.Popen", fake_popen)
-    monkeypatch.setattr("src.pluto.sweep.sys.platform", "darwin")
+    monkeypatch.setattr("spacepilot.pluto.sweep.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("spacepilot.pluto.sweep.sys.platform", "darwin")
 
     spec = _spec(resolutions=[(512, 512)])
     driver = _FakeDriver()
@@ -363,8 +363,8 @@ def test_caffeinate_is_released_even_when_a_job_raises_unexpectedly(tmp_path, mo
         def wait(self, timeout=None):
             return 0
 
-    monkeypatch.setattr("src.pluto.sweep.subprocess.Popen", lambda *a, **k: _FakeProc())
-    monkeypatch.setattr("src.pluto.sweep.sys.platform", "darwin")
+    monkeypatch.setattr("spacepilot.pluto.sweep.subprocess.Popen", lambda *a, **k: _FakeProc())
+    monkeypatch.setattr("spacepilot.pluto.sweep.sys.platform", "darwin")
 
     class _ExplodingSample:
         def __init__(self):
@@ -391,7 +391,7 @@ def test_caffeinate_is_released_even_when_a_job_raises_unexpectedly(tmp_path, mo
 
 def test_sweep_dry_run_lists_the_grid_without_generating_anything():
     proc = subprocess.run(
-        [sys.executable, "-m", "src.cli", "sweep", "run",
+        [sys.executable, "-m", "spacepilot.cli", "sweep", "run",
          str(SPECS_DIR / "flux-schnell-4bit.yaml"), "--dry-run"],
         cwd=ROOT, capture_output=True, text=True, timeout=60,
     )
@@ -404,7 +404,7 @@ def test_sweep_run_reports_a_bad_spec_without_a_traceback(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("schema: 1\nid: x\n")
     proc = subprocess.run(
-        [sys.executable, "-m", "src.cli", "sweep", "run", str(bad)],
+        [sys.executable, "-m", "spacepilot.cli", "sweep", "run", str(bad)],
         cwd=ROOT, capture_output=True, text=True, timeout=60,
     )
     assert proc.returncode == 1

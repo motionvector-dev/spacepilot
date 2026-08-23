@@ -1,4 +1,4 @@
-# Overnight sweep spec for `pluto sweep run` (src/pluto/sweep.py).
+# Overnight sweep spec for `pluto sweep run` (spacepilot/pluto/sweep.py).
 #
 # FLUX.2 Klein 4B, apache-2.0, mflux-generate-flux2 --model flux2-klein-4b.
 # registry/models/flux2-klein.yaml's flux2-klein-4b-4bit variant already

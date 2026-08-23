@@ -2,7 +2,7 @@
 """Unit tests for SpacePilot Gemini Storyboard & Script Decomposer."""
 
 import pytest
-from src.storyboard_decomposer import (
+from spacepilot.storyboard_decomposer import (
     decompose_storyboard,
     decompose_script_rule_based,
     call_gemini_decompose_api,

@@ -2,7 +2,7 @@
 
 mflux resolves 34 built-in aliases to specific Hugging Face repos. The FLUX.1
 variants belong to a separate, parallel workstream (registry/models/flux.yaml,
-src/drivers/mflux_driver.py); this file only guards the other nine families —
+spacepilot/drivers/mflux_driver.py); this file only guards the other nine families —
 Qwen-Image, Z-Image, FIBO, ERNIE-Image, Ideogram 4, SeedVR2, Boogu, Lens, and
 FLUX.2 Klein — plus the runtime file that lists what mflux can run.
 """
@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from src.pluto.registry import load_registry, registry
-from src.pluto.runtimes import load_runtimes
+from spacepilot.pluto.registry import load_registry, registry
+from spacepilot.pluto.runtimes import load_runtimes
 
 NEW_FAMILY_FILES = [
     "qwen-image.yaml",
@@ -145,7 +145,7 @@ def test_mflux_runtime_serves_video_now_that_it_runs_seedvr2():
 
 
 def test_catalog_manager_picks_up_the_new_variants_without_a_second_copy():
-    from src.pluto.services.model_catalog import catalog_manager
+    from spacepilot.pluto.services.model_catalog import catalog_manager
     ids = {v.id for v in registry().variants}
     assert set(catalog_manager.recipes) == ids
     for variant_id in NEW_VARIANT_IDS:

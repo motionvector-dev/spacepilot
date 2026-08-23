@@ -13,7 +13,7 @@ The frontend `/Users/saurabh/code/katana/upscaler/upscaler-frontend/src/views/Au
 - Keep it consistent with how `/enhance` and `/generate` are structured (same FastAPI app, same error/response conventions).
 
 ## Task 2: verify `/generate` and `/enhance` match the frontend
-Read `src/views/VideoGen.vue` and `src/views/VideoGenV2.vue` in the frontend repo. Confirm the request bodies they send to `/generate` and `/enhance` (prompt, resolution, frames, mode, autoEnhance…) and the response shapes they expect line up with what `server.py` implements. Fix any drift on the backend side (do NOT change the frontend). Note anything the frontend sends that the backend ignores.
+Read `spacepilot/views/VideoGen.vue` and `spacepilot/views/VideoGenV2.vue` in the frontend repo. Confirm the request bodies they send to `/generate` and `/enhance` (prompt, resolution, frames, mode, autoEnhance…) and the response shapes they expect line up with what `server.py` implements. Fix any drift on the backend side (do NOT change the frontend). Note anything the frontend sends that the backend ignores.
 
 ## Constraints
 - Keep `server.py` runnable (it should still start and serve /health). If it needs new deps, update requirements and note them.

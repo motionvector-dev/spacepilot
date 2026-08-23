@@ -2,7 +2,7 @@
 **Document Version**: 2.0.0 (Post-Modular Refactor)  
 **Repository**: `motionvector-dev/pluto`  
 **Status**: Current — describes the layout live on `main`
-**Verified**: 2026-08-22, by reading `src/pluto/api/routes/` (14 modules present)
+**Verified**: 2026-08-22, by reading `spacepilot/pluto/api/routes/` (14 modules present)
 **Origin branch**: `feat/backend-modular-refactor` (PR #9) — **merged**, no longer a worktree branch
 **Note**: this file existed only as an untracked file in the primary checkout until 2026-08-22. It is now committed.  
 **Legacy Fallback Directory**: `/Users/saurabh/code/motionvector/pluto/studio_backup_original/`  
@@ -12,7 +12,7 @@
 
 ## 1. Architecture & Package Structure
 
-The legacy monolith in `src/web_api.py` has been refactored into the structured, extensible `src.pluto` package layout while preserving 100% backwards compatibility for existing imports and CLI tools:
+The legacy monolith in `spacepilot/web_api.py` has been refactored into the structured, extensible `spacepilot.pluto` package layout while preserving 100% backwards compatibility for existing imports and CLI tools:
 
 ```
 pluto/
@@ -41,7 +41,7 @@ pluto/
 │   │           ├── gpu.py            # /api/gpu/launch, /api/gpu/terminate, spot failover
 │   │           ├── assets.py         # /api/assets/list, /api/assets/delete
 │   │           └── views.py          # Static files & /ws/cockpit Web SSH PTY bridge
-│   ├── web_api.py                 # Backwards-compatible facade importing from src.pluto
+│   ├── web_api.py                 # Backwards-compatible facade importing from spacepilot.pluto
 │   ├── cli.py                        # spacepilot CLI entrypoint
 │   └── skypilot_orchestrator.py      # SkyPilot YAML generator & spot broker
 ├── tests/                            # 142 Pytest unit & integration tests
@@ -55,7 +55,7 @@ pluto/
 ### A. Video Generation (`/api/generate`)
 * **Method**: `POST`
 * **Auth**: `X-Pluto-Token` (or session cookie)
-* **Pydantic Model**: `GenerateRequest` in `src/pluto/services/generation.py`
+* **Pydantic Model**: `GenerateRequest` in `spacepilot/pluto/services/generation.py`
 ```json
 {
   "prompt": "Cyberpunk rainy alleyway, anamorphic reflections, 35mm cinematic drift",
@@ -131,7 +131,7 @@ pluto/
 
 | PR # | Branch | Summary |
 | :---: | :--- | :--- |
-| **#9** | `feat/backend-modular-refactor` | Core package reorganization into `src/pluto` with zero regressions. |
+| **#9** | `feat/backend-modular-refactor` | Core package reorganization into `spacepilot/pluto` with zero regressions. |
 | **#10** | `feat/lora-studio-engine` | 1-Click PEFT LoRA fine-tuning runner and dynamic adapter hot-swap registry. |
 | **#11** | `feat/model-recipes-importer` | Wan2.1, HunyuanVideo, DeepSeek-R1, and Qwen2.5-VL download recipes. |
 | **#12** | `feat/polar-x402-payments` | Polar.sh webhook reconciliation and agent micropayments engine. |
@@ -143,9 +143,9 @@ pluto/
 ## 4. Immediate Action Item for Backend Session
 
 * **Test Compatibility Import Fix**:
-  In `src/web_api.py`, ensure `require_token` is explicitly imported from `src.pluto.api.deps` so legacy tests in `tests/test_web_api.py` pass cleanly:
+  In `spacepilot/web_api.py`, ensure `require_token` is explicitly imported from `spacepilot.pluto.api.deps` so legacy tests in `tests/test_web_api.py` pass cleanly:
   ```python
-  from src.pluto.api.deps import require_token, update_activity
+  from spacepilot.pluto.api.deps import require_token, update_activity
   ```
 * **Command to Run Tests**:
   ```bash
@@ -153,5 +153,5 @@ pluto/
   ```
 * **Command to Start Backend**:
   ```bash
-  python3 -m uvicorn src.web_api:create_app --factory --port 8080 --host 0.0.0.0
+  python3 -m uvicorn spacepilot.web_api:create_app --factory --port 8080 --host 0.0.0.0
   ```

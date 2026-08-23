@@ -48,7 +48,7 @@ def store(tmp_path, monkeypatch):
     which runs happen to be recorded in the repo."""
     root = tmp_path / "measurements"
     root.mkdir()
-    import src.pluto.measurements as ms
+    import spacepilot.pluto.measurements as ms
     monkeypatch.setattr(ms, "MEASUREMENTS_DIR", root)
     return root
 

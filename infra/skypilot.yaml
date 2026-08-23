@@ -72,4 +72,4 @@ setup: |
 run: |
   echo "[SpacePilot] Starting high-performance LTX-2.5 inference server with dead-man auto-shutdown..."
   conda activate spacepilot
-  python -m uvicorn src.ltx_worker:app --host 0.0.0.0 --port 8000
+  python -m uvicorn spacepilot.ltx_worker:app --host 0.0.0.0 --port 8000

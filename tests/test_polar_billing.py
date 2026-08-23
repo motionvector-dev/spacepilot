@@ -4,9 +4,9 @@ import hashlib
 import json
 from decimal import Decimal
 from fastapi.testclient import TestClient
-from src.pluto.api.routes.billing import billing_router
-from src.pluto.services.polar_billing import PolarBillingManager, RATE_CARD
-from src.pluto.core.config import get_settings
+from spacepilot.pluto.api.routes.billing import billing_router
+from spacepilot.pluto.services.polar_billing import PolarBillingManager, RATE_CARD
+from spacepilot.pluto.core.config import get_settings
 from fastapi import FastAPI
 
 app = FastAPI()
