@@ -285,10 +285,10 @@
       "is_measured": true
      },
      "working_set": {
-      "value": 4394535973.0,
+      "value": 11295763988.0,
       "source": "measured",
       "checked": "2026-08-23",
-      "note": "resource.getrusage(RUSAGE_CHILDREN).ru_maxrss peak RSS (bytes on macOS) captured by `pluto measure` around a real `mflux-generate-flux2 --model flux2-klein-4b --quantize 4` run on this Mac. See registry/measurements/ for the underlying sample; this is the one number in this file that is not a paper estimate.\n",
+      "note": "mflux's own \"Peak MLX memory: 10.52 GB\" line, printed by mflux-generate-flux2 --model flux2-klein-4b --quantize 4 --steps 4 --height 512 --width 512 at the end of a real run on this Mac (10.52 * 1024**3 bytes). This is mlx.metal's own peak-allocation counter, not an OS RSS estimate. See registry/measurements/ apple-m1-max-32gb/flux2-klein-4b-4bit/ for the paired load_seconds and seconds_per_image samples from the same driver run; this is the one working_set number in this file that is not a paper estimate.\n",
       "is_measured": true
      },
      "license": {
