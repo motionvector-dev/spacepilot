@@ -50,7 +50,19 @@ pluto = "spacepilot.cli:main"
 spacepilot = "spacepilot.cli:main"
 
 [tool.setuptools.packages.find]
+# Without this, setuptools flattened the source tree into sixteen generic
+# top-level modules (`cli`, `engines`, `web_api`). See #43. Do not widen it.
 include = ["spacepilot*"]
+
+[tool.setuptools.package-data]
+# `packages.find` ships .py files and nothing else, which is how the registry
+# — the catalogue the CLI reads at startup — shipped as zero entries and made
+# `spacepilot models list` exit 1 on every clean install.
+spacepilot = [
+    "registry/**/*.yaml",
+    "registry/**/*.yml",
+    "registry/**/*.md",
+]
 
 [build-system]
 # 77.0 is the floor for PEP 639 license expressions; 83.0 is the floor for
@@ -61,3 +73,9 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+    "packaging: builds and installs the wheel. Slow, and needs the network for the build backend.",
+]
+# Deselected from the default run, not from CI: the packaging job runs
+# `pytest -m packaging`, and a later -m on the command line overrides this one.
+addopts = "-m 'not packaging'"

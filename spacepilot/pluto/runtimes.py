@@ -22,8 +22,10 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from spacepilot.paths import shipped_dir
+
 SCHEMA_VERSION = 1
-RUNTIME_DIR = Path(__file__).resolve().parents[2] / "registry" / "runtimes"
+RUNTIME_DIR = shipped_dir("runtimes")
 
 MODALITIES = {"video", "image", "audio", "speech", "text", "vision"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}

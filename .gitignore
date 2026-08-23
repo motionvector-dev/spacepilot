@@ -20,10 +20,16 @@ scratch/
 
 # local model weights cache — never committed.
 # Anchored to the repo root on purpose: a bare `models/` also matches
-# registry/models/, which is source, and git add skips ignored files without
-# saying so — the model registry was silently absent from a commit that
+# spacepilot/registry/models/, which is source, and git add skips ignored files
+# without saying so — the model registry was silently absent from a commit that
 # claimed to add it.
 /models/
+
+# Sweep resume state, written by `pluto sweep run`. It lives inside the package
+# directory now, which is one `git add -A` away from being committed. The
+# measurement and system records beside it are the opposite: a corpus people
+# contribute to, so they stay tracked.
+/spacepilot/registry/sweeps/runs/
 
 # legacy studio snapshot kept on disk only; web/ history is in git already
 studio_backup_original/

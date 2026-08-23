@@ -30,13 +30,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import yaml
 
+from spacepilot.paths import shipped_dir, writable_dir
 from spacepilot.pluto import measurements as ms
 
 SCHEMA_VERSION = 1
 
-_ROOT = Path(__file__).resolve().parents[2]
-SPECS_DIR = _ROOT / "registry" / "sweeps"
-RUNS_DIR = _ROOT / "registry" / "sweeps" / "runs"
+# Specs are curated content and ship with the release; runs are produced here
+# and go wherever this machine's records go (spacepilot.paths).
+SPECS_DIR = shipped_dir("sweeps")
+RUNS_DIR = writable_dir("sweeps") / "runs"
 
 # Knobs that define a distinct job for resume purposes. Seed and prompt are
 # fixed per spec (part of what makes the sweep reproducible), not part of the

@@ -24,7 +24,7 @@ from spacepilot.pluto.sweep import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SPECS_DIR = ROOT / "registry" / "sweeps"
+SPECS_DIR = ROOT / "spacepilot" / "registry" / "sweeps"
 
 
 class _FakeDriver:
