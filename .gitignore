@@ -27,3 +27,8 @@ scratch/
 
 # legacy studio snapshot kept on disk only; web/ history is in git already
 studio_backup_original/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

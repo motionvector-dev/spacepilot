@@ -38,7 +38,7 @@ count in the body below as superseded by that number.
 
 ## 1. Executive Summary
 
-During this session, we completed the **full architectural overhaul of the SpacePilot backend**, transitioning from a single monolithic 2,577-line file (`src/web_api.py`) into a production-grade, typed, modular FastAPI package layout (`src/pluto/`).
+During this session, we completed the **full architectural overhaul of the SpacePilot backend**, transitioning from a single monolithic 2,577-line file (`spacepilot/web_api.py`) into a production-grade, typed, modular FastAPI package layout (`spacepilot/pluto/`).
 
 In addition to the zero-regression architectural refactor, we completed and published **5 major wave features and developer tools** across isolated Git worktrees, backed by unit test suites and registered FastMCP tools.
 
@@ -50,7 +50,7 @@ In addition to the zero-regression architectural refactor, we completed and publ
 ┌───────┬───────────────────────────────┬────────────────────────────────────────────────────────┬─────────────────────┐
 │ PR #  │ Branch                        │ Feature Scope                                          │ Review Status       │
 ├───────┼───────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────┤
-│  #9   │ feat/backend-modular-refactor │ FastAPI Package Modularization (src/pluto/)            │ Approved (Score 96) │
+│  #9   │ feat/backend-modular-refactor │ FastAPI Package Modularization (spacepilot/pluto/)            │ Approved (Score 96) │
 │  #10  │ feat/lora-studio-engine       │ 1-Click LoRA Studio & PEFT Hot-Swap Engine             │ Review Ready        │
 │  #11  │ feat/model-recipes-importer   │ Top Model Leaderboard Recipes & Quantized Importer     │ Review Ready        │
 │  #12  │ feat/polar-x402-payments      │ Polar.sh MoR Webhooks & x402 Agent Micropayments       │ Review Ready        │
@@ -71,12 +71,12 @@ In addition to the zero-regression architectural refactor, we completed and publ
 
 ## 3. Architectural Deliverables
 
-### A. The Modular `src/pluto/` Package
+### A. The Modular `spacepilot/pluto/` Package
 
 The monolith has been decomposed cleanly into domain boundaries:
 
 ```
-src/pluto/
+spacepilot/pluto/
 ├── __init__.py                   # Package exports & v2.8.0 metadata
 ├── app.py                        # FastAPI create_app() factory with lifespan watchdog
 ├── core/
@@ -121,7 +121,7 @@ src/pluto/
 ## 4. Wave Feature Breakdown
 
 ### 1. 1-Click LoRA Studio & PEFT Hot-Swap Engine (PR #10)
-- **Service**: `src/pluto/services/lora.py`
+- **Service**: `spacepilot/pluto/services/lora.py`
 - **Capabilities**:
   - `LoRAAdapterSpec` schema (DiT target family, rank, alpha, learning rate, steps, trigger tokens).
   - Background async fine-tuning runner with progressive loss curve streaming.
@@ -129,7 +129,7 @@ src/pluto/
 - **FastMCP Tools**: `pluto_list_lora_adapters`, `pluto_train_lora`.
 
 ### 2. Top Model Leaderboard Recipes & Quantized Importer (PR #11)
-- **Service**: `src/pluto/services/model_catalog.py`
+- **Service**: `spacepilot/pluto/services/model_catalog.py`
 - **Capabilities**:
   - Pre-calibrated hardware allocation profiles for Wan2.1 (1.3B/14B fp8), HunyuanVideo (GGUF q4), DeepSeek-R1 Distill (8B GGUF), Qwen2.5-VL (7B int4), and LTX-2.5 (fp8).
   - Dynamic hardware matching against Apple Silicon Metal and CUDA VRAM.
@@ -137,7 +137,7 @@ src/pluto/
 - **FastMCP Tools**: `pluto_list_model_recipes`, `pluto_download_model_recipe`.
 
 ### 3. Polar.sh Webhook Reconciliation & x402 Micropayments (PR #12)
-- **Service**: `src/pluto/services/polar_billing.py`
+- **Service**: `spacepilot/pluto/services/polar_billing.py`
 - **Capabilities**:
   - HMAC-SHA256 signature verification for Polar.sh webhook events (`checkout.created`, `subscription.active`, `order.paid`).
   - Credit usage ledger with per-engine generation rate cards (e.g., LTX-2.5 @ $0.005/sec, Hunyuan @ $0.015/sec).
@@ -145,7 +145,7 @@ src/pluto/
 - **FastMCP Tools**: `pluto_get_billing_usage`, `pluto_verify_agent_payment`.
 
 ### 4. Spot Training Checkpoint Sync & R2/S3 Auto-Resume (PR #13)
-- **Service**: `src/pluto/services/checkpoint_sync.py`
+- **Service**: `spacepilot/pluto/services/checkpoint_sync.py`
 - **Capabilities**:
   - Multi-cloud storage adapters: Cloudflare R2, AWS S3, and Local fallback.
   - Atomic checkpoint archiving with SHA-256 integrity verification.
@@ -154,7 +154,7 @@ src/pluto/
 - **FastMCP Tools**: `pluto_create_checkpoint`, `pluto_list_checkpoints`, `pluto_restore_checkpoint`.
 
 ### 5. CLI Doctor HUD, Serve Command & Phase 1C Archival (PR #15)
-- **CLI**: `src/cli.py` (`spacepilot` / `pluto`)
+- **CLI**: `spacepilot/cli.py` (`spacepilot` / `pluto`)
 - **Capabilities**:
   - `spacepilot doctor`: Zero-dependency diagnostic HUD verifying Apple Silicon Metal / CUDA VRAM safety margins, system RAM, FFmpeg installation and version, Kokoro ONNX weights cache, AWS CLI profile credentials, and local `.studio_token`.
   - `spacepilot serve`: Direct Uvicorn runner for the FastAPI app factory supporting `--host`, `--port`, and `--reload`.
@@ -174,7 +174,7 @@ The live Oven Kanban board in `web/oven.html` has been updated with all newly de
   5. `1-Click LoRA Studio & PEFT Hot-Swap Engine` (PR #10)
   6. `Zero-Leniency Audit SLA` (Opus Review Passed 100/100)
 - **Shipped**:
-  - `FastAPI Modular Package Layout (src/pluto/)` (PR #9)
+  - `FastAPI Modular Package Layout (spacepilot/pluto/)` (PR #9)
 
 ---
 

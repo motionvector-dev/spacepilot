@@ -2,7 +2,7 @@
 """Unit tests for SpacePilot SkyPilot Multi-Cloud Spot Orchestrator."""
 
 import pytest
-from src.skypilot_orchestrator import (
+from spacepilot.skypilot_orchestrator import (
     SkyPilotOrchestrator,
     generate_skypilot_yaml,
     DEFAULT_CLOUD_CATALOG,

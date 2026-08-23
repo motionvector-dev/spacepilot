@@ -1,9 +1,9 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from src.pluto.app import create_app
-from src.pluto.services.checkpoint_sync import CheckpointSyncEngine
-from src.pluto_mcp_server import pluto_create_checkpoint, pluto_list_checkpoints, pluto_restore_checkpoint
+from spacepilot.pluto.app import create_app
+from spacepilot.pluto.services.checkpoint_sync import CheckpointSyncEngine
+from spacepilot.pluto_mcp_server import pluto_create_checkpoint, pluto_list_checkpoints, pluto_restore_checkpoint
 
 @pytest.fixture(autouse=True)
 def reset_engine():
@@ -48,7 +48,7 @@ def test_engine_prune(reset_engine):
     assert len(reset_engine.snapshots) == res["kept"]
 
 def test_api_routes(client):
-    from src.pluto.core.config import get_settings
+    from spacepilot.pluto.core.config import get_settings
     headers = {"X-Pluto-Token": get_settings().studio_token}
     
     # 1. Create snapshot
@@ -107,7 +107,7 @@ def test_mcp_tools(reset_engine):
     assert res_restore["status"] == "success"
 
 def test_edge_cases(client):
-    from src.pluto.core.config import get_settings
+    from spacepilot.pluto.core.config import get_settings
     headers = {"X-Pluto-Token": get_settings().studio_token}
 
     # Test missing path / escapes directory

@@ -30,7 +30,7 @@
 │     └── Narrative: In-process GGUF screenplay deconstruction & 3D vectors   │
 │                                                                             │
 │  3. Agentic Protocol & Tool Modules                                         │
-│     ├── FastMCP Tool Server (src/pluto_mcp_server.py): 12+ tools for AI     │
+│     ├── FastMCP Tool Server (spacepilot/pluto_mcp_server.py): 12+ tools for AI     │
 │     ├── DocIR 2.0 Edit Protocol: Byte-exact, reversible patch operations   │
 │     └── WebSocket PTY Bridge: Live interactive shell & worker streaming    │
 │                                                                             │
@@ -65,7 +65,7 @@ doppler run -- ./bin/pluto studio
 ## Running the Studio
 
 ```bash
-doppler run -- ./bin/pluto studio        # or: python src/web_api.py
+doppler run -- ./bin/pluto studio        # or: python spacepilot/web_api.py
 ```
 
 Serves the Web UI and API on:
@@ -102,7 +102,7 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 
 ---
 
-## FastMCP Server Tools (`src/pluto_mcp_server.py`)
+## FastMCP Server Tools (`spacepilot/pluto_mcp_server.py`)
 
 Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 

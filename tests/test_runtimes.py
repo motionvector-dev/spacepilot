@@ -7,7 +7,7 @@ it would quietly change something else.
 
 import pytest
 
-from src.pluto.runtimes import (
+from spacepilot.pluto.runtimes import (
     BACKENDS, MODALITIES, Impact, RuntimeError_, load_runtimes, parse_runtime, runtimes,
 )
 
@@ -35,7 +35,7 @@ def test_pinned_versions_record_when_they_were_checked():
 
 def test_check_reports_a_reason_when_a_runtime_is_absent(monkeypatch):
     """Absence must carry the import error, not a bare False."""
-    from src.pluto import runtimes as rt
+    from spacepilot.pluto import runtimes as rt
     r = runtimes()["mflux"]
     st = rt.check(r)
     if not st.installed:
@@ -49,7 +49,7 @@ def test_outdated_is_not_the_same_as_installed():
     A caller checking only `installed` would run against an API that may not
     exist in the version actually present.
     """
-    from src.pluto import runtimes as rt
+    from spacepilot.pluto import runtimes as rt
     for r in runtimes().values():
         st = rt.check(r)
         if st.below_minimum:
@@ -61,7 +61,7 @@ def test_outdated_is_not_the_same_as_installed():
 
 def test_python_incompatibility_is_reported_rather_than_attempted():
     """stable-audio-tools pins itself below 3.11; this project runs 3.11."""
-    from src.pluto import runtimes as rt
+    from spacepilot.pluto import runtimes as rt
     r = runtimes()["stable-audio-tools"]
     ok, note = rt.python_ok(r)
     if not ok:
@@ -81,7 +81,7 @@ def test_a_downgrade_counts_as_disruptive():
 
 def test_install_command_names_the_interpreter():
     """A runtime installed into some other Python is not installed here."""
-    from src.pluto import runtimes as rt
+    from spacepilot.pluto import runtimes as rt
     argv = rt.install_command(runtimes()["mflux"], py="/tmp/fake-python")
     assert argv[0] == "/tmp/fake-python"
     assert argv[1:4] == ["-m", "pip", "install"]

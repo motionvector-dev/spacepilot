@@ -3,7 +3,7 @@ here than anywhere else in the registry, because FLUX.1-schnell and
 FLUX.1-dev are NOT on the same terms — one is apache-2.0, one forbids
 commercial use — and mixing them up is worse than leaving a variant out."""
 
-from src.pluto.registry import registry
+from spacepilot.pluto.registry import registry
 
 
 def _flux_variant(vid: str):

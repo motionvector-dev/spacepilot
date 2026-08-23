@@ -243,7 +243,7 @@ upscaled = upsample_pipe(latents, steps=15)</pre>
           <tbody>
             <tr>
               <td><span class="tag-min">RESOLVED</span></td>
-              <td><code>src/ltx_worker.py</code></td>
+              <td><code>spacepilot/ltx_worker.py</code></td>
               <td><strong>Duplicate Pipeline VRAM Allocation:</strong> <code>load_i2v_model()</code> was loading a second 28GB model copy into CUDA, causing OOM on 48GB cards.</td>
               <td><strong>FIXED:</strong> <code>LTX2ImageToVideoPipeline</code> now shares <code>transformer</code>, <code>text_encoder</code>, <code>tokenizer</code>, <code>vae</code>, <code>scheduler</code>, and <code>vocoder</code> from the resident t2v pipeline — zero duplicate VRAM.</td>
             </tr>
@@ -279,13 +279,13 @@ upscaled = upsample_pipe(latents, steps=15)</pre>
             </tr>
             <tr>
               <td><span class="tag-maj">MAJOR</span></td>
-              <td><code>src/cli.py</code></td>
+              <td><code>spacepilot/cli.py</code></td>
               <td><strong>Missing LTX-2.5 Controls:</strong> CLI lacks flags for STG, modality scale, negative prompt, audio guidance, and upscaling.</td>
               <td>Add CLI flags to <code>cmd_generate</code> and pass them through the HTTP JSON payload.</td>
             </tr>
             <tr>
               <td><span class="tag-maj">MAJOR</span></td>
-              <td><code>src/ltx_worker.py</code></td>
+              <td><code>spacepilot/ltx_worker.py</code></td>
               <td><strong>Rigid Concurrency Rejection:</strong> Rejects overlapping requests with 409 Conflict rather than using a task queue.</td>
               <td>Implement a lightweight FIFO job queue thread in Flask worker.</td>
             </tr>

@@ -2,8 +2,8 @@
 
 > Vanilla monolith → production-grade, agent-friendly architecture
 
-**Status**: Partially superseded by events. The backend half shipped in PR #9 (merged) as `src/pluto/api/routes/` — 14 modules, not the plan on this page. The frontend half is mid-flight in PR #14 (open, `feat/frontend-react-ui`, +12,765/-0 across 75 files under `ui/`).
-**Verified**: 2026-08-22, from `gh pr list` and a read of `src/pluto/api/routes/` on main.
+**Status**: Partially superseded by events. The backend half shipped in PR #9 (merged) as `spacepilot/pluto/api/routes/` — 14 modules, not the plan on this page. The frontend half is mid-flight in PR #14 (open, `feat/frontend-react-ui`, +12,765/-0 across 75 files under `ui/`).
+**Verified**: 2026-08-22, from `gh pr list` and a read of `spacepilot/pluto/api/routes/` on main.
 **Supersedes / Superseded by**: Backend section superseded by the shipped PR #9 layout. Frontend section still open pending PR #14; see docs/REDESIGN-PLAN.md for the contested frontend direction.
 
 **Author**: Antigravity Audit  
@@ -48,7 +48,7 @@ To guarantee zero breakage, this refactor follows a **surgical extraction** appr
 ### 1A. Python Package Layout
 
 ```
-src/pluto/
+spacepilot/pluto/
 ├── __init__.py
 ├── app.py                    ← FastAPI app factory
 │
@@ -142,8 +142,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 ### 1C. Delete / Archive
 
-- `src/server.py` — marked "legacy" in README. Archive or delete.
-- `src/produce_welch_master.py` — superseded by opus version? Confirm and archive.
+- `spacepilot/server.py` — marked "legacy" in README. Archive or delete.
+- `spacepilot/produce_welch_master.py` — superseded by opus version? Confirm and archive.
 - Root `output_*.mp4` files — gitignore and delete from tree.
 
 ---

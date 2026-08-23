@@ -12,12 +12,12 @@ from pathlib import Path
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
 from fastapi.testclient import TestClient
 
-import src.web_api as web_api
-from src.web_api import OUTPUTS_DIR, STUDIO_TOKEN, app
+import spacepilot.web_api as web_api
+from spacepilot.web_api import OUTPUTS_DIR, STUDIO_TOKEN, app
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}

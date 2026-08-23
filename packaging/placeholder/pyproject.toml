@@ -1,0 +1,28 @@
+[project]
+name = "spacepilot"
+version = "0.0.1"
+description = "Inference orchestration across the machines you can reach (placeholder release)"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [{ name = "MotionVector", email = "dev@motionvector.io" }]
+keywords = ["inference", "orchestration", "gpu", "scheduling", "local-first"]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://spacepilot.dev"
+
+[project.scripts]
+spacepilot = "spacepilot:main"
+
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["spacepilot"]

@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.pluto.registry import (
+from spacepilot.pluto.registry import (
     SOURCES, Registry, RegistryError, load_registry, parse_model, registry,
 )
 
@@ -95,7 +95,7 @@ def test_unknown_backend_is_rejected():
 
 def test_catalog_is_a_view_over_the_registry():
     """No second copy of the model list anywhere in the codebase."""
-    from src.pluto.services.model_catalog import catalog_manager
+    from spacepilot.pluto.services.model_catalog import catalog_manager
     assert set(catalog_manager.recipes) == {v.id for v in registry().variants}
 
 

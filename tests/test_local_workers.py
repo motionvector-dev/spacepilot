@@ -11,13 +11,13 @@ from fastapi.testclient import TestClient
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
-from src.drivers.base import DriverSpec, InferenceDriver
-from src.drivers.kokoro_driver import KokoroDriver, VOICE_CATALOGUE
-from src.drivers.gguf_driver import GGUFDriver
-from src.local_workers import LocalWorkerManager, local_worker_manager
-from src.web_api import app, STUDIO_TOKEN, OUTPUTS_DIR
+from spacepilot.drivers.base import DriverSpec, InferenceDriver
+from spacepilot.drivers.kokoro_driver import KokoroDriver, VOICE_CATALOGUE
+from spacepilot.drivers.gguf_driver import GGUFDriver
+from spacepilot.local_workers import LocalWorkerManager, local_worker_manager
+from spacepilot.web_api import app, STUDIO_TOKEN, OUTPUTS_DIR
 
 client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}

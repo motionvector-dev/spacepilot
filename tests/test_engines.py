@@ -18,9 +18,9 @@ from fastapi.testclient import TestClient
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
-from src.engines import (
+from spacepilot.engines import (
     EngineSpec,
     BaseVideoEngine,
     LTXVideoEngine,
@@ -32,11 +32,11 @@ from src.engines import (
     normalize_engine_id,
     DEFAULT_ENGINE_ID,
 )
-from src.pluto_mcp_server import (
+from spacepilot.pluto_mcp_server import (
     pluto_generate_video_wan,
     pluto_generate_video_hunyuan,
 )
-from src.web_api import app, STUDIO_TOKEN
+from spacepilot.web_api import app, STUDIO_TOKEN
 
 
 client = TestClient(app)

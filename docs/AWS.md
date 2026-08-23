@@ -40,7 +40,7 @@ No minimum billing period, so short jobs cost what they cost.
 budget, not just generation time. It is the reason the credits belong here
 rather than on EC2 Mac.
 
-`infra/gpu-box.sh` defaults to the smaller `g6e.xlarge`; `src/cli.py` uses
+`infra/gpu-box.sh` defaults to the smaller `g6e.xlarge`; `spacepilot/cli.py` uses
 `g6e.2xlarge`. They disagree on purpose — the shell script predates the CLI.
 
 ### Quota, and why it bites
@@ -54,7 +54,7 @@ Adjustable. 64 vCPU would allow eight concurrent boxes, or one four-GPU
 
 Quota is permission, not capacity — Spot can still refuse when G6e is tight in
 `us-east-1`. The regional fallback is `us-west-2`, which needs its own increase
-*and* a change to the hardcoded region in `src/cli.py`.
+*and* a change to the hardcoded region in `spacepilot/cli.py`.
 
 At eight boxes the burn is $6/hour: the whole $800 in about **133 hours**.
 Raising the quota removes the ceiling, not the meter. Cap `pluto launch` before

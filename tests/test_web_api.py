@@ -16,12 +16,12 @@ from pathlib import Path
 # Add project root to sys.path
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
 import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
-from src.web_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
+from spacepilot.web_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
 
 client = TestClient(app)
 
@@ -111,7 +111,7 @@ def test_healthz_is_dependency_free_liveness():
 
 def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
     """An adversarial poll burst must produce one AWS refresh, not one per call."""
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
 
     monkeypatch.setattr(web_api, "_status_cache", None)
     calls = 0
@@ -134,7 +134,7 @@ def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
 
 def test_instance_info_passes_bounded_timeout(monkeypatch):
     """The AWS child receives a hard timeout and a timeout is safe to report."""
-    import src.cli as cli
+    import spacepilot.cli as cli
 
     seen = {}
 
@@ -331,7 +331,7 @@ def test_resolve_output_blocks_escapes_from_outputs_dir():
     """Verify the containment check itself rejects anything outside OUTPUTS_DIR."""
     from fastapi import HTTPException
 
-    from src.web_api import OUTPUTS_DIR, resolve_output
+    from spacepilot.web_api import OUTPUTS_DIR, resolve_output
 
     outside = PLUTO_ROOT / "pytest_outside_marker.txt"
     outside.write_text("should never be served")
@@ -365,7 +365,7 @@ def test_media_route_refuses_symlink_out_of_outputs_dir():
     path and answers 404 itself. A symlink inside OUTPUTS_DIR has an ordinary
     name, so it routes fine and only the resolved-path check stops it.
     """
-    from src.web_api import OUTPUTS_DIR
+    from spacepilot.web_api import OUTPUTS_DIR
 
     secret = OUTPUTS_DIR.parent / "pytest_symlink_target.txt"
     secret.write_text("should never be served")
@@ -403,7 +403,7 @@ def test_asset_file_route_requires_exact_name():
 
 def test_failed_ffmpeg_is_recorded_as_failed():
     """Verify a bad ffmpeg run records status 'failed' instead of 'completed'."""
-    from src.web_api import ffmpeg_error, run_ffmpeg
+    from spacepilot.web_api import ffmpeg_error, run_ffmpeg
 
     res = run_ffmpeg(["-i", str(OUTPUTS_DIR / "definitely_missing_source.mp4"), "-f", "null", "-"])
     assert res.returncode != 0
@@ -442,7 +442,7 @@ def test_malformed_headers_and_names_do_not_500():
 
 def test_failed_render_leaves_no_partial_video():
     """A failed render must not leave a 0-byte mp4 that the library then lists."""
-    from src.web_api import OUTPUTS_DIR, discard_partial
+    from spacepilot.web_api import OUTPUTS_DIR, discard_partial
 
     corrupt = OUTPUTS_DIR / "pytest_corrupt.mp4"
     corrupt.write_bytes(b"not a video")
@@ -470,7 +470,7 @@ def test_failed_render_leaves_no_partial_video():
 
 def test_run_cmd_rejects_shell_strings():
     """Verify run_cmd only takes argv lists, leaving shell metacharacters inert."""
-    from src.cli import run_cmd
+    from spacepilot.cli import run_cmd
 
     try:
         run_cmd("echo shell string")
@@ -483,7 +483,7 @@ def test_run_cmd_rejects_shell_strings():
 
 def test_worker_headers_require_token():
     """Verify the studio refuses to call the GPU worker without a token."""
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
 
     original = web_api.WORKER_TOKEN
     try:
@@ -741,7 +741,7 @@ def test_generate_with_image_path():
 
 def test_inspect_metrics_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     import subprocess
     
     client = TestClient(web_api.app)
@@ -766,7 +766,7 @@ def test_inspect_metrics_endpoint(monkeypatch):
     
 def test_inspect_action_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     import subprocess
     
     client = TestClient(web_api.app)
@@ -791,7 +791,7 @@ def test_inspect_action_endpoint(monkeypatch):
     
 def test_inspect_shell_ws_valid_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     import asyncio
     
     # Mock async subprocess
@@ -827,7 +827,7 @@ def test_inspect_shell_ws_valid_auth(monkeypatch):
         
 def test_inspect_shell_ws_invalid_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     from starlette.websockets import WebSocketDisconnect
     
     client = TestClient(web_api.app)
@@ -841,7 +841,7 @@ def test_inspect_shell_ws_invalid_auth(monkeypatch):
 
 def test_inspect_shell_ws_null_auth(monkeypatch):
     from fastapi.testclient import TestClient
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     from starlette.websockets import WebSocketDisconnect
     
     client = TestClient(web_api.app)
@@ -935,7 +935,7 @@ if __name__ == "__main__":
 
 def test_cockpit_status_includes_launch_time(monkeypatch):
     """Verify that instance.launch_time propagates up through the status endpoint."""
-    import src.web_api as web_api
+    import spacepilot.web_api as web_api
     from fastapi.testclient import TestClient
     
     monkeypatch.setattr(web_api, "_status_cache", None)
@@ -1047,7 +1047,7 @@ def test_watchdog_update_config():
 def test_watchdog_logic_trigger(monkeypatch):
     """Verify watchdog triggers auto-termination when idle exceeds threshold."""
     async def run_test():
-        import src.web_api as web_api
+        import spacepilot.web_api as web_api
         fake_time = [1000.0]
         monkeypatch.setattr(web_api.time, "time", lambda: fake_time[0])
         web_api._last_activity_time = 1000.0
@@ -1088,7 +1088,7 @@ def test_watchdog_logic_trigger(monkeypatch):
 def test_watchdog_activity_reset(monkeypatch):
     """Verify activity updates reset the watchdog timer."""
     async def run_test():
-        import src.web_api as web_api
+        import spacepilot.web_api as web_api
         web_api._last_activity_time = 1000.0
         monkeypatch.setattr(web_api, "load_config", lambda: {"idle_shutdown_minutes": 20})
         monkeypatch.setattr(web_api, "get_instance_info", lambda cfg: {"id": "i-123", "state": "running"})
@@ -1149,7 +1149,7 @@ def test_multi_provider_config_redaction():
     assert r2.status_code == 200
     
     # Verify underlying config
-    from src.cli import load_config
+    from spacepilot.cli import load_config
     real_cfg = load_config()
     assert real_cfg["shadeform_api_key"] == "sec_12345"
     assert real_cfg["aws_profile"] == "new-profile"

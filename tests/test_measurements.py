@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.pluto.measurements import (
+from spacepilot.pluto.measurements import (
     Measurement,
     MeasurementError,
     System,

@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from src.pluto_mcp_server import (
+from spacepilot.pluto_mcp_server import (
     pluto_generate_video,
     pluto_extend_video,
     pluto_generate_audio,

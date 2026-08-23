@@ -10,9 +10,9 @@ from fastapi.testclient import TestClient
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "src"))
+sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
-from src.web_api import app
+from spacepilot.web_api import app
 
 client = TestClient(app)
 
