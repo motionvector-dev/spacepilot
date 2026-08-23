@@ -235,6 +235,10 @@ html[data-motion="full"] .skel{animation:skel 1.4s linear infinite}
 .stage-demo{border:1px solid var(--line);border-radius:var(--r2);background:var(--root);
   padding:18px 20px;min-height:78px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 
+html.bare #tree, html.bare #panel, html.bare .stagebar, html.bare header{display:none}
+html.bare .rv, html.bare .mo-rise, html.bare .probe-line{opacity:1!important;transform:none!important;animation:none!important}
+html.bare #app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+html.bare .viewport{padding:44px 56px 56px;max-width:1080px;margin:0 auto;width:100%}
 @media (max-width:1300px){
   #app{grid-template-columns:212px 1fr;grid-template-rows:auto 1fr auto}
   aside#panel{grid-column:1/-1;grid-row:3;border-left:0;border-top:1px solid var(--line);
@@ -1543,9 +1547,9 @@ function render() {
   $("#viewport").innerHTML = S.structure === "shipped" ? asShipped() : (R[S.route] || (() => "<div class='dim'>—</div>"))();
   $("#panel").innerHTML = panelHTML();
 
-  if (S.motion !== "reduced") restart($("#viewport"), "routing");
+  if (S.motion !== "reduced" && !document.documentElement.classList.contains("bare")) restart($("#viewport"), "routing");
   const auto = AUTOPLAY[S.route];
-  if (auto) requestAnimationFrame(() => play(auto));
+  if (auto && !document.documentElement.classList.contains("bare")) requestAnimationFrame(() => play(auto));
 
   surfaces = [];
   if (S.power !== "low") {
@@ -1624,7 +1628,12 @@ document.addEventListener("click", e => {
     render(); return;
   }
   const go = e.target.closest("[data-go]");
-  if (go) { S.route = go.dataset.go; if (S.structure === "shipped") S.structure = "restructured"; render(); return; }
+  if (go) {
+    S.route = go.dataset.go;
+    if (S.structure === "shipped") S.structure = "restructured";
+    history.replaceState(null, "", "#" + S.route);
+    render(); return;
+  }
 
   const seg = e.target.closest(".seg button");
   if (seg) {
@@ -1729,9 +1738,29 @@ document.addEventListener("click", e => {
 addEventListener("keydown", e => {
   if (e.key === "[" && !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) { S.railCollapsed = !S.railCollapsed; render(); }
 });
+/* every state gets a URL — linkable, bookmarkable, and capturable */
+function applyHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, ""));
+  if (!h) return false;
+  const [route, ...flags] = h.split("&");
+  if (R[route]) S.route = route;
+  for (const f of flags) {
+    const [k, v] = f.split("=");
+    if (k === "theme" && ["system","light","dark"].includes(v)) S.theme = v;
+    if (k === "rail" && v === "collapsed") S.railCollapsed = true;
+    if (k === "density" && ["dense","sparse"].includes(v)) S.density = v;
+    if (k === "crew") S.crew = ["kokoro","wan-2-1-1_3b","ltx-2b","hunyuan-13b","deepseek-r1-7b"].slice(0, +v || 0);
+    if (k === "chrome" && v === "off") document.documentElement.classList.add("bare");
+    if (k === "metal" && v === "css") S.power = "low";
+    if (k === "motion" && v === "reduced") S.motion = "reduced";
+  }
+  return true;
+}
+addEventListener("hashchange", () => { if (applyHash()) render(); });
 matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => { if (S.theme === "system") render(); });
 if (matchMedia("(prefers-reduced-motion: reduce)").matches) S.motion = "reduced";
 
+applyHash();
 render();
 requestAnimationFrame(frame);
 </script>
