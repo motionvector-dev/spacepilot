@@ -23,6 +23,7 @@ variants:
     name: Boogu Image 0.1 Turbo
     precision: bf16
     repo: Boogu/Boogu-Image-0.1-Turbo
+    revision: 53ad54522023f64d049f7f38e4d679359ef3fb92
     backends: [metal]
     download:
       value: 38552157959

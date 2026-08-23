@@ -28,6 +28,7 @@ variants:
     params: 3.8B
     precision: bf16
     repo: Comfy-Org/Lens
+    revision: 0817dc5573b589e187f072234b7ab0f074bdf3db
     backends: [metal]
     download:
       value: 41107648787

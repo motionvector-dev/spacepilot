@@ -21,6 +21,7 @@ variants:
   params: 4B
   precision: bf16
   repo: black-forest-labs/FLUX.2-klein-4B
+  revision: e7b7dc27f91deacad38e78976d1f2b499d76a294
   backends:
   - metal
   download:
@@ -53,6 +54,7 @@ variants:
   params: 4B
   precision: bf16
   repo: black-forest-labs/FLUX.2-klein-base-4B
+  revision: a3b4f4849157f664bdbc776fd7453c2783562f4d
   backends:
   - metal
   download:
@@ -75,6 +77,7 @@ variants:
   params: 9B
   precision: bf16
   repo: black-forest-labs/FLUX.2-klein-9B
+  revision: 92196c8e11f7b6cf2b7493e037d8c5345c559216
   backends:
   - metal
   license:
@@ -104,6 +107,7 @@ variants:
   params: 9B
   precision: bf16
   repo: black-forest-labs/FLUX.2-klein-9b-kv
+  revision: a6dfb36eca3a3906eb2fd460795adfb844e5fcce
   backends:
   - metal
   license:
@@ -136,6 +140,7 @@ variants:
   params: 9B
   precision: bf16
   repo: black-forest-labs/FLUX.2-klein-base-9B
+  revision: 32773329fbe7e81a90ef971740e8ba4b0364ecf3
   backends:
   - metal
   license:
@@ -167,6 +172,7 @@ variants:
   params: 4B
   precision: int4
   repo: black-forest-labs/FLUX.2-klein-4B
+  revision: e7b7dc27f91deacad38e78976d1f2b499d76a294
   files:
   - vae/*.safetensors
   - vae/*.json

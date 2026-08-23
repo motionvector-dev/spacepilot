@@ -18,6 +18,7 @@ variants:
     params: 82M
     precision: fp32
     repo: hexgrad/Kokoro-82M
+    revision: f3ff3571791e39611d31c381e3a41a3af07b4987
     backends: [metal, cuda, cpu]
     download:
       value: 366000000

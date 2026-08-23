@@ -24,6 +24,7 @@ variants:
     name: Ideogram 4 FP8
     precision: fp8
     repo: ideogram-ai/ideogram-4-fp8
+    revision: ee79a7237b519f1402ceacf952f30c8a31ec5073
     backends: [metal]
     download:
       value: 27549627282

@@ -23,6 +23,7 @@ variants:
     params: 2B
     precision: bf16
     repo: Lightricks/LTX-Video
+    revision: 8984fa25007f376c1a299016d0957a37a2f797bb
     files: ["ltxv-2b-0.9.8-distilled.safetensors"]
     backends: [metal, cuda]
     download:
@@ -51,6 +52,7 @@ variants:
     params: 13B
     precision: fp8
     repo: Lightricks/LTX-Video
+    revision: 8984fa25007f376c1a299016d0957a37a2f797bb
     files: ["ltxv-13b-0.9.8-distilled-fp8.safetensors"]
     backends: [cuda]
     download:

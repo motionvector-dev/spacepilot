@@ -22,6 +22,7 @@ variants:
     params: 3B
     precision: fp16
     repo: numz/SeedVR2_comfyUI
+    revision: 09ced71023636e9bc8cdf9cdecfb2625d1e691e8
     files: ["ema_vae_fp16.safetensors", "seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]
     backends: [metal]
     download:
@@ -43,6 +44,7 @@ variants:
     params: 7B
     precision: fp16
     repo: numz/SeedVR2_comfyUI
+    revision: 09ced71023636e9bc8cdf9cdecfb2625d1e691e8
     files:
       - ema_vae_fp16.safetensors
       - seedvr2_ema_7b_fp16.safetensors
