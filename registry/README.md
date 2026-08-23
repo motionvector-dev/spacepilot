@@ -78,7 +78,7 @@ variants:
 ```
 
 `speed` metrics: `tokens_per_second`, `seconds_per_image`,
-`seconds_per_second_of_video`, `realtime_factor`.
+`seconds_per_second_of_video`, `realtime_factor`, `load_seconds`.
 
 ## Keeping it true
 
