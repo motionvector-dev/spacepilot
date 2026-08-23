@@ -113,3 +113,12 @@ def test_an_unknown_model_id_fails_and_names_the_installed_binary():
     assert "not-a-real-model" in proc.stdout
     assert "spacepilot models" in proc.stdout
     assert "pluto models" not in proc.stdout
+
+
+def test_no_model_variant_is_named_list():
+    """`models list` reserves the word, so a variant called `list` would become
+    unreachable by id."""
+    sys.path.insert(0, str(ROOT))
+    from spacepilot.pluto.registry import registry
+
+    assert [v.id for v in registry().variants if v.id == "list"] == []
