@@ -877,8 +877,8 @@
        "metric": "load_seconds",
        "solo_median": null,
        "solo_samples": 0,
-       "observed_median": 24.51,
-       "observed_samples": 1,
+       "observed_median": 19.3535,
+       "observed_samples": 2,
        "failed_samples": 0
       },
       {
@@ -887,8 +887,8 @@
        "metric": "seconds_per_image",
        "solo_median": null,
        "solo_samples": 0,
-       "observed_median": 32.985,
-       "observed_samples": 1,
+       "observed_median": 28.173000000000002,
+       "observed_samples": 2,
        "failed_samples": 0
       }
      ]
