@@ -27,7 +27,12 @@ from spacepilot.paths import shipped_dir
 SCHEMA_VERSION = 1
 RUNTIME_DIR = shipped_dir("runtimes")
 
-MODALITIES = {"video", "image", "audio", "speech", "text", "vision"}
+# `transcription` is audio in, text out. `vad` is audio in, timings out —
+# not inference in the sense the rest of this list means, but a runtime a
+# user installs and a capability they ask for, so it is named rather than
+# folded into "audio".
+MODALITIES = {"video", "image", "audio", "speech", "transcription", "vad",
+              "text", "vision"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}
 METHODS = {"pip"}
 

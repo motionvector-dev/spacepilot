@@ -46,7 +46,10 @@ SCHEMA_VERSION = 1
 # installed, where nothing was).
 REGISTRY_DIR = shipped_dir("models")
 
-KINDS = {"video", "image", "audio", "speech", "text", "vision"}
+# `speech` is text going in and audio coming out; `transcription` is the
+# other direction. They are different capabilities with different runtimes,
+# so they are different kinds rather than one "audio" bucket.
+KINDS = {"video", "image", "audio", "speech", "transcription", "text", "vision"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}
 
 # How a number came to be here. Ordered weakest to strongest.
@@ -63,6 +66,23 @@ SOURCES = {
 MOVING_REFS = {"main", "master", "head", "latest", "default"}
 
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+# What an optimisation did to a named capability. `license.restrictions` exists
+# because "SOTA but you may not ship it" belongs in a machine-readable field;
+# this is the same idea one layer down — "fast but the word timestamps were
+# never trained" is a fact about the weights that no size, licence or speed
+# number can carry.
+#
+# Deliberately four words and a mandatory sentence. The failure mode being
+# fixed is a variant that reads as a drop-in replacement for the model it was
+# derived from, so what matters is that a caveat cannot be added without saying
+# what it costs.
+CAVEAT_STATUSES = {
+    "preserved",   # the derived variant keeps this capability
+    "degraded",    # measurably worse, still usable; detail must say how much
+    "untrained",   # inherited from the parent, never trained for; unvalidated
+    "absent",      # not implemented at all on this path
+}
 
 SPEED_METRICS = {
     "tokens_per_second",
@@ -116,6 +136,23 @@ class Speed:
 
 
 @dataclass(frozen=True)
+class Caveat:
+    """One capability, what an optimisation did to it, and in what way."""
+    capability: str
+    status: str
+    detail: str
+
+    @property
+    def is_safe(self) -> bool:
+        return self.status == "preserved"
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = dict(self.__dict__)
+        d["is_safe"] = self.is_safe
+        return d
+
+
+@dataclass(frozen=True)
 class License:
     id: str
     open_source: bool
@@ -154,7 +191,13 @@ class Variant:
     # `is_pinned`, which is what makes that visible rather than silent.
     revision: Optional[str] = None
     speed: List[Speed] = field(default_factory=list)
+    caveats: List[Caveat] = field(default_factory=list)
     notes: Optional[str] = None
+
+    @property
+    def compromised(self) -> List[str]:
+        """Capabilities this variant does not fully carry. Empty is the normal case."""
+        return [c.capability for c in self.caveats if not c.is_safe]
 
     @property
     def is_pinned(self) -> bool:
@@ -177,6 +220,8 @@ class Variant:
             "working_set": self.working_set.to_dict(),
             "license": self.license.to_dict(),
             "speed": [s.to_dict() for s in self.speed],
+            "caveats": [c.to_dict() for c in self.caveats],
+            "compromised": self.compromised,
             "notes": self.notes,
         }
 
@@ -279,6 +324,26 @@ def _speed(raw: Dict[str, Any], where: str) -> Speed:
     )
 
 
+def _caveat(raw: Dict[str, Any], where: str) -> Caveat:
+    """Parse one capability caveat. A status with no detail is refused.
+
+    `status: degraded` on its own tells a reader that something is worse and
+    nothing about whether it matters to them. The sentence is the whole value
+    of the field, so it is required rather than encouraged.
+    """
+    if not isinstance(raw, dict):
+        raise RegistryError(f"{where}: must be a mapping with 'capability', 'status' and 'detail'")
+    status = str(_require(raw, "status", where))
+    if status not in CAVEAT_STATUSES:
+        raise RegistryError(f"{where}: status '{status}' not one of {sorted(CAVEAT_STATUSES)}")
+    detail = str(_require(raw, "detail", where)).strip()
+    if not detail:
+        raise RegistryError(
+            f"{where}: a caveat must say what the effect is — a bare status "
+            f"tells a reader something changed and nothing about whether it matters")
+    return Caveat(str(_require(raw, "capability", where)), status, detail)
+
+
 def parse_model(raw: Dict[str, Any], where: str) -> Model:
     schema = raw.get("schema")
     if schema != SCHEMA_VERSION:
@@ -320,6 +385,7 @@ def parse_model(raw: Dict[str, Any], where: str) -> Model:
             precision=rv.get("precision"),
             revision=_revision(rv.get("revision"), f"{vw}.revision"),
             speed=[_speed(s, f"{vw}.speed[{j}]") for j, s in enumerate(rv.get("speed") or [])],
+            caveats=[_caveat(c, f"{vw}.caveats[{j}]") for j, c in enumerate(rv.get("caveats") or [])],
             notes=rv.get("notes"),
         ))
 

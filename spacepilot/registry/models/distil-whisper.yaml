@@ -1,0 +1,50 @@
+schema: 1
+id: distil-whisper
+name: Distil-Whisper
+family: distil-whisper
+kind: transcription
+summary: >
+  A distilled Whisper large-v3 in the GGML build whisper.cpp reads. Faster than
+  its parent at transcription, and the wrong tool for anything that cuts on a
+  word boundary — see the caveats, which is the only place that fact exists.
+homepage: https://huggingface.co/distil-whisper/distil-large-v3-ggml
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://opensource.org/license/mit
+
+variants:
+  - id: distil-large-v3-ggml
+    name: Distil-Whisper large-v3 (f16, GGML)
+    params: 756M
+    precision: f16
+    repo: distil-whisper/distil-large-v3-ggml
+    revision: 0d78dd96ed9fc152325f63b53788fec3b43de031
+    files: ["ggml-distil-large-v3.bin"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 1519521155
+      source: huggingface-api
+      checked: "2026-08-23"
+    working_set:
+      value: 1729521155
+      source: estimated
+      note: >
+        weights plus the ~210 MB of decoder state and audio buffers measured
+        alongside Whisper base.en f16 on the i5-6200U
+    caveats:
+      - capability: transcription
+        status: preserved
+        detail: >
+          Segment-level transcription is what the distillation was trained on,
+          and it is the reason to reach for this model at all.
+      - capability: word_timestamps
+        status: untrained
+        detail: >
+          Only segment-level output was distilled. Word timestamps are inherited
+          from the parent's attention heads with no dedicated training, so they
+          are unvalidated rather than merely less accurate. Fine for subtitles;
+          wrong for cutting filler words, where the cut lands on a word boundary
+          this model was never taught to place.

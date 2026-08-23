@@ -1,0 +1,32 @@
+schema: 1
+id: silero-vad
+name: Silero VAD
+summary: >
+  Voice activity detection: audio in, speech and silence timings out. Not
+  generation and not transcription — it is what makes silence trimming cost
+  nothing, and what keeps a transcriber from being handed dead air.
+homepage: https://github.com/snakers4/silero-vad
+serves: [vad]
+backends: [cpu]
+license: MIT
+
+install:
+  method: pip
+  package: silero-vad
+  min_version: "6.2.1"
+  checked: "2026-08-23"
+python_requires: ">=3.8"
+
+verify:
+  import: silero_vad
+
+runs: []
+notes: >
+  It carries its own weights in the wheel, which is why it has no entry in the
+  model registry: there is nothing to download separately, and the authors
+  publish on PyPI and GitHub rather than the Hub, so every Hub copy is a
+  third-party mirror this project would be pinning on their behalf.
+
+  The default wheel depends on torch and torchaudio. `pluto runtimes preview`
+  will show that before it happens; the `onnx-cpu` extra swaps them for
+  onnxruntime if a torch install is not wanted.
