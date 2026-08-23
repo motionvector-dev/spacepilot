@@ -4,7 +4,7 @@
 status: accepted
 authority: normative-process
 decided_at: 2026-08-23
-last_verified_at: 2026-08-23
+last_verified_at: 2026-08-24
 owners: [cto, founder]
 ---
 
@@ -127,6 +127,71 @@ undiscoverable.
   cheap against a rebrand after adoption.
 - **Founder decision needed**: proceed on SpacePilot, or clear it first.
 - **Close when**: names are parked and the trademark question has an answer.
+
+### What SpacePilot is for — the sentence, and its shelf life
+
+- **Working claim, today's version** (founder, 2026-08-23): *SpacePilot tells you
+  what your machines can actually run, and runs it there.*
+- **Explicitly not** "the scheduler decides which machine answers". That is the
+  mechanism, not the pitch, and it was overstated for most of 2026-08-23 by a
+  session that synthesised it from a warm-routing conversation and then argued
+  from it as though it had been decided.
+- **The founder's framing on lifespan**, recorded because it governs how this
+  entry should be read: *"pitch line works for today; it will change with
+  whatever v1.1+ is. A product/roadmap is not static, it changes with what users
+  want and what new market signals we get."* So this is dated, not settled.
+- **The evidence that shaped it**: a competitive audit on 2026-08-23 tried to
+  kill six claims and killed four. Probing, compatibility, contributed speed
+  corpora and warm-residency routing are all shipped by others — GPUStack's
+  `gguf-parser-go`, NVIDIA Dynamo's published warm formula, LocalScore, AI Horde.
+  See `motionvector/studio/docs/market/`.
+- **What survived**: knowing whether a compressed model still does the specific
+  job you need. Now partially implemented as `caveats:` — see the open entry above.
+- **Close when**: v1 ships and a real user restates the pitch back in their own
+  words. Until then this entry is the canonical wording; do not re-derive it.
+
+### Three directions formally retired
+
+Recorded so no session rebuilds them. Each was live at some point in 2026-08 and
+each is closed for a specific, checkable reason — not for lack of enthusiasm.
+
+- **Universal Neural Fabric** — any HF/Civitai model, auto-quantised, routed
+  across runtimes. Named as the moat in an early strategy memo. **Retired**: the
+  current worker is one hardened LTX pipeline, so this is a rewrite rather than
+  an extension, and the registry-plus-caveats work covers the part that was
+  actually valuable. Revisit only if the worker is being rewritten anyway.
+- **Multi-cloud broker (SKY)** — spot arbitrage across GPU providers.
+  **Retired: blocked, not unbuilt.** The G-family spot quota is 8 vCPU and
+  g6e.2xlarge is 8 vCPU, so there is exactly one box and no arbitrage is
+  possible. Separately, `spacepilot/skypilot_orchestrator.py` advertises
+  "Real-Time Spot Arbitrage" over a hardcoded price dict and makes zero network
+  calls — that module is a claim, not an implementation, and should be deleted
+  or made honest. Revisit if the quota moves.
+- **Share your Mac for small LLMs** (the Darkbloom-shaped framing) —
+  **superseded within a day by the founder**: any device, any modality, any
+  inference it is capable of. Kept here only so the narrower version is not
+  mistaken for the current one.
+
+### The warm-aware scheduler is parked, and why
+
+- **Parked 2026-08-23**, not abandoned. It was the top of the build queue for
+  most of that day.
+- **Three reasons, in order**: there is one substrate, so a scheduler has one
+  candidate and always returns the same answer; there are zero `solo`
+  measurements, so it would score on data that does not exist; and the
+  cold-start term it is built around is being **engineered toward zero** by
+  better-funded teams — RunPod FlashBoot markets sub-250ms, Replicate boots
+  fine-tuned models in under a second, Modal snapshots container memory. If
+  loading is a sub-second constant, `load_seconds x value_of_latency` is a
+  rounding error against price.
+- **The counter-evidence worth keeping**: chaining Whisper → SAM2 → FLUX in one
+  request loses 15+ seconds to repeated cold loads. The cold-start term is being
+  killed for *a single call*; nobody has optimised *chained media pipelines*.
+  That is the version of the idea that may still be worth building.
+- **Also note**: `value_of_latency` and `load_seconds` appear nowhere in the
+  repo. The scoring function being discussed all day does not exist.
+- **Unpark when**: a second substrate is routable and the corpus holds real
+  `solo` measurements.
 
 ## Decided 2026-08-23
 
