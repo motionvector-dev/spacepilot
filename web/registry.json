@@ -1126,7 +1126,29 @@
        "note": "12.5s of speech from a single sentence in 2.7s wall clock, kokoro-v1.0.onnx via onnxruntime"
       }
      ],
-     "notes": null
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "kokoro-82m",
+       "metric": "realtime_factor",
+       "solo_median": 4.021,
+       "solo_samples": 1,
+       "observed_median": 4.021,
+       "observed_samples": 1,
+       "failed_samples": 0
+      },
+      {
+       "system_id": "intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb",
+       "model_id": "kokoro-82m",
+       "metric": "realtime_factor",
+       "solo_median": 0.8400000000000001,
+       "solo_samples": 2,
+       "observed_median": 0.8400000000000001,
+       "observed_samples": 2,
+       "failed_samples": 0
+      }
+     ]
     }
    ]
   },
@@ -1924,6 +1946,26 @@
    "host_fingerprint": "b0689f2dbc85",
    "recorded_on": "2026-08-23",
    "unknown": {}
+  },
+  {
+   "id": "intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb",
+   "chip": "Intel(R) Core(TM) i5-8210Y CPU @ 1.60GHz",
+   "machine_model": "MacBookAir8,1",
+   "backend": "metal",
+   "os_name": "macOS",
+   "os_version": "14.8.7",
+   "cpu_cores": 4,
+   "gpu_cores": null,
+   "memory_total_bytes": 8589934592,
+   "memory_limit_bytes": 0,
+   "memory_limit_source": "heuristic",
+   "memory_unified": false,
+   "vram_total_bytes": 1610612736,
+   "host_fingerprint": "c18b43de8267",
+   "recorded_on": "2026-08-23",
+   "unknown": {
+    "system_profiler": "expected string or bytes-like object, got 'int'"
+   }
   }
  ]
 }
