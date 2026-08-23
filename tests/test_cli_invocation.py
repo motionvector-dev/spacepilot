@@ -74,3 +74,42 @@ def test_a_failed_measure_leaves_no_system_record(monkeypatch):
     )
     assert cli.cmd_measure(args) == 3
     assert written == []
+
+
+def _cli(*argv):
+    return subprocess.run([sys.executable, "spacepilot/cli.py", *argv],
+                          cwd=ROOT, capture_output=True, text=True, timeout=120)
+
+
+def test_models_list_lists_the_registry():
+    """`spacepilot models list` is documented, and parsed `list` as a model id.
+
+    `runtimes list` worked, so the two commands disagreed with each other.
+    """
+    proc = _cli("models", "list")
+    assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
+    assert "VERDICT" in proc.stdout
+    assert "kokoro-82m" in proc.stdout
+
+
+def test_bare_models_lists_the_registry():
+    proc = _cli("models")
+    assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
+    assert "VERDICT" in proc.stdout
+    assert "kokoro-82m" in proc.stdout
+
+
+def test_models_with_an_id_shows_that_one_model():
+    proc = _cli("models", "kokoro-82m")
+    assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
+    assert "[kokoro-82m]" in proc.stdout
+    assert "licence" in proc.stdout
+    assert "VERDICT" not in proc.stdout
+
+
+def test_an_unknown_model_id_fails_and_names_the_installed_binary():
+    proc = _cli("models", "not-a-real-model")
+    assert proc.returncode != 0
+    assert "not-a-real-model" in proc.stdout
+    assert "spacepilot models" in proc.stdout
+    assert "pluto models" not in proc.stdout
