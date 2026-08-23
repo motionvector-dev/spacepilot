@@ -485,3 +485,23 @@ def test_a_stealth_model_is_never_the_only_route():
     stealth = [v for v in FREE_POOL if "stealth/" in v.model]
     assert stealth, "expected a stealth route in the free pool"
     assert len(FREE_POOL) - len(stealth) >= 3, "too few non-stealth fallbacks"
+
+
+def test_report_names_who_fabricated_not_just_how_many():
+    """A model that invents citations must be droppable from the pool, which
+    needs attribution — a count alone shows the rot without its source."""
+    from tools.verify_claims import Verdict, aggregate_claim
+
+    good = Verdict(verifier="honest", model="m", verdict="supported", confidence=.9,
+                   url="http://x", quote="q", reasoning="r",
+                   prompt_tokens=1, completion_tokens=1)
+    bad = Verdict(verifier="inventor", model="m", verdict="fabricated_citation",
+                  confidence=.9, url="http://x", quote="never said this",
+                  reasoning="r", prompt_tokens=1, completion_tokens=1,
+                  gate_note="quote not on page")
+
+    out = aggregate_claim({"id": "c1", "text": "t"}, [good, bad])
+    assert out["counts"]["fabricated_citation"] == 1
+    named = {v["verifier"]: v["verdict"] for v in out["verdicts"]}
+    assert named["inventor"] == "fabricated_citation"
+    assert named["honest"] == "supported"
