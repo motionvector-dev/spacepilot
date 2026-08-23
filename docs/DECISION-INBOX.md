@@ -103,6 +103,95 @@ undiscoverable.
   cheap against a rebrand after adoption.
 - **Founder decision needed**: proceed on SpacePilot, or clear it first.
 - **Close when**: names are parked and the trademark question has an answer.
+### Trust delegated to the network layer, not built here
+
+- **Changed since prior state**: the settlement entry above treats verifying work
+  done on someone else's machine as a wall. It is a wall for *strangers*. It is
+  not one for a tailnet, and we are already living the counter-example: Saurabh
+  and Sam share machines over Tailscale today, and neither is incentivised to bill
+  the other for thirty diffusion steps while running eight.
+- **The reframe**: Tailscale (or Cloudflare's equivalent) supplies identity,
+  encrypted transport, ACLs, device authorisation and audit. That does not *solve*
+  settlement — it makes settlement **unnecessary** for the segment where the
+  provider is socially accountable. Small teams, solopreneurs, communities, and
+  companies managing their own fleet all sit in that segment.
+- **Why this is stronger than what Darkbloom built**: they spent four layers —
+  Secure Enclave, MicroMDM, Apple Managed Device Attestation against a pinned root
+  CA, APNs code identity — to establish "this is a genuine machine", and it only
+  works on Apple silicon. That is precisely why they cannot follow us to NVIDIA.
+  Tailscale establishes "this is an authorised device of an authorised user",
+  which is weaker in theory, sufficient for a team, and silicon-agnostic.
+- **Not lock-in**: headscale is at v0.29.1 (June 2026), BSD-3-Clause, self-hosted
+  control plane running unmodified official clients, in production use by
+  thousands of teams. It lacks SAML SSO and device posture checks, which only
+  matters if we chase enterprise. The trust layer is therefore a component we
+  plug in, not a dependency we rent.
+- **Market gap, checked 2026-08-23**: searching for tailnet-native GPU fleet
+  management surfaced Kubernetes multi-cluster tooling aimed at datacentres
+  (Rafay and similar). Nothing shaped like "I have three Macs and a 5090 on a
+  tailnet, schedule my work across them."
+- **CTO recommendation**: adopt this as the trust model for stages 1 and 2 of the
+  provider sequence (own machines, then trusted circle), and treat stage 3
+  (strangers) as gated on settlement, which remains unsolved industry-wide. A
+  tailnet outage must degrade to local-only, never to broken.
+- **Founder decision needed**: whether this becomes the stated architecture, and
+  whether Tailscale-managed or headscale-self-hosted is the default we document.
+- **Close when**: one job runs on another person's machine over a tailnet and the
+  measurement lands in this repo's store.
+
+### Second substrate: a trusted machine, not a paid API
+
+- **Conflict**: the build board lists "API substrate (fal or Replicate)" as the
+  next substrate, on the reasoning that it is the cheapest second option and gives
+  the scheduler a cost contrast to route against. Under the entry above, the more
+  valuable second substrate is **Sam's 5090 over the tailnet**.
+- **Why the reprioritisation**: fal proves that *routing* works. A second trusted
+  machine proves that *the product* works. It is free rather than per-image, it
+  has no settlement problem, and it exercises the heterogeneity that actually
+  matters — Metal and CUDA, macOS and Linux — instead of adding one more HTTPS
+  endpoint. It also forces the CUDA probe, which is the whole non-Mac half of the
+  any-device thesis and is currently stubbed.
+- **What it costs**: device discovery over a tailnet, a CUDA/Linux probe, and a
+  job protocol. Materially more than an API driver, which is a day.
+- **CTO recommendation**: do both, in this order — the tailnet substrate first
+  because it is on the thesis, the API substrate second because it is cheap and
+  gives the scheduler a paid tier to compare against. Do not skip the API one:
+  without a priced option the scheduler has no cost axis at all.
+- **Founder decision needed**: confirm the reordering, since it moves roughly a
+  week of work ahead of a day of work.
+- **Close when**: a job submitted on one machine executes on another over the
+  tailnet and both machines appear in `registry/systems/`.
+
+### Hardware spend: what $5–10k should buy
+
+- **Changed since prior state**: a budget of $5,000–10,000 is planned for
+  additional machines — a Mac and an NVIDIA rig (Saurabh, 2026-08-23). This is the
+  first time the fleet is real hardware rather than a thought experiment.
+- **The tension**: Apple silicon buys **capacity** — unified memory holds models a
+  32 GB card cannot, slowly. NVIDIA buys **throughput** — much faster diffusion,
+  capped at what fits in VRAM. They are not substitutes and the right mix depends
+  on whether we are memory-bound or time-bound, which nobody has measured.
+- **What is already known**: SDXL needs ~12 GB VRAM to run natively at 1024px; the
+  RTX 5090's 32 GB is the tier described as handling video pipelines without
+  memory pressure. On this M1 Max, FLUX.2-klein-4B at int4 peaked at 10.52 GB
+  against a 24.96 GB Metal ceiling — 42% utilisation, so this machine is not yet
+  memory-bound at 512px.
+- **CTO recommendation**: buy the **NVIDIA rig first**, for reasons that are about
+  the product rather than the specs. It unlocks CUDA, which is the entire non-Mac
+  half of the thesis and is currently a stub; it makes the fleet genuinely
+  heterogeneous, which is what the scheduler exists to handle; and paired with the
+  tailnet entry above it turns "second substrate" from a purchase into a capability.
+  A second Mac adds a faster copy of a machine we already understand.
+- **And defer the rest until the sweep has run.** The overnight sweep runner will
+  produce a real quality-and-cost curve for this machine within a night. Buying
+  before that means guessing at what is limiting; buying after means the purchase
+  is justified by measurements from our own registry, which is also the product
+  demonstrating itself on its first real decision.
+- **Founder decision needed**: split of the budget, and whether to buy before or
+  after the first sweep completes.
+- **Close when**: the new hardware appears in `registry/systems/` with its own
+  measurements, and the purchase rationale points at the numbers that justified it.
+
 
 ## Decided 2026-08-23
 
