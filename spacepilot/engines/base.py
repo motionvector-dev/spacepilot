@@ -15,6 +15,13 @@ import time
 import os
 import shutil
 
+from spacepilot.pluto.core.utils import allocate_output
+
+
+def default_render_path(job_id: str) -> str:
+    """Where a render lands when the caller names no output file."""
+    return str(allocate_output(f"{job_id}.mp4", subdir="renders"))
+
 
 @dataclass
 class EngineSpec:
