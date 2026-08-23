@@ -22,7 +22,6 @@ from src.model_recommender import (
 from src.pluto_mcp_server import (
     pluto_probe_hardware,
     pluto_recommend_models,
-    pluto_download_model,
     pluto_get_local_status,
 )
 from src.studio_api import app, STUDIO_TOKEN
@@ -114,9 +113,6 @@ def test_fastmcp_tools():
     rec_res = pluto_recommend_models()
     assert rec_res["status"] == "success"
     assert len(rec_res["recommendations"]) > 0
-
-    dl_res = pluto_download_model("span-4k-upscaler")
-    assert dl_res["success"] is True
 
     status_res = pluto_get_local_status()
     assert status_res["status"] == "online"

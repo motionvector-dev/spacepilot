@@ -11,8 +11,9 @@ uvicorn>=0.22.0
 pydantic>=2.0
 httpx>=0.24.0
 
-# MCP server (src/pluto_mcp_server.py)
-mcp>=1.0.0
+# MCP server (src/pluto_mcp_server.py). Spec kept identical to pyproject.toml:
+# 2.0 renamed FastMCP to MCPServer, so 1.x will not import.
+mcp>=2.0,<3
 
 # Audio. soundfile needs libsndfile1 from apt on Linux.
 soundfile>=0.12.0

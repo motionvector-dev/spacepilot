@@ -165,16 +165,6 @@ def pluto_get_render_status(job_id: str) -> Dict[str, Any]:
     return {"job_id": job_id, "status": "completed"}
 
 @mcp.tool()
-def pluto_get_fleet_status() -> Dict[str, Any]:
-    """Get the status of the GPU fleet.
-    
-    Returns:
-        Dict[str, Any]: Information about vram_usage, active instances, and health status.
-    """
-    return {"vram_usage": 0.5, "instances": 10, "status": "healthy"}
-
-
-@mcp.tool()
 def pluto_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
     """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
     
@@ -397,6 +387,10 @@ def pluto_train_lora(name: str, base_model: str, image_paths: list[str], trigger
 #   pluto_download_model: model_catalog._mock_download_task downloads nothing (TODO(real-download))
 #   pluto_get_billing_usage: no metering, credits or entitlements exist, so there is nothing to report usage against
 #   pluto_verify_agent_payment: same — x402 verification has no ledger behind it
+#   pluto_get_fleet_status: returned a fixed {vram_usage: 0.5, instances: 10, healthy};
+#     there is no fleet, and the one box is usually not running at all
+#   pluto://models/ltx25, pluto://voices/catalogue: hardcoded prose stating a 48GB
+#     VRAM figure and a voice list as fact, neither read from anything
 # Restore a tool here only once its implementation is real.
 
 if __name__ == "__main__":
