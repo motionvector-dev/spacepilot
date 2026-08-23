@@ -25,5 +25,5 @@ scratch/
 # claimed to add it.
 /models/
 
-# legacy studio snapshot kept on disk only; studio/ history is in git already
+# legacy studio snapshot kept on disk only; web/ history is in git already
 studio_backup_original/

@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Root Cause Audit
 
-Following a deep-dive audit of `src/studio_api.py`, `studio/create.html`, `studio/create.js`, `studio/index.html`, and `studio/studio.css`, we have identified the root causes across the 4 reported issues:
+Following a deep-dive audit of `src/web_api.py`, `web/create.html`, `web/create.js`, `web/index.html`, and `web/app.css`, we have identified the root causes across the 4 reported issues:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -36,14 +36,14 @@ Following a deep-dive audit of `src/studio_api.py`, `studio/create.html`, `studi
 ## 2. Implementation Blueprint
 
 ### Phase 1: Robust Image Upload & Aspect-Aware Dropzone
-1. **Backend Endpoint (`src/studio_api.py`)**:
+1. **Backend Endpoint (`src/web_api.py`)**:
    - Add `POST /api/upload-image` (and multipart form support):
      - Validates image MIME types (`image/jpeg`, `image/png`, `image/webp`).
      - Extracts image metadata (`natural_width`, `natural_height`, `aspect_ratio`).
      - Saves securely to `outputs/uploads/{job_id}_{filename}` preventing path traversal.
      - Returns `{ "image_path": str, "url": str, "width": int, "height": int, "aspect_ratio": "16:9" | "9:16" | "1:1" }`.
    - Update `POST /api/generate` to accept `image_path` and forward to LTX Image-to-Video pipeline.
-2. **Frontend Dynamic Aspect Dropzone (`studio/create.html` & `studio/create.js`)**:
+2. **Frontend Dynamic Aspect Dropzone (`web/create.html` & `web/create.js`)**:
    - Replace fixed-height `.dropzone-preview` with a responsive letterboxed/pillarboxed container using `object-fit: contain` and max-height constraints.
    - Detect image dimensions on load: display an upfront badge `1080×1920 · 9:16 Vertical` and provide a 1-click **"Auto-match Aspect Ratio"** action.
    - Add a **"✕ Remove Image"** button to reset keyframe staging.
@@ -83,9 +83,9 @@ Following a deep-dive audit of `src/studio_api.py`, `studio/create.html`, `studi
 ---
 
 ## 3. Test-Driven Verification Plan
-1. **API Unit Tests (`tests/test_studio_api.py`)**:
+1. **API Unit Tests (`tests/test_web_api.py`)**:
    - Test `POST /api/upload-image` with valid PNG/JPEG and malicious filenames/traversals.
    - Test `POST /api/generate` with `image_path` and `draft_mode=True` (asserting 15 steps and draft quote).
-2. **Frontend UI Tests (`tests/test_studio_js.py`)**:
+2. **Frontend UI Tests (`tests/test_web_js.py`)**:
    - Test image dropzone aspect ratio calculation and draft mode toggle event handling.
    - Verify zero JS syntax errors and clean HTML escaping.

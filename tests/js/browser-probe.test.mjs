@@ -19,7 +19,7 @@ globalThis.document = {
   }),
 };
 
-const { probeBrowser, APPLE_CHIPS } = await import("../../studio/browser-probe.js");
+const { probeBrowser, APPLE_CHIPS } = await import("../../web/browser-probe.js");
 
 const M1_MAX = "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)";
 const RTX_4090 = "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0, D3D11)";

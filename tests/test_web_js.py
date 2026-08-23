@@ -15,14 +15,14 @@ from pathlib import Path
 import pytest
 
 PLUTO_ROOT = Path(__file__).resolve().parent.parent
-STUDIO_JS = PLUTO_ROOT / "studio" / "studio.js"
+APP_JS = PLUTO_ROOT / "web" / "app.js"
 
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
 
 
 def _esc_source():
-    match = re.search(r"^function esc\(value\) \{.*?^\}", STUDIO_JS.read_text(), re.S | re.M)
-    assert match, "esc() helper is missing from studio.js"
+    match = re.search(r"^function esc\(value\) \{.*?^\}", APP_JS.read_text(), re.S | re.M)
+    assert match, "esc() helper is missing from app.js"
     return match.group(0)
 
 
@@ -53,9 +53,9 @@ console.log('ok');
 
 def test_server_data_is_never_interpolated_raw_into_innerhtml():
     """Fail if a scene/asset field reaches an innerHTML template unescaped."""
-    source = STUDIO_JS.read_text()
+    source = APP_JS.read_text()
     templates = re.findall(r"innerHTML\s*=\s*`(.*?)`", source, re.S)
-    assert templates, "no innerHTML templates found; did studio.js move?"
+    assert templates, "no innerHTML templates found; did app.js move?"
 
     offenders = []
     for template in templates:
@@ -70,13 +70,13 @@ def test_server_data_is_never_interpolated_raw_into_innerhtml():
 
 
 def test_syntax_is_valid():
-    result = subprocess.run([shutil.which("node"), "--check", str(STUDIO_JS)], capture_output=True, text=True)
+    result = subprocess.run([shutil.which("node"), "--check", str(APP_JS)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 def test_sidebar_format_time():
     """Verify the formatTime logic added to sidebar.js"""
     import re
-    sidebar = PLUTO_ROOT / "studio" / "sidebar.js"
+    sidebar = PLUTO_ROOT / "web" / "sidebar.js"
     source = sidebar.read_text()
     match = re.search(r"^    function formatTime\(totalSeconds\) \{.*?^\s*\}", source, re.S | re.M)
     assert match, "formatTime() helper is missing from sidebar.js"
@@ -108,11 +108,11 @@ console.log('ok');
 
 
 def test_cockpit_syntax():
-    cockpit_js = PLUTO_ROOT / "studio" / "cockpit.js"
+    cockpit_js = PLUTO_ROOT / "web" / "cockpit.js"
     result = subprocess.run([shutil.which("node"), "--check", str(cockpit_js)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 def test_create_js_syntax():
-    create_js = PLUTO_ROOT / "studio" / "create.js"
+    create_js = PLUTO_ROOT / "web" / "create.js"
     result = subprocess.run([shutil.which("node"), "--check", str(create_js)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

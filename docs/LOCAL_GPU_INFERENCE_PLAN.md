@@ -149,7 +149,7 @@ $ pluto models pull ltx-2.5-nf4
 
 ---
 
-## 5. Studio Cockpit Integration (`studio/cockpit.html`)
+## 5. Studio Cockpit Integration (`web/cockpit.html`)
 
 1. **Hardware Telemetry HUD**: Real-time VRAM gauge, unified memory ceiling, GPU temperature, and active backend badge (`[ Local: Apple Metal (48GB Free) ]`).
 2. **Model Registry Card**: Single-click "Download Recommended Suite" action with visual progress bar and local disk quota tracker.

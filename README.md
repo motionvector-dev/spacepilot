@@ -65,7 +65,7 @@ doppler run -- ./bin/pluto studio
 ## Running the Studio
 
 ```bash
-doppler run -- ./bin/pluto studio        # or: python src/studio_api.py
+doppler run -- ./bin/pluto studio        # or: python src/web_api.py
 ```
 
 Serves the Web UI and API on:
@@ -138,7 +138,7 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 ```
 bin/pluto                       CLI launcher & command router
 src/
-├── studio_api.py               SpacePilot Studio FastAPI server & web UI router
+├── web_api.py               SpacePilot Studio FastAPI server & web UI router
 ├── pluto_mcp_server.py         Native FastMCP tool server
 ├── device_probe.py             Zero-dependency cross-platform hardware profiler
 ├── model_recommender.py        Model catalog & dynamic fit scoring engine
@@ -160,12 +160,12 @@ src/
                                  modules (assets, audio, billing, checkpoints,
                                  compute, engines, generate, gpu, health, lora,
                                  recipes, storyboard, views, __init__)
-studio/                         Zero-build Obsidian UI
-├── index.html / studio.js      Director NLE & Asset matrix
+web/                         Zero-build Obsidian UI
+├── index.html / app.js      Director NLE & Asset matrix
 ├── create.html / create.js     Create Studio (Camera Compass, Dual Keyframe)
 ├── cockpit.html / cockpit.js   Cockpit (Host Hardware HUD, Model Registry)
 ├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
-└── studio.css                  Obsidian design system
+└── app.css                  Obsidian design system
 infra/                          SkyPilot YAML, GPU startup scripts, IAM
 tests/                          Pytest integration test suite (172 tests)
 docs/                           Architecture blueprints, plans, and research

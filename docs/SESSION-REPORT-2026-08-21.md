@@ -29,7 +29,7 @@ All six PRs are merged into main. Nothing in the Pull Request Fleet Summary or
 the Kanban section below reflects that — read them as a snapshot of a past
 moment, not current status.
 
-The test count in Section 6 is also stale. This report says 55 (studio_api)
+The test count in Section 6 is also stale. This report says 55 (web_api)
 plus five more suites passing. The full suite, run 2026-08-22, is **172
 passed, 0 failed**, in 57.81s (`python -m pytest tests/ -q`). Treat any test
 count in the body below as superseded by that number.
@@ -38,7 +38,7 @@ count in the body below as superseded by that number.
 
 ## 1. Executive Summary
 
-During this session, we completed the **full architectural overhaul of the SpacePilot backend**, transitioning from a single monolithic 2,577-line file (`src/studio_api.py`) into a production-grade, typed, modular FastAPI package layout (`src/pluto/`).
+During this session, we completed the **full architectural overhaul of the SpacePilot backend**, transitioning from a single monolithic 2,577-line file (`src/web_api.py`) into a production-grade, typed, modular FastAPI package layout (`src/pluto/`).
 
 In addition to the zero-regression architectural refactor, we completed and published **5 major wave features and developer tools** across isolated Git worktrees, backed by unit test suites and registered FastMCP tools.
 
@@ -163,9 +163,9 @@ src/pluto/
 
 ---
 
-## 5. Kanban Board (`studio/oven.html`)
+## 5. Kanban Board (`web/oven.html`)
 
-The live Oven Kanban board in `studio/oven.html` has been updated with all newly delivered PR cards:
+The live Oven Kanban board in `web/oven.html` has been updated with all newly delivered PR cards:
 - **Review Gate**:
   1. `SpacePilot CLI Doctor, Serve & Archival` (PR #15)
   2. `Polar.sh MoR & x402 Micropayments Engine` (PR #12)
@@ -181,7 +181,7 @@ The live Oven Kanban board in `studio/oven.html` has been updated with all newly
 ## 6. Verification and Test Results
 
 All 6 test suites pass with zero regressions:
-- `tests/test_studio_api.py` $\rightarrow$ 55 passed (100% backward compatibility)
+- `tests/test_web_api.py` $\rightarrow$ 55 passed (100% backward compatibility)
 - `tests/test_lora.py` $\rightarrow$ Passed
 - `tests/test_model_recipes.py` $\rightarrow$ Passed
 - `tests/test_polar_billing.py` $\rightarrow$ Passed

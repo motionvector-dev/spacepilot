@@ -95,8 +95,8 @@ class CompositeMotionVectorRequest(BaseModel):
 
 def worker_headers(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """Auth headers for the remote LTX worker; refuses to call it unauthenticated."""
-    import src.studio_api as studio_api
-    token = getattr(studio_api, "WORKER_TOKEN", os.environ.get("LOCAL_WORKER_TOKEN", ""))
+    import src.web_api as web_api
+    token = getattr(web_api, "WORKER_TOKEN", os.environ.get("LOCAL_WORKER_TOKEN", ""))
     if not token:
         raise RuntimeError("LOCAL_WORKER_TOKEN is not set; cannot talk to the GPU worker")
     headers = {"Authorization": f"Bearer {token}"}
