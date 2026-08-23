@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from src.pluto.api.security import LocalOnlyMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -52,6 +53,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+
+    # Host guard, added after CORS so it runs before it. Starlette applies
+    # middleware in reverse of registration, and a rebinding attempt should be
+    # refused before any CORS header is computed for it.
+    app.add_middleware(LocalOnlyMiddleware, enabled=settings.local_only)
 
     # CORS Middleware
     app.add_middleware(

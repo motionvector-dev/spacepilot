@@ -44,17 +44,20 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install ffmpeg
+      - name: Install system packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
 
+      # Install from the declared file, never a hand-typed list. Two PRs in a
+      # row added a dependency, declared it correctly, and still went red here
+      # because this step had its own private copy of the package list.
+      # requirements-gpu.txt is deliberately not installed: the GPU worker is
+      # stubbed in tests and its CUDA wheels are ~2.5 GB per run.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # torch/diffusers are only needed by the GPU worker, which is stubbed
-          # in tests and never runs here.
-          pip install fastapi uvicorn "pydantic>=2" pillow flask pytest httpx kokoro-onnx
+          pip install -r requirements.txt
 
       - name: Run tests
         run: python -m pytest tests/ -q
