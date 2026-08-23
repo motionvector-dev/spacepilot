@@ -1,0 +1,17 @@
+schema: 1
+id: intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb
+chip: Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
+machine_model: null
+backend: cpu
+os_name: Linux
+os_version: 7.0.0-28-generic
+cpu_cores: 4
+gpu_cores: null
+memory_total_bytes: 16618094592
+memory_limit_bytes: 13396869120
+memory_limit_source: heuristic
+memory_unified: false
+vram_total_bytes: null
+host_fingerprint: 388478e44e73
+recorded_on: '2026-08-23'
+unknown: {}
