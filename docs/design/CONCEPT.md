@@ -1,472 +1,341 @@
----
-status: decided — the concept pass the brief asked for
-written: 2026-08-23
-verified: 2026-08-23 (product facts inherited from COCKPIT-BRIEF.md, checked same day)
-scope: SpacePilot brand and product concept — all surfaces
-supersedes: nothing. Answers the six questions in docs/design/COCKPIT-BRIEF.md §7
-revisit when: local video generation works, an image runtime ships, the G-family
-  spot quota moves off 8 vCPU, or a second ship joins the fleet — any of those
-  changes what a screen can honestly say
----
-
 # Concept — SpacePilot
 
-The brief asked for a position on six questions, in the product's own voice,
-that a person can build from. This is that. It is decided, not proposed.
+**Revision 2 · 2026-08-24 · supersedes revision 1 (2026-08-23, commit `df5d7de`)**
 
-`COCKPIT-BRIEF.md` remains the input — read it for what is true about the
-product today. This file is what we do about it.
-
----
-
-## 1. The position
-
-**An instrument that does not flatter you.**
-
-Three tools got this laptop wrong while the product was being built. One called
-a 32 GB M1 Max MacBook Pro an 8 GB 4-core x86 Air. Ours asks Metal for the real
-ceiling, reports 24.96 GB rather than 32, and records every field it could not
-read and why.
-
-That is the brand. Not the voyage. The metaphor is voice on top of it — never
-the differentiator, because aviation and space are the most crowded namespace in
-developer tools and we would lose that fight on day one.
-
-**The misidentification story is motivation, never copy.** It explains why the
-probe exists and it belongs in this document. It does not belong on a landing
-page, in Cockpit, or in the CLI. A product whose loudest claim is that other
-tools are wrong reads as a grievance, not as a thing worth installing. Say what
-we do; let the reader draw the comparison. Zero mentions on any surface.
+Revision 1 optimized for internal coherence and grew a ten-word lexicon across
+two vocabularies. This revision optimizes for external inevitability and cuts
+the vocabulary to five words. What survives is compressed here; what died is
+recorded in §12 with reasons, so nobody re-derives it.
 
 ---
 
-## 2. The lexicon
+## 1. The thesis
 
-These words are load-bearing. They describe hardware and measurement, so they
-are identical in every surface and for every persona. Nothing here is decorative
-and nothing here is optional.
+Every AI company tells the story where the models are the stars. That story is
+wrong about this decade.
 
-| word | means | replaces |
-| --- | --- | --- |
-| **the ship** | the machine the user owns and is on | "local", which is accurate and lifeless |
-| **aboard** | runs on the ship. No credentials, no meter | "local execution" |
-| **off-ship** | runs on the rented box. Meter running | "cloud" |
-| **crew** | the models installed on this ship | "your models", "library" |
-| **berth** | one crew slot. Finite, bounded by disk | "install slot" |
-| **flown here** | we ran it on this ship and measured it | `measured` |
-| **on paper** | somebody else's published number, cited and dated | `declared`, `huggingface-api` |
-| **unflown here** | nobody has run this on this ship | `estimated`, and every blank cell |
-| **flight check** | the readiness pass over ship, crew and runtimes | already ours — the build board |
-| **copilot** | agents fly this via MCP. A description, not a flourish | — |
+If acceleration holds — and we build for the case where it does — intelligence
+becomes abundant. Weights are already freight: large files hauled across
+networks, compressed for the trip, priced by the gigabyte moved. The scarce
+thing, the contested thing, is where they run and what the run costs.
 
-### Compatibility verdicts are a separate axis from provenance
+**Intelligence is cargo. Compute is territory. SpacePilot is the pilot.**
 
-Provenance says how we know a number. The verdict says whether the model runs at
-all. They stack; they never merge.
+The drama of the next few years is not "which model". It is routes, fuel and
+dock space — a scheduler's story. The scheduler is the product:
 
-| verdict | treatment |
+```
+score = price + (cold ? load_seconds × value_of_latency : 0)
+```
+
+That equation is fuel economy. SpacePilot exists so that when the inversion
+becomes consensus, the product looks like it was built for that world rather
+than pivoted into it.
+
+---
+
+## 2. The goal
+
+A stranger lands on spacepilot.dev, absorbs the worldview in ten seconds
+without a glossary, and runs the install command.
+
+Every word and pixel serves that or gets cut. The test is external
+inevitability, never internal coherence or completeness of metaphor. A brand
+that needs a lexicon table has already lost — which is why the table below is
+the whole budget.
+
+---
+
+## 3. Five words
+
+The entire metaphor budget. Everything else, on every surface, is plain
+measured English.
+
+| word | means |
 | --- | --- |
-| `fits` | plain ink. Nothing to flag |
-| `fits, tight` | **platinum** — a raised chip, cool achromatic, one luminance step above the zinc around it |
-| `won't fit` | rose. A wall, and the only verdict that spends a hue |
-| `not supported` | faintest ink. An absence, not a failure |
+| **ship** | a machine you own. The laptop, the 5090 box, the Air. |
+| **dock** | compute you rent. A spot instance, a provider endpoint. The meter runs. |
+| **cargo** | models. Weights are freight; you carry what fits. |
+| **fuel** | what a run costs. The scheduler minimizes fuel: price plus cold-start. |
+| **flown** | measured. We ran it on this ship and logged the number. |
 
-Platinum is a metal, not a hue: `#cfd4dc` on a `--raised` surface with a
-`rgba(207,212,220,.30)` hairline in dark, `#5c6672` in light. It reads premium
-without spending the colour budget, which stays reserved for true, wrong and
-agent, and it satisfies "elevation is luminance, never a shadow" because that is
-literally how it is built. No gradient — metal here is a luminance step and a
-cool cast, nothing more.
+Derived forms are free and do not count against the budget: **unflown** (nobody
+ran it here), **flight check** (the CLI readiness pass), **pilot / autopilot**
+(SpacePilot itself; autopilot is the pilot with the conn, granted by you).
+"On paper" is plain English, not lexicon: someone else's published number,
+cited and dated.
 
-**Dead on arrival:** galaxy, planets, stars, capture, constellation, nebula,
-stardust, warp, hyperdrive, launch sequence, mission control, orbit, ground
-control. Each is either decorative with no referent, or already owned by a
-larger company.
+Everything else stays literal. Disk space is disk space. Downloading is
+downloading. Loading into VRAM is loading. The metaphor is a voice, not a
+costume — and a voice never stops to explain itself. The moment a screen needs
+a legend, the screen has failed.
 
 ---
 
-## 3. Provenance is the design language
+## 4. One register
 
-Eight of nine model variants have no measured speed on any machine. That is not
-a caveat to design around. It is the spine.
+Working space, not exploration. The fiction this borrows from is freighter
+fiction — the Nostromo was a commercial towing vehicle; Serenity hauled cargo;
+the Canterbury hauled ice. Owner-operators, fuel margins, manifests, dock fees.
+Blue-collar space. Never federation grandeur.
+
+One register everywhere. Landing and Cockpit differ in motion frequency and
+density, never in vocabulary. Revision 1's "two registers" split let every
+vocabulary survive by giving each one a floor; that is where the convolution
+came from, and it is dead.
+
+The cast is three:
+
+- **You.** Captain, owner-operator. You own the ships, you authorize the spend.
+- **The pilot.** SpacePilot. Copilot by default; autopilot when you grant the
+  conn. A description of the MCP surface, not a flourish.
+- **Cargo.** The models. They are not characters. They are not collected. They
+  are carried, and the good ones earn their place in the log.
+
+Galaxies, planets, stars, providers-as-territories: **scenery.** Allowed in
+prose and art direction on the story layer. Never a noun in the UI, never a
+label in nav, never a name for a screen.
+
+---
+
+## 5. Provenance is the design language
+
+Most numbers in this product were not measured by us on your hardware. That is
+not a caveat to design around; it is the spine.
 
 Two axes, and most tools collapse the wrong one:
 
 ```
                   measured HERE       measured ELSEWHERE
-  we ran it     │  flown here      │   —
+  we ran it     │  flown           │   —
   they claim it │  —               │   on paper
-  nobody ran it │  unflown here    │   unflown here
+  nobody ran it │  unflown         │   unflown
 ```
 
 LTX at 12 s/clip on an H100 is a true number that says nothing about a 24.96 GB
-M1 Max. So `on paper` and `unflown here` stack rather than compete:
+M1 Max. So `on paper` and `unflown` stack rather than compete:
 
 ```
-LTX-2.5 · video · won't fit aboard
-12 s/clip on paper (H100 · model card, 2026-08-12) · unflown here
+ltx-2.5 · video · won't fit
+12 s/clip on paper (H100 · model card, 2026-08-12) · unflown
 ```
 
-### Why `unflown` and not `estimated`
+**Why `unflown`, not `estimated`:** `estimated` hedges our competence,
+`unverified` accuses the source, `unknown` is false (we know the claim),
+`no data` is a blank with a label on it. `unflown` is a state of the airframe,
+not a judgement of the data — finished, certified, on the apron, never taken up.
 
-`estimated` reads as a hedge on our own competence. `unverified` is accusatory
-toward the source. `unknown` is false — we know the claim. `untested` implies
-negligence. `no data` is a blank with a label on it.
-
-`unflown` is a state of the aircraft, not a judgement of the data. An unflown
-airframe is finished, certified, sitting on the apron, and nobody has taken it
-up yet. That is exactly the condition. It also fits crew without a seam: a crew
-member can be signed on and unflown, and that is a normal thing to be on day one.
-
-### It is per-ship, and the transition is the product
-
-`unflown` is never a global property of a model. It is a property of this model
-on this ship, and it is the before half of a one-way door:
+**Per-ship, and the transition is the product.** `unflown` is never global. It
+is this cargo on this ship, and it is the before half of a one-way door:
 
 ```
-unflown here  ──── first run on this ship ────▸  flown here · 4.6× realtime · 2026-08-23
+unflown  ──── first run on this ship ────▸  flown · 4.6× realtime · 2026-08-23
 ```
 
-Once. Per model. Per ship. Irreversible. Every screen carries the running count,
-and it is the only progress meter the product needs:
+Once, per model, per ship, irreversible. The running count is the only progress
+meter the product needs:
 
 ```
-CREW   1 flown · 4 unflown
+CARGO   1 flown · 4 unflown
 ```
 
-Every other tool gets more confident with use because it hides more. This one
-gets more true.
+**Two measurement streams, never merged.** `solo` (nothing else running) and
+`loaded` (under real workload) differ by roughly 40%. Both are `flown`; the
+stream is named on the number. Merging them would be the exact dishonesty this
+product exists to refuse.
 
-### Two edges that must be designed, not discovered
+**Two edges designed, not discovered:**
 
-1. **When the ship changes.** New machine, or an OS update that moves the Metal
-   ceiling. A `flown here` measurement holds — your own old measurement is
-   better evidence than a stranger's H100 — but it must name which ship and
-   which hardware fingerprint produced it. It never silently demotes to
-   `on paper`.
-2. **When a model cannot fly.** A model that will not fit stays unflown forever.
-   Rendering it identically to "unflown, fits, tight" is misleading: one is an
-   invitation, the other is a wall. The wall case gets an em dash, not a state.
+1. **The ship changes.** New machine or an OS update moves the Metal ceiling. A
+   `flown` number holds — your own old measurement beats a stranger's H100 —
+   but it names which ship and which hardware fingerprint produced it. It never
+   silently demotes to `on paper`.
+2. **Cargo that cannot fly.** A model that will not fit stays unflown forever.
+   That is a wall, not an invitation, and it renders as an em dash — not a
+   state:
 
 ```
-wan-2.2    fits, tight    unflown here      ← invitation
-ltx-2.5    won't fit      —                 ← not unflown. Just no.
+wan-2.2    fits, tight    unflown       ← invitation
+ltx-2.5    won't fit      —             ← not unflown. Just no.
 ```
-
-Do not invite someone onto an aircraft they cannot lift.
 
 ---
 
-## 4. Crew, not collection
+## 6. Verdicts are a separate axis
 
-The concept on the table was a galaxy of models you capture like Pokémon. That
-is rejected, for one reason: it promises abundance and delivers triage. Most
-models will not fit. Several are licence-encumbered. One takes 82 minutes per
-two seconds of video on hardware twice as good as the user's. A concept that
-promises abundance and delivers triage feels like a lie on first contact.
+Provenance says how we know a number. The verdict says whether the cargo can
+fly at all. They stack; they never merge.
 
-You do not collect models. You **crew** them.
+| verdict | treatment |
+| --- | --- |
+| `fits` | plain ink. Nothing to flag |
+| `fits, tight` | **platinum** — raised chip, cool achromatic, one luminance step up |
+| `won't fit` | rose. A wall, and the only verdict that spends a hue |
+| `not supported` | faintest ink. An absence, not a failure |
 
-A galaxy of 400 catchable creatures is a lie about your ship. A crew of four —
-each chosen because it fits, each with a job and a logged record — is true,
-respectable, and gets better as it gets smaller. "This one does not come aboard,
-it is too heavy" is a normal sentence about a ship and a humiliating one about a
-Pokédex.
-
-Berths are finite and visible. `1 aboard · 4 berths open` is computed from disk,
-never a constant.
+Platinum is a metal, not a hue: `#cfd4dc` on `--raised` with a
+`rgba(207,212,220,.30)` hairline in dark, `#5c6672` in light. Premium without
+spending the colour budget, which stays reserved for true, wrong and agent.
 
 ---
 
-## 5. Where the magic lives
+## 7. Cargo, not collection — and the manifest is the moat
 
-The system already rations motion by frequency: the brand mark animates on cold
-start because you meet it rarely. Extended outward, that yields exactly three
-moments. Each is crossed once. Each earns real craft. Everything else is severe
-forever.
+You do not collect models. You carry what fits.
 
-**1 · First probe — the ship reads itself.** Once, ever. First contact, and
-where the product is won. The readout lands field by field, including the fields
-it could not read and why. `24.96 GB usable — not 32.` A machine telling you the
-truth about itself for the first time needs no decoration.
+A catalogue of 400 promises abundance and delivers triage: most will not fit,
+several are licence-encumbered, one takes 82 minutes per two seconds of video
+on hardware twice as good as yours. Four pieces of cargo — each carried because
+it fits, each with a job and a logged record — is true, respectable, and gets
+better as it gets smaller. "This one is too heavy for this ship" is a normal
+sentence about freight and a humiliating one about a collection.
 
-**2 · Coming aboard.** Once per model. Download completes, checksum clears, it
-takes a berth. `kokoro-82m is aboard.` This is the honest version of the capture
-moment, and the one place a genuine flourish belongs.
-
-**3 · First flight.** Once per model, per ship. The figure flips from `unflown`
-to a measured number with the ship's name on it. This is the instant the product
-stops quoting other people and starts knowing something. A needle settling, not
-confetti.
-
-Everything daily — Cockpit telemetry, model lists, runtime installs — gets
-nothing. Numbers that tick are never animated. That rule is what makes the three
-moments land.
+**The moat, said in-world:** weights are commodity — anyone can download the
+same cargo. What nobody else holds is your manifest: the log of how each one
+actually flies on your ships, measured, dated, keyed by hardware fingerprint.
+Everyone buys the same freight. Only you know your routes. The measurement log
+is the proprietary asset, and every design decision that makes it richer makes
+the product harder to leave.
 
 ---
 
-## 6. Ship identity
+## 8. Ships and docks
 
-**The user never names their machine.** Naming is a fake-personalisation tax
-charged in the first sixty seconds, and the slope to cute is short and steep.
-`USS Renderprise` will happen on day one and will never leave the screenshots.
-
-The ship uses the name it already has, from the OS, alongside the instrument:
+**Ships keep the name the OS already gave them.** Naming is a
+fake-personalisation tax charged in the first sixty seconds; `USS Renderprise`
+happens on day one and never leaves the screenshots.
 
 ```
 Saurabh's MacBook Pro
 M1 Max · 8P + 2E · 32-core GPU · Metal 4
-24.96 GB usable  ·  285 GB free  ·  3 fields unread
+24.96 GB usable  ·  170 GB free  ·  3 fields unread
 ```
 
 Line one is free and already true. Line two is the instrument. Neither is
-invented.
+invented. Beneath the display name sits a hardware fingerprint — chip, cores,
+driver ceiling, OS build — invisible in the UI but keying every measurement,
+which is what answers the ship-changed edge in §5.
 
-**This is a primary key, not decoration.** The first real user runs Macs, a
-5090, RunPod and Modal as one fleet. The moment there are two ships,
-`flown here` must resolve to *which* here:
-
-```
-kokoro-82m   flown here   4.6× realtime   Saurabh's MacBook Pro   2026-08-23
-wan-2.2      flown here   31 s/clip       the 5090 box            2026-08-21
-wan-2.2      unflown here                 Saurabh's MacBook Pro
-```
-
-Beneath the display name sits a hardware fingerprint — chip, core counts, driver
-ceiling, OS build — invisible in the UI, but what actually keys the log and
-answers the ship-changed edge case in §3. Design that key now or retrofit it
-through every measurement record later.
-
-### Rentals get the opposite treatment
-
-The rented GPU never gets a friendly name.
+**Docks never get a friendly name.**
 
 ```
 g6e.2xlarge · us-east-1 · i-0a3f7c21 · $0.74/hr · 00:41:12
 ```
 
-Friendly names on metered resources are how people forget the meter is running.
-The ship gets a human name because it is owned and free. The rental gets an
-instance ID and a running clock because it is billing right now. The asymmetry
-in how the two are named is itself the honest signal, and it costs nothing.
+Friendly names on metered resources are how people forget the meter. Ships get
+human names because they are owned and free; docks get an instance ID and a
+running clock because they are billing right now. The asymmetry is itself the
+honest signal, and it costs nothing.
+
+**The substrate is a fleet, from day one.** The first real user runs Macs, a
+5090 box, and rented docks as one fleet on a tailnet. Every list is plural and
+keyed by ship even when it has one row. A layout that structurally cannot show
+two ships is the trap; design the list that happens to have one row.
 
 ---
 
-## 7. Two registers: landing demonstrates, Cockpit operates
+## 9. Three thresholds
 
-Same severity, same palette, same refusal to flatter. Different job.
+Motion is rationed by frequency, so exactly three moments earn craft. Each is
+crossed once. Everything else is severe forever.
 
-| | Landing | Cockpit |
-| --- | --- | --- |
-| verb | **demonstrate** | **operate** |
-| subject | a machine that is not ours | the machine you are on |
-| vocabulary | explains itself once | assumes you know |
-| motion | allowed | rationed to near zero |
-| time on surface | 40 seconds, once | all day, forever |
+1. **First probe — the ship reads itself.** Once, ever. The readout lands field
+   by field, including what it could not read and why. `24.96 GB usable — not
+   32.` A machine telling you the truth about itself needs no decoration.
+2. **Cargo arrival.** Once per model. Download completes, checksum clears.
+   `kokoro-82m is stowed.` The one place a genuine flourish belongs.
+3. **First flight.** Once per model, per ship. `unflown` flips to a measured
+   number with the ship's name on it — the instant the product stops quoting
+   other people and starts knowing something. A needle settling, not confetti.
 
-Landing is a rare surface, so under the existing frequency rule it earns motion
-and Cockpit still gets none. That is the rule working, not an exception carved
-for marketing.
-
-### The landing page is the browser probe
-
-Two probes, one registry — already the architecture, and already the page. The
-reader arrives and, before any copy or signup, the browser probe tells them a
-true thing about their own machine, then states exactly what it could not know:
-
-```
-You are on an Apple M1 Max. 32-core GPU.
-
-We can read that much from a browser.
-We cannot ask your driver how much of your 32 GB
-it will actually hand a model.
-
-Three tools we tried got this laptop wrong.
-One called it an 8 GB, 4-core x86 Air.
-
-  install → we ask the driver  ▸
-```
-
-The pitch is a demonstration rather than a claim, and the CTA is generated by
-the probe's own honest limit. The browser names the chip; it cannot reach the
-driver. That gap is the button. No hero video, no gradient, no galaxy.
-
-### Cockpit's cold open
-
-Cockpit today is built around a box that usually does not exist, so it has
-nothing to say in the normal state. Restructured around the ship, it can never
-be empty:
-
-```
-┌─ ABOARD ────────────────────────────────────────────────────┐
-│  Saurabh's MacBook Pro                                      │
-│  M1 Max · 8P + 2E · 32-core GPU · Metal 4                   │
-│  24.96 GB usable          not 32 — asked the driver         │
-│  285 GB free                                                │
-│  3 fields unread          why ▸                             │
-├─ CREW ──────────────────────────────────────────────────────┤
-│  kokoro-82m      speech    flown here · 4.6× realtime       │
-│  4 berths open                                              │
-├─ ON PAPER ──────────────────────────────────────────────────┤
-│  wan-2.2         video     fits, tight   · unflown here     │
-│  ltx-2.5         video     won't fit     · —                │
-├─ OFF-SHIP ──────────────────────────────────────────────────┤
-│  none running · $0.00/hr · ceiling is 1 box, by quota       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-`3 fields unread — why` is the single most differentiating element in the
-product. First contact proves the tool is not lying before it asks for anything.
+Numbers that tick are never animated. That rule is what makes the three
+moments land.
 
 ---
 
-## 8. The developer is the wedge
+## 10. The quota, said loud
 
-Install to first output with no account, no API key and no config file. The
-terminal is therefore the first screen, and it teaches the entire vocabulary in
-one pass — which is why no surface needs a glossary:
+> **Ceiling is 1 dock, by quota.** The G-family spot quota is 8 vCPU. A
+> g6e.2xlarge is 8 vCPU. Renting is a decision, not a default.
+
+For the developer wedge this is an asset. Every developer has been burned by a
+tool that quietly fanned out and billed them. "There is exactly one, it costs
+$0.74/hr, and it bills until you kill it" is a tool that respects them.
+
+**Render the count from the quota. Never hard-code "one."** When the quota
+moves, the number moves and the sentence survives.
+
+---
+
+## 11. The wedge, and personas as views
+
+Install to first output with no account, no API key, no config file:
 
 ```
+$ pip install spacepilot
 $ spacepilot check
 
   Saurabh's MacBook Pro
   M1 Max · 8P + 2E · 32-core GPU · Metal 4
   24.96 GB usable       asked the driver, not the spec sheet
-  285 GB free
+  170 GB free
   3 fields unread       spacepilot check --why
 
-  CREW   1 aboard · 4 berths open
-    kokoro-82m    speech   flown here    4.6× realtime · 2026-08-23
-
-  ON PAPER
-    wan-2.2       video    fits, tight   unflown here
+  CARGO   1 flown · 2 unflown
+    kokoro-82m    speech   flown         4.6× realtime · 2026-08-23
+    wan-2.2       video    fits, tight   unflown
     ltx-2.5       video    won't fit     —
 
-  OFF-SHIP   none running · $0.00/hr
-    Ceiling is 1 box. G-family spot quota is 8 vCPU;
-    a g6e.2xlarge is 8 vCPU. $0.74/hr, bills until terminated.
+  DOCKS   none rented · $0.00/hr · ceiling 1, by quota
 ```
 
-`spacepilot check` is primary. `doctor` is an alias, because people type it
-without reading docs. The output is titled *Flight check* — the same words as
-the internal build board.
+The terminal is the first screen and teaches all five words in one pass, which
+is why no surface needs a glossary. `spacepilot check` is primary; `doctor` is
+an alias because people type it without reading docs.
+
+**Personas change how many facts you see, never which facts are true.** A
+creator does not get "fast!" where a developer gets `4.6× realtime`; both get
+the number, the creator gets fewer rows around it. Three mechanisms keep later
+personas free: the agent surface is the schema and humans are views over it;
+persona is inferred from the door (terminal, MCP handshake, spacepilot.dev),
+never asked; surfaces are named by function (Cockpit, Create, Flight Check),
+never by audience.
 
 ---
 
-## 9. The quota, said loud
+## 12. What died, and when
 
-> **Ceiling is 1 box.** The G-family spot quota is 8 vCPU. A g6e.2xlarge is
-> 8 vCPU. So off-ship is a decision, not a default.
+**Revision 1 killed (2026-08-23), still dead:** models as planets to capture,
+the galaxy as collection, capture animations, nebula gradients, persona
+switches, "name your machine", friendly names for rentals, animated counters,
+hero video, any accent hue beyond true/wrong/agent.
 
-For the wedge persona this is an asset, not an admission. Every developer has
-been burned by a tool that quietly fanned out and billed them. "There is exactly
-one, it costs $0.74/hr, and it bills until you kill it" is a tool that respects
-them. The constraint reads as discipline — an instrument that does not flatter
-you does not flatter itself either.
+**Revision 2 kills (2026-08-24):**
 
-**Render the count from the quota. Never hard-code "one."**
+- **crew, berth, aboard, off-ship, coming aboard** — four metaphor systems in a
+  trenchcoat. Each was locally good; together they needed the lexicon table
+  this document is no longer allowed to need. Cargo covers all of them.
+- **The two-register vocabulary split.** It was a hedge that let every
+  vocabulary survive. One voice everywhere; only motion and density vary.
+- **"unflown here" / "flown here".** The "here" was doing per-ship work that
+  the data model already does. The word is `flown`; the ship column says where.
+- **The misidentification story as copy** stays dead (rev 1 rule, reaffirmed):
+  it explains why the probe exists, it belongs in this document, and it appears
+  on zero surfaces. Say what we do; let the reader draw the comparison.
 
-```
-Ceiling is {n} box{es}, by quota.
-```
-
-When the quota moves the number moves and the sentence survives. Same discipline
-for `{n} berths open`, computed from disk.
-
----
-
-## 10. Personas are views, never modes
-
-The trap is a persona switch. Ship "Developer Mode / Creator Mode" and you have
-two half-products, and the second one lies — because the moment a persona can
-change what is on screen, someone softens a number for the creator.
-
-> **Personas change how many facts you see. They never change which facts are
-> true.**
-
-A creator does not get "fast!" where a developer gets `4.6× realtime`. Both get
-`4.6× realtime`; the creator gets fewer rows around it. `unflown` appears in
-every persona forever, because it is a fact about hardware rather than a
-developer's tolerance for detail.
-
-Three mechanisms make later personas free:
-
-1. **The agent surface is the schema; humans are views over it.** Agents have no
-   visual density, only facts. If CLI, Cockpit and Landing all render what the
-   MCP tools return, personas cannot diverge without diverging from the schema.
-   That is an architectural guarantee, not a design convention.
-2. **Persona is inferred from the door, never asked.** Terminal, MCP handshake,
-   or spacepilot.dev. A fourth persona is a fourth door — not a switch, and no
-   existing user gets re-onboarded.
-3. **Surfaces are named by function, never by audience.** Cockpit, Create,
-   Flight Check. Ship "Developer Dashboard" and adding a persona means either
-   renaming it or building a parallel one.
-
-### Expose the axis, ship one value
-
-| axis | values | ship now |
-| --- | --- | --- |
-| density | dense · sparse | **dense** |
-| surface | cli · cockpit · landing · mcp | **cli + cockpit** |
-| ships | 1 · n | **n**, currently n=1 |
-| off-ship boxes | 0 · 1 · n | **n**, ceiling 1 |
-
-The last two rows are the ones that hurt if skipped.
-
-> **Design the list that happens to have one row.**
-
-A frontend that shows a fleet when there is one machine is a lie with a nice
-gradient. The inverse trap is a layout that structurally cannot show two — a
-hero card for "your machine", a singleton off-ship panel. The first real user
-already runs Macs, a 5090, RunPod and Modal as one fleet. Ship a ship-list with
-one row and an off-ship list with zero: both honest today, both correct at n=4
-without a redesign. `flown here` is keyed by ship from day one, even with one
-ship to key it to.
-
----
-
-## 11. What this kills
-
-- The galaxy, the starfield, planets and stars as models, the capture animation
-  as collection, any nebula gradient. Decorative by construction, and in direct
-  conflict with "colour must mean something".
-- Any accent hue beyond the existing three: true (green), wrong (red), agent
-  (desaturated violet). There is no brand blue and no gradient.
-- Persona switches, mode toggles, "name your machine", friendly names for
-  metered rentals, animated counters, hero video.
-- Any blank cell where a provenance mark belongs.
-
-The design language in `COCKPIT-BRIEF.md` §4 is unchanged by this document and
-is not up for renegotiation here: no accent hue, elevation by luminance, two
-type sizes in chrome, motion rationed by frequency, exits faster than entrances
-and travelling nowhere, reduced motion zeroing distance and keeping time.
-
----
-
-## 12. Answers to the brief's six questions
-
-1. **Where does the magic live?** Three thresholds, each crossed once: first
-   probe, coming aboard, first flight. §5.
-2. **Is the metaphor load-bearing or a skin?** Load-bearing for copilot, flight
-   check, aboard/off-ship, crew/berth/flown. A skin — and killed — for
-   everything voyage-shaped. §2.
-3. **What do we call the user's own machine?** The ship, and it carries the name
-   the OS already gave it. §6.
-4. **What is the moment a model finishes downloading called?** Coming aboard.
-   §5.
-5. **How do we say "nobody measured this"?** `unflown here`. §3.
-6. **What does Cockpit say when there is nothing to show?** It is never empty —
-   the ship is always there, and `3 fields unread — why` is the opening move. §7.
+**Reopened, deliberately:** galaxies and planets — killed in rev 1 when models
+were celestial bodies to capture — return as *scenery only* under §4. The rev 1
+kill was about collection mechanics; this is territory. Scenery may appear in
+story-layer art and prose. It still never names a UI element.
 
 ---
 
 ## 13. Still open
 
-- **Density on the sparse end.** The axis is designed; only the dense value is
-  specified. A creator surface needs the sparse rendering defined before it
-  ships, and it must not soften a single number.
-- **Fleet UI.** Deliberately unscoped. The lists are plural and the keys exist;
-  what a multi-ship view actually looks like waits for a second ship.
-- **The glossary moment on landing.** The terminal teaches the vocabulary for
-  the wedge persona. Whether landing needs its own one-time definition pass, or
-  can rely on context the way the CLI does, is untested.
+- **The freight-chart hero.** Direction chosen (cargo moving between docks on a
+  dark chart, legs marked `flown` / `on paper`), unbuilt. Replaces the ring.
+- **Sparse density.** The axis is designed; only the dense value is specified.
+- **Fleet UI.** Lists are plural and keys exist; the multi-ship view waits for
+  a second ship in daily use.
+- **Story-layer scenery.** How far the territory imagery goes on landing before
+  it fights the ten-second test. Resolve by building, not debating.
