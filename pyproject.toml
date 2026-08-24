@@ -32,6 +32,7 @@ dependencies = [
     "huggingface_hub>=0.20",  # paths.py resolves the shared model cache
     "litellm>=1.98.0",
     "psutil>=5.9.0",
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +68,7 @@ Homepage = "https://spacepilot.dev"
 Source = "https://github.com/motionvector-dev/spacepilot"
 
 [project.scripts]
-pluto = "spacepilot.cli:main"
+pluto = "spacepilot.cli:pluto_main"
 spacepilot = "spacepilot.cli:main"
 
 [tool.setuptools.packages.find]
