@@ -318,7 +318,8 @@ def _fingerprint() -> Optional[str]:
         return None
     if not host:
         return None
-    salt = os.environ.get("PLUTO_FINGERPRINT_SALT", "pluto-measurements-v1")
+    from spacepilot.paths import env_value
+    salt = env_value("SPACEPILOT_FINGERPRINT_SALT", "PLUTO_FINGERPRINT_SALT", default="pluto-measurements-v1")
     return hashlib.sha256(f"{salt}:{host}".encode()).hexdigest()[:12]
 
 

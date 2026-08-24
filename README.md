@@ -4,9 +4,9 @@
 **Verified**: 2026-08-22 via `python -m pytest tests/ -q` (172 passed, 57.81s) and `gh pr list`
 **Supersedes / Superseded by**: none
 
-> **"SkyPilot pilots your cloud servers. SpacePilot pilots your generative cinema."**
+> **"SpacePilot pilots your generative cinema."**
 
-**SpacePilot** is the high-performance generative cinema workstation and zero-markup compute platform for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine, backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers with SkyPilot multi-cloud spot arbitrage ($0.012/take instead of 20x SaaS subscription markups).
+**SpacePilot** is the high-performance generative cinema workstation and compute toolkit for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine are backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers.
 
 ---
 
@@ -19,7 +19,7 @@
 │                                                                             │
 │  1. Compute Provider Modules (Pluggable Execution Runtimes)                 │
 │     ├── Local Host Driver: Apple Metal MPS / CUDA / CPU ($0.00 / Zero Cloud)│
-│     ├── SkyPilot Spot Mesh: AWS, Shadeform, Lambda, RunPod, GCP Arbitrage   │
+│     ├── Local Execution: Apple Metal MPS / CUDA / CPU                       │
 │     └── Hardware Probe: Auto-detects VRAM headroom & recommends models      │
 │                                                                             │
 │  2. Generative Model Modules (Polymorphic BaseVideoEngine Adapters)         │
@@ -36,7 +36,7 @@
 │                                                                             │
 │  4. UI Component Modules (Zero-Build Obsidian UI)                           │
 │     ├── Create Studio (/create): Camera Compass, Dual Keyframe, VO Ducking │
-│     ├── Cockpit (/cockpit): Live Host Telemetry, Model Hub, Spot Arbitrage  │
+│     ├── Cockpit (/cockpit): Live Host Telemetry, Model Hub                  │
 │     ├── Oven (/oven.html): Real-time 5-Lane ADLC Swarm Kanban Board         │
 │     └── Director (/studio): Multi-track NLE timeline & asset inspector      │
 │                                                                             │
@@ -92,7 +92,6 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 | `/api/audio/mix-ducked` | `POST` | Yes | Voiceover & background music dynamic sidechain ducking. |
 | `/api/narrative/decompose-local` | `POST` | Yes | In-process GGUF screenplay deconstruction into 3D camera shots. |
 | `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/pluto/models/`. |
-| `/api/sky/schedule` · `/failover` | `POST` | Yes | SkyPilot multi-cloud spot scheduling & preemption recovery. |
 | `/api/gpu/launch` · `/terminate` | `POST` | Yes | Spot GPU infrastructure lifecycle management. |
 | `/api/compute/local-profile` | `GET` | No | Hardware capability telemetry (backend, usable VRAM headroom). |
 | `/api/compute/models/recommended` | `GET` | No | Curated model recommendations scored for host hardware. |
@@ -112,7 +111,6 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 * `pluto_generate_video_wan`: Generates video using Wan2.1 (1.3B or 14B).
 * `pluto_generate_video_hunyuan`: Generates 720p/1080p video using HunyuanVideo.
 * `pluto_generate_audio` / `pluto_generate_music`: Generates voiceover and music cues.
-* `pluto_skypilot_arbitrage`: Calculates real-time cheapest spot cloud across 12+ providers.
 * `pluto_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
 
 ---
@@ -153,7 +151,6 @@ src/
 │   ├── base.py                 InferenceDriver ABC & DriverSpec
 │   ├── kokoro_driver.py        Kokoro TTS ONNX driver (-16 LUFS ducking)
 │   └── gguf_driver.py          GGUF screenplay deconstruction driver
-├── skypilot_orchestrator.py    SkyPilot spot cluster manager & arbitrage
 ├── storyboard_decomposer.py    Screenplay-to-shot decomposition
 ├── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
 └── pluto/api/routes/           Modular FastAPI backend, live on main: 14 route
@@ -166,7 +163,7 @@ web/                         Zero-build Obsidian UI
 ├── cockpit.html / cockpit.js   Cockpit (Host Hardware HUD, Model Registry)
 ├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
 └── app.css                  Obsidian design system
-infra/                          SkyPilot YAML, GPU startup scripts, IAM
+infra/                          GPU startup scripts, IAM
 tests/                          Pytest integration test suite (172 tests)
 docs/                           Architecture blueprints, plans, and research
 ```

@@ -73,8 +73,6 @@ from spacepilot.pluto.api.routes.storyboard import (
 from spacepilot.pluto.api.routes.gpu import (
     GpuActionRequest,
     InspectActionRequest,
-    SkyScheduleRequest,
-    SkyFailoverRequest,
 )
 
 from spacepilot.cli import (
@@ -84,10 +82,10 @@ from spacepilot.cli import (
     save_config,
     run_cmd,
 )
-from spacepilot.skypilot_orchestrator import sky_orchestrator, generate_skypilot_yaml
 from spacepilot.storyboard_decomposer import decompose_storyboard
 from spacepilot.pluto.app import create_app
 from spacepilot.pluto.api.deps import require_token  # re-export for backward compat
+from spacepilot.paths import env_value
 
 # Settings & Directory Aliases
 _settings = get_settings()
@@ -264,8 +262,8 @@ if __name__ == "__main__":
     # Loopback by default. LocalOnlyMiddleware already rejects a non-loopback
     # Host header, but a default that binds every interface means one
     # middleware bug is the only thing between this and the network.
-    host = os.environ.get("PLUTO_STUDIO_HOST", "127.0.0.1")
-    port = int(os.environ.get("PLUTO_STUDIO_PORT", 8088))
+    host = env_value("SPACEPILOT_STUDIO_HOST", "PLUTO_STUDIO_HOST", default="127.0.0.1")
+    port = int(env_value("SPACEPILOT_STUDIO_PORT", "PLUTO_STUDIO_PORT", default="8088"))
     print(f"\n✨ SpacePilot Studio API running on http://{host}:{port} (and http://spacepilot.localhost:{port})")
     # The token is never printed. Sixteen characters of it used to go to
     # stdout on every start, which means terminal scrollback, log files and

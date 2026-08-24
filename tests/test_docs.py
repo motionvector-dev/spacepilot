@@ -41,7 +41,7 @@ def test_docs_page_contains_core_architecture_sections():
     assert "Model Zoo" in content or "DiT" in content
     assert "FastMCP" in content
     assert "API Reference" in content or "REST API" in content
-    assert "SkyPilot" in content or "Spot" in content
+    assert "Spot" in content
 
     # SVG Diagram assertions
     assert "<svg" in content

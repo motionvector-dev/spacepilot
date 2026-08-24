@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pluto CLI - Remote GPU Box & Video Generation Tool
+"""SpacePilot CLI - local and remote inference tools.
 
 Controls remote AWS Spot GPU instances, monitors real-time VRAM / GPU metrics,
 streams live worker logs, and triggers remote LTX-2.5 video generations
@@ -15,7 +15,7 @@ import uuid
 import argparse
 import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Mapping, TextIO
 
 import httpx
 
@@ -30,9 +30,17 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(PLUTO_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUTO_ROOT))
-OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
+from spacepilot.paths import env_value
+
+OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(PLUTO_ROOT / "outputs")))
 CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
-KEY_FILE_DEFAULT = Path(os.environ.get("PLUTO_SSH_KEY", Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+KEY_FILE_DEFAULT = Path(
+    env_value(
+        "SPACEPILOT_SSH_KEY",
+        "PLUTO_SSH_KEY",
+        default=str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"),
+    )
+)
 
 DEFAULT_CONFIG = {
     "aws_profile": "default",
@@ -48,6 +56,102 @@ DEFAULT_CONFIG = {
     "idle_shutdown_minutes": 20,
     "default_steps": 30,
 }
+
+OUTPUT_MODES = frozenset({"live", "plain"})
+
+
+def _valid_output_mode(value: object, source: str) -> str | None:
+    """Normalise one configured output mode, rejecting a misleading typo."""
+    if value is None:
+        return None
+    if not isinstance(value, str) or value.strip().lower() not in OUTPUT_MODES:
+        raise ValueError(f"{source} must be one of: live, plain")
+    return value.strip().lower()
+
+
+def resolve_output_mode(
+    explicit: object = None,
+    cfg: Mapping[str, Any] | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    stdout: TextIO | None = None,
+) -> str:
+    """Resolve rendering mode with invocation, env, config, then TTY precedence."""
+    selected = _valid_output_mode(explicit, "--live/--plain")
+    if selected:
+        return selected
+
+    env = os.environ if environ is None else environ
+    if "SPACEPILOT_OUTPUT_MODE" in env:
+        return _valid_output_mode(env["SPACEPILOT_OUTPUT_MODE"], "SPACEPILOT_OUTPUT_MODE")  # type: ignore[index]
+
+    config = cfg or {}
+    if "output_mode" in config:
+        return _valid_output_mode(config["output_mode"], "output_mode in config")
+
+    stream = sys.stdout if stdout is None else stdout
+    return "live" if stream.isatty() else "plain"
+
+
+class OutputRenderer:
+    """Small mode boundary shared by present and future progress displays.
+
+    The text after the label is deliberately assembled once, before choosing a
+    renderer: mode may change presentation, never the operational facts.
+    """
+
+    def __init__(self, mode: str, *, stdout: TextIO | None = None,
+                 environ: Mapping[str, str] | None = None) -> None:
+        self.mode = mode
+        self.stream = sys.stdout if stdout is None else stdout
+        env = os.environ if environ is None else environ
+        self.no_color = "NO_COLOR" in env
+        self._console = None
+        if mode == "live":
+            # Rich is intentionally loaded only for live output: piping should
+            # not add terminal control codes or a rendering-only import path.
+            from rich.console import Console
+            self._console = Console(file=self.stream, no_color=self.no_color)
+
+    def progress(self, label: str, facts: str) -> None:
+        line = f"  {label}: {facts}"
+        if self.mode == "plain":
+            print(line, file=self.stream)
+        else:
+            assert self._console is not None
+            self._console.print(line, end="\r")
+
+    def finish(self) -> None:
+        if self.mode == "live":
+            assert self._console is not None
+            self._console.print()
+
+
+def output_renderer(args: argparse.Namespace, cfg: Mapping[str, Any] | None = None) -> OutputRenderer:
+    explicit = getattr(args, "output_mode", None)
+    # Direct handler tests often use MagicMock args. Only a real string is an
+    # invocation override; otherwise resolve from config/TTY as normal.
+    if not isinstance(explicit, str):
+        explicit = None
+    return OutputRenderer(resolve_output_mode(explicit, cfg))
+
+
+def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
+    """Allow --plain/--live either side of a subcommand, but never after --."""
+    selected: list[str] = []
+    cleaned: list[str] = []
+    passthrough = False
+    for arg in argv:
+        if arg == "--":
+            passthrough = True
+            cleaned.append(arg)
+        elif not passthrough and arg in ("--live", "--plain"):
+            selected.append(arg[2:])
+        else:
+            cleaned.append(arg)
+    if len(set(selected)) > 1:
+        raise ValueError("--live and --plain are mutually exclusive")
+    return cleaned, (selected[0] if selected else None)
 
 
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
@@ -464,7 +568,7 @@ def studio_python(cfg):
     for a Python environment with fastapi and uvicorn installed.
     """
     candidates = [
-        os.environ.get("PLUTO_PYTHON"),
+        env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON"),
         cfg.get("python_bin"),
         sys.executable,
         str(Path.home() / "miniconda3" / "envs" / "py312" / "bin" / "python"),

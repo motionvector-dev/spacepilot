@@ -159,8 +159,8 @@ def interpreter() -> str:
     A runtime installed into some other Python is not installed as far as this
     project is concerned, so every check and every install names it explicitly.
     """
-    import os
-    return os.environ.get("PLUTO_PYTHON") or sys.executable
+    from spacepilot.paths import env_value
+    return env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON") or sys.executable
 
 
 def python_ok(r: Runtime, py: Optional[str] = None) -> tuple[bool, str]:

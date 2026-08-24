@@ -44,6 +44,23 @@ APP_NAME = "spacepilot"
 DATA_DIR_ENV = "SPACEPILOT_DATA_DIR"
 
 
+def env_value(name: str, *legacy_names: str, default: str | None = None) -> str | None:
+    """Read a canonical environment variable with backwards-compatible aliases.
+
+    New configuration uses the ``SPACEPILOT_`` namespace.  The old ``PLUTO_``
+    names remain valid, but a canonical value wins when both are present.  A
+    small helper keeps that precedence identical across the CLI, API and
+    drivers instead of leaving each caller to implement its own fallback.
+    Empty strings are values too: callers that need a non-empty setting should
+    apply ``.strip()`` or their existing validation after reading it.
+    """
+    for key in (name, *legacy_names):
+        value = os.environ.get(key)
+        if value is not None:
+            return value
+    return default
+
+
 def shipped_registry_root() -> Path:
     """The read-only catalogue that travels inside the wheel.
 
@@ -71,7 +88,7 @@ def checkout_root() -> Path | None:
 
 def user_data_dir() -> Path:
     """Platform user-data location, or `$SPACEPILOT_DATA_DIR` when set."""
-    override = os.environ.get(DATA_DIR_ENV, "").strip()
+    override = env_value(DATA_DIR_ENV, "PLUTO_DATA_DIR", default="").strip()
     if override:
         return Path(override).expanduser().resolve()
     if sys.platform == "darwin":
@@ -83,7 +100,7 @@ def user_data_dir() -> Path:
 
 def writable_registry_root() -> Path:
     """Where new records go. Never inside site-packages."""
-    if os.environ.get(DATA_DIR_ENV, "").strip():
+    if env_value(DATA_DIR_ENV, "PLUTO_DATA_DIR", default="").strip():
         return user_data_dir() / "registry"
     root = checkout_root()
     if root is not None:

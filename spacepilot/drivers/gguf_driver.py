@@ -88,8 +88,9 @@ class GGUFDriver(InferenceDriver):
             return self.model_path
 
         home = Path.home()
+        from spacepilot.paths import env_value
         candidates = [
-            os.environ.get("PLUTO_GGUF_MODEL"),
+            env_value("SPACEPILOT_GGUF_MODEL", "PLUTO_GGUF_MODEL"),
             str(home / ".cache" / "pluto" / "models" / f"{self.driver_id}.gguf"),
             str(home / ".cache" / "pluto" / "models" / self.driver_id),
             str(home / ".cache" / "lm-studio" / "models"),
