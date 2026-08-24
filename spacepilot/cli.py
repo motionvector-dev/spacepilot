@@ -14,6 +14,7 @@ import logging
 import uuid
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, Mapping, TextIO
 
@@ -30,10 +31,11 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(PLUTO_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUTO_ROOT))
-from spacepilot.paths import env_value
+from spacepilot.paths import env_value, fleet_orders_path
 
 OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(PLUTO_ROOT / "outputs")))
-CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
+CONFIG_FILE = PLUTO_ROOT / ".spacepilot_config.json"
+LEGACY_CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path(
     env_value(
         "SPACEPILOT_SSH_KEY",
@@ -168,9 +170,13 @@ def worker_headers(extra=None):
 
 
 def load_config():
-    if CONFIG_FILE.exists():
+    # Canonical configuration wins whenever it exists. A malformed canonical
+    # file must not silently fall through to a stale legacy file containing
+    # different infrastructure settings or credentials.
+    source = CONFIG_FILE if CONFIG_FILE.exists() else LEGACY_CONFIG_FILE
+    if source.exists():
         try:
-            with open(CONFIG_FILE, "r") as f:
+            with open(source, "r") as f:
                 cfg = json.load(f)
                 return {**DEFAULT_CONFIG, **cfg}
         except Exception:
@@ -179,8 +185,34 @@ def load_config():
 
 
 def save_config(cfg):
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(cfg, f, indent=2)
+    """Atomically write only the canonical private config file.
+
+    The config can carry provider credentials.  Writing through a private
+    sibling and replacing it avoids partially-written JSON and makes the final
+    file mode independent of the caller's umask.
+    """
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{CONFIG_FILE.name}.", suffix=".tmp", dir=CONFIG_FILE.parent,
+    )
+    temp_path = Path(temp_name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            fd = -1
+            json.dump(cfg, stream, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, CONFIG_FILE)
+        CONFIG_FILE.chmod(0o600)
+    finally:
+        if fd != -1:
+            os.close(fd)
+        try:
+            temp_path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def run_cmd(cmd, check=True, capture=False, stdin_text=None, timeout=None):
@@ -918,6 +950,32 @@ def _print_caveats(variant) -> None:
         print(f"      {caveat.detail}")
 
 
+def _load_declared_provider_rates():
+    """Read the locally pinned, signed provider projection without network I/O."""
+    from spacepilot.daemon.orders import OrdersStore
+
+    try:
+        orders = OrdersStore(fleet_orders_path()).load()
+    except Exception as exc:
+        logger.debug("No usable local ORDERS provider projection: %s", exc)
+        return ()
+    return orders.providers if orders is not None else ()
+
+
+def _print_provider_rates(providers) -> None:
+    if not providers:
+        return
+    print("\n  PROVIDERS — on paper only")
+    print("  Declared API pricing; no local fit verdict, no flown/unflown speed axis, and no execution support is implied.")
+    print("  PROVIDER / VARIANT / MODEL                         INPUT USD/1M TOKENS  OUTPUT USD/1M TOKENS  SOURCE · CHECKED")
+    for rate in providers:
+        print(
+            f"  {rate.provider_id} / {rate.variant_id} / {rate.provider_model}"
+            f"  {rate.input_usd_per_1m_tokens}  {rate.output_usd_per_1m_tokens}"
+            f"  {rate.source} · checked {rate.checked}"
+        )
+
+
 def cmd_models(args, cfg=None) -> int:
     """List the registry, or one variant, judged against this machine."""
     from spacepilot.device_probe import probe_local_device, usable_memory_bytes
@@ -1000,6 +1058,7 @@ def cmd_models(args, cfg=None) -> int:
         print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
     print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
+    _print_provider_rates(_load_declared_provider_rates())
     return 0
 
 

@@ -115,7 +115,7 @@ let TOKEN = null, RECIPE = null, POLL = null;
 
 async function api(path, opts = {}) {
   const headers = Object.assign({}, opts.headers || {});
-  if (TOKEN) headers['X-Pluto-Token'] = TOKEN;
+  if (TOKEN) headers['X-SpacePilot-Token'] = TOKEN;
   if (opts.body) headers['Content-Type'] = 'application/json';
   const r = await fetch(path, Object.assign({}, opts, { headers }));
   if (!r.ok) throw new Error(`${path} → HTTP ${r.status}`);

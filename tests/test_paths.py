@@ -165,6 +165,42 @@ def test_reads_merge_shipped_and_user_records(tmp_path, monkeypatch):
     assert roots[1] == tmp_path.resolve() / "registry" / "measurements"
 
 
+def test_installed_reads_fall_back_to_legacy_pluto_data_without_writing_there(tmp_path, monkeypatch):
+    monkeypatch.delenv("SPACEPILOT_DATA_DIR", raising=False)
+    monkeypatch.delenv("PLUTO_DATA_DIR", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    monkeypatch.setattr(paths.sys, "platform", "linux")
+    monkeypatch.setattr(paths, "checkout_root", lambda: None)
+    legacy = tmp_path / ".local" / "share" / "pluto" / "registry" / "measurements"
+    legacy.mkdir(parents=True)
+
+    roots = paths.read_roots("measurements")
+    assert legacy.resolve() in roots
+    assert roots[-1] == tmp_path / ".local" / "share" / "spacepilot" / "registry" / "measurements"
+    assert paths.writable_registry_root() == (
+        tmp_path / ".local" / "share" / "spacepilot" / "registry"
+    )
+
+
+def test_recommender_cache_writes_canonical_and_reads_legacy(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setattr(paths.sys, "platform", "linux")
+    assert paths.model_recommender_cache_dir() == tmp_path / ".cache" / "spacepilot" / "models"
+    assert paths.model_recommender_cache_read_dirs() == [
+        tmp_path / ".cache" / "spacepilot" / "models",
+        tmp_path / ".cache" / "pluto" / "models",
+    ]
+
+    legacy_model = tmp_path / ".cache" / "pluto" / "models" / "kokoro-82m-tts"
+    legacy_model.parent.mkdir(parents=True)
+    legacy_model.write_bytes(b"legacy model bytes")
+    from spacepilot import model_recommender
+    assert model_recommender.is_model_downloaded("kokoro-82m-tts") is True
+    assert model_recommender.downloaded_model_ids() == ["kokoro-82m-tts"]
+
+
 def test_a_record_written_under_the_override_is_read_back(tmp_path, monkeypatch):
     """End to end through the measurement store, not just the path helpers."""
     import spacepilot.pluto.measurements as ms

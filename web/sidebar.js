@@ -154,7 +154,7 @@
     alert: function (message, title = 'Notice') {
       this.confirm({
         title: title,
-        subtitle: 'Pluto Studio',
+        subtitle: 'SpacePilot Studio',
         message: esc(message),
         type: 'launch',
         confirmText: 'Acknowledge',
@@ -540,7 +540,7 @@
 
     // Launch / Terminate
     const token = document.querySelector('meta[name="pluto-token"]')?.content || '';
-    const headers = { 'Content-Type': 'application/json', ...(token ? { 'X-Pluto-Token': token } : {}) };
+    const headers = { 'Content-Type': 'application/json', ...(token ? { 'X-SpacePilot-Token': token } : {}) };
 
     sbLaunch.addEventListener('click', () => {
       if (sbLaunch.disabled) return;

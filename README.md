@@ -1,4 +1,4 @@
-# SpacePilot 🚀 (Pluto Engine)
+# SpacePilot 🚀
 
 **Status**: Current
 **Verified**: 2026-08-22 via `python -m pytest tests/ -q` (172 passed, 57.81s) and `gh pr list`
@@ -55,17 +55,17 @@ pip install -r requirements.txt
 
 Secrets are centrally scoped with **Doppler**, project `unfoundbox`, config `dev_personal` at `~/code`:
 ```bash
-doppler run -- ./bin/pluto studio
+doppler run -- spacepilot studio
 ```
 
-**`LOCAL_WORKER_TOKEN`** is required for gated compute operations. The GPU worker requires it, and all mutating POST endpoints enforce `X-Pluto-Token`.
+**`LOCAL_WORKER_TOKEN`** is required for gated compute operations. The GPU worker requires it, and all mutating POST endpoints enforce `X-SpacePilot-Token`.
 
 ---
 
 ## Running the Studio
 
 ```bash
-doppler run -- ./bin/pluto studio        # or: python spacepilot/web_api.py
+doppler run -- spacepilot studio          # or: python spacepilot/web_api.py
 ```
 
 Serves the Web UI and API on:
@@ -82,7 +82,7 @@ Serves the Web UI and API on:
 
 ## API Routes & Security Gate
 
-Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token` (`require_token`). Read-only and telemetry routes stay open.
+Every endpoint that spends compute or creates assets is gated by `X-SpacePilot-Token` (`require_token`). Read-only and telemetry routes stay open.
 
 | Route | Method | Auth | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -91,7 +91,7 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 | `/api/audio/synthesize-local` | `POST` | Yes | In-process Kokoro TTS audio synthesis (-16 LUFS normalized). |
 | `/api/audio/mix-ducked` | `POST` | Yes | Voiceover & background music dynamic sidechain ducking. |
 | `/api/narrative/decompose-local` | `POST` | Yes | In-process GGUF screenplay deconstruction into 3D camera shots. |
-| `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/pluto/models/`. |
+| `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/spacepilot/models/`. |
 | `/api/gpu/launch` · `/terminate` | `POST` | Yes | Spot GPU infrastructure lifecycle management. |
 | `/api/compute/local-profile` | `GET` | No | Hardware capability telemetry (backend, usable VRAM headroom). |
 | `/api/compute/models/recommended` | `GET` | No | Curated model recommendations scored for host hardware. |
@@ -105,13 +105,13 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 
 Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 
-* `pluto_probe_hardware`: Probes host GPU VRAM and compute headroom.
-* `pluto_recommend_models`: Returns task-matched model catalog for current device.
-* `pluto_generate_video`: Generates cinematic video via LTX-Video 2.5.
-* `pluto_generate_video_wan`: Generates video using Wan2.1 (1.3B or 14B).
-* `pluto_generate_video_hunyuan`: Generates 720p/1080p video using HunyuanVideo.
-* `pluto_generate_audio` / `pluto_generate_music`: Generates voiceover and music cues.
-* `pluto_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
+* `spacepilot_probe_hardware`: Probes host GPU VRAM and compute headroom.
+* `spacepilot_recommend_models`: Returns task-matched model catalog for current device.
+* `spacepilot_generate_video`: Generates cinematic video via LTX-Video 2.5.
+* `spacepilot_generate_video_wan`: Generates video using Wan2.1 (1.3B or 14B).
+* `spacepilot_generate_video_hunyuan`: Generates 720p/1080p video using HunyuanVideo.
+* `spacepilot_generate_audio` / `spacepilot_generate_music`: Generates voiceover and music cues.
+* `spacepilot_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
 
 ---
 

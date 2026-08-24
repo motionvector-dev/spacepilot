@@ -13,8 +13,11 @@ import secrets
 import stat
 import uuid
 from dataclasses import dataclass, replace
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.parse import urlsplit
 
 import yaml
 
@@ -27,7 +30,8 @@ from spacepilot.daemon.identity import (
 from spacepilot.daemon.tailscale import TailscaleNode
 
 
-ORDERS_SCHEMA = 1
+ORDERS_SCHEMA = 2
+_ORDERS_V1 = 1
 SIGNATURE_ALGORITHM = "Ed25519"
 
 
@@ -140,6 +144,73 @@ def _node_id(value: object) -> str:
     return value
 
 
+def _slug(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise OrdersError(f"{field} must be a non-empty trimmed string")
+    if len(value) > 128 or any(
+        not (ch.isascii() and (ch.isalnum() or ch in "._-")) for ch in value
+    ):
+        raise OrdersError(f"{field} must be an ASCII slug")
+    if value != value.lower():
+        raise OrdersError(f"{field} must be lowercase")
+    return value
+
+
+def _public_label(value: object, *, field: str, maximum: int = 256) -> str:
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise OrdersError(f"{field} must be a non-empty trimmed string")
+    if len(value) > maximum or any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        raise OrdersError(f"{field} is too long or contains control characters")
+    return value
+
+
+def _rate(value: object, *, field: str) -> Decimal:
+    """Parse a rate without ever converting a binary float to Decimal."""
+    if isinstance(value, bool) or isinstance(value, float):
+        raise OrdersError(f"{field} must be a decimal string or Decimal, not a float")
+    if isinstance(value, str) and (not value or value != value.strip()):
+        raise OrdersError(f"{field} must be a canonical decimal")
+    try:
+        parsed = Decimal(value)  # type: ignore[arg-type]
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise OrdersError(f"{field} must be a decimal") from exc
+    if not parsed.is_finite() or parsed < 0:
+        raise OrdersError(f"{field} must be a finite non-negative decimal")
+    # Keep signed documents bounded while retaining exact decimal semantics.
+    if len(parsed.as_tuple().digits) > 30 or len(format(parsed, "f")) > 64:
+        raise OrdersError(f"{field} has too many digits")
+    return parsed
+
+
+def _rate_text(value: Decimal) -> str:
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _https_source(value: object) -> str:
+    source = _public_label(value, field="provider.source", maximum=2048)
+    parsed = urlsplit(source)
+    if (
+        parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password
+        or parsed.query or parsed.fragment
+    ):
+        raise OrdersError("provider.source must be an HTTPS URL without credentials or query data")
+    return source
+
+
+def _checked_date(value: object) -> str:
+    checked = _public_label(value, field="provider.checked", maximum=10)
+    try:
+        parsed = date.fromisoformat(checked)
+    except ValueError as exc:
+        raise OrdersError("provider.checked must be an ISO date (YYYY-MM-DD)") from exc
+    if parsed.isoformat() != checked:
+        raise OrdersError("provider.checked must be an ISO date (YYYY-MM-DD)")
+    return checked
+
+
 @dataclass(frozen=True)
 class Member:
     name: str
@@ -217,6 +288,71 @@ class Author:
 
 
 @dataclass(frozen=True)
+class ProviderRate:
+    """A signed, declared API price; it never asserts execution support."""
+
+    provider_id: str
+    variant_id: str
+    provider_model: str
+    input_usd_per_1m_tokens: Decimal | str | int
+    output_usd_per_1m_tokens: Decimal | str | int
+    source: str
+    checked: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "provider_id", _slug(self.provider_id, field="provider.provider_id"))
+        object.__setattr__(self, "variant_id", _slug(self.variant_id, field="provider.variant_id"))
+        object.__setattr__(
+            self, "provider_model", _public_label(self.provider_model, field="provider.provider_model"),
+        )
+        object.__setattr__(
+            self, "input_usd_per_1m_tokens",
+            _rate(self.input_usd_per_1m_tokens, field="provider.input_usd_per_1m_tokens"),
+        )
+        object.__setattr__(
+            self, "output_usd_per_1m_tokens",
+            _rate(self.output_usd_per_1m_tokens, field="provider.output_usd_per_1m_tokens"),
+        )
+        object.__setattr__(self, "source", _https_source(self.source))
+        object.__setattr__(self, "checked", _checked_date(self.checked))
+
+    @classmethod
+    def from_dict(cls, raw: object) -> "ProviderRate":
+        if not isinstance(raw, Mapping):
+            raise OrdersError("provider rate must be an object")
+        _exact_keys(raw, {
+            "provider_id", "variant_id", "provider_model",
+            "input_usd_per_1m_tokens", "output_usd_per_1m_tokens", "source", "checked",
+        }, "provider")
+        return cls(
+            provider_id=raw.get("provider_id"),
+            variant_id=raw.get("variant_id"),
+            provider_model=raw.get("provider_model"),
+            input_usd_per_1m_tokens=raw.get("input_usd_per_1m_tokens"),
+            output_usd_per_1m_tokens=raw.get("output_usd_per_1m_tokens"),
+            source=raw.get("source"),
+            checked=raw.get("checked"),
+        )
+
+    @property
+    def identity(self) -> tuple[str, str, str]:
+        return self.provider_id, self.variant_id, self.provider_model
+
+    def to_dict(self) -> dict[str, str]:
+        # Decimal strings are deliberate: JSON/YAML numeric floats are not a
+        # stable representation of a price and are rejected by from_dict.
+        return {
+            "provider_id": self.provider_id,
+            "variant_id": self.variant_id,
+            "provider_model": self.provider_model,
+            "input_usd_per_1m_tokens": _rate_text(self.input_usd_per_1m_tokens),
+            "output_usd_per_1m_tokens": _rate_text(self.output_usd_per_1m_tokens),
+            "source": self.source,
+            "checked": self.checked,
+        }
+
+
+@dataclass(frozen=True)
 class OrdersSignature:
     key_id: str
     value: str
@@ -247,11 +383,21 @@ class Orders:
     author: Author
     members: tuple[Member, ...]
     signature: OrdersSignature
+    providers: tuple[ProviderRate, ...] = ()
     schema: int = ORDERS_SCHEMA
 
     def __post_init__(self) -> None:
-        if self.schema != ORDERS_SCHEMA:
+        if isinstance(self.schema, bool) or self.schema not in {_ORDERS_V1, ORDERS_SCHEMA}:
             raise OrdersError(f"unsupported ORDERS schema {self.schema!r}")
+        if self.schema == _ORDERS_V1 and self.providers:
+            raise OrdersError("schema v1 ORDERS cannot contain provider rates")
+        providers = tuple(self.providers)
+        if not all(isinstance(provider, ProviderRate) for provider in providers):
+            raise OrdersError("providers must contain ProviderRate objects")
+        providers = tuple(sorted(providers, key=lambda provider: provider.identity))
+        if len({provider.identity for provider in providers}) != len(providers):
+            raise OrdersError("provider identity must be unique")
+        object.__setattr__(self, "providers", providers)
         try:
             canonical_fleet_id = str(uuid.UUID(self.fleet_id))
         except (ValueError, AttributeError, TypeError) as exc:
@@ -291,13 +437,16 @@ class Orders:
             raise OrdersSignatureError("signature key_id is not the permanent author")
 
     def payload(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema": self.schema,
             "fleet_id": self.fleet_id,
             "version": self.version,
             "author": self.author.to_dict(),
             "members": [member.to_dict() for member in self.members],
         }
+        if self.schema >= ORDERS_SCHEMA:
+            payload["providers"] = [provider.to_dict() for provider in self.providers]
+        return payload
 
     def to_dict(self) -> dict[str, Any]:
         return {**self.payload(), "signature": self.signature.to_dict()}
@@ -327,17 +476,28 @@ def parse_orders(raw: str | bytes | Mapping[str, Any]) -> Orders:
     value = raw if isinstance(raw, Mapping) else load_yaml_strict(raw)
     if not isinstance(value, Mapping):
         raise OrdersError("fleet YAML must contain one object")
-    _exact_keys(value, {"schema", "fleet_id", "version", "author", "members", "signature"}, "ORDERS")
+    schema = value.get("schema")
+    if schema == _ORDERS_V1:
+        expected = {"schema", "fleet_id", "version", "author", "members", "signature"}
+    elif schema == ORDERS_SCHEMA:
+        expected = {"schema", "fleet_id", "version", "author", "members", "providers", "signature"}
+    else:
+        raise OrdersError(f"unsupported ORDERS schema {schema!r}")
+    _exact_keys(value, expected, "ORDERS")
     members_raw = value.get("members")
     if not isinstance(members_raw, list):
         raise OrdersError("members must be a list")
+    providers_raw = value.get("providers", [])
+    if not isinstance(providers_raw, list):
+        raise OrdersError("providers must be a list")
     orders = Orders(
-        schema=value.get("schema"),
+        schema=schema,
         fleet_id=value.get("fleet_id"),
         version=value.get("version"),
         author=Author.from_dict(value.get("author")),
         members=tuple(Member.from_dict(member) for member in members_raw),
         signature=OrdersSignature.from_dict(value.get("signature")),
+        providers=tuple(ProviderRate.from_dict(provider) for provider in providers_raw),
     )
     return verify_orders(orders)
 
@@ -350,7 +510,8 @@ def dump_orders(orders: Orders) -> str:
 
 
 def init_orders(identity: Identity, node: TailscaleNode, *, name: str,
-                fleet_id: str | None = None) -> Orders:
+                fleet_id: str | None = None,
+                providers: tuple[ProviderRate, ...] = ()) -> Orders:
     if not node.is_self:
         raise OrdersBootstrapError("fleet init requires Tailscale Self, not a peer node")
     author = Author.from_identity(identity)
@@ -361,6 +522,7 @@ def init_orders(identity: Identity, node: TailscaleNode, *, name: str,
         author=author,
         members=(member,),
         signature=OrdersSignature(key_id=identity.key_id, value=_b64encode(b"\0" * 64)),
+        providers=providers,
     )
     return replace(unsigned, signature=_sign(unsigned.payload(), identity))
 
@@ -387,8 +549,37 @@ def add_member(orders: Orders, author_identity: Identity, *, name: str,
         author=orders.author,
         members=members,
         signature=OrdersSignature(key_id=orders.author.key_id, value=_b64encode(b"\0" * 64)),
+        providers=orders.providers,
+        schema=orders.schema,
     )
     return replace(unsigned, signature=_sign(unsigned.payload(), author_identity))
+
+
+def set_provider_rates(orders: Orders, author_identity: Identity,
+                       providers: tuple[ProviderRate, ...] | list[ProviderRate]) -> Orders:
+    """Replace the declared provider-rate projection as an author revision."""
+    verify_orders(orders)
+    if orders.schema < ORDERS_SCHEMA:
+        raise OrdersError("provider rates require ORDERS schema v2")
+    if author_identity.key_id != orders.author.key_id or author_identity.public_key_b64 != orders.author.public_key:
+        raise OrdersAuthorError("only the permanent author can change provider rates")
+    normalized = tuple(sorted(providers, key=lambda provider: provider.identity))
+    candidate = Orders(
+        fleet_id=orders.fleet_id,
+        version=orders.version + (0 if normalized == orders.providers else 1),
+        author=orders.author,
+        members=orders.members,
+        signature=OrdersSignature(key_id=orders.author.key_id, value=_b64encode(b"\0" * 64)),
+        providers=normalized,
+        schema=orders.schema,
+    )
+    if candidate.version == orders.version:
+        return orders
+    return replace(candidate, signature=_sign(candidate.payload(), author_identity))
+
+
+# Keep the verb explicit for callers that model this as a publication/update.
+update_provider_rates = set_provider_rates
 
 
 def join_orders(raw: Orders | str | bytes | Mapping[str, Any], *,
@@ -558,7 +749,8 @@ class OrdersStore:
 __all__ = [
     "ORDERS_SCHEMA", "OrdersError", "OrdersSignatureError", "OrdersRollbackError",
     "OrdersEquivocationError", "OrdersAuthorError", "OrdersBootstrapError",
-    "Member", "Author", "OrdersSignature", "Orders", "OrdersStore",
+    "Member", "Author", "ProviderRate", "OrdersSignature", "Orders", "OrdersStore",
     "load_yaml_strict", "parse_orders", "dump_orders", "verify_orders",
-    "init_orders", "add_member", "join_orders", "validate_transition",
+    "init_orders", "add_member", "set_provider_rates", "update_provider_rates",
+    "join_orders", "validate_transition",
 ]
