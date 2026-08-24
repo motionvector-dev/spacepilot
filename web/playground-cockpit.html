@@ -129,13 +129,16 @@ aside#panel{border-left:1px solid var(--line);background:var(--ground);overflow-
   border:1px solid var(--line);color:var(--ink2);background:var(--card);white-space:nowrap}
 .chip.tight{color:var(--silver);background:var(--raised);border-color:var(--silver-line);letter-spacing:.02em}
 .chip.no{color:var(--wrong);background:transparent;border-color:transparent;padding-left:0}
-.berths{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
-.berth{flex:1;height:26px;border:1px dashed var(--line3);border-radius:var(--r1)}
-.berth.full{border:1px solid var(--line3);background:var(--card);border-style:solid}
+.slots{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.slot{flex:0 1 158px;min-width:118px;height:26px;border:1px dashed var(--line3);border-radius:var(--r1);
+  display:flex;align-items:center;padding:0 9px;overflow:hidden;
+  font-family:var(--mono);font-size:10px;color:var(--ink4)}
+.slot.full{border:1px solid var(--line3);background:var(--card);border-style:solid;color:var(--ink2)}
+.slot .lab{position:relative;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .au-edge{height:2px;background:linear-gradient(96deg,#2e1f08 0%,#8a6a22 12%,#c9a227 26%,#fffbe8 40%,#d8b95a 54%,#4a3410 68%,#f6e6a8 84%,#3d2b0d 100%)}
 .prov{font-family:var(--mono);font-size:10px;letter-spacing:.02em}
 .prov.measured{color:var(--true)} .prov.declared{color:var(--ink2)}
-.prov.estimated{color:var(--ink3)} .prov.hfapi{color:var(--ink2)}
+.prov.estimated{color:var(--ink3)}
 .note{font-size:11.5px;line-height:1.6;color:var(--ink3);max-width:80ch}
 .meter{height:4px;border-radius:2px;background:var(--card);overflow:hidden}
 .meter i{display:block;height:100%;background:var(--ink2)}
@@ -177,13 +180,13 @@ html[data-motion="reduced"]{--mo-travel:0px}   /* distance to zero, time unchang
 .mo-stag > *:nth-child(n+5){animation-delay:calc(var(--mo-stagger)*4)}
 #viewport.routing{animation:mo-in var(--mo-route) var(--ease-out) both}
 
-/* the berth fill: border-style cannot animate, so the solid ring is a
+/* the cargo-slot fill: border-style cannot animate, so the solid ring is a
    second layer that fades over the dashed one. Nothing travels. */
-.berth{position:relative}
-.berth .solid{position:absolute;inset:-1px;border:1px solid var(--line3);border-radius:var(--r1);
+.slot{position:relative}
+.slot .solid{position:absolute;inset:-1px;border:1px solid var(--line3);border-radius:var(--r1);
   background:var(--card);opacity:0}
-.berth.full .solid{opacity:1}
-.berth.filling .solid{animation:mo-fill var(--mo-fill) var(--ease-out) both}
+.slot.full .solid{opacity:1}
+.slot.filling .solid{animation:mo-fill var(--mo-fill) var(--ease-out) both}
 
 /* the first-flight crossfade — the figure replaces the mark in place */
 .xfade{display:inline-grid}
@@ -260,14 +263,14 @@ html.bare .viewport{padding:44px 56px 56px;max-width:1080px;margin:0 auto;width:
 <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
 <symbol id="i-memory" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M8 6v12M12 6v12M16 6v12"/></symbol>
 <symbol id="i-disk" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="12" cy="12" r="3.5"/></symbol>
-<symbol id="i-crew" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></symbol>
-<symbol id="i-berth" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5" stroke-dasharray="3 2.6"/></symbol>
+<symbol id="i-cargo" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></symbol>
+<symbol id="i-slot" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5" stroke-dasharray="3 2.6"/></symbol>
 <symbol id="i-runtime" viewBox="0 0 24 24"><path d="M12 3 21 7.5v9L12 21 3 16.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10.5 12 15.5l5-5M4 20h16"/></symbol>
 <symbol id="i-install" viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M12 3v9M8.5 8.5 12 12l3.5-3.5"/></symbol>
 <symbol id="i-measure" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4.5M15 8v3M19 8v4.5"/></symbol>
 <symbol id="i-flight" viewBox="0 0 24 24"><path d="M3 12h3l2.5-6L12 19l2.5-7 1.5 3H21"/></symbol>
-<symbol id="i-offship" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".85" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r=".85" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-dock" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".85" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r=".85" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-meter" viewBox="0 0 24 24"><path d="M3.5 18a8.5 8.5 0 0 1 17 0"/><path d="M12 18 16.5 10.5"/></symbol>
 <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9.5 10 12.5 7 15.5M13 15.5h4"/></symbol>
 <symbol id="i-warning" viewBox="0 0 24 24"><path d="M12 4 21.5 20.5h-19z"/><path d="M12 10.5v4.5"/><circle cx="12" cy="17.8" r=".85" fill="currentColor" stroke="none"/></symbol>
@@ -455,7 +458,7 @@ const RUNTIMES = [
 const MEASURE = {
   solo: [{ model:"kokoro", metric:"realtime_factor", value:4.6, runs:1, on:"2026-08-22",
            note:"12.5s of speech in 2.7s wall clock, single sentence, nothing else running" }],
-  observed: []
+  loaded: []
 };
 
 const PYTHON = "3.11.15";   // live interpreter
@@ -635,13 +638,13 @@ class MetalSurface {
 /* ═══ state ════════════════════════════════════════════════════════ */
 const S = {
   route: "ship/loaded", structure: "restructured", density: "dense", theme: "system",
-  crew: ["kokoro"], runtimesInstalled: ["kokoro-onnx", "diffusers"],
-  offshipSeconds: 1084, acquirePct: 44, installPct: 62, firstFlightDone: false,
+  cargo: ["kokoro"], runtimesInstalled: ["kokoro-onnx", "diffusers"],
+  dockSeconds: 1084, acquirePct: 44, installPct: 62, firstFlightDone: false,
   metal: { on:true, alloy:"gold", radius:30, thick:7, lobes:4, rough:0.16, disp:0.42, grain:0.50, speed:0.30 },
-  alloc: { navRail:true, thresholdEdge:true, shipCard:false, primaryBtn:false, berths:false, rules:false },
+  alloc: { navRail:true, thresholdEdge:true, shipCard:false, primaryBtn:false, slots:false, rules:false },
   railCollapsed:false, motion:"full", power:"full", data:"fixtures", apiBase:"http://127.0.0.1:8100", liveNote:null
 };
-const BERTHS = 5;
+const CARGO_DEMO = ["kokoro","wan-2-1-1_3b","ltx-2b","hunyuan-13b","deepseek-r1-7b"];
 const byId = id => MODELS.find(m => m.id === id);
 const rt = id => RUNTIMES.find(r => r.id === id);
 
@@ -652,12 +655,33 @@ function verdict(m) {
   if (ratio > RULES.tight_threshold) return { k:"tight", label:"fits, tight", ratio };
   return { k:"fits", label:"fits", ratio };
 }
+const unitOf = metric => metric === "realtime_factor" ? "× realtime" : " s per second of video";
+
+/* Both streams are flown. The stream name rides on the number, never in a legend. */
+function flownOf(id) {
+  const solo = MEASURE.solo.find(x => x.model === id);
+  if (solo) return { rec: solo, stream: "solo" };
+  const loaded = MEASURE.loaded.find(x => x.model === id);
+  return loaded ? { rec: loaded, stream: "loaded" } : null;
+}
+/* Cargo that cannot fit is never counted as unflown — it is a wall, not an invitation. */
+function cargoCounts(ids) {
+  const c = { flown:0, unflown:0, paper:0, blank:0, wont:0 };
+  for (const id of ids) {
+    const m = byId(id);
+    if (verdict(m).k === "no") { c.wont++; continue; }
+    if (flownOf(id)) { c.flown++; continue; }
+    c.unflown++;
+    if (m.speed) c.paper++; else c.blank++;
+  }
+  return c;
+}
 function speedCell(m) {
-  const flown = MEASURE.solo.find(x => x.model === m.id);
-  if (flown) return `<span class="prov measured">flown here</span> <span class="mid">${flown.value}× realtime</span>`;
-  if (!m.speed) return `<span class="prov estimated">unflown here</span>`;
-  const unit = m.speed.metric === "realtime_factor" ? "× realtime" : " s per second of video";
-  return `<span class="mid">${m.speed.value}${unit} on paper</span> <span class="prov estimated">· unflown here</span>`;
+  if (verdict(m).k === "no") return `<span class="dim2">—</span>`;
+  const f = flownOf(m.id);
+  if (f) return `<span class="prov measured">flown</span> <span class="mid">${f.rec.value}${unitOf(f.rec.metric)} · ${f.stream}</span>`;
+  if (!m.speed) return `<span class="prov estimated">unflown</span>`;
+  return `<span class="mid" title="${esc(m.speed.note)}">${m.speed.value}${unitOf(m.speed.metric)} on paper</span>${sparse() ? "" : ` <span class="dim2" style="white-space:nowrap">· ${m.speed.on}</span>`} <span class="prov estimated" style="white-space:nowrap">· unflown</span>`;
 }
 function licenceCell(m) {
   if (m.restrictions.length) return `<span class="dim2" title="${esc(m.restrictions.join(' · '))}">${esc(m.restrictions[0])}</span>`;
@@ -673,11 +697,11 @@ function bezel(alloy, icon, size) {
   return `<div class="bezelwrap" data-metal="${alloy}" style="width:${size}px;height:${size}px">
     <canvas></canvas><div class="core">${icon}</div></div>`;
 }
-const ICONS = ["ship","chip","memory","disk","crew","berth","runtime","download","install","measure",
-  "flight","offship","meter","terminal","warning","verified","unflown","agent","quota","shell",
+const ICONS = ["ship","chip","memory","disk","cargo","slot","runtime","download","install","measure",
+  "flight","dock","meter","terminal","warning","verified","unflown","agent","quota","shell",
   "probe","licence","threshold","refusal","system","settings","key"];
 const icon = (n, cls) => `<svg class="icn ${cls || ""}"><use href="#i-${n}"></use></svg>`;
-const ICON_GRID = icon("crew", "xl");
+const ICON_GRID = icon("cargo", "xl");
 const ICON_WAVE = icon("flight", "xl");
 const ICON_CHIP = icon("chip", "xl");
 const goldEdge = () => S.alloc.thresholdEdge && S.metal.on ? `<div class="au-edge"></div>` : "";
@@ -708,7 +732,7 @@ function shipBlock(showUnread) {
     </div></div>`;
 }
 
-function crewTable(ids, opts) {
+function cargoTable(ids, opts) {
   opts = opts || {};
   const cols = sparse() ? "1fr 118px 160px" : "236px 66px 112px minmax(280px,1fr) 168px";
   const rows = ids.map(id => {
@@ -724,10 +748,20 @@ function crewTable(ids, opts) {
   return `<div class="card" style="overflow:hidden">${rows || `<div class="row dim">nothing here yet</div>`}</div>`;
 }
 
-function berthRow() {
-  let out = "";
-  for (let i = 0; i < BERTHS; i++) out += `<div class="berth ${i < S.crew.length ? "full" : ""}"><div class="solid"></div></div>`;
-  return `<div class="berths">${out}</div>`;
+/* One slot per piece of cargo actually on disk — no fixed capacity, because
+   there isn't one. The arriving piece is always rendered last so the fill
+   animation has a stable target. */
+function slotRow(pending) {
+  const ids = S.cargo.filter(id => id !== pending).concat(pending ? [pending] : []);
+  const out = ids.map(id => {
+    const m = byId(id);
+    return `<div class="slot full"><div class="solid"></div><span class="lab" title="${esc(m.name)} · ${fmt(m.download_bytes)}">${esc(m.name)}</span></div>`;
+  }).join("");
+  return `<div class="slots">${out || `<div class="slot"><span class="lab">nothing on disk</span></div>`}</div>`;
+}
+function diskLine() {
+  const on = S.cargo.reduce((a, id) => a + byId(id).download_bytes, 0);
+  return `${S.cargo.length} on disk · ${fmt(on)} · ${fmt(SHIP.free_disk_bytes)} free`;
 }
 
 /* ═══ the route tree ═══════════════════════════════════════════════ */
@@ -740,10 +774,10 @@ const TREE = [
     ["empty",        "empty · first contact", 0],
     ["loaded",       "loaded",                0],
     ["probe-detail", "probe detail",          0]]],
-  ["crew", "models on this ship", [
+  ["cargo", "what this ship carries", [
     ["list",    "list",     0],
-    ["acquire", "acquire",  0],
-    ["aboard",  "aboard",   1],
+    ["acquire", "arriving", 0],
+    ["stowed",  "stowed",   1],
     ["remove",  "remove",   0]]],
   ["runtimes", "installed, not downloaded", [
     ["list",              "list",              0],
@@ -753,7 +787,7 @@ const TREE = [
     ["failed",            "failed",            0]]],
   ["measurements", "never merged", [
     ["solo",         "solo",         0],
-    ["observed",     "observed",     0],
+    ["loaded",       "loaded",       0],
     ["first-flight", "first flight", 1]]],
   ["system", "the design system", [
     ["icons",      "icons",      0],
@@ -764,17 +798,17 @@ const TREE = [
     ["providers", "providers & keys",  0],
     ["defaults",  "generation defaults",0],
     ["access",    "access",            0]]],
-  ["off-ship", "the meter runs", [
+  ["docks", "the meter runs", [
     ["idle",      "idle",      0],
-    ["launch",    "launch",    0],
+    ["rent",      "rent",      0],
     ["running",   "running",   0],
     ["shell",     "shell",     0],
     ["terminate", "terminate", 0]]]
 ];
 
 const R = {};
-const GROUP_ICON = { "first-run":"probe", ship:"ship", crew:"crew", runtimes:"runtime",
-  measurements:"measure", system:"system", settings:"settings", "off-ship":"offship" };
+const GROUP_ICON = { "first-run":"probe", ship:"ship", cargo:"cargo", runtimes:"runtime",
+  measurements:"measure", system:"system", settings:"settings", docks:"dock" };
 
 /* ── first-run ─────────────────────────────────────────────────── */
 R["first-run/consent"] = () => `
@@ -782,7 +816,7 @@ R["first-run/consent"] = () => `
     <div class="lbl">Before anything else</div>
     <div style="font-size:30px;font-weight:600;letter-spacing:-.028em;line-height:1.12">May we read this machine?</div>
     <div style="font-size:15px;line-height:1.65;color:var(--ink2)">SpacePilot asks your hardware what it is, so it can tell you what will actually run. It reads the chip, the core counts, what the graphics driver will hand a model, and free disk. Nothing leaves the machine, and nothing is uploaded.</div>
-    ${note(`You can decline and use SpacePilot anyway. Every figure will then say <span class="prov estimated">unflown here</span> or <span class="mid">on paper</span> for as long as it stays declined — which is honest, and much less useful.`)}
+    ${note(`You can decline and use SpacePilot anyway. Every figure will then read <span class="prov estimated">unflown</span> or <span class="mid">on paper</span> for as long as it stays declined — which is honest, and much less useful.`)}
     <div style="display:flex;gap:12px;padding-top:4px">
       <button class="btn" data-go="first-run/detect">Read this machine</button>
       <button class="btn2" data-go="ship/empty">Not now</button>
@@ -809,39 +843,35 @@ R["first-run/recommend"] = () => {
   const fits = MODELS.filter(m => verdict(m).k !== "no");
   return `<div class="sect"><div class="secthead"><div class="lbl">Device × model · what this machine can run</div>
     <div class="k dim2">${fits.length} of ${MODELS.length} fit · ceiling ${fmt(SHIP.usable_bytes)}</div></div>
-    ${crewTable(MODELS.map(m => m.id), { right: m => `<span class="dim2">${fmt(m.ws)} · ${m.ws_src}</span>` })}
-    ${note(`Every footprint carries where it came from. One of these nine is <span class="prov declared">declared</span> by the model card; the rest are <span class="prov estimated">estimated</span> from weights, precision and a resident text encoder. Not one has been run on this machine yet.`)}
-    <div style="padding-top:10px"><button class="btn" data-go="crew/acquire">Bring Kokoro aboard</button></div>
+    ${cargoTable(MODELS.map(m => m.id), { right: m => `<span class="dim2">${fmt(m.ws)} · ${m.ws_src}</span>` })}
+    ${note(`Every footprint carries where it came from. One of these nine is <span class="prov declared">declared</span> by the model card; the rest are <span class="prov estimated">estimated</span> from weights, precision and a resident text encoder. A footprint is not a measurement — the column beside it says separately what has been flown.`)}
+    <div style="padding-top:10px"><button class="btn" data-go="cargo/acquire">Get Kokoro 82M</button></div>
   </div>`;
 };
 
 /* ── ship ──────────────────────────────────────────────────────── */
 R["ship/empty"] = () => `
-  <div class="sect"><div class="lbl">Aboard · 1 ship</div>${shipBlock(true)}</div>
-  <div class="sect"><div class="secthead"><div class="lbl">Crew · 0 aboard · ${BERTHS} berths open</div>
+  <div class="sect"><div class="lbl">Ships · 1</div>${shipBlock(true)}</div>
+  <div class="sect"><div class="secthead"><div class="lbl">Cargo</div>
     <div class="k dim2">0 flown · 0 unflown</div></div>
-    <div class="card">${berthRow()}</div>
-    ${note(`First contact, and it is not an empty page — the ship is always there. Nothing has been installed, so nothing is claimed. This is the state every session starts in.`)}
+    <div class="card"><div class="row dim">nothing on disk · ${fmt(SHIP.free_disk_bytes)} free</div></div>
+    ${note(`First contact, and it is not an empty page — the ship is always there. Nothing has been downloaded, so nothing is claimed. This is the state every session starts in.`)}
     <div style="padding-top:10px"><button class="btn" data-go="first-run/recommend">See what fits</button></div>
   </div>
-  ${offshipStrip()}`;
+  ${docksStrip()}`;
 
 R["ship/loaded"] = () => {
-  const flownN = S.crew.filter(id => MEASURE.solo.some(x => x.model === id)).length;
-  const onPaper = MODELS.filter(m => !S.crew.includes(m.id));
+  const c = cargoCounts(MODELS.map(m => m.id));
   return `
-  <div class="sect"><div class="secthead"><div class="lbl">Aboard · 1 ship</div>
+  <div class="sect"><div class="secthead"><div class="lbl">Ships · 1</div>
     <div class="k dim2">probed 2026-08-23 · 14:02</div></div>${shipBlock(true)}</div>
-  <div class="sect"><div class="secthead"><div class="lbl">Crew · ${S.crew.length} aboard · ${BERTHS - S.crew.length} berths open</div>
-    <div class="k dim2">${flownN} flown · ${S.crew.length - flownN} unflown</div></div>
-    <div class="card" style="overflow:hidden">${crewTable(S.crew).replace(/^<div class="card"[^>]*>/, "").replace(/<\/div>$/, "")}${berthRow()}</div>
+  <div class="sect"><div class="secthead"><div class="lbl">Cargo</div>
+    <div class="k dim2">${c.flown} flown · ${c.unflown} unflown</div></div>
+    ${cargoTable(MODELS.map(m => m.id))}
+    <div class="k dim2" style="padding:3px 2px 0">${diskLine()}</div>
+    ${note(`One list, and the provenance sits on the row rather than in a legend. Flown: ${c.flown}, measured on this ship. On paper: ${c.paper}, numbers somebody else published — Hugging Face model cards, read 2026-08-22 — still unflown beside the claim. No number at all: ${c.blank}. Will not fit: ${c.wont}, and that renders as an em dash rather than a state.`)}
   </div>
-  <div class="sect"><div class="secthead"><div class="lbl">On paper · not run here</div>
-    <div class="k dim2">Hugging Face registry · 2026-08-22</div></div>
-    ${crewTable(onPaper.map(m => m.id))}
-    ${note(`Eight of nine variants have no measured speed on any machine, and the table says so rather than implying otherwise. That is the spine, not a caveat.`)}
-  </div>
-  ${offshipStrip()}`;
+  ${docksStrip()}`;
 };
 
 R["ship/probe-detail"] = () => `
@@ -861,32 +891,36 @@ R["ship/probe-detail"] = () => `
     ${note(`The usable-memory number has its own provenance. On this machine Metal answers directly, so it is <span class="prov measured">measured</span>. On a machine that will not answer, the same field falls back to the ${RULES.metal_working_set_fraction * 100}% rule and is marked <span class="prov estimated">estimated</span> — the figure changes meaning, so the mark changes with it.`)}
   </div>`;
 
-function offshipStrip() {
-  return `<div class="sect"><div class="lbl">Off-ship · none running · $0.00/hr</div>
+function docksStrip() {
+  return `<div class="sect"><div class="lbl">Docks · none rented · $0.00/hr · ceiling 1, by quota</div>
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:28px;padding:17px 20px">
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div class="k">Ceiling is 1 box, by quota.</div>
-        ${sparse() ? "" : `<div class="k mid">G-family spot quota is 8 vCPU; a g6e.2xlarge is 8 vCPU.<br>$0.75/hr, bills until terminated. An escalation, not a fleet.</div>`}
+        <div class="k">Ceiling is 1 dock, by quota.</div>
+        ${sparse() ? "" : `<div class="k mid">G-family spot quota is 8 vCPU; a g6e.2xlarge is 8 vCPU.<br>$0.75/hr, bills until terminated. Renting is a decision, not a default.</div>`}
       </div>
-      <button class="${S.alloc.primaryBtn && S.metal.on ? "btn2" : "btn"}" data-go="off-ship/launch">Launch a box</button>
+      <button class="${S.alloc.primaryBtn && S.metal.on ? "btn2" : "btn"}" data-go="docks/rent">Rent a dock</button>
     </div></div>`;
 }
 
-/* ── crew ──────────────────────────────────────────────────────── */
-R["crew/list"] = () => `
-  <div class="sect"><div class="secthead"><div class="lbl">Crew · ${S.crew.length} aboard · ${BERTHS - S.crew.length} berths open</div>
-    <div class="k dim2">berths are bounded by disk, not by licence</div></div>
-    <div class="card" style="overflow:hidden">${crewTable(S.crew, { right: m => `<button class="k dim" data-go="crew/remove">remove</button>` }).replace(/^<div class="card"[^>]*>/, "").replace(/<\/div>$/, "")}${berthRow()}</div>
-  </div>
-  <div class="sect"><div class="lbl">Not aboard</div>
-    ${crewTable(MODELS.filter(m => !S.crew.includes(m.id)).map(m => m.id), {
-      right: m => verdict(m).k === "no" ? `<span class="dim2">—</span>` : `<button class="k" data-go="crew/acquire" style="color:var(--ink)">get</button>` })}
-    ${note(`A model that will not fit gets an em dash, not a get button and not <span class="prov estimated">unflown</span>. One is an invitation; the other is a wall. They must not render alike.`)}
+/* ── cargo ─────────────────────────────────────────────────────── */
+R["cargo/list"] = () => {
+  const c = cargoCounts(MODELS.map(m => m.id));
+  return `
+  <div class="sect"><div class="secthead"><div class="lbl">Cargo</div>
+    <div class="k dim2">${c.flown} flown · ${c.unflown} unflown</div></div>
+    <div class="card" style="overflow:hidden">${cargoTable(MODELS.map(m => m.id), {
+      right: m => verdict(m).k === "no" ? `<span class="dim2">—</span>`
+        : S.cargo.includes(m.id) ? `<button class="k dim" data-go="cargo/remove">remove</button>`
+        : `<button class="k" data-go="cargo/acquire" style="color:var(--ink)">get</button>`
+    }).replace(/^<div class="card"[^>]*>/, "").replace(/<\/div>$/, "")}${slotRow()}</div>
+    <div class="k dim2" style="padding:3px 2px 0">${diskLine()}</div>
+    ${note(`One list, not two. What is on disk carries a <span class="k">remove</span>, what is not carries a <span class="k">get</span>, and a model that will not fit gets an em dash — not a get button, and not <span class="prov estimated">unflown</span>. One is an invitation, the other is a wall, and they must not render alike. Disk is the only ceiling here, and it is a real number: ${fmt(SHIP.free_disk_bytes)} free.`)}
   </div>`;
+};
 
-R["crew/acquire"] = () => {
+R["cargo/acquire"] = () => {
   const m = byId("wan-2-1-1_3b"), got = m.download_bytes * S.acquirePct / 100;
-  return `<div class="sect"><div class="lbl">Coming aboard</div>
+  return `<div class="sect"><div class="lbl">Cargo arriving</div>
     <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:13px">
       <div style="display:flex;align-items:baseline;justify-content:space-between">
         <span class="k">${esc(m.name)}</span><span class="k dim">${fmt(got)} of ${fmt(m.download_bytes)}</span>
@@ -894,39 +928,39 @@ R["crew/acquire"] = () => {
       <div class="meter"><i style="width:${S.acquirePct}%"></i></div>
       <div class="k dim">Keeps going if you close this window.</div>
     </div>
-    ${note(`Berths are finite and visible, so the download says something true about capacity instead of promising abundance. ${BERTHS - S.crew.length} open once this lands.`)}
-    <div class="card">${berthRow()}</div>
-    <div style="padding-top:10px"><button class="btn" data-go="crew/aboard">Finish the download</button></div>
+    ${note(`Disk is the only limit, and it is a real number: ${fmt(SHIP.free_disk_bytes)} free, ${fmt(m.download_bytes)} of it going. The bar tracks bytes on disk, not a percentage of something invented.`)}
+    <div class="card">${slotRow(m.id)}</div>
+    <div style="padding-top:10px"><button class="btn" data-go="cargo/stowed">Finish the download</button></div>
   </div>`;
 };
 
-R["crew/aboard"] = () => `
+R["cargo/stowed"] = () => `
   <div class="sect"><div class="lbl" style="color:var(--gold)">Threshold · once per model</div>
     <div style="display:flex;align-items:center;gap:26px;padding:14px 0 6px;flex-wrap:wrap">
       ${bezel("gold", ICON_GRID, 112)}
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:22px;font-weight:600;letter-spacing:-.02em">Wan 2.1 T2V 1.3B is aboard.</div>
-        <div class="k mid">berth 2 of ${BERTHS} · ${fmt(byId("wan-2-1-1_3b").ws)} working set · ${byId("wan-2-1-1_3b").spdx}</div>
-        <div class="k"><span class="prov estimated">unflown here</span> <span class="dim">· 48 s per second of video on paper</span></div>
+        <div style="font-size:22px;font-weight:600;letter-spacing:-.02em">Wan 2.1 T2V 1.3B is stowed.</div>
+        <div class="k mid">${fmt(byId("wan-2-1-1_3b").download_bytes)} on disk · ${fmt(byId("wan-2-1-1_3b").ws)} working set · ${byId("wan-2-1-1_3b").spdx}</div>
+        <div class="k"><span class="prov estimated">unflown</span> <span class="dim">· 48 s per second of video on paper</span></div>
       </div>
     </div>
-    <div class="card" id="aboard-berths">${berthRow()}</div>
-    <div><button class="btn3" data-play="aboard">replay ›</button></div>
-    ${note(`The berth border goes dashed to solid over 220ms and nothing travels. The download row fades where it stands in 120ms — exits are faster than entrances. Under reduced motion this frame is identical, because nothing moved in the first place.`)}
+    <div class="card" id="arrival-slots">${slotRow("wan-2-1-1_3b")}</div>
+    <div><button class="btn3" data-play="arrival">replay ›</button></div>
+    ${note(`The slot border goes dashed to solid over 220ms and nothing travels. The download row fades where it stands in 120ms — exits are faster than entrances. Under reduced motion this frame is identical, because nothing moved in the first place.`)}
     <div style="padding-top:6px"><button class="btn" data-go="measurements/first-flight">Fly it</button></div>
   </div>`;
 
-R["crew/remove"] = () => `
-  <div class="sect"><div class="lbl">Remove from crew</div>
+R["cargo/remove"] = () => `
+  <div class="sect"><div class="lbl">Remove cargo</div>
     <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
       <div class="k">Remove Kokoro 82M?</div>
-      <div class="k mid">Frees ${fmt(byId("kokoro").download_bytes)} on disk and opens a berth.</div>
-      <div class="k" style="color:var(--gold)">Its measured run stays in the log. ${MEASURE.solo.length} measurement on this ship survives removal.</div>
+      <div class="k mid">Frees ${fmt(byId("kokoro").download_bytes)} on disk. ${fmt(SHIP.free_disk_bytes)} free either way.</div>
+      <div class="k" style="color:var(--gold)">Its flown number stays in the log. ${MEASURE.solo.length} measurement on this ship survives removal.</div>
       <div style="display:flex;gap:10px;padding-top:4px">
-        <button class="btn2" data-go="crew/list">Remove</button><button class="btn2" data-go="crew/list">Cancel</button>
+        <button class="btn2" data-go="cargo/list">Remove</button><button class="btn2" data-go="cargo/list">Cancel</button>
       </div>
     </div>
-    ${note(`Uninstalling the weights does not un-measure the machine. The flight log is a property of the ship, not of the crew — which is why removing a model never costs you a number you earned.`)}
+    ${note(`Deleting the weights does not un-measure the machine. The flight log belongs to the ship, not to the cargo — which is why dropping a model never costs you a number you earned.`)}
   </div>`;
 
 /* ── runtimes ──────────────────────────────────────────────────── */
@@ -1020,38 +1054,41 @@ R["measurements/solo"] = () => `
     <div class="k dim2">nothing else running · ${MEASURE.solo.length} on this ship</div></div>
     <div class="card" style="overflow:hidden">
       ${MEASURE.solo.map(x => `<div class="row" style="grid-template-columns:200px 150px 1fr 120px">
-        <span>${esc(byId(x.model).name)}</span><span class="ok">${x.value}× realtime</span>
+        <span>${esc(byId(x.model).name)}</span><span class="ok">${x.value}${unitOf(x.metric)} · solo</span>
         <span class="dim">${esc(x.note)}</span><span class="dim2" style="text-align:right">${x.on}</span></div>`).join("")}
     </div>
-    ${note(`One row. Nine variants exist and eight have never been run here, so this table has exactly one entry and looks like it. A registry holding one measured fact should look honest about that, not padded.`)}
+    ${note(`One row. Nine variants exist and eight have never been flown on this ship, so this table has exactly one entry and looks like it. A registry holding one measured fact should look honest about that, not padded.`)}
   </div>`;
 
-R["measurements/observed"] = () => `
-  <div class="sect"><div class="secthead"><div class="lbl">Observed · what a request actually saw</div>
-    <div class="k dim2">under real contention · 0 recorded</div></div>
-    <div class="card"><div class="row dim">no requests observed yet</div></div>
-    ${note(`Empty, and it stays empty until a real request runs. Solo and observed are never averaged: a ceiling that collapses under load is worse than useless, and a mean of the two describes a machine nobody has.`)}
+R["measurements/loaded"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Loaded · what a request actually saw</div>
+    <div class="k dim2">under real workload · 0 recorded</div></div>
+    <div class="card"><div class="row dim">nothing measured under load yet</div></div>
+    ${note(`Empty, and it stays empty until a real request runs. Solo and loaded are never averaged: a ceiling that collapses under load is worse than useless, and a mean of the two describes a machine nobody has.`)}
   </div>
   <div class="sect"><div class="lbl">Why they never merge</div>
     <div class="card" style="overflow:hidden">
       <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">solo</span><span>the machine alone, nothing else resident. An upper bound.</span></div>
-      <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">observed</span><span>what a request saw with whatever else was running. A lower bound that moves.</span></div>
+      <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">loaded</span><span>what a request saw with whatever else was running. A lower bound that moves.</span></div>
       <div class="row" style="grid-template-columns:150px 1fr"><span class="dim">the mean</span><span class="no">a number describing neither, quoted as if it described both.</span></div>
     </div>
+    ${note(`Both streams are flown — measured here, on this ship. The stream name rides on the number and never lives in a footnote: <span class="k">4.6× realtime · solo</span>.`)}
   </div>`;
 
-R["measurements/first-flight"] = () => `
+R["measurements/first-flight"] = () => {
+  const c = cargoCounts(MODELS.map(m => m.id));
+  return `
   <div class="sect"><div class="lbl" style="color:var(--gold)">Threshold · once per model, per ship</div>
     <div style="display:flex;align-items:center;gap:26px;padding:14px 0 6px;flex-wrap:wrap">
       ${bezel("gold", ICON_WAVE, 112)}
       <div style="display:flex;flex-direction:column;gap:10px">
         <div class="xfade" id="ff-mark" style="justify-items:start">
-          <span class="was k" style="color:var(--ink3);opacity:1">unflown here</span>
-          <span class="now k ok" style="opacity:0">flown here</span>
+          <span class="was k" style="color:var(--ink3);opacity:1">unflown</span>
+          <span class="now k ok" style="opacity:0">flown</span>
         </div>
         <div class="xfade" id="ff-figure">
           <span class="was" style="font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink4);opacity:1">—</span>
-          <span class="now" style="font-size:22px;font-weight:600;letter-spacing:-.02em;opacity:0">4.6× realtime</span>
+          <span class="now" style="font-size:22px;font-weight:600;letter-spacing:-.02em;opacity:0">4.6× realtime · solo</span>
         </div>
         <div class="k mid">Kokoro 82M · ${SHIP.name} · 2026-08-23</div>
       </div>
@@ -1059,27 +1096,28 @@ R["measurements/first-flight"] = () => `
     <div><button class="btn3" data-play="firstflight">replay ›</button></div>
     ${note(`A crossfade from the mark to the figure, 240ms, in place. The number does <span class="no">not</span> count up — animating a number is the fastest way to make an instrument feel like a toy. Reduced motion renders this identically, because a crossfade already is the accessible form.`)}
     <div class="card" style="padding:16px 20px;display:flex;flex-direction:column;gap:7px">
-      <div class="k">CREW &nbsp;1 flown · 8 unflown</div>
+      <div class="k">CARGO &nbsp;${c.flown} flown · ${c.unflown} unflown</div>
       <div class="note" style="margin:0">The only progress meter the product needs. Every other tool grows more confident with use because it hides more; this one grows more true.</div>
     </div>
   </div>`;
+};
 
-/* ── off-ship ──────────────────────────────────────────────────── */
+/* ── docks ─────────────────────────────────────────────────────── */
 const hhmmss = s => `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor(s%3600/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
-R["off-ship/idle"] = () => `
-  <div class="sect"><div class="secthead"><div class="lbl">Off-ship · none running</div><div class="k dim2">$0.00/hr</div></div>
+R["docks/idle"] = () => `
+  <div class="sect"><div class="secthead"><div class="lbl">Docks · none rented</div><div class="k dim2">$0.00/hr · ceiling 1, by quota</div></div>
     <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:11px">
-      <div class="k">Ceiling is 1 box, by quota.</div>
+      <div class="k">Ceiling is 1 dock, by quota.</div>
       <div class="k mid">G-family spot quota is 8 vCPU. A g6e.2xlarge is 8 vCPU. So there is exactly one, it costs $0.75/hr, and it bills until you kill it.</div>
-      <div class="k dim">An escalation, not a fleet.</div>
+      <div class="k dim">Renting is a decision, not a default.</div>
     </div>
     ${note(`Rendered from the quota, never hard-coded — when the quota moves the count moves and the sentence survives. And the cheapest, most common state gets the loudest sentence in the product.`)}
-    <div style="padding-top:10px"><button class="btn" data-go="off-ship/launch">Launch a box</button></div>
+    <div style="padding-top:10px"><button class="btn" data-go="docks/rent">Rent a dock</button></div>
   </div>`;
 
-R["off-ship/launch"] = () => `
-  <div class="sect"><div class="lbl">Confirm launch</div>
+R["docks/rent"] = () => `
+  <div class="sect"><div class="lbl">Confirm the rental</div>
     <div class="card" style="overflow:hidden">
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">instance</span><span>g6e.2xlarge · L40S 48 GB · spot</span></div>
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">region</span><span>us-east-1</span></div>
@@ -1088,34 +1126,34 @@ R["off-ship/launch"] = () => `
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">auto-shutdown</span><span>after 15 minutes idle</span></div>
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">spending limit</span><span>stops itself at $12.00</span></div>
       <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
-        <button class="btn" data-go="off-ship/running">Launch · the meter starts</button>
-        <button class="btn2" data-go="off-ship/idle">Cancel</button></div>
+        <button class="btn" data-go="docks/running">Rent · the meter starts</button>
+        <button class="btn2" data-go="docks/idle">Cancel</button></div>
     </div>
     ${note(`Six facts before a single dollar. The watchdog and the spending limit are shown at the moment of the decision, not buried in a settings hub afterwards.`)}
   </div>`;
 
-R["off-ship/running"] = () => {
-  const hrs = S.offshipSeconds / 3600, spent = (hrs * 0.75);
-  return `<div class="sect"><div class="secthead"><div class="lbl">Off-ship · running</div>
+R["docks/running"] = () => {
+  const hrs = S.dockSeconds / 3600, spent = (hrs * 0.75);
+  return `<div class="sect"><div class="secthead"><div class="lbl">Docks · one rented</div>
     <div class="k" style="color:var(--wrong)">$0.75/hr</div></div>
     <div class="card" style="overflow:hidden">
       <div class="row" style="grid-template-columns:1fr 1fr 1fr">
         <span class="dim2">g6e.2xlarge · us-east-1 · i-0a3f7c21</span>
-        <span class="dim">${hhmmss(S.offshipSeconds)} elapsed</span>
+        <span class="dim">${hhmmss(S.dockSeconds)} elapsed</span>
         <span style="text-align:right">$${spent.toFixed(2)} so far</span>
       </div>
-      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">stops itself at</span><span>$12.00 · ${hhmmss(Math.round((12 / 0.75) * 3600) - S.offshipSeconds)} remaining</span></div>
+      <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">stops itself at</span><span>$12.00 · ${hhmmss(Math.round((12 / 0.75) * 3600) - S.dockSeconds)} remaining</span></div>
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">idle watchdog</span><span>15 minutes</span></div>
       <div class="row" style="grid-template-columns:190px 1fr"><span class="dim">GPU</span><span>L40S · 48 GB · 61 °C · 38% utilisation</span></div>
     </div>
     ${note(`The rental gets an instance id and a running clock, never a friendly name — friendly names on metered resources are how people forget the meter is running. The ship gets a human name because it is owned and free. That asymmetry is the honest signal, and it costs nothing to build.`)}
     <div style="padding-top:10px;display:flex;gap:10px">
-      <button class="btn2" data-go="off-ship/shell">Shell</button>
-      <button class="btn2" data-go="off-ship/terminate" style="border-color:var(--wrong);color:var(--wrong)">Terminate</button></div>
+      <button class="btn2" data-go="docks/shell">Shell</button>
+      <button class="btn2" data-go="docks/terminate" style="border-color:var(--wrong);color:var(--wrong)">Terminate</button></div>
   </div>`;
 };
 
-R["off-ship/shell"] = () => `
+R["docks/shell"] = () => `
   <div class="sect"><div class="lbl">Shell · i-0a3f7c21</div>
     <div class="card grain" style="padding:16px 18px;background:var(--root)">
       <div class="k mid" style="line-height:2.05">
@@ -1125,20 +1163,20 @@ R["off-ship/shell"] = () => `
         <span class="dim2">$</span> <span style="border-left:7px solid var(--ink3);height:13px;display:inline-block;vertical-align:-2px"></span>
       </div>
     </div>
-    ${note(`Kept from Cockpit-as-shipped, and demoted — it lives under off-ship because it is only ever about the rented box. Nothing on the local machine has ever needed an SSH session.`)}
+    ${note(`Kept from Cockpit-as-shipped, and demoted — it lives under Docks because it is only ever about the rented machine. Nothing on the ship itself has ever needed an SSH session.`)}
   </div>`;
 
-R["off-ship/terminate"] = () => `
+R["docks/terminate"] = () => `
   <div class="sect"><div class="lbl">Terminate</div>
     <div class="card" style="overflow:hidden;border-color:var(--wrong)">
       <div style="padding:18px 20px;display:flex;flex-direction:column;gap:10px">
         <div class="k">Destroy i-0a3f7c21 and stop billing?</div>
-        <div class="k mid">Ran ${hhmmss(S.offshipSeconds)} · $${(S.offshipSeconds / 3600 * 0.75).toFixed(2)} billed. Anything not synced to this machine is lost.</div>
+        <div class="k mid">Ran ${hhmmss(S.dockSeconds)} · $${(S.dockSeconds / 3600 * 0.75).toFixed(2)} billed. Anything not synced to this machine is lost.</div>
         <div class="k dim">3 outputs already synced to ~/Movies/SpacePilot/</div>
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px">
-        <button class="btn2" style="border-color:var(--wrong);color:var(--wrong)" data-go="off-ship/idle">Destroy &amp; stop billing</button>
-        <button class="btn2" data-go="off-ship/running">Keep it running</button></div>
+        <button class="btn2" style="border-color:var(--wrong);color:var(--wrong)" data-go="docks/idle">Destroy &amp; stop billing</button>
+        <button class="btn2" data-go="docks/running">Keep it running</button></div>
     </div>
     ${note(`It names what is lost and what is already safe, because "are you sure?" is not information. The destructive button carries the only red on the screen.`)}
   </div>`;
@@ -1175,7 +1213,7 @@ function asShipped() {
   </div>
   <div class="sect"><div class="lbl">What this structure costs</div>
     <div class="card" style="overflow:hidden">
-      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">every metric reads —</span><span class="dim">Cockpit is built around a box that is not running, which is the normal state, the cheap state, and the state every session starts in.</span></div>
+      <div class="row" style="grid-template-columns:230px 1fr"><span class="no">every metric reads —</span><span class="dim">Cockpit is built around a rented machine that is not running, which is the normal state, the cheap state, and the state every session starts in.</span></div>
       <div class="row" style="grid-template-columns:230px 1fr"><span class="no">the local machine is a footnote</span><span class="dim">"Host Device Compute &amp; Model Registry" is one collapsed row beneath the cloud telemetry, on a product whose whole claim is local-first.</span></div>
       <div class="row" style="grid-template-columns:230px 1fr"><span class="no">credentials before value</span><span class="dim">Six provider fields sit above any output. Nothing here works until you have an AWS account.</span></div>
       <div class="row" style="grid-template-columns:230px 1fr"><span class="no">no provenance anywhere</span><span class="dim">Not one number on this screen says where it came from.</span></div>
@@ -1219,17 +1257,17 @@ function panelHTML() {
     ${togCtl("alloc", "navRail", "active nav rail", S.alloc.navRail)}
     ${togCtl("alloc", "shipCard", "ship card", S.alloc.shipCard)}
     ${togCtl("alloc", "primaryBtn", "primary button", S.alloc.primaryBtn)}
-    ${togCtl("alloc", "berths", "berth slots", S.alloc.berths)}
+    ${togCtl("alloc", "slots", "cargo slots", S.alloc.slots)}
     ${togCtl("alloc", "rules", "section rules", S.alloc.rules)}
     <div class="note" style="margin-top:8px">Turn on more than two and watch it stop reading as metal. A screen where four things are metal has no metal on it.</div>
   </div>
 
   <div class="psec"><span class="lbl">Product state</span>
-    ${rangeCtl("__crew", "crew aboard", 0, 5, 1, S.crew.length, ` / ${BERTHS}`)}
+    ${rangeCtl("__cargo", "cargo on disk", 0, CARGO_DEMO.length, 1, S.cargo.length, "")}
     ${rangeCtl("__acq", "download", 0, 100, 1, S.acquirePct, "%")}
     ${rangeCtl("__inst", "install job", 0, 100, 1, S.installPct, "%")}
-    ${rangeCtl("__off", "off-ship elapsed", 0, 58378, 60, S.offshipSeconds, "s")}
-    <div class="note" style="margin-top:8px">The off-ship slider tops out where the $12.00 spending limit does.</div>
+    ${rangeCtl("__dock", "dock elapsed", 0, 58378, 60, S.dockSeconds, "s")}
+    <div class="note" style="margin-top:8px">The dock slider tops out where the $12.00 spending limit does.</div>
   </div>
 
   <div class="psec"><span class="lbl">Motion &amp; power</span>
@@ -1287,7 +1325,7 @@ R["system/components"] = () => `
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <span class="lbl" style="width:92px;flex:none">${name}</span>
           ${BTN_STATES.map(([label, mod]) => `<div class="statecell">
-            <button class="${cls} ${mod}">Launch a box</button>
+            <button class="${cls} ${mod}">Rent a dock</button>
             <span class="lbl">${label}</span></div>`).join("")}
         </div>`).join("")}
     </div>
@@ -1303,8 +1341,8 @@ R["system/components"] = () => `
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
         <span class="lbl" style="width:92px;flex:none">provenance</span>
-        <span class="prov measured">flown here</span><span class="prov declared">on paper</span>
-        <span class="prov estimated">unflown here</span><span class="prov measured">measured</span>
+        <span class="prov measured">flown</span><span class="prov declared">on paper</span>
+        <span class="prov estimated">unflown</span><span class="prov measured">measured</span>
         <span class="prov estimated">estimated</span>
       </div>
     </div>
@@ -1314,7 +1352,7 @@ R["system/components"] = () => `
   <div class="sect"><div class="lbl">Feedback</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
       <div class="statecell" style="width:100%"><span class="lbl">toast</span>
-        <div class="toast" style="width:100%">${icon("verified")} <span>Kokoro 82M is aboard.</span></div></div>
+        <div class="toast" style="width:100%">${icon("verified")} <span>Kokoro 82M is stowed.</span></div></div>
       <div class="statecell" style="width:100%"><span class="lbl">toast · refused</span>
         <div class="toast" style="width:100%;border-color:var(--wrong)"><span class="no">${icon("refusal")}</span> <span>Would downgrade 2 packages.</span></div></div>
       <div class="statecell" style="width:100%"><span class="lbl">meter</span>
@@ -1325,7 +1363,7 @@ R["system/components"] = () => `
       <div class="statecell" style="width:100%"><span class="lbl">switch</span>
         <div style="display:flex;gap:12px"><div class="sw" role="switch" aria-checked="false"></div><div class="sw" role="switch" aria-checked="true"></div></div></div>
       <div class="statecell" style="width:100%"><span class="lbl">segmented</span>
-        <div class="seg"><button aria-pressed="true">Solo</button><button aria-pressed="false">Observed</button></div></div>
+        <div class="seg"><button aria-pressed="true">Solo</button><button aria-pressed="false">Loaded</button></div></div>
     </div>
   </div>
 
@@ -1333,7 +1371,7 @@ R["system/components"] = () => `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card" style="padding:26px 22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
         <span class="dim2">${icon("unflown", "xl")}</span>
-        <div class="k">No requests observed yet</div>
+        <div class="k">Nothing measured under load yet</div>
         <div class="note" style="margin:0">Empty, and it stays empty until a real request runs. An empty state says what would fill it.</div>
       </div>
       <div class="card" style="padding:26px 22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;border-color:var(--wrong)">
@@ -1355,10 +1393,10 @@ R["system/components"] = () => `
     </div>
   </div>
 
-  <div class="sect"><div class="lbl">Berths and bezel</div>
+  <div class="sect"><div class="lbl">Cargo slots and bezel</div>
     <div class="stage-demo" style="gap:26px">
-      <div style="flex:1;min-width:240px"><div class="card">${berthRow()}</div></div>
-      ${bezel("chrome", icon("crew", "xl"), 92)}
+      <div style="flex:1;min-width:240px"><div class="card">${slotRow()}</div></div>
+      ${bezel("chrome", icon("cargo", "xl"), 92)}
       ${bezel("gold", icon("threshold", "xl"), 92)}
     </div>
   </div>`;
@@ -1369,7 +1407,7 @@ const MOTION_SPEC = [
   ["exit",        "120ms", "ease-out",    "opacity only — travels nowhere", "exit"],
   ["stagger",     "40ms",  "—",           "caps at the fifth sibling",      "stag"],
   ["crossfade",   "240ms", "ease-in-out", "state replaces state, in place", "cross"],
-  ["berth fill",  "220ms", "ease-out",    "dashed → solid, layered",        "fill"],
+  ["cargo fill",  "220ms", "ease-out",    "dashed → solid, layered",        "fill"],
   ["route change","200ms", "ease-out",    "the whole viewport, once",       "route"],
   ["a number",    "never", "—",           "numbers do not tick",            "number"]
 ];
@@ -1390,14 +1428,14 @@ R["system/motion"] = () => `
   <div class="sect"><div class="lbl">Stage</div>
     <div class="stage-demo" id="mo-stage">
       <div class="mo-stag" id="mo-demo" style="display:flex;flex-direction:column;gap:7px;flex:1;min-width:260px">
-        ${["Apple M1 Max", "8P + 2E · 32-core GPU", "24.96 GB usable", "285 GB free", "3 fields unread", "macOS 26.6.2"]
+        ${["Apple M1 Max", "8P + 2E · 32-core GPU", "24.96 GB usable", "170 GB free", "3 fields unread", "macOS 26.6.2"]
           .map(t => `<div class="k mid">${t}</div>`).join("")}
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
-        <div class="berth" id="mo-berth" style="width:120px;height:30px;flex:none"><div class="solid"></div></div>
+        <div class="slot" id="mo-slot" style="width:120px;height:30px;flex:none"><div class="solid"></div></div>
         <div class="xfade k" id="mo-xfade" style="font-size:15px">
-          <span class="was" style="color:var(--ink3);opacity:1">unflown here</span>
-          <span class="now ok" style="opacity:0">4.6× realtime</span>
+          <span class="was" style="color:var(--ink3);opacity:1">unflown</span>
+          <span class="now ok" style="opacity:0">4.6× realtime · solo</span>
         </div>
       </div>
     </div>
@@ -1408,7 +1446,7 @@ R["system/motion"] = () => `
     <div class="card" style="overflow:hidden">
       <div class="row" style="grid-template-columns:220px 120px 1fr"><span>the brand mark</span><span class="ok">once</span><span class="dim">cold start, and never again</span></div>
       <div class="row" style="grid-template-columns:220px 120px 1fr"><span>first probe</span><span class="ok">once, ever</span><span class="dim">fields land staggered; the unread ones land last</span></div>
-      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>coming aboard</span><span class="ok">per model</span><span class="dim">a berth fills where it stands</span></div>
+      <div class="row" style="grid-template-columns:220px 120px 1fr"><span>cargo arrival</span><span class="ok">per model</span><span class="dim">a slot fills where it stands</span></div>
       <div class="row" style="grid-template-columns:220px 120px 1fr"><span>first flight</span><span class="ok">per model, per ship</span><span class="dim">a mark crossfades to a figure</span></div>
       <div class="row" style="grid-template-columns:220px 120px 1fr"><span>the bezel environment</span><span class="mid">continuous</span><span class="dim">the environment rotates; the object never does</span></div>
       <div class="row" style="grid-template-columns:220px 120px 1fr"><span class="dim2">everything else</span><span class="no">never</span><span class="dim">telemetry · lists · counters · installs · polls</span></div>
@@ -1478,11 +1516,11 @@ R["settings/defaults"] = () => `
       ${kv("duration", CONFIG.default_duration + "s", ["declared",".pluto_config.json"])}
     </div>
   </div>
-  <div class="sect"><div class="lbl">Off-ship limits · the ones that cost money</div>
+  <div class="sect"><div class="lbl">Dock limits · the ones that cost money</div>
     <div class="card" style="overflow:hidden">
       ${kv("spot rate", "$" + CONFIG.spot_hourly_rate.toFixed(2) + "/hr", ["declared",".pluto_config.json"])}
       ${kv("idle shutdown", CONFIG.idle_shutdown_minutes + " minutes", ["declared",".pluto_config.json"])}
-      ${kv("quota ceiling", "1 box · G-family spot is 8 vCPU", ["measured","AWS quota"])}
+      ${kv("ceiling", "1 dock, by quota · G-family spot is 8 vCPU", ["measured","AWS quota"])}
     </div>
     ${note(`These four numbers are the only settings in the product that can bill you, so they sit apart from the rest and every one of them says where it came from.`)}
   </div>`;
@@ -1593,24 +1631,24 @@ function stagger(nodes, staggered) {
   });
 }
 function play(kind) {
-  const demo = $("#mo-demo"), berth = $("#mo-berth"), xf = $("#mo-xfade");
+  const demo = $("#mo-demo"), slot = $("#mo-slot"), xf = $("#mo-xfade");
   switch (kind) {
     case "rise":  if (demo) { demo.classList.remove("mo-stag"); stagger([...demo.children], false); } break;
     case "stag":  if (demo) { demo.classList.remove("mo-stag"); stagger([...demo.children], true); } break;
     case "exit":  if (demo) [...demo.children].forEach(c => restart(c, "mo-out")); break;
     case "cross": restart(xf, "playing"); break;
-    case "fill":  if (berth) { berth.classList.remove("full"); restart(berth, "filling");
-                    setTimeout(() => berth.classList.add("full"), 220); } break;
+    case "fill":  if (slot) { slot.classList.remove("full"); restart(slot, "filling");
+                    setTimeout(() => slot.classList.add("full"), 220); } break;
     case "route": restart($("#viewport"), "routing"); break;
     case "probe": stagger([...document.querySelectorAll("#probe-fields .probe-line")], true); break;
-    case "aboard": {
-      const b = document.querySelectorAll("#aboard-berths .berth")[1];
+    case "arrival": {
+      const b = $("#arrival-slots .slot:last-child");
       if (b) { b.classList.remove("full"); restart(b, "filling"); setTimeout(() => b.classList.add("full"), 220); }
       break; }
     case "firstflight": restart($("#ff-mark"), "playing"); restart($("#ff-figure"), "playing"); break;
   }
 }
-const AUTOPLAY = { "first-run/detect":"probe", "crew/aboard":"aboard", "measurements/first-flight":"firstflight" };
+const AUTOPLAY = { "first-run/detect":"probe", "cargo/stowed":"arrival", "measurements/first-flight":"firstflight" };
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-play]");
   if (b) play(b.dataset.play);
@@ -1660,10 +1698,10 @@ document.addEventListener("input", e => {
   if (!k) return;
   const v = parseFloat(e.target.value);
   const out = e.target.parentElement.querySelector("output");
-  if (k === "__crew") { S.crew = ["kokoro","wan-2-1-1_3b","ltx-2b","hunyuan-13b","deepseek-r1-7b"].slice(0, v); }
+  if (k === "__cargo") { S.cargo = CARGO_DEMO.slice(0, v); }
   else if (k === "__acq")  S.acquirePct = v;
   else if (k === "__inst") S.installPct = v;
-  else if (k === "__off")  S.offshipSeconds = v;
+  else if (k === "__dock") S.dockSeconds = v;
   else S.metal[k] = v;
   if (out) out.textContent = v + (out.textContent.replace(/^[\d.]+/, "") || "");
   // re-render content but keep focus on the slider being dragged
@@ -1749,7 +1787,7 @@ function applyHash() {
     if (k === "theme" && ["system","light","dark"].includes(v)) S.theme = v;
     if (k === "rail" && v === "collapsed") S.railCollapsed = true;
     if (k === "density" && ["dense","sparse"].includes(v)) S.density = v;
-    if (k === "crew") S.crew = ["kokoro","wan-2-1-1_3b","ltx-2b","hunyuan-13b","deepseek-r1-7b"].slice(0, +v || 0);
+    if (k === "cargo") S.cargo = CARGO_DEMO.slice(0, +v || 0);
     if (k === "chrome" && v === "off") document.documentElement.classList.add("bare");
     if (k === "metal" && v === "css") S.power = "low";
     if (k === "motion" && v === "reduced") S.motion = "reduced";

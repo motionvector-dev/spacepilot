@@ -219,7 +219,7 @@ which is what answers the ship-changed edge in §5.
 **Docks never get a friendly name.**
 
 ```
-g6e.2xlarge · us-east-1 · i-0a3f7c21 · $0.74/hr · 00:41:12
+g6e.2xlarge · us-east-1 · i-0a3f7c21 · $0.75/hr · 00:41:12
 ```
 
 Friendly names on metered resources are how people forget the meter. Ships get
@@ -260,7 +260,7 @@ moments land.
 
 For the developer wedge this is an asset. Every developer has been burned by a
 tool that quietly fanned out and billed them. "There is exactly one, it costs
-$0.74/hr, and it bills until you kill it" is a tool that respects them.
+$0.75/hr, and it bills until you kill it" is a tool that respects them.
 
 **Render the count from the quota. Never hard-code "one."** When the quota
 moves, the number moves and the sentence survives.
