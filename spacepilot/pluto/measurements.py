@@ -320,8 +320,16 @@ def system_id_for(profile: Any) -> str:
     return _slug(f"{chip}-{gib}gb") if gib else _slug(chip)
 
 
+FINGERPRINT_SALT_DEFAULT = "pluto-measurements-v1"
+
+
 def _fingerprint() -> Optional[str]:
-    """Truncated salted digest of the hostname. Dedupes boxes, names nobody."""
+    """Truncated salted digest of the hostname. Dedupes boxes, names nobody.
+
+    Both the old environment name and the historical default salt are
+    permanent compatibility inputs: changing either would assign every
+    existing machine a new identity.
+    """
     try:
         host = platform.node()
     except Exception:
@@ -329,7 +337,10 @@ def _fingerprint() -> Optional[str]:
     if not host:
         return None
     from spacepilot.paths import env_value
-    salt = env_value("SPACEPILOT_FINGERPRINT_SALT", "PLUTO_FINGERPRINT_SALT", default="pluto-measurements-v1")
+    salt = env_value(
+        "SPACEPILOT_FINGERPRINT_SALT", "PLUTO_FINGERPRINT_SALT",
+        default=FINGERPRINT_SALT_DEFAULT,
+    )
     return hashlib.sha256(f"{salt}:{host}".encode()).hexdigest()[:12]
 
 

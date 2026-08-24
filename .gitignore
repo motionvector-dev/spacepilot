@@ -8,6 +8,7 @@ venv/
 outputs/
 scratch/
 .studio_token
+.spacepilot_config.json
 .pluto_config.json
 
 # tooling / os

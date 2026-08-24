@@ -18,7 +18,7 @@ async function authHeaders(extra) {
     const r = await fetch('/api/token');
     plutoToken = (await r.json()).token;
   }
-  return { 'X-Pluto-Token': plutoToken, ...(extra || {}) };
+  return { 'X-SpacePilot-Token': plutoToken, ...(extra || {}) };
 }
 
 let state = {

@@ -110,6 +110,63 @@ def user_data_dir() -> Path:
     return (base / APP_NAME).resolve()
 
 
+def legacy_user_data_dir() -> Path:
+    """Pre-rename per-user data root; read-only compatibility location."""
+    if sys.platform == "darwin":
+        return (Path.home() / "Library" / "Application Support" / "pluto").resolve()
+    xdg = os.environ.get("XDG_DATA_HOME", "").strip()
+    base = Path(xdg).expanduser() if xdg else Path.home() / ".local" / "share"
+    return (base / "pluto").resolve()
+
+
+def user_data_read_dirs() -> List[Path]:
+    """Canonical then legacy data roots, without redirecting new writes."""
+    canonical = user_data_dir()
+    candidates = [canonical]
+    # An explicit data-dir setting is already a compatibility decision and
+    # must not silently mix unrelated data from the platform defaults.
+    if not env_value(DATA_DIR_ENV, "PLUTO_DATA_DIR", default="").strip():
+        candidates.append(legacy_user_data_dir())
+    out: List[Path] = []
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved not in out:
+            out.append(resolved)
+    return out
+
+
+def user_cache_dir() -> Path:
+    """Canonical per-user cache root for SpacePilot-owned transient data."""
+    xdg = os.environ.get("XDG_CACHE_HOME", "").strip()
+    if xdg:
+        return (Path(xdg).expanduser() / APP_NAME).resolve()
+    if sys.platform == "darwin":
+        return (Path.home() / "Library" / "Caches" / APP_NAME).resolve()
+    return (Path.home() / ".cache" / APP_NAME).resolve()
+
+
+def legacy_user_cache_dir() -> Path:
+    """The former direct ``~/.cache/pluto`` root, for reads only."""
+    return (Path.home() / ".cache" / "pluto").resolve()
+
+
+def model_recommender_cache_dir() -> Path:
+    """Canonical flat cache used by the legacy recommender compatibility API."""
+    return user_cache_dir() / "models"
+
+
+def model_recommender_cache_read_dirs() -> List[Path]:
+    """Canonical recommender cache followed by its old read-only location."""
+    out: List[Path] = []
+    for candidate in (
+        model_recommender_cache_dir(), legacy_user_cache_dir() / "models",
+    ):
+        resolved = candidate.resolve()
+        if resolved not in out:
+            out.append(resolved)
+    return out
+
+
 def identity_dir() -> Path:
     """The per-user directory containing this machine's signing identity.
 
@@ -263,7 +320,11 @@ def read_roots(name: str) -> List[Path]:
     directory and reading it twice would double every record.
     """
     out: List[Path] = []
-    for candidate in (shipped_dir(name), writable_dir(name)):
+    legacy = [] if checkout_root() is not None else [
+        root / "registry" / name for root in user_data_read_dirs()[1:]
+        if (root / "registry" / name).is_dir()
+    ]
+    for candidate in (shipped_dir(name), *legacy, writable_dir(name)):
         resolved = candidate.resolve()
         if resolved not in out:
             out.append(resolved)

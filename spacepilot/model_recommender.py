@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Multimodal model recommender engine for Pluto / SpacePilot."""
 
-import os
 from dataclasses import dataclass, asdict
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
+from spacepilot.paths import model_recommender_cache_dir, model_recommender_cache_read_dirs
 
-PLUTO_MODELS_CACHE = Path.home() / ".cache" / "pluto" / "models"
+# Direct-import compatibility. The value is now canonical and all fallback
+# reads go through paths.py rather than embedding a second directory policy.
+PLUTO_MODELS_CACHE = model_recommender_cache_dir()
 
 
 @dataclass
@@ -105,8 +106,22 @@ RECOMMENDED_MODEL_CATALOG: List[ModelEntry] = [
 
 def is_model_downloaded(model_id: str) -> bool:
     """Check if a model exists in the local cache."""
-    model_path = PLUTO_MODELS_CACHE / model_id
-    return model_path.exists() and model_path.stat().st_size > 10
+    return any(
+        (root / model_id).is_file() and (root / model_id).stat().st_size > 10
+        for root in model_recommender_cache_read_dirs()
+    )
+
+
+def downloaded_model_ids() -> List[str]:
+    """Canonical and legacy cached model ids, deduplicated in precedence order."""
+    values: List[str] = []
+    for root in model_recommender_cache_read_dirs():
+        if not root.is_dir():
+            continue
+        for path in sorted(root.iterdir(), key=lambda item: item.name):
+            if path.is_file() and path.name not in values:
+                values.append(path.name)
+    return values
 
 
 def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict[str, Any]:

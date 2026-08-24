@@ -137,6 +137,19 @@ def test_compute_endpoints_all_require_the_token():
         assert client.post(path, json=body, headers={"X-Pluto-Token": "wrong"}).status_code == 401
 
 
+def test_canonical_and_legacy_token_headers_are_accepted_but_conflicts_fail_closed():
+    path, body = GATED_POSTS[0]
+    token = STUDIO_TOKEN
+    assert client.post(path, json=body, headers={"X-SpacePilot-Token": token}).status_code != 401
+    assert client.post(path, json=body, headers={"X-Pluto-Token": token}).status_code != 401
+    assert client.post(path, json=body, headers={
+        "X-SpacePilot-Token": token, "X-Pluto-Token": token,
+    }).status_code != 401
+    assert client.post(path, json=body, headers={
+        "X-SpacePilot-Token": token, "X-Pluto-Token": "different-test-value",
+    }).status_code == 401
+
+
 def test_read_only_endpoints_stay_open():
     for path in ["/api/status", "/api/assets"]:
         assert client.get(path).status_code == 200

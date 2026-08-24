@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/launch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/deploy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message || data.status}`, 'success');
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message}`, 'success');
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/terminate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await fetch('/api/cockpit/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({ config: keyData })
         });
         localStorage.setItem('spacepilot_onboarded', 'true');
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/cockpit/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ config: updated })
       });
       if (res.ok) {
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/inspect/metrics', {
-        headers: { 'X-Pluto-Token': token }
+        headers: { 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       if (res.ok && data.gpu) {
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/gpu/inspect/action', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({ action })
         });
         const data = await res.json();
@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             const schedRes = await fetch('/api/sky/schedule', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+              headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
               body: JSON.stringify({ task_name: `spacepilot-${prov}-worker`, provider: prov, accelerator: accel, use_spot: true })
             });
             const sData = await schedRes.json();
@@ -808,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/sky/failover', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({ reason: 'Simulated spot preemption / arbitrage rebalance' })
         });
         const data = await res.json();
@@ -911,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'X-Pluto-Token': token
+                  'X-SpacePilot-Token': token
                 },
                 body: JSON.stringify({ model_id: modelId })
               });

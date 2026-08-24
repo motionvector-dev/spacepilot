@@ -60,6 +60,7 @@ def test_semantic_signature_survives_yaml_format_mapping_and_member_order(tmp_pa
         "signature": raw["signature"], "members": raw["members"],
         "author": raw["author"], "version": raw["version"],
         "fleet_id": raw["fleet_id"], "schema": raw["schema"],
+        "providers": raw["providers"],
     }
     text = "# comments and YAML order are not signed\n" + yaml.safe_dump(reordered, sort_keys=False)
     parsed = parse_orders(text)
