@@ -71,8 +71,9 @@ def mflux_bin_dir(cfg: Optional[Dict[str, Any]] = None) -> str:
     """Where the mflux CLI entry points live. Configurable because the path is
     this-machine-specific: env var wins, then .pluto_config.json, then the
     conda env layout this Mac actually uses."""
+    from spacepilot.paths import env_value
     return (
-        os.environ.get("PLUTO_MFLUX_BIN")
+        env_value("SPACEPILOT_MFLUX_BIN", "PLUTO_MFLUX_BIN")
         or (cfg or {}).get("mflux_bin_dir")
         or _default_bin_dir()
     )

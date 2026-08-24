@@ -78,8 +78,12 @@ class KokoroDriver(InferenceDriver):
                 return self.model_path, self.voices_path
 
         home = Path.home()
+        from spacepilot.paths import env_value
         candidates = [
-            (os.environ.get("PLUTO_KOKORO_MODEL"), os.environ.get("PLUTO_KOKORO_VOICES")),
+            (
+                env_value("SPACEPILOT_KOKORO_MODEL", "PLUTO_KOKORO_MODEL"),
+                env_value("SPACEPILOT_KOKORO_VOICES", "PLUTO_KOKORO_VOICES"),
+            ),
             (
                 str(Path(__file__).resolve().parent.parent.parent.parent / "katana" / "super-resolution-lab" / "tools" / "kokoro" / "kokoro-v1.0.onnx"),
                 str(Path(__file__).resolve().parent.parent.parent.parent / "katana" / "super-resolution-lab" / "tools" / "kokoro" / "voices-v1.0.bin"),

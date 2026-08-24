@@ -5,6 +5,7 @@ import secrets
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
+from spacepilot.paths import env_value
 
 
 def _resolve_pluto_root() -> Path:
@@ -45,7 +46,9 @@ class Settings(BaseModel):
 
     root_dir: Path = Field(default_factory=lambda: PLUTO_ROOT)
     outputs_dir: Path = Field(
-        default_factory=lambda: Path(os.environ.get("PLUTO_OUTPUTS_DIR", str(PLUTO_ROOT / "outputs"))).resolve()
+        default_factory=lambda: Path(
+            env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(PLUTO_ROOT / "outputs"))
+        ).resolve()
     )
     web_dir: Path = Field(default_factory=lambda: PLUTO_ROOT / "web")
 
@@ -55,8 +58,12 @@ class Settings(BaseModel):
     # Loopback by default. This server hands out a token that unlocks a shell
     # websocket, so publishing it to every interface put that shell on whatever
     # network the laptop happened to join.
-    host: str = Field(default_factory=lambda: os.environ.get("PLUTO_STUDIO_HOST", "127.0.0.1"))
-    port: int = Field(default_factory=lambda: int(os.environ.get("PLUTO_STUDIO_PORT", 8088)))
+    host: str = Field(
+        default_factory=lambda: env_value("SPACEPILOT_STUDIO_HOST", "PLUTO_STUDIO_HOST", default="127.0.0.1")
+    )
+    port: int = Field(
+        default_factory=lambda: int(env_value("SPACEPILOT_STUDIO_PORT", "PLUTO_STUDIO_PORT", default="8088"))
+    )
 
     # Audio defaults
     mlx_serve_url: str = Field(default_factory=lambda: os.environ.get("MLX_SERVE_URL", "http://127.0.0.1:11234"))
@@ -67,15 +74,21 @@ class Settings(BaseModel):
     ffmpeg_timeout_sec: int = Field(default_factory=lambda: int(os.environ.get("FFMPEG_TIMEOUT_SEC", 1800)))
 
     # Kokoro paths
-    kokoro_model_path: Optional[str] = Field(default_factory=lambda: os.environ.get("PLUTO_KOKORO_MODEL"))
-    kokoro_voices_path: Optional[str] = Field(default_factory=lambda: os.environ.get("PLUTO_KOKORO_VOICES"))
+    kokoro_model_path: Optional[str] = Field(
+        default_factory=lambda: env_value("SPACEPILOT_KOKORO_MODEL", "PLUTO_KOKORO_MODEL")
+    )
+    kokoro_voices_path: Optional[str] = Field(
+        default_factory=lambda: env_value("SPACEPILOT_KOKORO_VOICES", "PLUTO_KOKORO_VOICES")
+    )
 
     # Set PLUTO_ALLOW_REMOTE=1 to serve something other than this machine.
     # It widens the bind and drops the Host guard together, because doing one
     # without the other yields a server that listens and then refuses.
     @property
     def local_only(self) -> bool:
-        return os.environ.get("PLUTO_ALLOW_REMOTE", "").strip() not in ("1", "true", "yes")
+        return env_value("SPACEPILOT_ALLOW_REMOTE", "PLUTO_ALLOW_REMOTE", default="").strip() not in (
+            "1", "true", "yes"
+        )
 
     # CORS
     @property

@@ -1,21 +1,19 @@
-"""GPU spot lifecycle, Cockpit telemetry, and SkyPilot multi-cloud routes."""
+"""GPU spot lifecycle and Cockpit telemetry routes."""
 
 import sys
 import json
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 import secrets
 
 from spacepilot.pluto.core.config import get_settings
-from spacepilot.pluto.api.deps import require_token, update_activity
+from spacepilot.pluto.api.deps import require_token
 from spacepilot.pluto.services.gpu_lifecycle import get_cached_status
 from spacepilot.cli import get_instance_info, load_config, save_config, run_cmd
-from spacepilot.skypilot_orchestrator import sky_orchestrator, generate_skypilot_yaml
 
 router = APIRouter(tags=["gpu"])
 
@@ -26,19 +24,6 @@ class GpuActionRequest(BaseModel):
 
 class InspectActionRequest(BaseModel):
     action: str
-
-
-class SkyScheduleRequest(BaseModel):
-    task_name: str = "spacepilot-ltx-worker"
-    provider: Optional[str] = None
-    accelerator: Optional[str] = None
-    use_spot: bool = True
-    auto_failover: bool = True
-    checkpoint_sync: bool = True
-
-
-class SkyFailoverRequest(BaseModel):
-    reason: str = "Manual preemption trigger / cloud arbitrage rebalance"
 
 
 def _get_api_attr(name, default):
@@ -472,73 +457,3 @@ def post_inspect_action(req: InspectActionRequest, _: None = Depends(require_tok
         return {"ok": True, "message": f"Action {req.action} executed successfully", "output": res.stdout}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/api/sky/clouds")
-def get_sky_clouds_api(sort_by: str = "spot_price"):
-    """Return live 12+ multi-cloud spot arbitrage matrix."""
-    return {
-        "status": "ok",
-        "providers_count": len(sky_orchestrator.catalog),
-        "arbitrage_matrix": sky_orchestrator.get_arbitrage_matrix(sort_by=sort_by),
-    }
-
-
-@router.get("/api/sky/status")
-def get_sky_status_api():
-    """Return SkyPilot orchestrator cluster status and preemption failover metrics."""
-    return sky_orchestrator.get_status()
-
-
-@router.get("/api/sky/yaml")
-def get_sky_yaml_api(
-    task_name: str = "spacepilot-ltx-worker",
-    accelerators: str = "L40S:1",
-    cloud: Optional[str] = None,
-    use_spot: bool = True,
-):
-    """Return declarative SkyPilot YAML specification."""
-    yaml_content = generate_skypilot_yaml(
-        task_name=task_name,
-        accelerators=accelerators,
-        cloud=cloud,
-        use_spot=use_spot,
-    )
-    return {"status": "ok", "yaml": yaml_content}
-
-
-@router.post("/api/sky/schedule")
-def post_sky_schedule_api(req: SkyScheduleRequest, _: None = Depends(require_token)):
-    """Schedule and launch spot task across multi-cloud cluster."""
-    update_activity()
-    try:
-        res = sky_orchestrator.schedule_spot_task(
-            task_name=req.task_name,
-            provider=req.provider,
-            accelerator=req.accelerator,
-            use_spot=req.use_spot,
-            auto_failover=req.auto_failover,
-            checkpoint_sync=req.checkpoint_sync,
-        )
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e))
-    return res
-
-
-@router.post("/api/sky/failover")
-def post_sky_failover_api(req: SkyFailoverRequest, _: None = Depends(require_token)):
-    """Trigger instantaneous preemption failover with zero data loss."""
-    update_activity()
-    try:
-        res = sky_orchestrator.trigger_preemption_failover(reason=req.reason)
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e))
-    return res
-
-
-@router.post("/api/sky/terminate")
-def post_sky_terminate_api(_: None = Depends(require_token)):
-    """Terminate active SkyPilot spot cluster."""
-    update_activity()
-    res = sky_orchestrator.terminate_cluster()
-    return res
