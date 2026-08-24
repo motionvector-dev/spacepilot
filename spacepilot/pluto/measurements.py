@@ -205,6 +205,16 @@ class Measurement:
         return {k: v for k, v in asdict(self).items() if v not in (None, {}, [])}
 
 
+def subject_id(measurement: Measurement) -> str:
+    """The registry variant a measurement describes.
+
+    New records use ``variant_id``.  Older records used ``model_id`` for the
+    same purpose, so readers must consistently prefer the former without
+    orphaning the corpus written before that field existed.
+    """
+    return measurement.variant_id or measurement.model_id
+
+
 def _own_tree_pids(root_pid: Optional[int] = None) -> Set[int]:
     """This process, plus every descendant — recursively.
 
@@ -539,7 +549,7 @@ class Summary:
 def summarise(measurements: List[Measurement], system_id: str,
               model_id: str, metric: str) -> Summary:
     rows = [m for m in measurements if m.system_id == system_id
-            and m.model_id == model_id and m.metric == metric]
+            and subject_id(m) == model_id and m.metric == metric]
     ok = [m for m in rows if m.is_ok]
     failed = [m for m in rows if not m.is_ok]
     solo = [m.value for m in ok if m.is_solo]

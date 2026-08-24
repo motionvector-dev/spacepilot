@@ -25,7 +25,7 @@ from spacepilot.device_probe import (  # noqa: E402
     MEMORY_RESERVE_FLOOR_BYTES, MEMORY_RESERVE_FRACTION,
 )
 from spacepilot.pluto.measurements import (  # noqa: E402
-    load_measurements, load_systems, summarise,
+    load_measurements, load_systems, subject_id, summarise,
 )
 from spacepilot.pluto.registry import load_registry  # noqa: E402
 from spacepilot.pluto.services.compatibility import (  # noqa: E402
@@ -61,7 +61,7 @@ def attach_measurements(models: list) -> int:
     # for those was set to the variant id.
     keyed: dict = {}
     for m in rows:
-        keyed.setdefault(m.variant_id or m.model_id, []).append(m)
+        keyed.setdefault(subject_id(m), []).append(m)
 
     attached = 0
     for model in models:

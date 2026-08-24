@@ -893,12 +893,22 @@ def _gb(b) -> str:
 def cmd_models(args, cfg=None) -> int:
     """List the registry, or one variant, judged against this machine."""
     from spacepilot.device_probe import probe_local_device, usable_memory_bytes
+    from spacepilot.pluto import measurements as ms
     from spacepilot.pluto.registry import registry
     from spacepilot.pluto.services.compatibility import assess
     from spacepilot.pluto.services.model_catalog import catalog_manager
+    from spacepilot.pluto.services.provenance import (
+        format_fact, format_local_speed, format_metric, local_speeds, primary_speed,
+        speed_provenance,
+    )
 
     reg = registry()
     profile = probe_local_device()
+    system_id = ms.system_from_profile(profile).id
+    measurements = ms.load_measurements()
+
+    def local_speed(v):
+        return primary_speed(local_speeds(measurements, system_id=system_id, variant_id=v.id))
 
     # `list` is reserved, so this reads the same way as `runtimes list`; no
     # variant may be named that.
@@ -912,42 +922,54 @@ def cmd_models(args, cfg=None) -> int:
         print(f"{v.name}  [{v.id}]")
         print(f"  {v.kind} · {v.params or '?'} · {v.precision or '?'} · runs on {', '.join(v.backends)}")
         print(f"  repo      {v.repo}" + (f"   files: {', '.join(v.files)}" if v.files else "   (whole repo)"))
-        checked = f", checked {v.download.checked}" if v.download.checked else ""
-        print(f"  download  {_gb(v.download.value)}   [{v.download.source}{checked}]")
-        print(f"  needs     {_gb(v.working_set.value)}   [{v.working_set.source}]")
+        print(f"  download  {format_fact(v.download, _gb(v.download.value))}")
+        print(f"  needs     {format_fact(v.working_set, _gb(v.working_set.value))}")
         if v.working_set.note:
             print(f"            {v.working_set.note}")
         print(f"  licence   {v.license.id}")
         for r in v.license.restrictions:
             print(f"            ! {r}")
-        print(f"  here      {verdict.verdict} — {verdict.reason}")
+        # `assess` legitimately needs an estimated footprint to decide whether
+        # a model can fit, but its numeric ratio is not a measured fact and
+        # must not be rendered as one.
+        if v.working_set.source == "estimated":
+            here_reason = "fit assessment uses an unflown footprint"
+        else:
+            here_reason = verdict.reason
+        print(f"  here      {verdict.verdict} — {here_reason}")
+        here = local_speed(v)
+        print(f"  speed here {format_local_speed(here)}")
         if v.speed:
             for sp in v.speed:
-                print(f"  speed     {sp.value} {sp.metric} on {sp.device}   [{sp.source}]")
+                evidence = speed_provenance(sp)
+                if evidence.value is None:
+                    shown = "unflown"
+                else:
+                    date = evidence.checked or "date unrecorded"
+                    shown = (f"{format_metric(sp.metric, evidence.value)} · {evidence.state} · "
+                             f"{evidence.source} · checked {date}")
+                print(f"  speed     {shown} on {sp.device}")
                 if sp.note:
                     print(f"            {sp.note.strip()}")
-        else:
-            print("  speed     not measured on any machine yet")
         return 0
 
     usable = usable_memory_bytes(profile)
     src = profile.memory_limit_source or "unknown"
     print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
           f"· {_gb(usable)} available to models [{src}]\n")
-    print(f"  {'VERDICT':10s}{'MODEL':36s}{'DOWNLOAD':>10s}{'NEEDS':>9s}   {'SPEED':<11s}LICENCE")
+    print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE")
 
     order = {"fits": 0, "tight": 1, "unknown": 2, "wont_fit": 3, "blocked": 4}
     rows = [(assess(catalog_manager.recipes[v.id], profile), v) for v in reg.variants]
     rows.sort(key=lambda rv: (order.get(rv[0].verdict, 9), -rv[1].working_set.value))
 
     for verdict, v in rows:
-        speed = ("measured" if any(s.source == "measured" for s in v.speed)
-                 else "published" if v.speed else "—")
+        download = format_fact(v.download, _gb(v.download.value))
+        speed = format_local_speed(local_speed(v))
         lic = v.license.id + ("" if v.license.is_permissive else "  !")
-        print(f"  {verdict.verdict:10s}{v.id:36s}{_gb(v.download.value):>10s}"
-              f"{_gb(v.working_set.value):>9s}   {speed:<11s}{lic}")
+        print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
-    print("  SPEED is how the number was obtained, not how fast it is — most are unmeasured.")
+    print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
     return 0
 
 
