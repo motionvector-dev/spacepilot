@@ -249,7 +249,9 @@ class DeviceProfile:
 
 
 def _probe_disk(profile: DeviceProfile) -> None:
-    target = os.environ.get("SPACEPILOT_MODELS_DIR") or os.path.expanduser("~/.spacepilot/models")
+    from spacepilot.paths import weights_dir
+
+    target = str(weights_dir())
     probe_at = target
     while probe_at and not os.path.exists(probe_at):
         parent = os.path.dirname(probe_at)

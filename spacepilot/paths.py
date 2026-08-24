@@ -36,12 +36,15 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import dataclass
+from fnmatch import fnmatch
 from importlib import resources
 from pathlib import Path
-from typing import List
+from typing import List, Sequence
 
 APP_NAME = "spacepilot"
 DATA_DIR_ENV = "SPACEPILOT_DATA_DIR"
+MODELS_DIR_ENV = "SPACEPILOT_MODELS_DIR"
 
 
 def env_value(name: str, *legacy_names: str, default: str | None = None) -> str | None:
@@ -128,3 +131,156 @@ def read_roots(name: str) -> List[Path]:
         if resolved not in out:
             out.append(resolved)
     return out
+
+
+def weights_dir() -> Path:
+    """The writable Hugging Face Hub cache used for model repositories.
+
+    ``HF_HOME`` is the parent of the repository cache, not the repository
+    cache itself.  Passing it directly as ``snapshot_download(cache_dir=...)``
+    would create a second, non-standard cache beside ``HF_HOME/hub`` and lose
+    the deduplication this helper exists to preserve.
+
+    ``SPACEPILOT_MODELS_DIR`` retains its historical meaning: when set it is
+    the cache directory containing ``models--org--repo`` entries directly.
+    """
+    override = env_value(MODELS_DIR_ENV, "PLUTO_MODELS_DIR", default="").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+
+    hub_override = os.environ.get("HF_HUB_CACHE", "").strip()
+    if not hub_override:
+        hub_override = os.environ.get("HUGGINGFACE_HUB_CACHE", "").strip()
+    if hub_override:
+        return Path(hub_override).expanduser().resolve()
+
+    hf_home = os.environ.get("HF_HOME", "").strip()
+    if hf_home:
+        return (Path(hf_home).expanduser() / "hub").resolve()
+
+    xdg_cache = os.environ.get("XDG_CACHE_HOME", "").strip()
+    home = Path(xdg_cache).expanduser() if xdg_cache else Path.home() / ".cache"
+    return (home / "huggingface" / "hub").resolve()
+
+
+def legacy_weights_dir() -> Path:
+    """The pre-resolver cache. Read-only fallback; never the new default."""
+    return (Path.home() / ".spacepilot" / "models").resolve()
+
+
+def weights_read_dirs() -> List[Path]:
+    """Cache roots to inspect, in precedence order, without duplicates."""
+    out: List[Path] = []
+    for candidate in (weights_dir(), legacy_weights_dir()):
+        if candidate not in out:
+            out.append(candidate)
+    return out
+
+
+def revision_from_snapshot(path: Path | str | None) -> str | None:
+    """Extract the commit from ``.../snapshots/<sha>`` without guessing."""
+    if path is None:
+        return None
+    parts = Path(path).parts
+    if "snapshots" not in parts:
+        return None
+    idx = len(parts) - 1 - parts[::-1].index("snapshots")
+    return parts[idx + 1] if idx + 1 < len(parts) else None
+
+
+@dataclass(frozen=True)
+class ResolvedWeights:
+    """Concrete files from one cached repository snapshot."""
+
+    files: tuple[Path, ...]
+    revision: str | None
+    snapshot: Path
+    cache_dir: Path
+
+    def file(self, name: str) -> Path | None:
+        """Find an exact relative path, or an unambiguous basename."""
+        exact = [p for p in self.files if p.relative_to(self.snapshot).as_posix() == name]
+        if len(exact) == 1:
+            return exact[0]
+        by_name = [p for p in self.files if p.name == name]
+        return by_name[0] if len(by_name) == 1 else None
+
+
+def concrete_snapshot_files(
+    snapshot: Path | str,
+    patterns: Sequence[str] | None,
+) -> tuple[Path, ...]:
+    """Narrow one snapshot to real files, requiring every pattern to match.
+
+    The paths returned remain inside the snapshot tree. Hugging Face normally
+    materialises them as symlinks into ``blobs/``; resolving those symlinks
+    would discard the snapshot/revision context needed for provenance.
+    """
+    root = Path(snapshot)
+    if not root.is_dir():
+        return ()
+    candidates = sorted(
+        (p for p in root.rglob("*") if p.is_file()),
+        key=lambda p: p.relative_to(root).as_posix(),
+    )
+    if patterns is None:
+        return tuple(candidates)
+    if not patterns:
+        return ()
+
+    selected: List[Path] = []
+    seen: set[Path] = set()
+    for pattern in patterns:
+        matches = [
+            path for path in candidates
+            if fnmatch(path.relative_to(root).as_posix(), pattern)
+        ]
+        if not matches:
+            return ()
+        for path in matches:
+            if path not in seen:
+                seen.add(path)
+                selected.append(path)
+    return tuple(selected)
+
+
+def resolve(
+    repo: str,
+    revision: str | None,
+    patterns: Sequence[str] | None,
+) -> ResolvedWeights | None:
+    """Resolve cached model files without making a network request.
+
+    A result is atomic: every requested pattern came from the same snapshot
+    and therefore the same resolved revision. Missing or incomplete cache
+    state returns ``None``; it never falls forward to another revision or
+    combines a model from one cache with auxiliary files from another.
+    """
+    if not repo or "/" not in repo:
+        return None
+
+    from huggingface_hub import snapshot_download
+
+    for cache_dir in weights_read_dirs():
+        try:
+            snapshot = Path(snapshot_download(
+                repo_id=repo,
+                revision=revision,
+                cache_dir=str(cache_dir),
+                allow_patterns=list(patterns) if patterns is not None else None,
+                local_files_only=True,
+            ))
+        except Exception:
+            # Cache misses and incomplete snapshots are ordinary availability
+            # states. The resolver is intentionally unable to repair them.
+            continue
+        files = concrete_snapshot_files(snapshot, patterns)
+        if not files:
+            continue
+        return ResolvedWeights(
+            files=files,
+            revision=revision_from_snapshot(snapshot),
+            snapshot=snapshot,
+            cache_dir=cache_dir,
+        )
+    return None

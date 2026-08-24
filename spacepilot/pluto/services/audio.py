@@ -27,18 +27,11 @@ CLOUD_NOT_READY = (
 
 
 def get_kokoro_search_paths() -> list[tuple[Optional[str], Optional[str]]]:
-    settings = get_settings()
-    return [
-        (settings.kokoro_model_path, settings.kokoro_voices_path),
-        (
-            str(settings.root_dir.parent / "sr-lessons" / "tools" / "kokoro" / "kokoro-v1.0.onnx"),
-            str(settings.root_dir.parent / "sr-lessons" / "tools" / "kokoro" / "voices-v1.0.bin"),
-        ),
-        (
-            str(Path.home() / ".cache" / "hyperframes" / "tts" / "models" / "kokoro-v1.0.onnx"),
-            str(Path.home() / ".cache" / "hyperframes" / "tts" / "voices" / "voices-v1.0.bin"),
-        ),
-    ]
+    """The same offline resolution path used by the in-process driver."""
+    from spacepilot.drivers.kokoro_driver import KokoroDriver
+
+    model, voices = KokoroDriver().asset_paths()
+    return [(model, voices)] if model and voices else []
 
 
 def kokoro_assets() -> tuple[Optional[str], Optional[str]]:

@@ -13,8 +13,8 @@ license:
   url: https://www.apache.org/licenses/LICENSE-2.0
 
 variants:
-  - id: kokoro-82m
-    name: Kokoro 82M
+  - id: kokoro-82m-pytorch
+    name: Kokoro 82M PyTorch
     params: 82M
     precision: fp32
     repo: hexgrad/Kokoro-82M
@@ -24,6 +24,23 @@ variants:
       value: 366000000
       source: huggingface-api
       checked: "2026-08-22"
+    working_set:
+      value: 751619276
+      source: estimated
+      note: checkpoint plus roughly one checkpoint-sized runtime and activation margin; this PyTorch path has not been measured here
+
+  - id: kokoro-82m-onnx
+    name: Kokoro 82M ONNX
+    params: 82M
+    precision: fp32
+    repo: fastrtc/kokoro-onnx
+    revision: 8d07950c9b6c87ce6809e9bba7bd494336217c2a
+    files: [kokoro-v1.0.onnx, voices-v1.0.bin]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 353746785
+      source: huggingface-api
+      checked: "2026-08-25"
     working_set:
       value: 751619276
       source: estimated

@@ -89,20 +89,20 @@ def test_models_list_lists_the_registry():
     proc = _cli("models", "list")
     assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
     assert "VERDICT" in proc.stdout
-    assert "kokoro-82m" in proc.stdout
+    assert "kokoro-82m-onnx" in proc.stdout
 
 
 def test_bare_models_lists_the_registry():
     proc = _cli("models")
     assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
     assert "VERDICT" in proc.stdout
-    assert "kokoro-82m" in proc.stdout
+    assert "kokoro-82m-onnx" in proc.stdout
 
 
 def test_models_with_an_id_shows_that_one_model():
-    proc = _cli("models", "kokoro-82m")
+    proc = _cli("models", "kokoro-82m-onnx")
     assert proc.returncode == 0, proc.stdout + proc.stderr[-2000:]
-    assert "[kokoro-82m]" in proc.stdout
+    assert "[kokoro-82m-onnx]" in proc.stdout
     assert "licence" in proc.stdout
     assert "VERDICT" not in proc.stdout
 

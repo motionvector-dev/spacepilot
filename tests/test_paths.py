@@ -59,6 +59,69 @@ def test_the_platform_directory_is_used_when_nothing_is_set(tmp_path, monkeypatc
     assert str(got).endswith(expected)
 
 
+def test_weights_dir_is_the_actual_hub_cache(tmp_path, monkeypatch):
+    monkeypatch.delenv("SPACEPILOT_MODELS_DIR", raising=False)
+    monkeypatch.delenv("PLUTO_MODELS_DIR", raising=False)
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
+    monkeypatch.delenv("HUGGINGFACE_HUB_CACHE", raising=False)
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf-home"))
+    assert paths.weights_dir() == (tmp_path / "hf-home" / "hub").resolve()
+
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path / "exact-hub"))
+    assert paths.weights_dir() == (tmp_path / "exact-hub").resolve()
+
+    monkeypatch.setenv("SPACEPILOT_MODELS_DIR", str(tmp_path / "spacepilot"))
+    assert paths.weights_dir() == (tmp_path / "spacepilot").resolve()
+
+
+def test_resolve_returns_concrete_files_and_actual_snapshot_revision(tmp_path, monkeypatch):
+    import huggingface_hub
+
+    sha = "a" * 40
+    cache = tmp_path / "cache"
+    snapshot = cache / "models--a--b" / "snapshots" / sha
+    snapshot.mkdir(parents=True)
+    (snapshot / "model.onnx").write_bytes(b"model")
+    (snapshot / "voices.bin").write_bytes(b"voices")
+    seen = {}
+
+    def fake_snapshot_download(**kwargs):
+        seen.update(kwargs)
+        return str(snapshot)
+
+    monkeypatch.setenv("SPACEPILOT_MODELS_DIR", str(cache))
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+    got = paths.resolve("a/b", "tag-v1", ["model.onnx", "voices.bin"])
+
+    assert got is not None
+    assert got.revision == sha
+    assert [p.name for p in got.files] == ["model.onnx", "voices.bin"]
+    assert seen["local_files_only"] is True
+    assert seen["revision"] == "tag-v1"
+
+
+def test_resolve_never_combines_an_incomplete_pair_across_caches(tmp_path, monkeypatch):
+    import huggingface_hub
+
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    primary = tmp_path / "primary"
+    monkeypatch.setenv("SPACEPILOT_MODELS_DIR", str(primary))
+    sha = "b" * 40
+    first = primary / "models--a--b" / "snapshots" / sha
+    second_cache = tmp_path / "home" / ".spacepilot" / "models"
+    second = second_cache / "models--a--b" / "snapshots" / sha
+    first.mkdir(parents=True)
+    second.mkdir(parents=True)
+    (first / "model.onnx").write_bytes(b"model")
+    (second / "voices.bin").write_bytes(b"voices")
+
+    def fake_snapshot_download(**kwargs):
+        return str(first if Path(kwargs["cache_dir"]) == primary else second)
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+    assert paths.resolve("a/b", sha, ["model.onnx", "voices.bin"]) is None
+
+
 def test_xdg_data_home_is_honoured_off_macos(tmp_path, monkeypatch):
     if sys.platform == "darwin":
         pytest.skip("XDG is not the macOS convention")
