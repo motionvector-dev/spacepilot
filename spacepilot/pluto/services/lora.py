@@ -64,6 +64,17 @@ class LoRAManager:
         Returns:
             A dictionary containing the job details.
         """
+        # GATED 2026-08-24: _advance_training only SIMULATES training — it ticks
+        # a fake progress bar, invents a loss curve with random noise, and
+        # registers an adapter whose .safetensors is never written. Returning
+        # that as a real job is the same fake-success lie as the gated mocks.
+        # Real LoRA training (an mflux/diffusers run producing a real
+        # checkpoint) is a separate, unbuilt feature. Until it exists this
+        # raises rather than pretend.
+        raise NotImplementedError(
+            "LoRA training is not implemented; the previous job was a "
+            "simulation (fake loss curve, no real checkpoint). Gated 2026-08-24."
+        )
         job_id = f"job-{uuid.uuid4().hex[:8]}"
         self._jobs[job_id] = {
             "job_id": job_id,

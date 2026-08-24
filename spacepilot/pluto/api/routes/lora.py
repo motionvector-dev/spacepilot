@@ -38,17 +38,20 @@ async def list_adapters(base_model: Optional[str] = None, _: None = Depends(requ
 
 @router.post("/train")
 async def train_lora(req: TrainLoRARequest, _: None = Depends(require_token)):
-    return lora_manager.create_training_job(
-        name=req.name,
-        base_model=req.base_model,
-        image_paths=req.image_paths,
-        trigger_word=req.trigger_word,
-        rank=req.rank,
-        alpha=req.alpha,
-        target_modules=req.target_modules,
-        steps=req.steps,
-        lr=req.lr
-    )
+    try:
+        return lora_manager.create_training_job(
+            name=req.name,
+            base_model=req.base_model,
+            image_paths=req.image_paths,
+            trigger_word=req.trigger_word,
+            rank=req.rank,
+            alpha=req.alpha,
+            target_modules=req.target_modules,
+            steps=req.steps,
+            lr=req.lr
+        )
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
 
 @router.get("/train/{job_id}")
 async def get_training_job(job_id: str, _: None = Depends(require_token)):

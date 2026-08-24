@@ -642,11 +642,95 @@ def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
 
 def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    raise NotImplementedError("LoRA CLI coming in a follow-up PR")
+    raise NotImplementedError(
+        "LoRA training is not implemented. The previous service only simulated "
+        "training — a fake loss curve and no real checkpoint — and is now gated. "
+        "Real LoRA training (an mflux/diffusers run producing a real adapter) is "
+        "a separate feature, not yet built.")
 
 
-def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    raise NotImplementedError("Recipes CLI coming in a follow-up PR")
+def _progress_bar(pct: float, width: int = 24) -> str:
+    filled = int(width * max(0.0, min(100.0, pct)) / 100)
+    return "[" + "#" * filled + "-" * (width - filled) + "]"
+
+
+def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """List registry-backed model recipes and download their weights from the Hub.
+
+    A recipe is a view over registry/models/*.yaml; downloading fetches the
+    real weights via huggingface_hub, narrowed by the variant's allow_patterns
+    and pinned to its revision when the registry records one.
+    """
+    from spacepilot.pluto.services.model_catalog import catalog_manager
+
+    action = getattr(args, "recipes_action", None)
+
+    if action == "list":
+        recipes = catalog_manager.get_all_recipes()
+        if not recipes:
+            print("  No recipes in the registry.")
+            return 0
+        print(f"  {'RECIPE':<30} {'SIZE':>9}  {'RUNS HERE':<9} REPO")
+        for r in sorted(recipes, key=lambda x: x.recipe_id):
+            size = f"{r.size_gb:.1f} GB" if r.download_bytes else "—"
+            runs = "yes" if r.is_local_runnable else "no"
+            pin = "" if r.is_pinned else "  (unpinned)"
+            print(f"  {r.recipe_id:<30} {size:>9}  {runs:<9} {r.hf_repo}{pin}")
+        return 0
+
+    if action == "download":
+        rid = args.recipe_name
+        recipe = catalog_manager.get_recipe(rid)
+        if not recipe:
+            print(f"  Recipe not found: {rid}")
+            print("  Run 'spacepilot recipes list' to see what is available.")
+            return 1
+        if not recipe.hf_repo:
+            print(f"  Recipe {rid} has no hf_repo to download from.")
+            return 1
+
+        rev = f" @ {recipe.revision}" if recipe.revision else " (unpinned — resolved SHA reported on completion)"
+        print(f"  Downloading {rid} from {recipe.hf_repo}{rev}")
+
+        import threading
+        import time
+
+        outcome: Dict[str, Any] = {}
+
+        def _run() -> None:
+            try:
+                outcome["job"] = catalog_manager.download_recipe_blocking(rid)
+            except Exception as exc:  # surfaced to the user below
+                outcome["error"] = exc
+
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
+        while thread.is_alive():
+            job = catalog_manager.get_download_progress(rid)
+            if job:
+                sys.stdout.write(
+                    f"\r  {_progress_bar(job.progress_percent)} "
+                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s")
+                sys.stdout.flush()
+            time.sleep(0.5)
+        thread.join()
+        sys.stdout.write("\n")
+
+        if "error" in outcome:
+            print(f"  Download failed: {outcome['error']}")
+            return 1
+        job = outcome.get("job")
+        if not job or job.status != "completed":
+            reason = getattr(job, "error", None) or "unknown"
+            print(f"  Download did not complete: {reason}")
+            return 1
+        print(f"  Done → {job.local_path}")
+        if job.resolved_revision:
+            print(f"  revision: {job.resolved_revision}")
+        return 0
+
+    print("  Usage: spacepilot recipes {list|download <recipe>}")
+    return 2
 
 
 # ─────────────────────────────────────────────────────────────────────────────
