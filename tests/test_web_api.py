@@ -1220,8 +1220,9 @@ def test_sky_status_and_yaml_endpoint():
 
 
 def test_sky_schedule_and_failover_lifecycle():
-    """Verify /api/sky/schedule launches spot cluster and /api/sky/failover triggers recovery."""
-    # 1. Schedule on Lambda Spot
+    """Gated 2026-08-24: /api/sky/schedule and /api/sky/failover fabricated a
+    deployment (mock 198.51.x IPs, invented failover). They must return 501 Not
+    Implemented, not a fake success payload."""
     req = {
         "task_name": "spacepilot-cinematic-prod",
         "provider": "lambda",
@@ -1230,31 +1231,11 @@ def test_sky_schedule_and_failover_lifecycle():
         "auto_failover": True,
     }
     sched_res = client.post("/api/sky/schedule", json=req, headers=AUTH)
-    assert sched_res.status_code == 200
-    sched_data = sched_res.json()
-    assert sched_data["status"] == "scheduled"
-    assert sched_data["provider"] == "lambda"
-    assert "yaml_spec" in sched_data
+    assert sched_res.status_code == 501
 
-    # 2. Check live status
-    status_res = client.get("/api/sky/status")
-    assert status_res.status_code == 200
-    assert status_res.json()["active"] is True
-    assert status_res.json()["provider"] == "lambda"
-
-    # 3. Trigger spot preemption failover
-    failover_res = client.post("/api/sky/failover", json={"reason": "Spot 2-minute preemption signal"}, headers=AUTH)
-    assert failover_res.status_code == 200
-    f_data = failover_res.json()
-    assert f_data["status"] == "recovered"
-    assert f_data["failover"]["source_provider"] == "lambda"
-    assert f_data["failover"]["downtime_seconds"] <= 2.0
-    assert "data_loss" in f_data["failover"]
-
-    # 4. Terminate cluster
-    term_res = client.post("/api/sky/terminate", headers=AUTH)
-    assert term_res.status_code == 200
-    assert term_res.json()["status"] == "terminated"
+    failover_res = client.post(
+        "/api/sky/failover", json={"reason": "Spot 2-minute preemption signal"}, headers=AUTH)
+    assert failover_res.status_code == 501
 
 
 def test_storyboard_decompose_endpoint():

@@ -43,38 +43,12 @@ def test_generate_skypilot_yaml():
 
 
 def test_skypilot_schedule_and_preemption_failover():
+    """Gated 2026-08-24: scheduling and failover fabricated cluster state (mock
+    198.51.x IPs, a fixed 1.4s downtime) with no cloud call. They must raise
+    NotImplementedError now, not return a fake success payload."""
+    import pytest
     orch = SkyPilotOrchestrator()
-    
-    # 1. Schedule a spot cluster
-    res = orch.schedule_spot_task(
-        task_name="spacepilot-cinematic",
-        provider="lambda",
-        accelerator="L40S:1",
-        use_spot=True,
-        auto_failover=True,
-    )
-    assert res["status"] == "scheduled"
-    assert res["provider"] == "lambda"
-    
-    status = orch.get_status()
-    assert status["active"] is True
-    assert status["provider"] == "lambda"
-    assert status["preemption_failover_count"] == 0
-
-    # 2. Trigger preemption failover
-    failover_res = orch.trigger_preemption_failover(reason="AWS spot preemption notice")
-    assert failover_res["status"] == "recovered"
-    assert failover_res["failover"]["source_provider"] == "lambda"
-    assert failover_res["failover"]["target_provider"] != "lambda"
-    assert failover_res["failover"]["downtime_seconds"] <= 2.0
-    assert "r2://" in failover_res["failover"]["checkpoint_restored_from"]
-
-    # 3. Status reflects failover count
-    status_after = orch.get_status()
-    assert status_after["preemption_failover_count"] == 1
-    assert status_after["last_failover"] is not None
-
-    # 4. Terminate
-    term = orch.terminate_cluster()
-    assert term["status"] == "terminated"
-    assert orch.get_status()["active"] is False
+    with pytest.raises(NotImplementedError):
+        orch.schedule_spot_task(task_name="spacepilot-cinematic", provider="lambda")
+    with pytest.raises(NotImplementedError):
+        orch.trigger_preemption_failover(reason="AWS spot preemption notice")

@@ -511,14 +511,17 @@ def get_sky_yaml_api(
 def post_sky_schedule_api(req: SkyScheduleRequest, _: None = Depends(require_token)):
     """Schedule and launch spot task across multi-cloud cluster."""
     update_activity()
-    res = sky_orchestrator.schedule_spot_task(
-        task_name=req.task_name,
-        provider=req.provider,
-        accelerator=req.accelerator,
-        use_spot=req.use_spot,
-        auto_failover=req.auto_failover,
-        checkpoint_sync=req.checkpoint_sync,
-    )
+    try:
+        res = sky_orchestrator.schedule_spot_task(
+            task_name=req.task_name,
+            provider=req.provider,
+            accelerator=req.accelerator,
+            use_spot=req.use_spot,
+            auto_failover=req.auto_failover,
+            checkpoint_sync=req.checkpoint_sync,
+        )
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     return res
 
 
@@ -526,7 +529,10 @@ def post_sky_schedule_api(req: SkyScheduleRequest, _: None = Depends(require_tok
 def post_sky_failover_api(req: SkyFailoverRequest, _: None = Depends(require_token)):
     """Trigger instantaneous preemption failover with zero data loss."""
     update_activity()
-    res = sky_orchestrator.trigger_preemption_failover(reason=req.reason)
+    try:
+        res = sky_orchestrator.trigger_preemption_failover(reason=req.reason)
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     return res
 
 

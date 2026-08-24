@@ -551,7 +551,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     sys.path.insert(0, str(PLUTO_ROOT))
     from spacepilot.device_probe import probe_local_device
     print("┌─────────────────────────────────────────────────────────────────┐")
-    print("│                     PLUTO CLI DOCTOR                            │")
+    print("│                        SPACEPILOT DOCTOR                        │")
     print("└─────────────────────────────────────────────────────────────────┘")
     
     # 1. Device Profile
@@ -980,6 +980,60 @@ def replace_dataclass(instance, **changes):
     return dataclasses.replace(instance, **changes)
 
 
+def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Detect this machine and print its system record.
+
+    `measure` and `sweep` write a system record only as a side effect of a real
+    run. `probe` is the direct way to see what SpacePilot detects, and — with
+    --save — the honest way to add this box to registry/systems/. Read-only by
+    default: it writes nothing unless you ask.
+    """
+    from spacepilot.device_probe import probe_local_device
+    from spacepilot.pluto import measurements as ms
+
+    profile = probe_local_device()
+    system = ms.system_from_profile(profile)
+
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps({"schema": ms.SCHEMA_VERSION, **system.to_dict()}, indent=2))
+    else:
+        gib = lambda b: f"{b / (1024 ** 3):.2f} GiB"
+        print(f"  system id : {system.id}")
+        print(f"  chip      : {system.chip or system.machine_model or 'unknown'}")
+        print(f"  backend   : {(system.backend or 'unknown').upper()}")
+        os_line = f"{system.os_name or '?'} {system.os_version or ''}".rstrip()
+        print(f"  os        : {os_line}")
+        cores = []
+        if system.cpu_cores:
+            cores.append(f"{system.cpu_cores} cpu")
+        if system.gpu_cores:
+            cores.append(f"{system.gpu_cores} gpu")
+        if cores:
+            print(f"  cores     : {', '.join(cores)}")
+        if system.memory_total_bytes:
+            unified = " unified" if system.memory_unified else ""
+            print(f"  memory    : {gib(system.memory_total_bytes)}{unified}")
+        if system.memory_limit_bytes is not None:
+            src = system.memory_limit_source or "unknown"
+            print(f"  usable    : {gib(system.memory_limit_bytes)} (source: {src})")
+        elif profile.accelerator_memory_bytes is None:
+            print("  usable    : unknown — accelerator memory not measured")
+        if system.vram_total_bytes:
+            print(f"  vram      : {gib(system.vram_total_bytes)} present")
+        if system.unknown:
+            print("  not measured:")
+            for key, reason in system.unknown.items():
+                print(f"    {key}: {reason}")
+
+    if getattr(args, "save", False):
+        path = ms.write_system(system)
+        print(f"\n  recorded → {path}")
+    else:
+        print("\n  (not saved; pass --save to write this to registry/systems/)")
+    return 0
+
+
 def main():
     cfg = load_config()
     parser = argparse.ArgumentParser(
@@ -990,6 +1044,14 @@ def main():
 
     # doctor
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
+
+    # probe
+    probe_p = subparsers.add_parser(
+        "probe", help="Detect this machine and print its system record")
+    probe_p.add_argument("--save", action="store_true",
+                         help="Write the record to registry/systems/")
+    probe_p.add_argument("--json", action="store_true",
+                         help="Emit the record as JSON")
 
     # serve
     serve_p = subparsers.add_parser("serve", help="Start FastAPI app")
@@ -1112,6 +1174,7 @@ def main():
 
     dispatch = {
         "doctor": cmd_doctor,
+        "probe": cmd_probe,
         "serve": cmd_serve,
         "lora": cmd_lora,
         "recipes": cmd_recipes,

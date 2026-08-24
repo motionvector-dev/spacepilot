@@ -335,6 +335,14 @@ class SkyPilotOrchestrator:
         checkpoint_sync: bool = True,
     ) -> Dict[str, Any]:
         """Schedule and deploy multi-cloud spot task using declarative SkyPilot routing."""
+        # GATED 2026-08-24: this fabricated a deployment — it minted a fake
+        # public IP (198.51.x) and reported success with zero cloud calls.
+        # Disabled so it can no longer return fake success. Real multi-cloud
+        # scheduling is unbuilt (see docs/THESIS.md). Mock body below is dead.
+        raise NotImplementedError(
+            "SkyPilot spot scheduling is not implemented; this method returned "
+            "fabricated cluster data (mock IP, no network call). Gated 2026-08-24."
+        )
         target_cloud = None
         if provider:
             for c in self.catalog:
@@ -390,6 +398,13 @@ class SkyPilotOrchestrator:
         self, reason: str = "Spot preemption notice received (2-minute warning)"
     ) -> Dict[str, Any]:
         """Execute instantaneous zero-data-loss failover to the next optimal cloud."""
+        # GATED 2026-08-24: fabricated a failover — invented a new public IP and
+        # a fixed "downtime_seconds": 1.4 with no cloud involved. Disabled so it
+        # can no longer return fake success. See docs/THESIS.md. Body below dead.
+        raise NotImplementedError(
+            "SkyPilot preemption failover is not implemented; this method "
+            "returned fabricated failover data. Gated 2026-08-24."
+        )
         if not self._active_cluster:
             # If no active cluster, schedule on cheapest
             return self.schedule_spot_task(task_name="spacepilot-recovered-worker")
