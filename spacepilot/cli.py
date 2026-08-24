@@ -1003,6 +1003,124 @@ def cmd_models(args, cfg=None) -> int:
     return 0
 
 
+def _run_candidate_facts(candidate) -> tuple[str, str, str]:
+    """One source of truth for both live and plain confirmation rows."""
+    from spacepilot.pluto.services.provenance import format_local_speed
+
+    verdict = candidate.verdict
+    fit = f"{verdict.verdict} — {verdict.reason}"
+    if verdict.runnable_now is False:
+        fit += f"; not runnable now, short {_gb(verdict.free_shortfall_bytes)}"
+    if verdict.disk_ok is False:
+        fit += f"; disk short {_gb(verdict.disk_shortfall_bytes)}"
+    provenance = format_local_speed(candidate.speed)
+    if candidate.executable_ready:
+        route = f"ready — {candidate.route.model_alias} via {candidate.executable}"
+    else:
+        route = f"no route — executable missing or not executable: {candidate.executable}"
+    return fit, provenance, route
+
+
+def run_confirmation_lines(plan, output: Path) -> list[str]:
+    """Stable facts shared by both output modes; only their renderer may vary."""
+    lines = [
+        f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE",
+    ]
+    for candidate in plan.candidates:
+        fit, provenance, route = _run_candidate_facts(candidate)
+        lines.append(f"  {candidate.variant.id:27s} {fit} · {provenance} · {route}")
+
+    selected = plan.selected
+    if selected is None:
+        lines.append("\n  No safe local route is available; nothing can execute.")
+    else:
+        lines.extend([
+            f"\n  selected   {selected.variant.id} (exact alias {selected.route.model_alias})",
+            f"  output     {output}",
+            "  weights    mflux owns its cache; the exact loaded revision is unobserved",
+            "  network    disabled for this run; a missing cached weight fails instead of downloading",
+        ])
+
+    unsafe = [
+        (candidate.variant.id, caveat)
+        for candidate in plan.candidates
+        for caveat in candidate.non_safe_caveats
+    ]
+    if unsafe:
+        lines.append("\n  capability caveats")
+        for variant_id, caveat in unsafe:
+            method = _caveat_method(caveat, next(
+                c.variant.precision for c in plan.candidates if c.variant.id == variant_id
+            ))
+            detail = f"{variant_id}: {caveat.capability} — {caveat.status} · {caveat.provenance}"
+            if method:
+                detail += f" · {method}"
+            lines.append(f"    {detail}")
+            lines.append(f"      {caveat.detail}")
+    return lines
+
+
+def cmd_run(args, cfg=None) -> int:
+    """Plan, confirm and execute one real local workload."""
+    from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
+    from spacepilot.pluto.services.execution import (
+        LocalExecutionError, LocalExecutionService, RunRequest, default_image_output,
+    )
+
+    workload = getattr(args, "run_workload", None)
+    service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
+    try:
+        plan = service.plan(workload)
+    except (ValueError, LocalExecutionError) as exc:
+        print(f"  Cannot plan run: {exc}")
+        return 1
+
+    output_arg = getattr(args, "output", None)
+    output = Path(output_arg).expanduser().resolve() if output_arg else default_image_output()
+    # Deliberately identical fact strings in live and plain modes. This is a
+    # confirmation snapshot, not progress animation; terminal mode cannot
+    # make a refusal, caveat or provenance mark disappear.
+    print("\n".join(run_confirmation_lines(plan, output)))
+    if plan.selected is None:
+        return 1
+
+    if not getattr(args, "yes", False):
+        if not sys.stdin.isatty():
+            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+            return 1
+        try:
+            answer = input("\n  Run? [Y/n] ").strip().lower()
+        except EOFError:
+            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+            return 1
+        if answer not in ("", "y", "yes"):
+            print("  Nothing ran.")
+            return 1
+
+    try:
+        result = service.execute(plan, RunRequest(
+            workload=workload,
+            prompt=args.prompt,
+            output=output,
+        ))
+    except Exception as exc:
+        # Driver failures are user-facing route failures, not tracebacks or
+        # synthetic artifacts. The service writes no speed record for them.
+        print(f"\n  Run failed: {exc}")
+        return 1
+
+    print(f"\n  completed   {result.variant_id}")
+    print(f"  artifact    {result.output}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    if result.seconds_per_image is None:
+        print("  speed       unrecorded — mflux exposed no generation boundary")
+    else:
+        print(f"  speed       {result.seconds_per_image:.3f} s/image")
+        print(f"  measured    {result.measurement_path}")
+    print(f"  revision    {result.resolved_revision or 'unknown (mflux did not expose it)'}")
+    return 0
+
+
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
@@ -1385,6 +1503,13 @@ def main(argv: list[str] | None = None):
     models_p.add_argument("model_id", nargs="?",
                           help="`list` for the table (the default), or a variant id for detail")
 
+    run_p = subparsers.add_parser("run", help="Run a real workload on this machine")
+    run_sub = run_p.add_subparsers(dest="run_workload", required=True)
+    run_image = run_sub.add_parser("image", help="Generate one image through an exact local route")
+    run_image.add_argument("--prompt", required=True, help="Text prompt for the image")
+    run_image.add_argument("--output", "-o", default=None, help="Output image path")
+    run_image.add_argument("--yes", action="store_true", help="Execute after printing the plan")
+
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
     meas_p.add_argument("--metric", required=True,
@@ -1479,6 +1604,7 @@ def main(argv: list[str] | None = None):
         "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
+        "run": cmd_run,
         "runtimes": cmd_runtimes,
         "measure": cmd_measure,
         "sweep": cmd_sweep,

@@ -119,6 +119,17 @@ def writable_dir(name: str) -> Path:
     return writable_registry_root() / name
 
 
+def outputs_dir() -> Path:
+    """Where generated artifacts go for CLI and transport-neutral services."""
+    override = env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default="").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    root = checkout_root()
+    if root is not None:
+        return (root / "outputs").resolve()
+    return (user_data_dir() / "outputs").resolve()
+
+
 def read_roots(name: str) -> List[Path]:
     """Every directory a reader should merge, shipped first, user last.
 
