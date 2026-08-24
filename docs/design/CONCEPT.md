@@ -1,351 +1,333 @@
 # Concept — SpacePilot
 
-**Revision 3 · 2026-08-24 · supersedes revision 2 (2026-08-24, commit `313a21f`)**
+**2026-08-24**
 
-Revision 1 optimized for internal coherence. Revision 2 cut the vocabulary to
-five words but still told the story in the past tense — freight, harbors,
-grids. Revision 3 was born in a divergence session (ten frames, a kill round)
-and stands on what survived: three frames, several verified facts, and a name
-that turned out to be more literal than we were treating it. What died is in
-§13.
+What SpacePilot is, the words it uses, and the rules every surface follows.
+Written to stand alone: a new reader should need nothing else to understand
+what we are building and why it looks the way it does.
 
 ---
 
 ## 1. The name is the thesis
 
-**There has never been a space pilot.** Not one. Astronauts do not pilot in
-any meaningful sense — Buran landed unmanned in 1988, Dragon docks itself,
-every burn is computed into a window. Orbital mechanics are the canonical
-space human intuition cannot fly: speed up to fall behind, burn backwards to
-catch up. When the profession finally exists, it will be a human supervising
-trajectories no hand could fly.
+**There has never been a space pilot.** Not one, ever. Astronauts do not
+really pilot — spacecraft dock themselves, every engine burn is computed into
+a precise window, and orbital mechanics famously defeat human intuition: you
+speed up to fall behind, you burn backwards to catch up. When the profession
+of space pilot finally exists, it will be a human supervising a machine that
+does the flying, because the flying is beyond hands.
 
 **The first space pilots will be software.** That is not a metaphor for this
-product; it is a description of it. The compute universe — prices moving in
-two lanes, spot boxes evaporating, warm states shifting across a fleet,
-quotas and export borders redrawn by the quarter — is a high-dimensional
-space with dynamics as counterintuitive as orbital mechanics. You do not
-hand-fly a transfer window. You will not hand-schedule a fleet.
+product; it is a plain description of it. The world of compute — prices
+moving daily, rented machines vanishing mid-job, models loaded here but not
+there, rules and limits shifting under you — is exactly the kind of space
+people cannot fly by feel. You do not hand-calculate an orbit. You should not
+hand-decide, fifty times a day, which machine should run which model.
 
-And "space" carries its second reading for free: to anyone who has touched
-ML, a *space* is a state space, a latent space — territory you navigate with
-math because intuition fails there. SpacePilot is the pilot of a space. Both
-readings are true. Neither needs explaining to the audience that installs
-Python packages.
+The word "space" also carries a second meaning for free: in machine learning,
+a *space* is a mathematical territory — a search space, a latent space — that
+you navigate with math because intuition fails there. SpacePilot is the pilot
+of a space. Both readings are true, and neither needs explaining to our
+audience.
 
-This is the brand's tense: **future, claimed early.** The name is a job
-title from a profession that does not exist yet. Historical frames — freight,
-pilotage, merit-order — are ballast for credibility, used sparingly in docs.
-The masthead makes the bet.
+So the brand looks forward, not back. The name is a job title from a
+profession that does not exist yet, claimed early. We are betting the job is
+about to exist, and that we are it.
 
 ---
 
-## 2. Three frames
+## 2. What SpacePilot does, in one sentence
 
-Everything on every surface traces back to one of these.
+> **SpacePilot sends every job to whichever of your machines can answer it
+> best right now — and spends money only when you would want it to.**
 
-### 2a. Already aboard — what the pilot is
+"Best right now" usually means: the machine that already has the model loaded
+in memory, because that one answers instantly and costs nothing extra. When
+nothing you own can do the job, SpacePilot can rent a machine — openly, with
+the meter in plain view.
 
-The pilot installs on every machine and runs headlessly everywhere at once.
-Cargo sits in one place. A ship is one place. The human is in one place.
-**The pilot is the only entity in the universe that is in more than one place
-at once** — and a pilot that had to be somewhere would just be another
-program.
+Every surface — the website, the app, the command line — must be able to say
+this sentence in ten seconds. Everything else in this document exists to
+serve it.
 
-Consequences:
+---
 
-- **You don't open SpacePilot. It's already aboard.** Installing it on a new
-  machine is the pilot boarding that ship — a better arrival moment than any
-  download.
-- **Three doors, one pilot.** Human → Cockpit. Agent → MCP. Nobody →
-  autopilot, still flying. Same pilot, same facts. This is the architectural
-  version of "personas are views": the doors differ, the pilot cannot.
-- **One ceremony: granting the conn.** Copilot → autopilot is a human handing
-  over control of things that bill money. It is the single place ritual is
-  honest, and it gets the craft we once wasted on downloads.
-- **Asleep, not lost.** Verified against both hemispheres' tooling: no
-  scheduler — not exo, not Petals, not BOINC's descendants, nothing Chinese
-  or American — treats a sleeping laptop as a distinguished state. exo stalls
-  the whole ring and tells users to run `caffeinate`. Everyone else treats
-  sleep as death. The pilot stays aboard a sleeping ship: queue the cargo,
-  wake the ship, resume. This is provenance-grade honesty applied to
-  liveness, it is an empty niche, and it is ours to name.
+## 3. Three ideas everything hangs on
 
-### 2b. The picture — what the pilot holds
+### 3a. Already aboard
 
-One state. Every terminal — the laptop, a web shell into a droplet, a RunPod
-pod, the Cockpit in a browser — is a **window onto the picture, never the
-picture itself**. It does not matter which console you sit at; the picture is
+SpacePilot installs on every machine you use and runs quietly on all of them
+at the same time. A model lives in one place. A machine is one place. You are
+in one place. **SpacePilot is the only thing in the system that is
+everywhere at once** — that is what makes it the pilot rather than another
+app.
+
+What follows from this:
+
+- **You don't open SpacePilot; it's already there.** Installing it on a new
+  machine is the pilot coming aboard that machine. That moment — not a
+  download finishing — is the real beginning.
+- **Three doors, one pilot.** A person uses the visual app. An AI agent uses
+  the programmatic interface. And with your permission, SpacePilot acts on
+  its own. All three are doors into the same pilot, seeing the same facts.
+  No door gets a prettier version of the truth.
+- **One ceremony.** Letting SpacePilot act on its own — including spending
+  money — is the single moment in the product that deserves ritual weight.
+  It is designed like signing something, because it is.
+- **Asleep is not gone.** No tool in this category, anywhere, treats a
+  sleeping laptop differently from a dead one — they all fail the job or
+  route around it, and some literally tell users to disable sleep. SpacePilot
+  knows the difference: a sleeping machine is still yours, still holds its
+  models, and can be woken. Work waits for it honestly. This small mercy is,
+  as far as verified research can tell, ours alone.
+
+### 3b. The picture
+
+There is exactly **one shared picture** of everything: which machines exist,
+what each carries, what is loaded and ready, what is asleep, what the rented
+machine is costing this minute. Every screen — on any machine, in any browser,
+from any terminal — is a *window onto that one picture*, never a separate
+copy of it. It does not matter which window you look through; the picture is
 the picture.
 
-Consequences:
+What follows from this:
 
-- **Design the scope, not the dashboard.** A dashboard is a room of gauges
-  about one machine. The scope is one state-dense, glanceable rendering of
-  the whole fleet, identical wherever it appears. This is the standing answer
-  to "why has the UI gotten complicated": we were building headquarters when
-  the product is a window.
-- **Git, not Docker.** Docker manages state per-daemon; `docker context`
-  points at one remote at a time; there is no merged truth. Git has merged
-  truth — one repository, every checkout a view. That is the lineage.
-- **Three kinds of state, three mechanisms** (verified shape, SkyPilot-grade
-  precedent): the **logbook merges** (append-only facts — measurements,
-  manifests — union is truth), the **orders have one author** (desired
-  config, single-writer), the **picture is observed** (warm state and
-  liveness are perishable — never stored, always fresh, always timestamped).
-  Forcing all three through one mechanism is where distributed systems go to
-  die; our shape — one owner, small fleet, already on a tailnet — is the easy
-  case if we respect the split.
-- **The moat is the picture, not the manifest.** Anyone can reproduce a
-  measurement by running the model once. Nobody else can hold the live
-  picture of *your* fleet — which ship is warm, which is asleep, what the
-  next job should do about it. Situational awareness is the asset; the
-  logbook is its memory.
+- **Design one glanceable view, not a cockpit full of gauges.** The job of
+  the interface is to show the whole picture at a glance and take orders —
+  not to be headquarters. When an interface here grows complicated, it is
+  almost always because it forgot it is a window.
+- **The right analogy is git, not Docker.** Docker manages each machine
+  separately; there is no merged truth. Git has one repository of truth and
+  every checkout is a view of it. That is our lineage.
+- **Three kinds of state, kept separate.** Facts that only ever accumulate
+  (measurements, what happened when) are merged freely — everyone's log,
+  combined, is the truth. Settings and intentions have one author — you.
+  And "what is happening right now" is never stored at all — it is observed
+  fresh, and always carries its age, because a stale "ready" is worse than an
+  honest "unknown".
+- **The picture is the moat.** Anyone can download the same models. Nobody
+  else holds the live picture of *your* machines — what is warm, what is
+  asleep, what the next job should do about it.
 
-### 2c. The bet — where this is going
+### 3c. The bet
 
-The RSI-era inversion: intelligence becomes abundant; the scarce, contested
-thing is where it runs and what the run costs. Weights are already freight.
-The verified 2026 universe, in four words: **free cargo, bordered territory.**
-Qwen and DeepSeek weights fly on Mac Minis in both hemispheres while H100s
-cross borders in suitcases and export rules flip by the quarter.
+If AI keeps accelerating, intelligence itself becomes abundant — models are
+already just large files anyone can download. The scarce thing, the thing
+worth fighting over, becomes **where they run and what the run costs**. The
+evidence is already visible: model weights cross every border freely while
+the chips that run them are rationed, priced in two diverging lanes, and
+carried through customs in suitcases. Free cargo, bordered territory.
 
-The inversion is the *second* beat on every surface, never the first. Lead
-with what the pilot does; let the worldview land underneath it. (Revision 2
-led with the worldview and read like a compute exchange. §13.)
+This worldview is load-bearing, but it is always the *second* thing we say,
+never the first. Lead with what the product does; let the worldview arrive
+underneath as depth. A homepage that leads with a philosophy of compute reads
+like an exchange, not a tool.
 
 ---
 
-## 3. The goal
+## 4. The words, in plain language
 
-A stranger lands on spacepilot.dev, learns two things in ten seconds — what
-the tool does, and that the name is a bet — and runs the install command.
-
-The plain sentence, which every surface must be able to say and revision 2
-forgot to write down: **SpacePilot sends every job to whichever of your
-machines is already holding the model warm — and rents only when you'd want
-it to.**
-
----
-
-## 4. Four words, one reserved
-
-The metaphor budget. Everything else, on every surface, is plain measured
+Four special words. Everything else on every surface is ordinary, precise
 English.
 
-| word | means |
+| word | plain meaning |
 | --- | --- |
-| **ship** | a machine you own. The laptop, the 5090 box, the Air. |
-| **dock** | compute you rent. A spot instance. The meter runs. |
-| **cargo** | models. Weights are freight; you carry what fits. |
-| **flown** | measured. We ran it on this ship and logged the number. |
-| *fuel* | **reserved.** What a run costs. Enters the lexicon the day a scheduler surface exists to say it, and not before. A word no surface uses is a lie about the product. |
+| **ship** | a machine you own. Your laptop, a GPU box, a spare Mac in a drawer. Called a ship because the pilot is aboard it. |
+| **dock** | a machine you rent by the hour. A cloud instance, a GPU pod. Called a dock because you pull in, pay, and leave — the meter always visible. |
+| **cargo** | a model. Models are freight: big files you download, store, and carry on the machines that can lift them. |
+| **flown** | measured for real. "Flown" means *we actually ran this model on this machine and wrote down the number* — as opposed to quoting someone else's benchmark. |
 
-Derived forms are free: **unflown**, **flight check**, **pilot / autopilot**,
-**aboard** (only of the pilot: *the pilot is aboard* — never of models),
-**stowed** (cargo arrival). "On paper" is plain English: someone else's
-published number, cited and dated.
+Words derived from these are free: **unflown** (never yet run on this
+machine), **flight check** (the readiness report), **pilot / autopilot**
+(SpacePilot itself; autopilot means it acts alone, with your permission),
+**stowed** (a model finished downloading and is safely on disk). "On paper"
+is not jargon at all — it means someone else's published number, quoted with
+its source and date.
 
-Everything else stays literal. Disk is disk, downloading is downloading,
-loading is loading. The moment a screen needs a legend, the screen has
-failed.
+One word is **held in reserve**: *fuel* (what a run costs). It enters the
+vocabulary the day there is a screen that shows costs being weighed, and not
+before. A special word no screen uses is a lie about the product.
 
-**Open flaw, carried honestly:** `dock` does double duty. A spot instance you
-stock with cargo and a provider API that comes pre-stocked behave nothing
-alike — the second has no fits/unflown axis at all. Rule until resolved:
-*docks you stock* are docks; provider endpoints are named plainly
-("providers") until a better word earns its place. Do not force it.
+Two rules keep the vocabulary honest:
 
----
+1. Everything else stays literal. Disk space is disk space, downloading is
+   downloading, loading is loading. The metaphor is a voice, not a costume.
+2. If a screen ever needs a glossary, the screen has failed.
 
-## 5. One register
-
-Working space, not exploration — owner-operators, manifests, meters, blue-
-collar space, never federation grandeur. One register everywhere: landing and
-Cockpit differ in motion frequency and density, never in vocabulary.
-
-The cast is three: **you** (captain, owner-operator — you own the ships, you
-authorize the spend), **the pilot** (everywhere at once; copilot by default,
-autopilot by granted conn), **cargo** (not characters, not collected;
-carried). Galaxies, planets, stars: scenery — story-layer art and prose only,
-never a noun in the UI.
+One known rough edge, carried openly: a rented machine you set up yourself
+and a commercial API that serves models ready-made are both "not yours", but
+they behave very differently. For now, only the first is a *dock*; API
+services are just called providers. We would rather have a small hole in the
+metaphor than force it.
 
 ---
 
-## 6. Provenance is the design language
+## 5. One voice
 
-Unchanged in substance from revision 2; the pilotage principle now names its
-foundation: **local knowledge is a different kind of knowledge, and it cannot
-be shipped in from outside.** Every serious harbor on earth makes pilotage
-mandatory because knowing *these waters* beats general seamanship. An H100
-benchmark is general seamanship. `4.6× realtime on this M1 Max, measured
-Tuesday` is knowing where the sandbar is. Harbors do not accept résumés.
+The register is working space, not Star Trek: owner-operators, freight
+manifests, meters running, margins watched. Blue-collar space. No federation
+grandeur, no cosmic wallpaper in the interface — galaxies and stars may
+appear in storytelling and artwork, never as the name of a button or screen.
 
-The mechanics stand:
+The cast is three:
 
-```
-                  measured HERE       measured ELSEWHERE
-  we ran it     │  flown           │   —
-  they claim it │  —               │   on paper
-  nobody ran it │  unflown         │   unflown
-```
+- **You** — the captain. You own the ships; you authorize the spending.
+- **The pilot** — SpacePilot, everywhere at once. Copilot by default,
+  autopilot only when you grant it.
+- **Cargo** — the models. Not characters, not a collection. Carried, because
+  they are useful and they fit.
 
-- `on paper` and `unflown` stack rather than compete.
-- `unflown` is a state of the airframe, not a judgement of the data.
-- Per-ship, one-way door: `unflown ──first run──▸ flown · 4.6× · date`.
-  Once, per model, per ship, irreversible. `CARGO 1 flown · 7 unflown` is the
-  only progress meter the product needs, always computed, never written in.
-- Two streams, never merged: `solo` and `loaded` differ by ~40%; the stream
-  name rides on the number.
-- A `flown` number survives a ship change but names its hardware fingerprint;
-  it never silently demotes to `on paper`.
-- Cargo that cannot fly stays a wall, not an invitation: an em dash, not a
-  state.
-
-Verdicts remain a separate axis (`fits` plain · `fits, tight` platinum ·
-`won't fit` rose · `not supported` faintest), stacking with provenance, never
-merging. Platinum is a metal, not a hue.
+Every kind of user gets this same voice and these same facts. Different
+audiences may see *fewer* facts — never softer ones. A casual user and an
+engineer both see the real measured number; the casual user just sees fewer
+rows around it. Which door you entered through (app, terminal, agent
+interface) decides the density; nothing ever asks you to pick a persona.
 
 ---
 
-## 7. Liveness is provenance's twin
+## 6. Honesty about numbers
 
-Revision 3's structural addition. The same honesty that governs numbers
-governs presence:
+Most performance numbers in any tool like this were not measured on your
+machine. Most tools hide that. Here it is the spine of the design.
 
-| state | means | treatment |
+Every number answers two questions: *did anyone actually run this?* and *was
+it on this machine?*
+
+- **flown** — we ran it, on this machine, on a date you can read. The gold
+  standard.
+- **on paper** — someone else's number, quoted with source and date. A true
+  number about somebody else's hardware.
+- **unflown** — nobody has run it here yet. Not a failure; just not yet.
+
+The words matter. We do not say "estimated" (sounds like hedging), or
+"unverified" (sounds like an accusation), or "unknown" (false — we know the
+claim). *Unflown* is the honest state: finished, sitting on the runway,
+never yet taken up from this particular field.
+
+Rules that keep it honest:
+
+- A claimed number and the "unflown here" status stack — both are shown,
+  because both are true.
+- The first real run flips *unflown* to *flown* forever, one way, per model,
+  per machine. The running count (`3 flown · 9 unflown`) is the only
+  progress bar the product needs, and it is always computed, never typed in.
+- Measurements taken on an idle machine and measurements taken under real
+  load are different numbers (often ~40% apart). Both are kept, labeled,
+  and never averaged. An average of the two describes a machine nobody has.
+- A model that cannot run on a given machine is a wall, not a to-do. It gets
+  a plain dash, never an invitation.
+- Whether a model *fits* on a machine is a separate question from how it
+  performs, shown separately, never blended.
+
+The deep reason this matters is old: harbors force incoming ships to take a
+local pilot because knowing *these waters* beats general skill. A benchmark
+from someone else's datacenter is general skill. A measurement from your own
+machine is local knowledge — and local knowledge cannot be shipped in.
+
+---
+
+## 7. Honesty about presence
+
+The same honesty applies to whether machines are ready:
+
+| state | plain meaning | how it is treated |
 | --- | --- | --- |
-| `warm` | model in memory, answers now | the prize. Plain ink, stated with its ship |
-| `cold` | on disk, loads on demand | plain, with the measured load time when flown |
-| `asleep` | ship is sleeping. **Not lost.** | its own state, never rendered like failure |
-| `gone` | spot reclaimed, node vanished | said plainly, with the timestamp |
+| **warm** | model already loaded in memory; answers now | the prize — this is what the pilot hunts for |
+| **cold** | on disk; must load first, which takes real time | fine, with the load time stated |
+| **asleep** | the machine is sleeping. Not gone. | its own state, never drawn like an error |
+| **gone** | a rented machine was reclaimed, or a machine vanished | said plainly, with when |
 
-`asleep` is the differentiator: queue the cargo, wake the ship, resume — and
-say so. Every peer tool renders a sleeping MacBook the way it renders a dead
-one. The pilot knows the difference because the pilot is still aboard.
+"Asleep" is the one competitors do not have. Work queues for a sleeping
+machine, wakes it if it can be woken, and says what it is waiting for.
 
-The picture's staleness is itself data: every liveness fact carries its age.
-A fresh "asleep" is honest; a stale "warm" is a lie wearing green.
-
----
-
-## 8. Ships and docks
-
-Unchanged from revision 2. Ships keep the OS name (`Saurabh's MacBook Pro`),
-never invite naming; beneath sits the hardware fingerprint that keys every
-measurement. Docks never get a friendly name — instance ID, region, rate,
-running clock (`g6e.2xlarge · us-east-1 · i-0a3f7c21 · $0.75/hr · 00:41:12`).
-The asymmetry is the honest signal. Every list is plural and keyed by ship
-even at n=1; design the list that happens to have one row.
+And every "right now" fact shows its age. A ten-second-old "warm" is
+information; a ten-minute-old "warm" shown as fresh is a lie wearing green.
 
 ---
 
-## 9. Three thresholds, one ceremony
+## 8. Machines are named honestly
 
-Motion is rationed by frequency. Three thresholds earn craft, each crossed
-once: **first boarding** (the probe — the ship reads itself, fields it could
-not read included), **cargo arrival** (`kokoro-82m is stowed.`), **first
-flight** (`unflown` flips to a measured number with the ship's name on it).
+**Your machines keep the names they already have.** The OS already calls it
+something ("Maya's MacBook Pro"); we use that. We never ask you to name a
+machine — invented names are a toy tax, and the cute name will haunt every
+screenshot. Under the display name sits a hardware fingerprint (chip, cores,
+memory ceiling, OS build) that ties every measurement to the exact machine
+that produced it.
 
-Above them sits the one ceremony: **granting the conn.** Autopilot touches
-money; the moment of authorization is designed like the signing of something,
-because it is. Everything daily gets nothing; numbers never tick.
+**Rented machines never get friendly names.** They are shown as what they
+are: instance type, region, ID, hourly price, and a running clock. Friendly
+names on metered things are how people forget the meter. The contrast — warm
+names for what you own, cold IDs for what bills you — is itself part of the
+honesty.
 
----
-
-## 10. The economics, verified
-
-Facts the design leans on, checked live 2026-08:
-
-- **The price lanes split.** Committed compute rose hard through 2026
-  (1-yr H100 contracts $1.70 → $2.35/hr Oct–Mar, SemiAnalysis; AWS Capacity
-  Blocks +38% in six months). Opportunistic compute stayed flat
-  ($2.79–2.83/hr composite since Jul 2025). **Commitment is getting
-  expensive; opportunism stays cheap. A scheduler is an opportunism
-  machine.** The spread between lanes — and between your $0 warm ship and
-  any lane at all — is what the pilot eats. Abundance does not close it.
-- **The niche is empty in both hemispheres.** Borg, MAST, Singularity,
-  SkyPilot, Dynamo, llm-d, Gödel, AIBrix, Volcano — every scheduler surveyed
-  assumes nodes reliably present. None treats a closed lid as scheduling
-  state. Small market is the stated reason, not prior solution.
-- **The pilot layer trends open on both sides of the Pacific** — NVIDIA
-  open-sources schedulers to sell silicon; China opens infra (DeepSeek's
-  filesystem week, Huawei's CANN) to catch up on CUDA. Different motives,
-  same direction. The proprietary layer is always the *fleet*, never the
-  pilot. An open SpacePilot runs with the grain of the industry.
-- **The quota stays loud.** Ceiling rendered from the quota, never
-  hard-coded: `Ceiling is 1 dock, by quota.` Renting is a decision, not a
-  default.
+Every list of machines is built to hold many, even when it holds one. A
+design that assumes one machine lies to the future; a design that fakes a
+fleet lies today. Show the real list, however short.
 
 ---
 
-## 11. The wedge, and the doors
+## 9. Money is loud
 
-Unchanged in substance: `pip install spacepilot`, no account, no API key, no
-config; `spacepilot check` is the first screen and teaches the four words in
-one pass; `doctor` aliases it. Personas change how many facts you see, never
-which facts are true; persona is inferred from the door, never asked;
-surfaces are named by function. The agent surface is the schema; humans are
-views over it.
+Renting compute is a decision, never a default. Prices, limits, and quotas
+are said out loud, in numbers, computed from reality — never hard-coded, so
+when a limit changes the sentence survives. The meter on anything rented is
+always visible, always running, always current.
 
----
-
-## 12. The ten-second sequence
-
-The landing page's order of operations, fixed:
-
-1. **The plain sentence** (§3) — what it does, in measured English.
-2. **The picture** — the live proof: the fleet, the warm ship chosen, the
-   sleeping ship honest, the meter at $0.00.
-3. **The bet** — the name explained in two lines: *There has never been a
-   space pilot. The first one is software.*
-4. The install pill.
-
-Worldview never leads. Revision 2's hero led with "Intelligence is cargo.
-Compute is territory" and read like a compute exchange; the inversion now
-arrives third, where it lands as depth instead of confusion.
+The reason this is a feature and not an apology: everyone has been burned by
+a tool that quietly scaled up and billed them. A tool that says "this will
+cost about this much, per hour, until you stop it" is a tool that respects
+its owner. An instrument that does not flatter you does not flatter itself
+either.
 
 ---
 
-## 13. What died, and when
+## 10. First contact
 
-**Rev 1 (2026-08-23):** models as planets, capture, galaxy-as-collection,
-persona modes, machine naming, animated counters. Still dead.
+Install with one command. No account, no API key, no configuration file. The
+first thing a new user ever sees is the readiness report: the pilot reads the
+machine and reports what it found — including what it could *not* read, and
+why. A tool that opens by telling you the truth about your own hardware,
+including its own blind spots, has proven its character before asking for
+anything.
 
-**Rev 2 (2026-08-24, morning):** crew/berth/aboard-for-models/off-ship, the
-two-register split, "flown here". Still dead.
+That first report also quietly teaches all four special words in one pass,
+which is why no screen ever needs a glossary.
 
-**Rev 3 (2026-08-24, the kill round):**
-
-- **The worldview headline.** "Intelligence is cargo. Compute is territory"
-  demoted from first beat to third. It claimed a war the product doesn't
-  fight and failed the ten-second test in the direction of grandeur.
-- **The container/intermodal frame** — borrowed glory; we adapt to formats,
-  we don't set them. One line survives in escrow for the day conversion
-  ships: "any cargo, any ship, untouched by hand."
-- **The home-grid frame as identity** — electrons are fungible, inference
-  isn't; it hid the compatibility half of the product. Survives only as a
-  teaching device for the score function.
-- **Proprioception as a frame** — nobody installs a nervous system. Its
-  jewel survives at the center of §7: *asleep, not lost.*
-- **`fuel` as an active word** — demoted to reserved (§4). Vocabulary must
-  trail the product, never lead it.
-- **The manifest-as-moat claim** — the moat is the live picture; the
-  manifest is its memory.
-- **Past-tense ballast as spine** — Nostromo, McLean, merit order move from
-  masthead to footnotes. The name faces forward; the doc now does too.
+Three moments in the whole product earn visual craft, each crossed once: the
+first reading of a machine, a model arriving safely, and a model's first real
+run flipping *unflown* to *flown*. Plus the one ceremony: granting autopilot.
+Everything routine stays severe — numbers never animate, nothing celebrates
+twice.
 
 ---
 
-## 14. Still open
+## 11. What we deliberately do not do
 
-- **The dock/provider split** (§4). Carried as a named flaw; resolve when the
-  provider surface is designed, not before.
-- **The freight-chart hero** predates the kill round — it leads with the
-  worldview and shows no sleeping ship. Rebuild against §12's sequence when
-  UI work resumes.
-- **Wake mechanics.** "Queue and wake" needs a technical answer per ship
-  class (wake-on-LAN for the Lenovo, launch-on-demand for docks, waiting
-  honestly for a lid). The concept commits to the honesty, not to magic.
-- **Sparse density; fleet UI at n>1 in daily use.** Unchanged.
-- **The story-layer scenery budget.** Unchanged; resolve by building.
+- No collection mechanics. Models are not creatures to catch; most will not
+  fit most machines, and a design that promises abundance delivers
+  disappointment. Carrying four that fit beats displaying four hundred that
+  do not.
+- No persona modes. Views differ in density, never in truth.
+- No naming your machine, no friendly names for rented ones.
+- No cosmic decoration in the interface. Scenery lives in storytelling only.
+- No leading with worldview. The product speaks first; the bet speaks second.
+- No special vocabulary ahead of the product. Words earn their place by
+  having a screen to live on.
+- No blank cells where an honesty mark belongs, no averaged measurements, no
+  hidden meters, no fallback that looks like success.
+
+---
+
+## 12. Open questions
+
+- **Providers.** The right word and surface for ready-made API services,
+  versus machines you control. Deliberately unresolved until that surface is
+  designed.
+- **Waking.** "Queue and wake" needs a real mechanism per machine type —
+  wake-on-LAN, cloud start, or honestly waiting for a lid to open. The
+  concept commits to the honesty, not to magic.
+- **The sparse view.** The dense, engineer-grade rendering is specified; the
+  calm few-facts rendering is not yet.
+- **Scenery budget.** How much story-layer atmosphere the website can carry
+  before it fights the ten-second job. To be resolved by building, not
+  debating.
