@@ -84,6 +84,29 @@ CAVEAT_STATUSES = {
     "absent",      # not implemented at all on this path
 }
 
+# A caveat is qualitative evidence, not a performance measurement.  Its
+# provenance makes clear whether the statement came from a run here, a
+# reproducible inference, or the publisher; a sourced sentence is still
+# required in `detail` either way.
+CAVEAT_PROVENANCES = {"measured", "inferred", "declared"}
+
+# Capability names are a small, shared taxonomy rather than prose.  The
+# aliases below are deliberately exact: accepting arbitrary punctuation or
+# case changes would turn a typo into a different fact silently.
+CAVEAT_CAPABILITIES = {
+    "audio.transcription",
+    "audio.transcription-accuracy",
+    "audio.word-timestamps",
+    "image.text-rendering",
+    "video.temporal-consistency",
+    "video.motion-amount",
+}
+CAVEAT_CAPABILITY_ALIASES = {
+    "transcription": "audio.transcription",
+    "transcription_accuracy": "audio.transcription-accuracy",
+    "word_timestamps": "audio.word-timestamps",
+}
+
 SPEED_METRICS = {
     "tokens_per_second",
     "seconds_per_image",
@@ -141,6 +164,9 @@ class Caveat:
     capability: str
     status: str
     detail: str
+    provenance: str
+    metric: Optional[str] = None
+    method: Optional[str] = None
 
     @property
     def is_safe(self) -> bool:
@@ -332,16 +358,35 @@ def _caveat(raw: Dict[str, Any], where: str) -> Caveat:
     of the field, so it is required rather than encouraged.
     """
     if not isinstance(raw, dict):
-        raise RegistryError(f"{where}: must be a mapping with 'capability', 'status' and 'detail'")
+        raise RegistryError(
+            f"{where}: must be a mapping with 'capability', 'status', 'detail' and 'provenance'")
+    capability = str(_require(raw, "capability", where)).strip()
+    capability = CAVEAT_CAPABILITY_ALIASES.get(capability, capability)
+    if capability not in CAVEAT_CAPABILITIES:
+        raise RegistryError(
+            f"{where}: capability '{raw['capability']}' is not one of "
+            f"{sorted(CAVEAT_CAPABILITIES)}")
     status = str(_require(raw, "status", where))
     if status not in CAVEAT_STATUSES:
         raise RegistryError(f"{where}: status '{status}' not one of {sorted(CAVEAT_STATUSES)}")
+    provenance = str(_require(raw, "provenance", where))
+    if provenance not in CAVEAT_PROVENANCES:
+        raise RegistryError(
+            f"{where}: provenance '{provenance}' not one of {sorted(CAVEAT_PROVENANCES)}")
     detail = str(raw.get("detail") or "").strip()
     if not detail:
         raise RegistryError(
             f"{where}: a caveat must say what the effect is — a bare status "
             f"tells a reader something changed and nothing about whether it matters")
-    return Caveat(str(_require(raw, "capability", where)), status, detail)
+    optional = {}
+    for key in ("metric", "method"):
+        value = raw.get(key)
+        if value is not None:
+            value = str(value).strip()
+            if not value:
+                raise RegistryError(f"{where}: {key} must be a non-empty string when present")
+        optional[key] = value
+    return Caveat(capability, status, detail, provenance, **optional)
 
 
 def parse_model(raw: Dict[str, Any], where: str) -> Model:

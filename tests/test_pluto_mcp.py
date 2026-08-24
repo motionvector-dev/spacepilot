@@ -10,6 +10,7 @@ from spacepilot.pluto_mcp_server import (
     pluto_generate_music,
     pluto_get_render_status,
     pluto_decompose_storyboard,
+    pluto_list_model_recipes,
 )
 
 def test_pluto_generate_video():
@@ -43,3 +44,11 @@ def test_pluto_decompose_storyboard():
     result = pluto_decompose_storyboard(script="Cosmic voyage across the multiverse", scene_count=6)
     assert result["status"] == "success"
     assert len(result["scenes"]) == 6
+
+
+def test_model_recipes_mcp_carries_caveats():
+    result = pluto_list_model_recipes()
+    assert result["status"] == "success"
+    distil = next(r for r in result["recipes"] if r["recipe_id"] == "distil-large-v3-ggml")
+    assert distil["caveats"][0]["capability"] == "audio.transcription"
+    assert distil["caveats"][0]["provenance"] == "declared"

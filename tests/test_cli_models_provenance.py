@@ -54,3 +54,46 @@ def test_models_list_labels_rows_without_local_measurements_unflown(monkeypatch,
     assert "kokoro-82m-onnx" in out
     assert "unflown" in out
     assert "huggingface-api · checked 2026-08-25" in out
+
+
+def test_models_detail_prints_full_caveat_evidence(monkeypatch, capsys):
+    import spacepilot.cli as cli
+    from spacepilot.pluto import measurements as ms
+
+    monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
+    monkeypatch.setattr(ms, "load_measurements", lambda: [])
+
+    assert cli.cmd_models(argparse.Namespace(model_id="distil-large-v3-ggml")) == 0
+    out = capsys.readouterr().out
+
+    assert "caveats" in out
+    assert "audio.transcription — preserved · declared" in out
+    assert "metric  long-form WER (English)" in out
+    assert "method  GGML f16 conversion" in out
+    assert "huggingface.co/distil-whisper/distil-large-v3-ggml" in out
+
+
+def test_models_list_has_a_distinct_caveat_column_and_keeps_empty_rows_blank(monkeypatch, capsys):
+    import spacepilot.cli as cli
+    from spacepilot.pluto import measurements as ms
+
+    monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
+    monkeypatch.setattr(ms, "load_measurements", lambda: [])
+
+    assert cli.cmd_models(argparse.Namespace(model_id=None)) == 0
+    lines = capsys.readouterr().out.splitlines()
+
+    assert any("CAVEATS" in line for line in lines)
+    distil = next(line for line in lines if "distil-large-v3-ggml" in line)
+    assert "audio.transcription · preserved · declared" in distil
+    kokoro = next(line for line in lines if "kokoro-82m-onnx" in line)
+    assert not kokoro.rstrip().endswith(("none", "safe", "preserved"))
+
+
+def test_missing_method_is_loud_for_a_quantized_caveat():
+    import spacepilot.cli as cli
+    from types import SimpleNamespace
+
+    caveat = SimpleNamespace(method=None)
+    assert cli._caveat_method(caveat, "q5_1") == "method unrecorded"
+    assert cli._caveat_method(caveat, "f16") is None

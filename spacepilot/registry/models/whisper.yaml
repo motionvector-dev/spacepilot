@@ -69,19 +69,6 @@ variants:
       note: >
         weights plus the ~210 MB of decoder state and audio buffers measured
         alongside base.en f16 on the same machine
-    caveats:
-      - capability: word_timestamps
-        status: preserved
-        detail: >
-          whisper.cpp computes timestamps in its own decoder logic, independent
-          of the quantisation level of the weights, so q5_1 aligns as well as
-          f16 does. This is what separates quantisation from distillation here.
-      - capability: transcription_accuracy
-        status: degraded
-        detail: >
-          q5_1 costs under 1% WER against the f16 build. q4_0 roughly doubles
-          that cost for a modest further size saving, which is why q5_1 is the
-          quantisation carried here and q4_0 is not.
     notes: >
       The default choice on a small machine: a third of the download, and the
       timestamps a caption or a filler-word cut depends on are unaffected.
@@ -138,15 +125,6 @@ variants:
       note: >
         weights plus the ~210 MB of decoder state and audio buffers measured
         alongside base.en f16 on the same machine
-    caveats:
-      - capability: word_timestamps
-        status: preserved
-        detail: >
-          Timestamps come from whisper.cpp's own decoder logic rather than from
-          the weights' precision, so quantisation does not move them.
-      - capability: transcription_accuracy
-        status: degraded
-        detail: q5_1 costs under 1% WER against the f16 build.
 
   - id: whisper-large-v3-turbo
     name: Whisper large-v3-turbo (f16)
@@ -188,9 +166,3 @@ variants:
       note: >
         weights plus the ~210 MB of decoder state and audio buffers measured
         alongside base.en f16 on the same machine
-    caveats:
-      - capability: word_timestamps
-        status: preserved
-        detail: >
-          Quantisation does not touch whisper.cpp's timestamp logic. The
-          alignment is as good as the f16 build's.

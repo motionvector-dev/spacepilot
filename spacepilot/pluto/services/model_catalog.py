@@ -51,6 +51,7 @@ class ModelRecipeSpec(BaseModel):
     license_note: Optional[str] = None
 
     speed: List[Dict[str, object]] = []
+    caveats: List[Dict[str, object]] = Field(default_factory=list)
 
     download_url: str = ""
     recommended_gpu: str = "any"
@@ -110,6 +111,7 @@ def _spec_from_variant(v: Variant) -> "ModelRecipeSpec":
         license=v.license.id,
         license_note="; ".join(v.license.restrictions) or None,
         speed=[s.to_dict() for s in v.speed],
+        caveats=[c.to_dict() for c in v.caveats],
     )
 
 
