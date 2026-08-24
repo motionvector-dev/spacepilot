@@ -37,6 +37,7 @@ packaging>=23.0
 # outside our own process tree, which os.getloadavg() cannot distinguish.
 psutil>=5.9.0
 rich>=13.0
+cryptography>=42.0
 
 # Claim verifier (tools/verify_claims.py): fans a claim out to N cheap models
 # across providers through one interface.

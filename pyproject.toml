@@ -33,6 +33,7 @@ dependencies = [
     "litellm>=1.98.0",
     "psutil>=5.9.0",
     "rich>=13.0",
+    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]
