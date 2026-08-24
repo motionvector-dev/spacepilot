@@ -594,21 +594,22 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     except Exception:
         print("  FFmpeg   : ❌ NOT FOUND (Required for video assembly)")
 
-    # 3. Kokoro weights check
-    kokoro_paths = [
-        PLUTO_ROOT / "models" / "kokoro" / "kokoro-v0_19.onnx",
-        PLUTO_ROOT / "models" / "kokoro" / "kokoro-v1_0.onnx",
-        Path.home() / ".pluto" / "models" / "kokoro" / "kokoro-v0_19.onnx",
-    ]
-    kokoro_found = False
-    for path in kokoro_paths:
-        if path.exists():
-            kokoro_found = True
-            print(f"  Kokoro   : ✅ Found ONNX weights ({path.name})")
-            break
-    if not kokoro_found:
+    # 3. Kokoro weights check — ask the driver where it actually looks, so this
+    #    reflects what TTS will really find instead of a guessed path that the
+    #    driver never checks.
+    try:
+        from spacepilot.drivers.kokoro_driver import KokoroDriver
+        m_path, v_path = KokoroDriver()._discover_asset_paths()
+        kokoro_found = bool(m_path and v_path)
+    except Exception:
+        m_path = None
+        kokoro_found = False
+    if kokoro_found:
+        print(f"  Kokoro   : ✅ Found ONNX weights ({Path(m_path).name})")
+    else:
         print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
-        print("             Download with: spacepilot recipes download kokoro-82m")
+        print("             Point PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES at a local")
+        print("             kokoro-v1.0.onnx + voices-v1.0.bin (auto-fetch not built yet).")
         
     print("")
 
