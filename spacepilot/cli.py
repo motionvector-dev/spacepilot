@@ -1121,6 +1121,85 @@ def cmd_run(args, cfg=None) -> int:
     return 0
 
 
+def cmd_daemon(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> int:
+    """Manage the local daemon through its OS user-service supervisor."""
+    from spacepilot.daemon import service
+
+    action = getattr(args, "daemon_action", None)
+    try:
+        if action == "install":
+            path = service.install_daemon()
+            print(f"  daemon installed: {path}")
+            if sys.platform.startswith("linux"):
+                state = service.daemon_status()
+                if state.lingering is False:
+                    print("  lingering is off; the daemon stops when this user logs out.")
+                elif state.lingering is None:
+                    print("  lingering could not be checked; it was not changed.")
+            return 0
+        if action == "run":
+            return service.run_foreground()
+        if action == "status":
+            state = service.daemon_status()
+            print(f"  definition  {state.definition}")
+            print(f"  installed   {'yes' if state.installed else 'no'}")
+            if state.active is None:
+                print("  state       unknown")
+            else:
+                print(f"  state       {'active' if state.active else 'inactive'}")
+            if state.platform == "linux":
+                if state.lingering is True:
+                    print("  lingering   on")
+                elif state.lingering is False:
+                    print("  lingering   off (daemon stops at logout)")
+                else:
+                    print("  lingering   unknown")
+            print(f"  local door  {'reachable' if state.reachable else 'unreachable'}")
+            if state.reachable:
+                print(f"  picture     {_daemon_age_suffix(state.picture_age_seconds).removeprefix(' · ')}")
+                if state.peer_state:
+                    peer = state.peer_state
+                    if state.peer_address:
+                        peer += f" ({state.peer_address})"
+                    print(f"  peer        {peer}{_daemon_age_suffix(state.peer_age_seconds)}")
+                else:
+                    print("  peer        unknown")
+                if state.key_id:
+                    print(f"  key         {state.key_id}{_daemon_age_suffix(state.key_age_seconds)}")
+                else:
+                    print("  key         unknown")
+            elif state.reachability_detail:
+                print(f"  local error {state.reachability_detail}")
+            if state.detail:
+                print(f"  supervisor  {state.detail}")
+            return 0 if state.installed or state.reachable else 1
+        if action == "stop":
+            service.stop_daemon()
+            print("  daemon stopped")
+            return 0
+    except service.ServiceError as exc:
+        print(f"  daemon: {exc}")
+        return 1
+    except (OSError, RuntimeError) as exc:
+        # Supervisor failures are real state failures, not an invitation to
+        # guess a PID and kill it ourselves.
+        print(f"  daemon supervisor error: {exc}")
+        return 1
+    print(f"  Unknown daemon action {action!r}.")
+    return 2
+
+
+def _daemon_age_suffix(seconds: float | None) -> str:
+    """Render an observed age without pretending a missing timestamp is fresh."""
+    if seconds is None:
+        return " · checked unknown"
+    if seconds < 60:
+        return f" · checked {seconds:.0f}s ago"
+    if seconds < 3600:
+        return f" · checked {seconds / 60:.0f}m ago"
+    return f" · checked {seconds / 3600:.1f}h ago"
+
+
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
@@ -1469,6 +1548,14 @@ def main(argv: list[str] | None = None):
     serve_p.add_argument("--port", type=int, default=8088, help="Port (default: 8088)")
     serve_p.add_argument("--reload", action="store_true", help="Enable reload")
 
+    # daemon
+    daemon_p = subparsers.add_parser("daemon", help="Run and supervise this machine's local daemon")
+    daemon_sub = daemon_p.add_subparsers(dest="daemon_action", required=True)
+    daemon_sub.add_parser("install", help="Install and start the per-user daemon service")
+    daemon_sub.add_parser("run", help="Run the daemon in this foreground terminal")
+    daemon_sub.add_parser("status", help="Ask the OS supervisor for daemon status")
+    daemon_sub.add_parser("stop", help="Stop the daemon through its OS supervisor")
+
     # lora
     lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
     lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
@@ -1600,6 +1687,7 @@ def main(argv: list[str] | None = None):
         "check": cmd_doctor,
         "probe": cmd_probe,
         "serve": cmd_serve,
+        "daemon": cmd_daemon,
         "lora": cmd_lora,
         "recipes": cmd_recipes,
         "studio": cmd_studio,

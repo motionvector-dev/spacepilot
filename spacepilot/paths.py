@@ -45,6 +45,15 @@ from typing import List, Sequence
 APP_NAME = "spacepilot"
 DATA_DIR_ENV = "SPACEPILOT_DATA_DIR"
 MODELS_DIR_ENV = "SPACEPILOT_MODELS_DIR"
+DAEMON_RUNTIME_DIR_ENV = "SPACEPILOT_DAEMON_RUNTIME_DIR"
+
+# The identity is deliberately kept separate from the writable registry.  In
+# particular, ``writable_registry_root`` may point into a checkout for
+# contributors, while a machine's signing key must never move with a clone or
+# get committed by accident.
+IDENTITY_DIR_NAME = "identity"
+IDENTITY_FILENAME = "identity.json"
+IDENTITY_LOCK_FILENAME = ".identity.lock"
 
 
 def env_value(name: str, *legacy_names: str, default: str | None = None) -> str | None:
@@ -101,6 +110,31 @@ def user_data_dir() -> Path:
     return (base / APP_NAME).resolve()
 
 
+def identity_dir() -> Path:
+    """The per-user directory containing this machine's signing identity.
+
+    This always derives from :func:`user_data_dir`; unlike registry writes it
+    never follows the checkout exception.  The identity module creates and
+    validates the directory's restrictive permissions.
+    """
+    return user_data_dir() / IDENTITY_DIR_NAME
+
+
+def identity_path() -> Path:
+    """Path to the persistent (private) identity record."""
+    return identity_dir() / IDENTITY_FILENAME
+
+
+def identity_private_key_path() -> Path:
+    """Descriptive alias for :func:`identity_path`."""
+    return identity_path()
+
+
+def identity_lock_path() -> Path:
+    """Path used to serialize first identity creation."""
+    return identity_dir() / IDENTITY_LOCK_FILENAME
+
+
 def writable_registry_root() -> Path:
     """Where new records go. Never inside site-packages."""
     if env_value(DATA_DIR_ENV, "PLUTO_DATA_DIR", default="").strip():
@@ -128,6 +162,54 @@ def outputs_dir() -> Path:
     if root is not None:
         return (root / "outputs").resolve()
     return (user_data_dir() / "outputs").resolve()
+
+
+def daemon_state_dir() -> Path:
+    """Private, persistent state for the local daemon.
+
+    This is deliberately separate from identity material.  Identity owns its
+    keys; lifecycle owns transient sockets, logs and supervisor definitions.
+    """
+    return (user_data_dir() / "daemon").resolve()
+
+
+def daemon_log_dir() -> Path:
+    """Where a user supervisor can write daemon stdout and stderr."""
+    return (daemon_state_dir() / "logs").resolve()
+
+
+def daemon_runtime_dir() -> Path:
+    """Directory for the daemon's Unix-domain socket.
+
+    A systemd unit sets ``SPACEPILOT_DAEMON_RUNTIME_DIR`` to its protected
+    RuntimeDirectory.  An interactive foreground daemon uses XDG's runtime
+    directory when available and otherwise a private data-directory fallback.
+    """
+    override = env_value(DAEMON_RUNTIME_DIR_ENV, default="").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    if sys.platform != "darwin":
+        xdg_runtime = os.environ.get("XDG_RUNTIME_DIR", "").strip()
+        if xdg_runtime:
+            return (Path(xdg_runtime).expanduser() / APP_NAME).resolve()
+    return (daemon_state_dir() / "run").resolve()
+
+
+def daemon_socket_path() -> Path:
+    """The local daemon's filesystem-permission-protected socket path."""
+    return daemon_runtime_dir() / "daemon.sock"
+
+
+def launch_agent_path() -> Path:
+    """The per-user launchd definition, on macOS."""
+    return (Path.home() / "Library" / "LaunchAgents" / "com.spacepilot.daemon.plist").resolve()
+
+
+def systemd_user_unit_path() -> Path:
+    """The per-user systemd definition, on Linux."""
+    xdg_config = os.environ.get("XDG_CONFIG_HOME", "").strip()
+    config_home = Path(xdg_config).expanduser() if xdg_config else Path.home() / ".config"
+    return (config_home / "systemd" / "user" / "spacepilot-daemon.service").resolve()
 
 
 def read_roots(name: str) -> List[Path]:
