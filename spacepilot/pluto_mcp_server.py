@@ -377,6 +377,52 @@ def pluto_install_runtime(runtime_id: str, allow_downgrade: bool = False) -> dic
     st = rt.install(r)
     return {**st.to_dict(), "changed": imp.to_dict()}
 
+
+@mcp.tool()
+def pluto_check() -> dict:
+    """Probe this machine and return its own flown corpus summaries.
+
+    This is a read-only local check.  It never launches a worker, downloads
+    weights, or turns an absent measurement into a performance claim.
+    """
+    from spacepilot.pluto.services.corpus import CorpusReadError, check_payload
+
+    try:
+        return check_payload()
+    except CorpusReadError as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def pluto_measurements(variant_id: Optional[str] = None) -> dict:
+    """Return individual flown observations and their registry caveats.
+
+    ``variant_id`` is an exact registry identifier when supplied; it is a
+    filter over loaded records, never a filesystem path or a fuzzy model name.
+    """
+    from spacepilot.pluto.services.corpus import CorpusReadError, measurement_payload
+
+    try:
+        payload = measurement_payload()
+    except CorpusReadError as exc:
+        return {"error": str(exc)}
+    if variant_id is not None:
+        payload["measurements"] = [
+            row for row in payload["measurements"] if row["variant_id"] == variant_id
+        ]
+    return payload
+
+
+@mcp.tool()
+def pluto_system_summary(system_id: Optional[str] = None) -> dict:
+    """Return flown two-stream summaries with associated capability caveats."""
+    from spacepilot.pluto.services.corpus import CorpusReadError, summary_payload
+
+    try:
+        return summary_payload(system_id=system_id)
+    except CorpusReadError as exc:
+        return {"error": str(exc)}
+
 # Deliberately NOT exposed as tools — each returns a plausible success with nothing
 # behind it, and an agent calling one has no way to tell:
 #   pluto_skypilot_arbitrage: no arbitrage is possible on one 8 vCPU box; the G-family spot quota permits exactly one g6e.2xlarge
@@ -395,4 +441,3 @@ def pluto_install_runtime(runtime_id: str, allow_downgrade: bool = False) -> dic
 
 if __name__ == "__main__":
     mcp.run()
-
