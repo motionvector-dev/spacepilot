@@ -119,7 +119,7 @@ class OutputRenderer:
             print(line, file=self.stream)
         else:
             assert self._console is not None
-            self._console.print(line, end="\r")
+            self._console.print(line, end="\r", markup=False)
 
     def finish(self) -> None:
         if self.mode == "live":
@@ -232,7 +232,7 @@ def fetch_worker_health(ip):
         return None
     url = f"http://{ip}:5000/health"
     try:
-        resp = httpx.get(url, headers={"User-Agent": "PlutoCLI/1.0"}, timeout=3)
+        resp = httpx.get(url, headers={"User-Agent": "SpacePilotCLI/1.0"}, timeout=3)
         if resp.is_error:
             # urlopen raised HTTPError here and the body was still readable; an
             # unhealthy worker answers 503 with a JSON reason worth surfacing.
@@ -252,7 +252,7 @@ def fetch_worker_health(ip):
 
 def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  PLUTO GPU BOX & WORKER STATUS")
+    print("  SPACEPILOT GPU BOX & WORKER STATUS")
     print("──────────────────────────────────────────────────────────────────────────")
     inst = get_instance_info(cfg)
     if not inst:
@@ -296,7 +296,7 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
 def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  LAUNCHING PLUTO GPU BOX (AWS SPOT L40S)")
+    print("  LAUNCHING SPACEPILOT GPU BOX (AWS SPOT L40S)")
     print("──────────────────────────────────────────────────────────────────────────")
     inst = get_instance_info(cfg)
     if inst and inst["state"] in ("running", "pending"):
@@ -399,7 +399,7 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     image_noise_scale = getattr(args, "image_noise_scale", 0.0)
 
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  PLUTO VIDEO GENERATION (LTX-2.5)")
+    print("  SPACEPILOT VIDEO GENERATION (LTX-2.5)")
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  Prompt     : \"{prompt}\"")
     print(f"  Resolution : {width}x{height} | Duration: {seconds}s ({fps} fps) | Steps: {steps}")
@@ -496,15 +496,14 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Error submitting job: {e}")
         return
 
-    # Poll status with progress bar
+    # Poll status with a renderer that remains legible when piped.
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     start_t = time.time()
-    print("  Rendering  : [", end="", flush=True)
+    renderer = output_renderer(args, cfg)
 
     retries = 0
     while True:
         time.sleep(1.5)
-        print("█", end="", flush=True)
         try:
             st_resp = httpx.get(
                 f"http://{ip}:5000/status/{job_id}", headers=worker_headers(), timeout=30
@@ -512,9 +511,14 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             st_resp.raise_for_status()
             st_data = st_resp.json()
             retries = 0
+            renderer.progress(
+                "Rendering",
+                f"{st_data.get('status', 'unknown')} · elapsed {time.time() - start_t:.1f}s",
+            )
             if st_data.get("status") == "completed":
                 dur = time.time() - start_t
-                print(f"] Done in {dur:.1f}s!")
+                renderer.finish()
+                print(f"  Rendering  : completed in {dur:.1f}s")
 
                 # Download MP4
                 if getattr(args, "output", None):
@@ -538,13 +542,15 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
                     subprocess.run(["open", str(out_path)])
                 break
             elif st_data.get("status") == "failed":
-                print(f"\n  Error: Job failed: {st_data.get('error')}")
+                renderer.finish()
+                print(f"  Error: Job failed: {st_data.get('error')}")
                 sys.exit(1)
         except Exception:
             logger.warning("Failed during worker status polling", exc_info=True)
             retries += 1
             if retries > 20:
-                print(f"\n  Error: Connection lost while polling worker status.")
+                renderer.finish()
+                print("  Error: Connection lost while polling worker status.")
                 break
 
 
@@ -617,18 +623,18 @@ def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     python_bin = studio_python(cfg)
     if not python_bin:
         print("  Error: no interpreter found with fastapi + uvicorn installed.")
-        print("  Set PLUTO_PYTHON, or add \"python_bin\" to .pluto_config.json,")
+        print("  Set SPACEPILOT_PYTHON, or add \"python_bin\" to .pluto_config.json,")
         print("  pointing at the environment where you ran: pip install -r requirements.txt")
         return
 
     print("──────────────────────────────────────────────────────────────────────────")
-    print(f"  🎬 LAUNCHING PLUTO STUDIO ON http://localhost:{port}")
+    print(f"  🎬 LAUNCHING SPACEPILOT STUDIO ON http://localhost:{port}")
     print("──────────────────────────────────────────────────────────────────────────")
     if args.open:
         import webbrowser
         time.sleep(1.0)
         webbrowser.open(f"http://localhost:{port}")
-    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
+    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "SPACEPILOT_STUDIO_PORT": str(port)})
 
 
 def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
@@ -675,7 +681,9 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  VRAM     : {profile.vram_total_gb:.1f}GB present, 0GB usable "
               "— no compute runtime can reach this card")
     else:
-        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total (Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
+        source = getattr(profile, "memory_limit_source", None) or "unknown"
+        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total "
+              f"(limit source: {source}; Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
     print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")
     for gpu in (profile.gpus if isinstance(profile.gpus, list) else []):
         vram = f"{gpu['vram_total_bytes'] / (1024 ** 3):.2f}GB" if gpu.get("vram_total_bytes") else "VRAM unknown"
@@ -712,7 +720,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Kokoro   : ✅ Found ONNX weights ({Path(m_path).name})")
     else:
         print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
-        print("             Point PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES at a local")
+        print("             Point SPACEPILOT_KOKORO_MODEL / SPACEPILOT_KOKORO_VOICES at a local")
         print("             kokoro-v1.0.onnx + voices-v1.0.bin (auto-fetch not built yet).")
         
     print("")
@@ -740,7 +748,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
 def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     import uvicorn
-    print(f"Starting Pluto server on {args.host}:{args.port}")
+    print(f"Starting SpacePilot server on {args.host}:{args.port}")
     sys.path.insert(0, str(PLUTO_ROOT))
     uvicorn.run("spacepilot.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
 
@@ -809,6 +817,7 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         return 0
 
     if action == "download":
+        renderer = output_renderer(args, cfg)
         rid = args.recipe_name
         recipe = catalog_manager.get_recipe(rid)
         if not recipe:
@@ -838,13 +847,14 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         while thread.is_alive():
             job = catalog_manager.get_download_progress(rid)
             if job:
-                sys.stdout.write(
-                    f"\r  {_progress_bar(job.progress_percent)} "
-                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s")
-                sys.stdout.flush()
+                renderer.progress(
+                    "Downloading",
+                    f"{_progress_bar(job.progress_percent)} "
+                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s",
+                )
             time.sleep(0.5)
         thread.join()
-        sys.stdout.write("\n")
+        renderer.finish()
 
         if "error" in outcome:
             print(f"  Download failed: {outcome['error']}")
@@ -1075,7 +1085,7 @@ def cmd_measure(args, cfg=None) -> int:
         command = command[1:]
     if not command:
         print("Nothing to measure. Put the command after --, e.g.")
-        print("  pluto measure --model flux --metric seconds_per_image -- "
+        print("  spacepilot measure --model flux --metric seconds_per_image -- "
               "mflux-generate --model schnell --steps 4")
         return 1
 
@@ -1249,16 +1259,22 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-def main():
+def main(argv: list[str] | None = None):
     cfg = load_config()
     parser = argparse.ArgumentParser(
         prog="spacepilot",
         description="SpacePilot — inference orchestration across the machines you can reach.",
     )
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--live", dest="output_mode", action="store_const", const="live",
+                              help="Render live terminal updates")
+    output_group.add_argument("--plain", dest="output_mode", action="store_const", const="plain",
+                              help="Render plain newline-delimited output")
     subparsers = parser.add_subparsers(dest="command")
 
-    # doctor
+    # doctor/check
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
+    subparsers.add_parser("check", help="Alias for doctor")
 
     # probe
     probe_p = subparsers.add_parser(
@@ -1289,7 +1305,7 @@ def main():
     recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
 
     # studio
-    studio_p = subparsers.add_parser("studio", help="Launch interactive Pluto Studio Web UI")
+    studio_p = subparsers.add_parser("studio", help="Launch interactive SpacePilot Studio Web UI")
     studio_p.add_argument("--port", type=int, default=8088, help="Port to bind (default: 8088)")
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
@@ -1381,14 +1397,22 @@ def main():
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    try:
+        parse_argv, explicit_mode = _extract_output_mode_flags(raw_argv)
+    except ValueError as exc:
+        parser.error(str(exc))
 
-    args = parser.parse_args()
+    if not parse_argv:
+        parser.print_help()
+        return 0
+
+    args = parser.parse_args(parse_argv)
+    args.output_mode = resolve_output_mode(explicit_mode or args.output_mode, cfg)
 
     dispatch = {
         "doctor": cmd_doctor,
+        "check": cmd_doctor,
         "probe": cmd_probe,
         "serve": cmd_serve,
         "lora": cmd_lora,
@@ -1416,6 +1440,12 @@ def main():
     # exited 0 — including ones that had just printed a refusal or an error,
     # which made pluto unusable from a script or a CI step.
     return handler(args, cfg) or 0
+
+
+def pluto_main() -> int:
+    """Compatibility executable retained for one deprecation window."""
+    print("pluto is deprecated; use spacepilot", file=sys.stderr)
+    return main()
 
 
 if __name__ == "__main__":
