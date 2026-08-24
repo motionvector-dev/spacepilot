@@ -108,8 +108,9 @@ agent) actually runs:
 3. `dispatch_to_node` reaches another machine over Tailscale.
 4. Every mock deleted or gated so no tool returns fake success.
 
-Bring-your-own-agent on top. Substrate keys we hold: AWS (driver), Modal, RunPod
-(keys only, drivers are ~100-line adapters written once).
+A **default agent** rides on top so a human can use it out of the box; power users
+bring their own. Substrate keys we hold: AWS (driver), Modal, RunPod (keys only,
+drivers are ~100-line adapters written once).
 
 ## What this retires
 
@@ -119,13 +120,63 @@ Bring-your-own-agent on top. Substrate keys we hold: AWS (driver), Modal, RunPod
 - **"We build the smart layer."** The smart layer is the caller's. We build the
   tools and the ground truth under them.
 
-## Open questions the framing forces
+## The cockpit
 
-1. **Human surface.** Does the cockpit UI survive as a window onto the agent, or is
-   MCP + CLI the whole product for v1.1?
-2. **Caveat sourcing.** `caveat_lookup` is the moat but coverage is thin. Curated by
-   hand, or a scheduled agent that reads model cards and derivative graphs?
-3. **Who is the agent.** BYO frontier model only, or do we ship a default caller so
-   a human can use SpacePilot without wiring one up?
-4. **Tailscale as the substrate.** Confirm the mesh is the fleet transport before
-   building `dispatch_to_node` on it.
+The cockpit is not a dashboard. It is the **shared surface where the human and the
+agent collaborate over WebMCP** — the human sees what the agent sees, steers, and
+approves; the agent calls the same tools. Neither is pinned to one machine, because
+Tailscale is *only* transport: the fleet is reachable from wherever the cockpit
+runs. The cockpit survives v1.1 as this collaboration window, not as a control panel
+the human drives alone.
+
+## Caveats, in depth
+
+A caveat is the moat because of *what kind of fact it is*: **negative information
+about someone else's artifact.** "This q4 build is worse at typography" is a fact the
+uploader has no reason to publish and the host has no reason to surface — it is
+adversarial to their own supply. That structural disincentive is why the gap exists
+and stays open. We collect the one fact the ecosystem is built not to say.
+
+- **A caveat is a task-specific quality measurement.** Same shape as a speed
+  measurement — a fact about `(variant, capability)` with `measured | inferred |
+  declared` provenance. Not "flux-q4 is good" but "flux-q4 · typography · degraded"
+  and "flux-q4 · photoreal · preserved". The caveat ledger and the measurement store
+  are one object with two value types.
+- **Two production paths — this is the cron-vs-real-code line.**
+  - *Structural* caveats derive from the compression method + base model without
+    running anything (distillation → word-timestamps `untrained`; aggressive quant →
+    text/fine-detail `degraded` before photoreal). They generalize across models. A
+    **scheduled agent** produces them: diff model cards, walk the derivative graph,
+    read the method, emit *candidate* caveats — always `inferred`, never `measured`.
+  - *Empirical* caveats need an `eval` run on the fleet; they catch the surprises a
+    method cannot predict. **Real code**, expensive, run only on variants that
+    matter. Promotion to `measured` requires this run.
+
+  The curator proposes; the fleet confirms.
+- **Consumption is three verbs:** reject a variant for a task, warn the human,
+  substitute a better-preserved variant. That needs a small **capability taxonomy**
+  — the finite list of tasks a caveat can be about (word-timestamps, text-rendering,
+  temporal-consistency, multilingual, instruction-following…). That taxonomy is the
+  schema the whole moat hangs on; write it down once.
+
+## The default agent
+
+Not a model we ship — the thesis forbids building reasoning. The default agent is a
+bundled **configuration**: a system prompt + the SpacePilot MCP toolset + a pointer
+to whatever inference the user has keys for. Model-agnostic; swap the model freely.
+
+- **Two modes decide it.** Headless agent-to-agent (MotionVector's video agent) needs
+  no default — the caller is the agent. Human-in-cockpit needs a brain behind the
+  WebMCP surface, or "use SpacePilot" means "first wire up an agent" — dead on
+  arrival.
+- **The tools carry the correctness, so the model choice is de-risked.** Because
+  `probe`, `caveat_lookup` and `verify_output` return honest ground truth, even a
+  modest default model gives a correct answer — it cannot hallucinate VRAM the tool
+  reports. Building tools not reasoning is what makes the caller interchangeable.
+- **The system prompt is an asset.** It operationalizes the conscience: probe before
+  you recommend, check caveats before you promise, verify before you report success.
+  The honest-failure guard lives half in the tools and half in the agent's
+  instructions to trust them over its own priors.
+- **v1.1:** a BYO-key default agent (persona + tool-wiring). Running that agent *on
+  the fleet* — a local model for cheap/private reasoning, escalating to a frontier
+  model for hard calls — is a later recursion.
