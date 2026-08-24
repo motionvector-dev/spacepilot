@@ -48,9 +48,19 @@ def test_list_recipes_endpoint(client, auth_headers):
     required = {
         "recipe_id", "name", "family", "kind", "quantization", "hf_repo",
         "download_bytes", "working_set_bytes", "backends", "license",
-        "is_local_runnable",
+        "is_local_runnable", "caveats",
     }
     assert required <= set(recipes[0].keys())
+    distil = next(r for r in recipes if r["recipe_id"] == "distil-large-v3-ggml")
+    assert distil["caveats"][0]["capability"] == "audio.transcription"
+    assert distil["caveats"][0]["provenance"] == "declared"
+
+
+def test_compatibility_report_carries_registry_caveats(client):
+    res = client.get("/api/compute/compatibility")
+    assert res.status_code == 200
+    distil = next(r for r in res.json()["models"] if r["recipe_id"] == "distil-large-v3-ggml")
+    assert distil["caveats"][0]["capability"] == "audio.transcription"
 
 
 @mock.patch("spacepilot.pluto.services.model_catalog.asyncio.create_task")

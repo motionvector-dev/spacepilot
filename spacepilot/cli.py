@@ -890,6 +890,40 @@ def _gb(b) -> str:
     return f"{(b or 0) / 1024 ** 3:.1f} GB"
 
 
+def _caveat_method(caveat, precision: str | None) -> str | None:
+    """Render an absent compression method as an explicit unknown, not a blank."""
+    if caveat.method:
+        return caveat.method
+    normalized = (precision or "").lower()
+    uncompressed = {"f16", "fp16", "bf16", "fp32", "float16", "float32"}
+    if normalized and normalized not in uncompressed:
+        return "method unrecorded"
+    return None
+
+
+def _caveat_summary(variant) -> str:
+    """A compact, factual table cell; no caveats remains deliberately blank."""
+    return "; ".join(
+        f"{c.capability} · {c.status} · {c.provenance}"
+        for c in variant.caveats
+    )
+
+
+def _print_caveats(variant) -> None:
+    """Print the full capability evidence for one model variant, when present."""
+    if not variant.caveats:
+        return
+    print("  caveats")
+    for caveat in variant.caveats:
+        print(f"    {caveat.capability} — {caveat.status} · {caveat.provenance}")
+        if caveat.metric:
+            print(f"      metric  {caveat.metric}")
+        method = _caveat_method(caveat, variant.precision)
+        if method:
+            print(f"      method  {method}")
+        print(f"      {caveat.detail}")
+
+
 def cmd_models(args, cfg=None) -> int:
     """List the registry, or one variant, judged against this machine."""
     from spacepilot.device_probe import probe_local_device, usable_memory_bytes
@@ -929,6 +963,7 @@ def cmd_models(args, cfg=None) -> int:
         print(f"  licence   {v.license.id}")
         for r in v.license.restrictions:
             print(f"            ! {r}")
+        _print_caveats(v)
         # `assess` legitimately needs an estimated footprint to decide whether
         # a model can fit, but its numeric ratio is not a measured fact and
         # must not be rendered as one.
@@ -957,7 +992,7 @@ def cmd_models(args, cfg=None) -> int:
     src = profile.memory_limit_source or "unknown"
     print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
           f"· {_gb(usable)} available to models [{src}]\n")
-    print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE")
+    print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE   CAVEATS")
 
     order = {"fits": 0, "tight": 1, "unknown": 2, "wont_fit": 3, "blocked": 4}
     rows = [(assess(catalog_manager.recipes[v.id], profile), v) for v in reg.variants]
@@ -967,7 +1002,8 @@ def cmd_models(args, cfg=None) -> int:
         download = format_fact(v.download, _gb(v.download.value))
         speed = format_local_speed(local_speed(v))
         lic = v.license.id + ("" if v.license.is_permissive else "  !")
-        print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}")
+        caveats = _caveat_summary(v)
+        print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
     print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
     return 0
