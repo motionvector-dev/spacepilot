@@ -173,9 +173,53 @@ def daemon_state_dir() -> Path:
     return (user_data_dir() / "daemon").resolve()
 
 
+def fleet_state_dir() -> Path:
+    """Durable signed fleet control state, separate from daemon lifecycle."""
+    return (user_data_dir() / "fleet").resolve()
+
+
+def fleet_orders_path() -> Path:
+    """The single durable, signed ORDERS manifest for this user."""
+    return fleet_state_dir() / "fleet.yaml"
+
+
 def daemon_log_dir() -> Path:
     """Where a user supervisor can write daemon stdout and stderr."""
     return (daemon_state_dir() / "logs").resolve()
+
+
+def daemon_log_store_dir() -> Path:
+    """The immutable LOG gossip store, separate from supervisor stdout logs."""
+    return (daemon_state_dir() / "log").resolve()
+
+
+def daemon_log_replica_dir() -> Path:
+    """Verified remote LOG replicas, grouped by original author."""
+    return daemon_log_store_dir() / "replicas"
+
+
+def daemon_log_state_path() -> Path:
+    """Persistent local LOG epoch/sequence metadata."""
+    return daemon_log_store_dir() / "state.json"
+
+
+def daemon_index_dir() -> Path:
+    """Directory containing the rebuildable fleet index."""
+    return (daemon_state_dir() / "index").resolve()
+
+
+def daemon_index_path() -> Path:
+    """The derived SQLite index; never a checkout or registry file."""
+    return daemon_index_dir() / "fleet.sqlite3"
+
+
+# Short names are useful to transport-neutral services and make the boundary
+# explicit without overloading ``daemon_log_dir`` (which is supervisor logs).
+log_store_dir = daemon_log_store_dir
+log_replica_dir = daemon_log_replica_dir
+log_state_path = daemon_log_state_path
+index_dir = daemon_index_dir
+index_path = daemon_index_path
 
 
 def daemon_runtime_dir() -> Path:

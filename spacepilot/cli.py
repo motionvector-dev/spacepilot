@@ -1206,6 +1206,116 @@ def _daemon_age_suffix(seconds: float | None) -> str:
     return f" · checked {seconds / 3600:.1f}h ago"
 
 
+def _fleet_admin_client():
+    """The CLI's only fleet door is the local daemon's UDS admin contract."""
+    from spacepilot.daemon.fleet import local_fleet_admin
+    return local_fleet_admin()
+
+
+def _fleet_snapshot(admin):
+    from spacepilot.daemon.fleet import FleetSnapshot
+    return FleetSnapshot.from_wire(admin.list())
+
+
+def _fleet_frame_lines(admin) -> list[str]:
+    """One fact frame shared unchanged by plain and Rich Live presentations."""
+    from spacepilot.daemon.fleet import render_fleet_snapshot, utc_now
+    return render_fleet_snapshot(_fleet_snapshot(admin), now=utc_now())
+
+
+def _render_fleet_snapshot(snapshot) -> None:
+    """Render a single non-watch fleet snapshot."""
+    from spacepilot.daemon.fleet import render_fleet_snapshot, utc_now
+    print("\n".join(render_fleet_snapshot(snapshot, now=utc_now())))
+
+
+def _watch_fleet(
+    admin,
+    *,
+    interval: float,
+    output_mode: str = "plain",
+    sleep=time.sleep,
+    max_frames: int | None = None,
+    live_factory=None,
+    console_factory=None,
+) -> int:
+    """Refresh daemon-produced facts while recomputing ages at every frame."""
+    frames = 0
+    if output_mode == "live":
+        from rich.console import Console
+        from rich.live import Live
+        from rich.text import Text
+
+        # screen=False keeps this a compact updating table, not an alternate
+        # screen TUI. The actual rows come exclusively from `_fleet_frame_lines`.
+        make_console = console_factory or Console
+        make_live = live_factory or Live
+        console = make_console(no_color="NO_COLOR" in os.environ)
+        try:
+            with make_live(Text(""), console=console, screen=False, transient=False) as live:
+                while max_frames is None or frames < max_frames:
+                    lines = _fleet_frame_lines(admin)
+                    live.update(Text("\n".join(lines)))
+                    frames += 1
+                    sleep(interval)
+        except KeyboardInterrupt:
+            console.print("\n  fleet watch stopped")
+        return 0
+
+    try:
+        while max_frames is None or frames < max_frames:
+            # Timestamping each printed snapshot makes an old block visibly
+            # old when plain output is redirected to a log or CI artifact.
+            from spacepilot.daemon.fleet import utc_now
+            print(f"  snapshot   {utc_now().isoformat(timespec='seconds')}")
+            print("\n".join(_fleet_frame_lines(admin)))
+            frames += 1
+            sleep(interval)
+    except KeyboardInterrupt:
+        print("\n  fleet watch stopped")
+    return 0
+
+
+def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> int:
+    """Send fleet requests to the local daemon; never poll peers from the CLI."""
+    from spacepilot.daemon.fleet import FleetError
+
+    action = getattr(args, "fleet_action", None)
+    watch = bool(getattr(args, "watch", False))
+    if action is None and watch:
+        action = "list"
+    try:
+        admin = _fleet_admin_client()
+        if action == "init":
+            result = admin.init(args.name)
+            version = result.get("orders_version", "unknown")
+            print(f"  fleet initialized · ORDERS v{version}")
+            return 0
+        if action == "add":
+            result = admin.add(args.selector)
+            print(f"  fleet member added · ORDERS v{result.get('orders_version', 'unknown')}")
+            return 0
+        if action == "join":
+            result = admin.join(args.author_key_id, args.author_selector, args.fleet_id)
+            print(f"  joined fleet · ORDERS v{result.get('orders_version', 'unknown')}")
+            return 0
+        if action == "list":
+            interval = float(getattr(args, "interval", 2.0))
+            if interval <= 0:
+                print("  --interval must be greater than zero")
+                return 2
+            if watch:
+                mode = getattr(args, "output_mode", "plain")
+                return _watch_fleet(admin, interval=interval, output_mode=mode)
+            _render_fleet_snapshot(_fleet_snapshot(admin))
+            return 0
+    except (FleetError, OSError, RuntimeError) as exc:
+        print(f"  fleet: {exc}")
+        return 1
+    print(f"  Unknown fleet action {action!r}.")
+    return 2
+
+
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
@@ -1696,6 +1806,27 @@ def main(argv: list[str] | None = None):
     daemon_sub.add_parser("status", help="Ask the OS supervisor for daemon status")
     daemon_sub.add_parser("stop", help="Stop the daemon through its OS supervisor")
 
+    # fleet
+    fleet_p = subparsers.add_parser("fleet", help="Manage ships through the local daemon")
+    fleet_p.add_argument("--watch", action="store_true", help="Continuously render daemon fleet facts")
+    fleet_p.add_argument("--interval", type=float, default=2.0,
+                         help="Seconds between daemon snapshot requests (default: 2)")
+    fleet_sub = fleet_p.add_subparsers(dest="fleet_action")
+    fleet_init = fleet_sub.add_parser("init", help="Create this fleet's signed ORDERS")
+    fleet_init.add_argument("name", help="This ship's real name")
+    fleet_add = fleet_sub.add_parser("add", help="Add a signed ship member")
+    fleet_add.add_argument("selector", help="One live Tailscale peer selector")
+    fleet_join = fleet_sub.add_parser("join", help="Join with a signed fleet invitation")
+    fleet_join.add_argument("--author-key-id", required=True,
+                            help="Pinned permanent author Ed25519 key id")
+    fleet_join.add_argument("--author-selector", required=True,
+                            help="Live Tailscale selector for the pinned author")
+    fleet_join.add_argument("--fleet-id", default=None, help="Optional pinned fleet UUID")
+    fleet_list = fleet_sub.add_parser("list", help="Render the daemon's current fleet facts")
+    fleet_list.add_argument("--watch", action="store_true", help="Continuously render fleet facts")
+    fleet_list.add_argument("--interval", type=float, default=2.0,
+                            help="Seconds between daemon snapshot requests (default: 2)")
+
     # lora
     lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
     lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
@@ -1834,6 +1965,7 @@ def main(argv: list[str] | None = None):
         "probe": cmd_probe,
         "serve": cmd_serve,
         "daemon": cmd_daemon,
+        "fleet": cmd_fleet,
         "lora": cmd_lora,
         "recipes": cmd_recipes,
         "studio": cmd_studio,
