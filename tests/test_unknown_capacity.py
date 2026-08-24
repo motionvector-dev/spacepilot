@@ -139,9 +139,17 @@ def test_a_model_larger_than_the_whole_card_is_wont_fit_even_so():
 
 
 def test_cpu_capable_driver_runs_on_a_machine_with_no_accelerator(monkeypatch):
-    """Kokoro is ONNX on CPU. It needs no VRAM and must not be gated on it."""
+    """Kokoro is ONNX on CPU. Weight availability is separate from VRAM."""
     monkeypatch.setattr(
         "spacepilot.local_workers.probe_local_device", cpu_only_profile
+    )
+    def fake_load(driver):
+        driver._session = object()
+        driver.spec.is_loaded = True
+        return True
+
+    monkeypatch.setattr(
+        "spacepilot.drivers.kokoro_driver.KokoroDriver.load", fake_load
     )
     LocalWorkerManager.reset_instance()
     try:

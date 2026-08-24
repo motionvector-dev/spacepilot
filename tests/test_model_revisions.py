@@ -104,7 +104,10 @@ def test_snapshot_download_is_given_the_revision(monkeypatch, tmp_path):
 
     def fake_snapshot_download(**kwargs):
         seen.update(kwargs)
-        return str(tmp_path / "models--a--b" / "snapshots" / sha)
+        snapshot = tmp_path / "models--a--b" / "snapshots" / sha
+        snapshot.mkdir(parents=True, exist_ok=True)
+        (snapshot / "weights.safetensors").write_bytes(b"weights")
+        return str(snapshot)
 
     import huggingface_hub
     monkeypatch.setattr(huggingface_hub, "snapshot_download",
@@ -130,7 +133,10 @@ def test_the_job_records_which_commit_it_actually_got(monkeypatch, tmp_path):
     sha = "b" * 40
 
     def fake_snapshot_download(**kwargs):
-        return str(tmp_path / "models--a--b" / "snapshots" / sha)
+        snapshot = tmp_path / "models--a--b" / "snapshots" / sha
+        snapshot.mkdir(parents=True, exist_ok=True)
+        (snapshot / "weights.bin").write_bytes(b"weights")
+        return str(snapshot)
 
     import huggingface_hub
     monkeypatch.setattr(huggingface_hub, "snapshot_download",
@@ -145,6 +151,8 @@ def test_the_job_records_which_commit_it_actually_got(monkeypatch, tmp_path):
     mgr._run_download("j", "a/b", None, None)
 
     assert mgr.jobs["j"].resolved_revision == sha
+    assert mgr.jobs["j"].resolved_files == [
+        str(tmp_path / "models--a--b" / "snapshots" / sha / "weights.bin")]
 
 
 # --------------------------------------- the measurement writes down the pin

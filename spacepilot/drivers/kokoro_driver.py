@@ -59,6 +59,7 @@ class KokoroDriver(InferenceDriver):
         super().__init__(spec)
         self.model_path = model_path
         self.voices_path = voices_path
+        self.resolved_revision: Optional[str] = None
         self._session: Any = None
 
     @classmethod
@@ -71,55 +72,61 @@ class KokoroDriver(InferenceDriver):
         """Check if a voice ID exists in the catalogue."""
         return any(v["id"] == voice_id for v in VOICE_CATALOGUE)
 
+    def asset_paths(self) -> Tuple[Optional[str], Optional[str]]:
+        """Find both assets from one explicit source or one HF snapshot."""
+        from spacepilot.paths import env_value, resolve
+
+        if self.model_path or self.voices_path:
+            if not self.model_path or not self.voices_path:
+                raise ValueError("Kokoro requires both model_path and voices_path")
+            if not Path(self.model_path).is_file() or not Path(self.voices_path).is_file():
+                raise FileNotFoundError("explicit Kokoro model_path/voices_path do not both exist")
+            self.resolved_revision = None
+            return self.model_path, self.voices_path
+
+        env_model = env_value("SPACEPILOT_KOKORO_MODEL", "PLUTO_KOKORO_MODEL")
+        env_voices = env_value("SPACEPILOT_KOKORO_VOICES", "PLUTO_KOKORO_VOICES")
+        if env_model or env_voices:
+            if not env_model or not env_voices:
+                raise ValueError(
+                    "Kokoro requires both SPACEPILOT_KOKORO_MODEL and "
+                    "SPACEPILOT_KOKORO_VOICES")
+            if not Path(env_model).is_file() or not Path(env_voices).is_file():
+                raise FileNotFoundError("configured Kokoro model and voices files do not both exist")
+            self.resolved_revision = None
+            return env_model, env_voices
+
+        from spacepilot.pluto.registry import registry
+
+        variant_id = "kokoro-82m-onnx" if self.driver_id == "kokoro" else self.driver_id
+        variant = registry().variant(variant_id)
+        if variant is None or not variant.files:
+            return None, None
+        resolved = resolve(variant.repo, variant.revision, variant.files)
+        if resolved is None:
+            return None, None
+        model = resolved.file("kokoro-v1.0.onnx")
+        voices = resolved.file("voices-v1.0.bin")
+        if model is None or voices is None:
+            return None, None
+        self.resolved_revision = resolved.revision
+        return str(model), str(voices)
+
     def _discover_asset_paths(self) -> Tuple[Optional[str], Optional[str]]:
-        """Find Kokoro ONNX model and voices binary files."""
-        if self.model_path and self.voices_path:
-            if Path(self.model_path).is_file() and Path(self.voices_path).is_file():
-                return self.model_path, self.voices_path
-
-        home = Path.home()
-        from spacepilot.paths import env_value
-        candidates = [
-            (
-                env_value("SPACEPILOT_KOKORO_MODEL", "PLUTO_KOKORO_MODEL"),
-                env_value("SPACEPILOT_KOKORO_VOICES", "PLUTO_KOKORO_VOICES"),
-            ),
-            (
-                str(Path(__file__).resolve().parent.parent.parent.parent / "katana" / "super-resolution-lab" / "tools" / "kokoro" / "kokoro-v1.0.onnx"),
-                str(Path(__file__).resolve().parent.parent.parent.parent / "katana" / "super-resolution-lab" / "tools" / "kokoro" / "voices-v1.0.bin"),
-            ),
-            (
-                str(home / ".cache" / "hyperframes" / "tts" / "models" / "kokoro-v1.0.onnx"),
-                str(home / ".cache" / "hyperframes" / "tts" / "voices" / "voices-v1.0.bin"),
-            ),
-            (
-                str(home / ".cache" / "pluto" / "models" / "kokoro-v1.0.onnx"),
-                str(home / ".cache" / "pluto" / "models" / "voices-v1.0.bin"),
-            ),
-        ]
-
-        for m, v in candidates:
-            if m and v and Path(m).is_file() and Path(v).is_file():
-                return m, v
-
-        return None, None
+        """Compatibility wrapper for callers predating the public resolver."""
+        return self.asset_paths()
 
     def load(self) -> bool:
         """Load the Kokoro ONNX runtime model and voice embeddings into memory."""
         try:
-            m_path, v_path = self._discover_asset_paths()
-            if m_path and v_path:
-                try:
-                    from kokoro_onnx import Kokoro
-                    self._session = Kokoro(m_path, v_path)
-                    logger.info(f"Loaded Kokoro ONNX model from {m_path}")
-                except Exception as e:
-                    logger.warning(f"Could not initialize kokoro_onnx engine ({e}), using in-process synthetic fallback.")
-                    self._session = "synthetic_engine"
-            else:
-                # Weights not downloaded yet; initialize synthetic fallback
-                self._session = "synthetic_engine"
-
+            m_path, v_path = self.asset_paths()
+            if not m_path or not v_path:
+                raise FileNotFoundError(
+                    "Kokoro ONNX weights are not cached; run "
+                    "`spacepilot recipes download kokoro-82m-onnx`")
+            from kokoro_onnx import Kokoro
+            self._session = Kokoro(m_path, v_path)
+            logger.info("Loaded Kokoro ONNX model from %s", m_path)
             self.spec.is_loaded = True
             return True
         except Exception as e:
@@ -138,35 +145,17 @@ class KokoroDriver(InferenceDriver):
     ) -> Tuple[np.ndarray, int]:
         """Synthesize raw float32 audio waveform at 24kHz."""
         if not self.is_loaded:
-            self.load()
-
-        if self._session != "synthetic_engine" and self._session is not None:
-            try:
-                samples, sample_rate = self._session.create(
-                    text, voice=voice, speed=speed, lang="en-us"
-                )
-                return np.asarray(samples, dtype=np.float32), sample_rate
-            except Exception as e:
-                logger.warning(f"ONNX inference failed: {e}; falling back to synthetic generator")
-
-        # Synthetic 24kHz harmonic waveform fallback
-        sample_rate = DEFAULT_SAMPLE_RATE
-        words = len(text.split())
-        chars = len(text)
-        duration = max(0.5, (words * 0.35 + chars * 0.02) / max(0.1, speed))
-        num_samples = int(duration * sample_rate)
-        t = np.linspace(0, duration, num_samples, endpoint=False, dtype=np.float32)
-
-        # Base fundamental frequency modulated by voice gender
-        f0 = 210.0 if voice.startswith("af_") else 125.0
-        waveform = 0.5 * np.sin(2 * np.pi * f0 * t)
-        waveform += 0.25 * np.sin(2 * np.pi * (f0 * 2) * t)
-        waveform += 0.12 * np.sin(2 * np.pi * (f0 * 3) * t)
-
-        # Apply smooth Hann envelope to avoid clicks
-        envelope = np.hanning(num_samples).astype(np.float32)
-        waveform = waveform * envelope
-        return waveform, sample_rate
+            if not self.load():
+                raise RuntimeError("KokoroDriver could not load real model weights")
+        if self._session is None:
+            raise RuntimeError("KokoroDriver has no loaded ONNX session")
+        try:
+            samples, sample_rate = self._session.create(
+                text, voice=voice, speed=speed, lang="en-us"
+            )
+        except Exception as exc:
+            raise RuntimeError(f"Kokoro ONNX inference failed: {exc}") from exc
+        return np.asarray(samples, dtype=np.float32), sample_rate
 
     @staticmethod
     def _normalize_loudness(
@@ -247,6 +236,7 @@ class KokoroDriver(InferenceDriver):
             "driver_id": self.driver_id,
             "task": self.task,
             "backend": self.backend,
+            "model_revision": self.resolved_revision,
             "voice": voice,
             "speed": speed,
             "text": text,

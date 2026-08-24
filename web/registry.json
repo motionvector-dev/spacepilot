@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-23",
+ "generated": "2026-08-25",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1194,9 +1194,9 @@
    },
    "variants": [
     {
-     "id": "kokoro-82m",
+     "id": "kokoro-82m-pytorch",
      "model_id": "kokoro",
-     "name": "Kokoro 82M",
+     "name": "Kokoro 82M PyTorch",
      "kind": "speech",
      "family": "hexgrad",
      "params": "82M",
@@ -1214,6 +1214,53 @@
       "value": 366000000.0,
       "source": "huggingface-api",
       "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 751619276.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "checkpoint plus roughly one checkpoint-sized runtime and activation margin; this PyTorch path has not been measured here",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "kokoro-82m-onnx",
+     "model_id": "kokoro",
+     "name": "Kokoro 82M ONNX",
+     "kind": "speech",
+     "family": "hexgrad",
+     "params": "82M",
+     "precision": "fp32",
+     "repo": "fastrtc/kokoro-onnx",
+     "files": [
+      "kokoro-v1.0.onnx",
+      "voices-v1.0.bin"
+     ],
+     "revision": "8d07950c9b6c87ce6809e9bba7bd494336217c2a",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 353746785.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-25",
       "note": null,
       "is_measured": true
      },
@@ -1245,39 +1292,7 @@
      ],
      "caveats": [],
      "compromised": [],
-     "notes": null,
-     "measurements": [
-      {
-       "system_id": "apple-m1-max-32gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 4.021,
-       "solo_samples": 1,
-       "observed_median": 4.021,
-       "observed_samples": 1,
-       "failed_samples": 0
-      },
-      {
-       "system_id": "intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 0.8920811586885874,
-       "solo_samples": 1,
-       "observed_median": 0.8920811586885874,
-       "observed_samples": 1,
-       "failed_samples": 0
-      },
-      {
-       "system_id": "intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 0.8400000000000001,
-       "solo_samples": 2,
-       "observed_median": 0.8400000000000001,
-       "observed_samples": 2,
-       "failed_samples": 0
-      }
-     ]
+     "notes": null
     }
    ]
   },

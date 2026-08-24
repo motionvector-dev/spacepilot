@@ -717,7 +717,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     #    driver never checks.
     try:
         from spacepilot.drivers.kokoro_driver import KokoroDriver
-        m_path, v_path = KokoroDriver()._discover_asset_paths()
+        m_path, v_path = KokoroDriver().asset_paths()
         kokoro_found = bool(m_path and v_path)
     except Exception:
         m_path = None
@@ -726,8 +726,8 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Kokoro   : ✅ Found ONNX weights ({Path(m_path).name})")
     else:
         print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
-        print("             Point SPACEPILOT_KOKORO_MODEL / SPACEPILOT_KOKORO_VOICES at a local")
-        print("             kokoro-v1.0.onnx + voices-v1.0.bin (auto-fetch not built yet).")
+        print("             Run: spacepilot recipes download kokoro-82m-onnx")
+        print("             or set SPACEPILOT_KOKORO_MODEL / SPACEPILOT_KOKORO_VOICES.")
         
     print("")
 
@@ -870,7 +870,9 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             reason = getattr(job, "error", None) or "unknown"
             print(f"  Download did not complete: {reason}")
             return 1
-        print(f"  Done → {job.local_path}")
+        print("  Done:")
+        for resolved_file in job.resolved_files:
+            print(f"    {resolved_file}")
         if job.resolved_revision:
             print(f"  revision: {job.resolved_revision}")
         return 0
