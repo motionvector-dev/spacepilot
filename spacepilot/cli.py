@@ -641,12 +641,38 @@ def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     uvicorn.run("spacepilot.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
 
 
-def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    raise NotImplementedError(
-        "LoRA training is not implemented. The previous service only simulated "
-        "training — a fake loss curve and no real checkpoint — and is now gated. "
-        "Real LoRA training (an mflux/diffusers run producing a real adapter) is "
-        "a separate feature, not yet built.")
+def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """List LoRA adapters. Training is gated — only the simulation existed.
+
+    Listing is a real read and stays working, exactly as the API and MCP
+    surfaces keep it: gating the whole command would have taken an honest
+    read down with the dishonest write.
+    """
+    from spacepilot.pluto.services.lora import lora_manager
+
+    action = getattr(args, "lora_action", None)
+
+    if action == "list":
+        adapters = lora_manager.list_adapters()
+        if not adapters:
+            print("  No LoRA adapters. Training is not implemented yet, so this")
+            print("  list stays empty until real adapters can be produced.")
+            return 0
+        print(f"  {'ADAPTER':<24} {'BASE MODEL':<20} {'RANK':>5}  TRIGGER")
+        for a in adapters:
+            print(f"  {a.adapter_id:<24} {a.base_model:<20} {a.rank:>5}  {a.trigger_word}")
+        return 0
+
+    if action == "train":
+        print("  LoRA training is not implemented.")
+        print("  The previous service only simulated it — a fake loss curve and no")
+        print("  real checkpoint — so it is gated rather than left to look real.")
+        print("  Real training (an mflux/diffusers run producing a real adapter)")
+        print("  is a separate, unbuilt feature.")
+        return 1
+
+    print("  Usage: spacepilot lora {list|train}")
+    return 2
 
 
 def _progress_bar(pct: float, width: int = 24) -> str:
