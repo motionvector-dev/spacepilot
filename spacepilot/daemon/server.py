@@ -19,7 +19,7 @@ from typing import Any, Callable, Iterator, Mapping
 
 import uvicorn
 
-from spacepilot.daemon.api import create_local_app, create_peer_app
+from spacepilot.daemon.api import FleetControl, PeerReads, create_local_app, create_peer_app
 from spacepilot.daemon.picture import PictureSampler
 from spacepilot.pluto.services.execution import LocalExecutionService
 from spacepilot.substrate import DirectLocal, Substrate
@@ -238,6 +238,8 @@ async def _serve_peer(
     stop: asyncio.Event,
     peer_port: int,
     peer_picture_signer: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    peer_reads: PeerReads | None,
+    peer_authenticator: Any | None,
     fixed_ip: str | None,
     discover: bool,
     status: PeerListenerState,
@@ -267,7 +269,12 @@ async def _serve_peer(
         try:
             status.update("listening", address=f"{ip}:{peer_port}")
             peer = _PeerServer(uvicorn.Config(
-                create_peer_app(substrate, picture_signer=peer_picture_signer),
+                create_peer_app(
+                    substrate,
+                    picture_signer=peer_picture_signer,
+                    peer_reads=peer_reads,
+                    peer_authenticator=peer_authenticator,
+                ),
                 log_level="info", access_log=False,
             ))
             serving = asyncio.create_task(peer.serve(sockets=[peer_sock]))
@@ -300,6 +307,11 @@ async def _serve(
     peer_picture_signer: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
     discover_peer: bool,
     peer_status: PeerListenerState,
+    fleet: FleetControl | None = None,
+    peer_reads: PeerReads | None = None,
+    peer_authenticator: Any | None = None,
+    fleet_status_supplier: Callable[[], Mapping[str, Any]] | None = None,
+    lifecycle_components: tuple[Any, ...] = (),
 ) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -307,11 +319,21 @@ async def _serve(
     def request_shutdown() -> None:
         loop.call_soon_threadsafe(stop.set)
 
+    def health() -> dict[str, Any]:
+        value: dict[str, Any] = {"peer": peer_status.snapshot()}
+        if fleet_status_supplier is not None:
+            try:
+                value["fleet"] = dict(fleet_status_supplier())
+            except Exception as exc:
+                value["fleet"] = {"background": {"state": "degraded", "errors": [str(exc)]}}
+        return value
+
     local = uvicorn.Server(uvicorn.Config(
         create_local_app(
             substrate,
             shutdown=request_shutdown,
-            health_supplier=lambda: {"peer": peer_status.snapshot()},
+            health_supplier=health,
+            fleet=fleet,
         ),
         log_level="info",
         access_log=False,
@@ -331,18 +353,32 @@ async def _serve(
         stopping.cancel()
         await asyncio.gather(stopping, return_exceptions=True)
 
-    await asyncio.gather(
-        serve_local(),
-        _serve_peer(
-            substrate,
-            stop=stop,
-            peer_port=peer_port,
-            peer_picture_signer=peer_picture_signer,
-            fixed_ip=peer_ip,
-            discover=discover_peer,
-            status=peer_status,
-        ),
-    )
+    started: list[Any] = []
+    try:
+        for component in lifecycle_components:
+            starter = getattr(component, "start", None)
+            if callable(starter):
+                await asyncio.to_thread(starter)
+            started.append(component)
+        await asyncio.gather(
+            serve_local(),
+            _serve_peer(
+                substrate,
+                stop=stop,
+                peer_port=peer_port,
+                peer_picture_signer=peer_picture_signer,
+                peer_reads=peer_reads,
+                peer_authenticator=peer_authenticator,
+                fixed_ip=peer_ip,
+                discover=discover_peer,
+                status=peer_status,
+            ),
+        )
+    finally:
+        for component in reversed(started):
+            closer = getattr(component, "stop", None) or getattr(component, "close", None)
+            if callable(closer):
+                await asyncio.to_thread(closer)
 
 
 def run_daemon(
@@ -354,6 +390,14 @@ def run_daemon(
     tailnet_ip: str | None = None,
     discover_tailnet: bool = True,
     identity: Any | None = None,
+    fleet_control: FleetControl | None = None,
+    fleet_manager: Any | None = None,
+    orders_supplier: Callable[[], Any] | None = None,
+    peer_reads: PeerReads | None = None,
+    peer_authenticator: Any | None = None,
+    fleet_runtime: Any | None = None,
+    gossip_puller: Any | None = None,
+    index_writer: Any | None = None,
 ) -> None:
     """Run the foreground daemon, honoring the exact supplied UDS path.
 
@@ -381,16 +425,55 @@ def run_daemon(
         "algorithm": "Ed25519",
     })
     substrate = DirectLocal(execution, picture_supplier=picture.sample)
+    owns_fleet_runtime = False
+    if fleet_runtime is None and all(value is None for value in (
+        fleet_control, fleet_manager, orders_supplier, peer_reads, peer_authenticator,
+    )):
+        from spacepilot.daemon.identity import Identity
+        if isinstance(machine_identity, Identity):
+            from spacepilot.daemon.index import IndexWriter
+            from spacepilot.daemon.runtime import build_runtime
+            fleet_runtime = build_runtime(
+                machine_identity, peer_port=peer_port,
+                index_writer=index_writer or IndexWriter(),
+            )
+            index_writer = None  # FleetRuntime now owns this writer exactly once.
+            owns_fleet_runtime = True
+    if fleet_runtime is not None:
+        fleet_control = fleet_control or fleet_runtime.controls()
+        peer_reads = peer_reads or fleet_runtime.peer_reads()
+        peer_authenticator = peer_authenticator or fleet_runtime.peer_authenticator()
+    if fleet_control is None and fleet_manager is not None and orders_supplier is not None:
+        fleet_control = FleetControl(
+            snapshot=lambda: fleet_manager.refresh(orders_supplier()).to_wire(),
+        )
     peer_status = PeerListenerState(
         "waiting" if tailnet_ip is not None or discover_tailnet else "disabled"
     )
-    with bind_unix_socket(socket_path) as bound:
-        asyncio.run(_serve(
-            bound,
-            substrate,
-            tailnet_ip,
-            peer_port,
-            lambda value: sign_picture(machine_identity, value),
-            discover_tailnet,
-            peer_status,
-        ))
+    try:
+        with bind_unix_socket(socket_path) as bound:
+            asyncio.run(_serve(
+                bound,
+                substrate,
+                tailnet_ip,
+                peer_port,
+                lambda value: sign_picture(machine_identity, value),
+                discover_tailnet,
+                peer_status,
+                fleet_control,
+                peer_reads,
+                peer_authenticator,
+                fleet_runtime.status if fleet_runtime is not None else None,
+                tuple(component for component in (
+                    fleet_manager, gossip_puller, index_writer,
+                    *(fleet_runtime.lifecycle_components() if fleet_runtime is not None else ()),
+                ) if component is not None),
+            ))
+    finally:
+        # _serve normally closes these. This also covers a bind/start failure
+        # after the default runtime created its background index writer.
+        if owns_fleet_runtime:
+            for component in fleet_runtime.lifecycle_components():
+                closer = getattr(component, "close", None)
+                if callable(closer):
+                    closer()
