@@ -75,8 +75,16 @@ nav.stuck{border-bottom-color:var(--line)}
              radial-gradient(46% 38% at 76% 66%,rgba(207,212,220,.09),transparent 70%)}
 .hero .vign{position:absolute;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(70% 60% at 50% 45%,transparent 40%,var(--root) 100%)}
-#ring{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:0;
-  width:min(760px,92vw);aspect-ratio:1;opacity:.92}
+.herogrid{display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(28px,4vw,64px);align-items:center}
+@media(max-width:1080px){.herogrid{grid-template-columns:1fr}.routes{max-width:540px}}
+.routes{margin:0}
+.routes svg{width:100%;height:auto;display:block}
+.routes .rt{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+.routes .rts{font-family:var(--mono);font-size:10.5px;fill:var(--ink3)}
+.routes .rtv{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;fill:var(--gold)}
+.routes .chipbox{fill:var(--panel);stroke:var(--line2)}
+html[data-motion="reduced"] .routes .pulse{display:none}
+@media (prefers-reduced-motion:reduce){.routes .pulse{display:none}}
 .wordmark{position:relative;z-index:3;display:block;width:min(1080px,100%);height:auto}
 .heroline{margin:30px 0 0;font-size:clamp(19px,2.5vw,27px);font-weight:500;letter-spacing:-.024em;
   line-height:1.24;max-width:23ch;text-wrap:balance}
@@ -200,18 +208,50 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
 <!-- ══ HERO ══ a chrome torus, a wordmark milled from the same metal ══ -->
 <header class="hero">
   <div class="glow"></div>
-  <canvas id="ring"></canvas>
   <div class="vign"></div>
-  <div class="wrap">
+  <div class="wrap herogrid">
+   <div class="herocopy">
     <canvas class="wordmark rv" id="wordmark" height="200"></canvas>
-    <p class="heroline rv">You already own the hardware.<br>SpacePilot flies it.</p>
-    <p class="herosub rv">This laptop. The box under your desk. A friend's rig. A spot instance you rent for nine minutes. One fleet, and every job goes to whichever ship is already holding the model <em style="font-style:normal;color:var(--ink)">warm</em>.</p>
+    <p class="heroline rv">Intelligence is cargo.<br>Compute is territory.</p>
+    <p class="herosub rv">You already own the territory — this laptop, the box under the desk, a dock you rent for nine minutes. One fleet, and every job goes to whichever ship is already holding the cargo <em style="font-style:normal;color:var(--ink)">warm</em>.</p>
     <div class="rv" style="margin-top:34px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
       <div class="install"><span style="color:var(--ink4)">$</span><span>pip install spacepilot</span>
         <button data-copy="pip install spacepilot">copy</button></div>
       <span class="m" style="font-size:12.5px;color:var(--ink3)">then open 127.0.0.1</span>
     </div>
     <p class="note rv" style="margin-top:20px">No account. No API key. No port opened. Nothing to sign up for, because there is nothing to sign up to.</p>
+   </div>
+   <figure class="routes rv" aria-label="One job, three candidate machines. The scheduler picks the one already holding the model warm.">
+    <svg viewBox="0 0 604 470" role="img">
+      <g fill="var(--ink4)" opacity=".3">
+        <circle cx="58" cy="60" r="1"/><circle cx="200" cy="34" r="1"/><circle cx="330" cy="80" r="1.2"/>
+        <circle cx="90" cy="400" r="1"/><circle cx="260" cy="430" r="1"/><circle cx="490" cy="240" r="1"/>
+        <circle cx="380" cy="440" r="1.2"/>
+      </g>
+      <path id="leg-studio" d="M172,224 C260,200 330,140 410,94" fill="none" stroke="var(--gold)" stroke-width="2.4"/>
+      <path d="M172,237 C260,237 330,236 408,235" fill="none" stroke="var(--ink4)" stroke-width="1.4"/>
+      <path d="M172,250 C260,275 330,340 406,378" fill="none" stroke="var(--ink4)" stroke-width="1.2" stroke-dasharray="5 5" opacity=".75"/>
+      <circle class="pulse" r="3.2" fill="var(--gold)">
+        <animateMotion dur="4.8s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear">
+          <mpath href="#leg-studio"/>
+        </animateMotion>
+      </circle>
+      <rect class="chipbox" x="18" y="212" width="154" height="50" rx="10"/>
+      <text class="rt"  x="32" y="233">wan 2.1 t2v</text>
+      <text class="rts" x="32" y="251">one 5 s clip</text>
+      <circle cx="416" cy="90" r="7" fill="none" stroke="var(--gold)" stroke-width="2"/>
+      <text class="rtv" x="432" y="76">chosen</text>
+      <text class="rt"  x="432" y="94">studio · M1 Max</text>
+      <text class="rts" x="432" y="111">warm · 0 s · $0.00</text>
+      <circle cx="416" cy="235" r="6" fill="none" stroke="var(--ink3)" stroke-width="1.5"/>
+      <text class="rt"  x="432" y="232">lenovo · RTX 5090</text>
+      <text class="rts" x="432" y="249">cold +14 s · $0.00</text>
+      <rect x="410" y="374" width="12" height="12" fill="none" stroke="var(--ink3)" stroke-width="1.5"/>
+      <text class="rt"  x="432" y="377">aws-spot · L40S</text>
+      <text class="rts" x="432" y="394">cold +92 s · <tspan fill="var(--wrong)">$0.31</tspan> — bills</text>
+    </svg>
+    <figcaption class="note">One job, three ways to run it. Gold is the route the pilot picked; every number here is real and repeated in the cards below.</figcaption>
+   </figure>
   </div>
   <div class="scrollcue"><i></i><span class="lbl">scroll</span></div>
 </header>
@@ -258,7 +298,7 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
   <div class="wrap">
     <div class="eyebrow rv"><i></i><span class="lbl">Fifteen seconds, start to measured</span></div>
     <h2 class="rv">This is the whole<br>first run.</h2>
-    <p class="lede rv">No tenant, no onboarding wizard, no trial. It asks permission, reads the machine, tells you what fits, brings one model aboard, and then measures it — and the number at the end is the only one on the screen we produced ourselves.</p>
+    <p class="lede rv">No tenant, no onboarding wizard, no trial. It asks permission, reads the machine, tells you what fits, stows one model, and then measures it — and the number at the end is the only one on the screen we produced ourselves.</p>
 
     <div class="shot rv">
       <div class="shotglow"></div>
@@ -271,7 +311,7 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
       <div class="step"><b>01</b><span>Ask before reading anything</span></div>
       <div class="step"><b>02</b><span>24.96 GB, not the 32 on the box</span></div>
       <div class="step"><b>03</b><span>What fits, before you download</span></div>
-      <div class="step"><b>04</b><span>One model aboard</span></div>
+      <div class="step"><b>04</b><span>One model stowed</span></div>
       <div class="step"><b>05</b><span>4.6× realtime, measured here</span></div>
     </div>
     <p class="note rv" style="margin-top:24px">Recorded from the running interface at 1280×720. Nothing in those frames is a mockup, and nothing in them is a number we did not take.</p>
@@ -282,30 +322,28 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
 <section id="proof">
   <div class="wrap">
     <div class="eyebrow rv"><i></i><span class="lbl">The uncomfortable slide</span></div>
-    <h2 class="rv">Thirty-four model variants.<br>Two numbers we measured ourselves.</h2>
-    <div class="ratio rv"><span class="n" style="color:var(--true)">2</span><span class="of">of 34 measured</span></div>
+    <h2 class="rv">Thirty-four variants.<br>Two flown.</h2>
+    <div class="ratio rv"><span class="n" style="color:var(--true)">2</span><span class="of">of 34 flown</span></div>
     <p class="lede rv">Most of this registry is other people's arithmetic, and we would rather print that on the homepage than let you find out later. Provenance sits at the same weight as the number it qualifies — never a tooltip, never a footnote, never grey. An instrument that flatters you is a decoration.</p>
 
     <div class="marks">
-      <div class="mark2 rv"><span class="k" style="color:var(--true)">measured</span>
-        <p>We ran it. On this machine. On a date you can read. Two of thirty-four, and the count only goes up by working.</p></div>
-      <div class="mark2 rv"><span class="k" style="color:var(--ink2)">declared</span>
-        <p>Their number, cited and dated. Measured on a machine that is not yours, under conditions nobody wrote down.</p></div>
-      <div class="mark2 rv"><span class="k" style="color:var(--ink2)">huggingface-api</span>
-        <p>Summed from the Hub. Real bytes, honestly added up, and still not a measurement.</p></div>
-      <div class="mark2 rv"><span class="k" style="color:var(--ink3)">estimated</span>
-        <p>A rule applied to a parameter count. The note names the rule. This is most of the registry and we are not hiding it.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--true)">flown</span>
+        <p>We ran it. On this ship. On a date you can read. Two of thirty-four, and the count only goes up by working.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink2)">on paper</span>
+        <p>Their number, cited and dated. Sometimes a spec sheet, sometimes bytes summed from the Hub — honest arithmetic, still not a measurement.</p></div>
+      <div class="mark2 rv"><span class="k" style="color:var(--ink3)">unflown</span>
+        <p>Nobody has run it here. A rule applied to a parameter count, and the note names the rule. Most of the registry, and we are not hiding it.</p></div>
     </div>
 
     <div class="marks" style="margin-top:16px">
       <div class="mark2 rv" style="border-color:var(--silver-line)">
-        <span class="lbl">Measured · speech</span>
+        <span class="lbl">Flown · speech</span>
         <span class="m" style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;color:var(--true)">4.6× realtime</span>
-        <p>Kokoro 82M through ONNX. 12.5 seconds of speech from one sentence in 2.7 seconds of wall clock, M1 Max, nothing else running.</p></div>
+        <p>Kokoro 82M through ONNX. 12.5 seconds of speech from one sentence in 2.7 seconds of wall clock, M1 Max, solo — nothing else running.</p></div>
       <div class="mark2 rv" style="border-color:var(--silver-line)">
-        <span class="lbl">Measured · image</span>
+        <span class="lbl">Flown · image</span>
         <span class="m" style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;color:var(--true)">10.52 GB</span>
-        <p>FLUX.2 klein-4B at 4-bit through MFLUX — the working set we observed, not a figure derived from parameter count.</p></div>
+        <p>FLUX.2 klein-4B at 4-bit through MFLUX — the working set we measured, not a figure derived from parameter count.</p></div>
     </div>
     <p class="note rv" style="margin-top:26px">And when a call fails, you get the failure. Not a plausible number wearing its clothes.</p>
   </div>
@@ -315,8 +353,8 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
 <section>
   <div class="wrap">
     <div class="eyebrow rv"><i></i><span class="lbl">The fleet</span></div>
-    <h2 class="rv">Not local versus cloud.<br>Ships, and one of them is rented.</h2>
-    <p class="lede rv">Local-versus-cloud is a distinction that mattered when you owned one machine. You own four. They find each other over your own tailnet, they keep their own crews warm, and the rented one is just the ship with a meter running. No port is opened. We never hold your identity, and we never see your work.</p>
+    <h2 class="rv">Not local versus cloud.<br>Ships, and one rented dock.</h2>
+    <p class="lede rv">Local-versus-cloud is a distinction that mattered when you owned one machine. You own four. They find each other over your own tailnet, they keep their own cargo warm, and the rented one is just a dock with a meter running. No port is opened. We never hold your identity, and we never see your work.</p>
 
     <div class="fleet rv">
       <div class="peers">
@@ -363,7 +401,7 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
 
 <footer><div class="wrap frow">
   <span>SpacePilot — an instrument that does not flatter you</span>
-  <span class="m">registry 2026-08-23 · 17 models · 34 variants · 2 measured</span>
+  <span class="m">registry 2026-08-23 · 17 models · 34 variants · 2 flown</span>
 </div></footer>
 
 <script>
@@ -452,7 +490,6 @@ function draw(ctx,w,h,o){
 }
 
 const DPR=()=>Math.min(devicePixelRatio||1,2);
-const ringCv=document.getElementById("ring"), ringCtx=makeGL(ringCv);
 const plate=document.createElement("canvas"), plateCtx=makeGL(plate);       // brushed metal source
 const wm=document.getElementById("wordmark"), wm2=wm.getContext("2d");
 const fav=document.getElementById("favmark"), fav2=fav.getContext("2d");
@@ -494,12 +531,6 @@ function frame(now){
   const t = now/1000, d = DPR(), lt = isLight();
   const liftBase = lt ? 0.02 : 0.36, liftSpan = lt ? 0.62 : 0.64;
 
-  if (ringCtx){
-    const w = Math.round(ringCv.clientWidth*d), h = Math.round(ringCv.clientHeight*d);
-    if (w>0) draw(ringCtx, w, h, {mode:0, radius:Math.min(w,h)*0.49, thick:Math.min(w,h)*0.052,
-      envRot:rot, lobes:4, rough:.17, disp:.85, grain:.35, time:t, alloy:"chrome",
-      liftBase, liftSpan});
-  }
   if (plateCtx){
     const pw = Math.max(2,Math.round(wm.clientWidth*d)), ph = Math.max(2,Math.round(200*d));
     draw(plateCtx, pw, ph, {mode:1, radius:0, thick:0, envRot:rot*1.9, lobes:4,
@@ -509,8 +540,7 @@ function frame(now){
   }
   requestAnimationFrame(frame);
 }
-if (ringCtx || plateCtx) requestAnimationFrame(frame);
-else document.querySelectorAll("#ring").forEach(c=>c.style.display="none");
+if (plateCtx) requestAnimationFrame(frame);
 
 /* ═══ reveals — landing is a rare surface, so it earns them ═══════════ */
 document.documentElement.classList.add("js");
