@@ -167,6 +167,14 @@ def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict
 
 def download_model_mock(model_id: str) -> Dict[str, Any]:
     """Mock/Staging model downloader creating cache payload."""
+    # GATED 2026-08-24: this wrote a stub text file with a fake sha256 and
+    # returned {"status": "downloaded"} — a fabricated download. Disabled so it
+    # can no longer report fake success. The real path is a huggingface_hub
+    # wrapper writing to the HF cache (see docs/THESIS.md). Mock body below dead.
+    raise NotImplementedError(
+        "Model download is not implemented; this wrote a stub with a mock "
+        "sha256 and claimed success. Gated 2026-08-24."
+    )
     target_entry = next((m for m in RECOMMENDED_MODEL_CATALOG if m.model_id == model_id), None)
     if not target_entry:
         return {"success": False, "error": f"Model {model_id} not found in catalogue."}

@@ -43,6 +43,8 @@ def download_local_model(req: ModelDownloadRequest):
         return res
     except HTTPException:
         raise
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to download model: {str(e)}")
 

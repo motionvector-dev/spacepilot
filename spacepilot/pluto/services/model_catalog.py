@@ -314,6 +314,31 @@ class ModelCatalogManager:
         )
         return job_id
 
+    def download_recipe_blocking(self, recipe_id: str) -> DownloadJob:
+        """Synchronous download for the CLI, which has no running event loop.
+
+        Builds the same job download_recipe does and runs _download_task to
+        completion in a private loop. Poll get_download_progress(recipe_id)
+        from another thread for live progress while this runs.
+        """
+        if recipe_id not in self.recipes:
+            raise ValueError(f"Recipe not found: {recipe_id}")
+        recipe = self.recipes[recipe_id]
+        if not recipe.hf_repo:
+            raise ValueError(f"Recipe {recipe_id} has no hf_repo to download from")
+        self.jobs[recipe_id] = DownloadJob(
+            job_id=recipe_id,
+            recipe_id=recipe_id,
+            status="pending",
+            progress_percent=0.0,
+            speed_mb_s=0.0,
+            total_bytes=recipe.download_bytes,
+            requested_revision=recipe.revision,
+        )
+        asyncio.run(self._download_task(
+            recipe_id, recipe.hf_repo, recipe.allow_patterns, recipe.revision))
+        return self.jobs[recipe_id]
+
     def get_download_progress(self, job_id: str) -> Optional[DownloadJob]:
         """Get the progress of a specific download job."""
         return self.jobs.get(job_id)

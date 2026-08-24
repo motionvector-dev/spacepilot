@@ -121,15 +121,11 @@ def test_model_recommender_task_routing():
 
 
 def test_download_model_mock_lifecycle():
-    """Test downloading a model from the recommended catalog."""
-    res = download_model_mock("kokoro-82m-tts")
-    assert res["success"] is True
-    assert res["model_id"] == "kokoro-82m-tts"
-    assert os.path.exists(res["path"])
-
-    bad_res = download_model_mock("non-existent-model-xyz")
-    assert bad_res["success"] is False
-    assert "error" in bad_res
+    """Model download is gated (2026-08-24): the mock downloader wrote a stub
+    with a fake sha256 and reported success. It must now raise rather than lie."""
+    import pytest
+    with pytest.raises(NotImplementedError):
+        download_model_mock("kokoro-82m-tts")
 
 
 def test_fastmcp_tools():
@@ -169,5 +165,4 @@ def test_web_api_compute_endpoints():
     assert r_dl_unauth.status_code == 401
 
     r_dl_auth = client.post("/api/compute/models/download", headers=AUTH, json={"model_id": "kokoro-82m-tts"})
-    assert r_dl_auth.status_code == 200
-    assert r_dl_auth.json()["success"] is True
+    assert r_dl_auth.status_code == 501  # gated: real model download is not implemented
