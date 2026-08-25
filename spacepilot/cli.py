@@ -454,8 +454,13 @@ def studio_python(cfg):
             )
             if probe.returncode == 0:
                 if cfg.get("python_bin") != candidate:
+                    # Cached so the next launch skips this scan — probing every
+                    # conda env costs a subprocess import each. Said out loud
+                    # because a launch verb writing config silently is a trap.
                     cfg["python_bin"] = candidate
                     save_config(cfg)
+                    print(f"  caching interpreter choice → .pluto_config.json "
+                          f"(python_bin = {candidate})")
                 return candidate
         except Exception:
             continue
@@ -1280,21 +1285,27 @@ def cmd_runtimes(args, cfg=None) -> int:
                 return "unusable"
             if st.below_minimum:
                 return "outdated"
+            if st.installed and st.external:
+                return "installed (external env)"
             if st.installed:
                 return "installed"
             if backend and backend not in r.backends:
                 return "n/a here"
             return "available"
 
+        checked = [(r, rt.check(r, cfg=cfg)) for r in
+                   sorted(reg.values(), key=lambda x: x.id)]
+
         if getattr(args, "json", False):
             rows = []
-            for r in sorted(reg.values(), key=lambda x: x.id):
-                st = rt.check(r)
+            for r, st in checked:
                 rows.append({
                     "id": r.id, "state": _state_of(r, st),
                     "serves": r.serves, "backends": r.backends,
                     "runs": r.runs, "version": st.version,
                     "python_note": st.python_note or None,
+                    "external": st.external,
+                    "external_path": st.external_path,
                 })
             print(json.dumps({
                 "system": {"chip": profile.chip, "backend": backend,
@@ -1305,14 +1316,14 @@ def cmd_runtimes(args, cfg=None) -> int:
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
               f"· {rt.interpreter()}\n")
-        print(f"  {'STATE':11s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
-        for r in sorted(reg.values(), key=lambda x: x.id):
-            st = rt.check(r)
+        width = max(11, max(len(_state_of(r, st)) for r, st in checked) + 2)
+        print(f"  {'STATE':{width}s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
+        for r, st in checked:
             state = _state_of(r, st)
-            print(f"  {state:11s}{r.id:20s}{','.join(r.serves):16s}"
+            print(f"  {state:{width}s}{r.id:20s}{','.join(r.serves):16s}"
                   f"{','.join(r.backends):20s}{st.version or '-'}")
             if not st.python_compatible:
-                print(f"  {'':11s}{'':20s}{st.python_note}")
+                print(f"  {'':{width}s}{'':20s}{st.python_note}")
         print("\n  `spacepilot runtimes check <id>` for detail, `install <id>` to add one.")
         print("  n/a here means it needs silicon this machine does not have.")
         return 0
@@ -1324,7 +1335,7 @@ def cmd_runtimes(args, cfg=None) -> int:
         return 1
 
     if action == "check":
-        st = rt.check(r)
+        st = rt.check(r, cfg=cfg)
         print(f"{r.name}  [{r.id}]")
         print(f"  {r.summary}")
         print(f"  serves    {', '.join(r.serves)}")
@@ -1336,9 +1347,12 @@ def cmd_runtimes(args, cfg=None) -> int:
         print(f"  python    {r.python_requires or 'any'}")
         print(f"  runs      {', '.join(r.runs) or '-'}")
         print(f"  here      " + (
-            f"installed, {st.version}" if st.installed and not st.below_minimum
+            f"installed (external env), {st.version}" if st.installed and st.external and not st.below_minimum
+            else f"installed, {st.version}" if st.installed and not st.below_minimum
             else f"installed but outdated — {st.reason}" if st.below_minimum
             else f"not installed — {st.reason}"))
+        if st.external and st.external_path:
+            print(f"  binary    {st.external_path}")
         if not st.python_compatible:
             print(f"            {st.python_note}")
         if r.notes:
@@ -1346,9 +1360,13 @@ def cmd_runtimes(args, cfg=None) -> int:
         return 0
 
     if action == "install":
-        st = rt.check(r)
+        st = rt.check(r, cfg=cfg)
         if st.installed and not st.below_minimum:
-            print(f"{r.name} is already installed ({st.version}).")
+            if st.external:
+                print(f"{r.name} is already installed in its own environment "
+                      f"({st.version}) — {st.external_path}")
+            else:
+                print(f"{r.name} is already installed ({st.version}).")
             return 0
         if not st.python_compatible:
             print(f"Cannot install {r.name}: {st.python_note}")

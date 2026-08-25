@@ -10,6 +10,25 @@
 
 ---
 
+## First run
+
+```bash
+pip install -e .                                  # into an env with Python 3.10+
+spacepilot probe                                  # what this machine can run
+spacepilot models                                 # which models run here
+spacepilot run image --prompt "a red lighthouse" --yes
+```
+
+What works today:
+
+- **Image** on Apple Silicon, via mflux in its own conda env (`spacepilot runtimes check mflux` shows the route).
+- **Speech and transcription** via the API (`spacepilot serve`).
+
+What does not: **video**. The engines and routes exist, but every render is a
+mock — an ffmpeg test pattern, not a real model run.
+
+---
+
 ## Architecture & Modular Components
 
 ```
