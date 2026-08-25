@@ -957,18 +957,30 @@ def _print_caveats(variant) -> None:
 
 
 def _load_declared_provider_rates():
-    """Read the locally pinned, signed provider projection without network I/O."""
-    from spacepilot.daemon.orders import OrdersStore
+    """Read the locally pinned, signed provider projection without network I/O.
+
+    Returns (providers, failure). A failure is the signed-ORDERS design working
+    — a bad signature, a rolled-back file, a foreign owner — and must reach the
+    screen. This used to swallow every exception into an empty tuple and log at
+    DEBUG, which rendered byte-identically to "this machine has no fleet": the
+    detection fired and the user saw nothing.
+    """
+    from spacepilot.daemon.orders import OrdersError, OrdersStore
 
     try:
         orders = OrdersStore(fleet_orders_path()).load()
-    except Exception as exc:
-        logger.debug("No usable local ORDERS provider projection: %s", exc)
-        return ()
-    return orders.providers if orders is not None else ()
+    except OrdersError as exc:
+        logger.debug("Local ORDERS provider projection did not verify: %s", exc)
+        return (), str(exc)
+    return (orders.providers if orders is not None else ()), None
 
 
-def _print_provider_rates(providers) -> None:
+def _print_provider_rates(providers, failure=None) -> None:
+    if failure:
+        print("\n  PROVIDERS — unavailable")
+        print(f"  The local ORDERS file did not verify: {failure}")
+        print("  This is a detection, not an absence. Nothing below reflects a fleet.")
+        return
     if not providers:
         return
     print("\n  PROVIDERS — on paper only")
@@ -1064,7 +1076,7 @@ def cmd_models(args, cfg=None) -> int:
         print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
     print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
-    _print_provider_rates(_load_declared_provider_rates())
+    _print_provider_rates(*_load_declared_provider_rates())
     return 0
 
 
@@ -1882,8 +1894,13 @@ def main(argv: list[str] | None = None):
                             help="Live Tailscale selector for the pinned author")
     fleet_join.add_argument("--fleet-id", default=None, help="Optional pinned fleet UUID")
     fleet_list = fleet_sub.add_parser("list", help="Render the daemon's current fleet facts")
-    fleet_list.add_argument("--watch", action="store_true", help="Continuously render fleet facts")
-    fleet_list.add_argument("--interval", type=float, default=2.0,
+    # SUPPRESS, not a default: argparse writes a subparser default over whatever
+    # the parent already parsed, so `fleet --watch --interval 5 list` silently
+    # became a single snapshot at 2s. With SUPPRESS the attribute is only set
+    # when the flag is actually given after the subcommand.
+    fleet_list.add_argument("--watch", action="store_true", default=argparse.SUPPRESS,
+                            help="Continuously render fleet facts")
+    fleet_list.add_argument("--interval", type=float, default=argparse.SUPPRESS,
                             help="Seconds between daemon snapshot requests (default: 2)")
 
     # lora

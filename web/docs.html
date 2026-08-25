@@ -367,7 +367,7 @@
                 <ul class="nav-list">
                     <li class="nav-item"><a href="#fastmcp" class="nav-link">Agentic FastMCP</a></li>
                     <li class="nav-item"><a href="#rest-api" class="nav-link">REST API & Auth</a></li>
-                    <li class="nav-item"><a href="#economics" class="nav-link">SkyPilot Economics</a></li>
+                    <li class="nav-item"><a href="#economics" class="nav-link">Economics</a></li>
                 </ul>
             </div>
         </nav>
@@ -602,8 +602,8 @@ def render_video(prompt: str, engine: str = "ltx-2.5", aspect_ratio: str = "16:9
         </section>
 
         <section id="economics" class="doc-section">
-            <h2>7. SkyPilot Economics</h2>
-            <p>SaaS APIs charge upwards of $0.30 per generation. Using our SkyPilot Spot Mesh router, generation requests that exceed your local headroom are automatically routed to spot instances (e.g., GCP a2-highgpu-1g preemptible) at roughly $0.012 per take, representing a 25x cost reduction.</p>
+            <h2>7. Economics</h2>
+            <p>Work runs on the machine you are sitting at, or on one AWS g6e.2xlarge spot instance you launch by hand with <code>spacepilot launch</code> and terminate yourself. There is no automatic overflow router: nothing decides on your behalf that a request exceeds local headroom and sends it to a cloud. The SkyPilot spot-mesh arbitrage this section used to describe was never built, and its API surface has been removed.</p>
         </section>
         
         <div style="height: 100px;"></div>

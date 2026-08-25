@@ -1,7 +1,7 @@
 # SpacePilot 🚀
 
 **Status**: Current
-**Verified**: 2026-08-22 via `python -m pytest tests/ -q` (172 passed, 57.81s) and `gh pr list`
+**Verified**: 2026-08-25 via `python -m pytest tests/ -q` (682 passed, 3 skipped) and `gh pr list`
 **Supersedes / Superseded by**: none
 
 > **"SpacePilot pilots your generative cinema."**
@@ -117,8 +117,9 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -m pytest tests/ -v
 ```
 
-**172 passing tests**, 0 failed, in 57.81s (verified 2026-08-22). Covers:
-- Polymorphic DiT engines (LTX, Wan 1.3B/14B, HunyuanVideo spatial/temporal constraints).
+**682 passing tests**, 0 failed, 3 skipped (verified 2026-08-25). Covers:
+- Polymorphic DiT engine adapters (LTX, Wan 1.3B/14B, HunyuanVideo). Mock renders only —
+  every BaseVideoEngine path writes an ffmpeg test pattern; no real video runs here yet.
 - In-process Kokoro TTS and GGUF narrative drivers.
 - Device capability probing and safety headroom calculations.
 - FastMCP tool wrappers.
@@ -160,6 +161,6 @@ web/                         Zero-build Obsidian UI
 ├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
 └── app.css                  Obsidian design system
 infra/                          GPU startup scripts, IAM
-tests/                          Pytest integration test suite (172 tests)
+tests/                          Pytest integration test suite (682 tests)
 docs/                           Architecture blueprints, plans, and research
 ```
