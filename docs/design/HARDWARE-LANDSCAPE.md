@@ -1,123 +1,105 @@
-# AI hardware landscape — August 2026
+# What the hardware is doing to the scheduler
 
-A scheduler that decides *where* a model runs must know what hardware exists,
-not only what it has probed. This records the state of AI silicon and memory,
-and what each change means for that decision.
+Four forces in AI hardware change what a scheduler must know. This explains
+them. It holds almost no numbers on purpose: the parts live in
+`spacepilot/registry/silicon/`, where every figure carries its source and the
+date it was read, and a loader refuses one that does not.
 
-Every figure here is **declared**: a vendor or a named report published it on a
-stated date. Nothing here is measured. The two must never be confused.
+**If a new part ships tomorrow, this document should not need editing.** Add a
+file to the registry instead. Only a change in *understanding* belongs here.
 
-## Datacenter silicon
+## 1. Memory is the binding constraint, not compute
 
-| Vendor | Now | Next |
-|---|---|---|
-| NVIDIA | Rubin — production early 2026, partner systems H2 | Rubin Ultra Q2 2027, then Feynman |
-| AMD | MI350 | MI400/MI450 in 2026. HBM4 **432 GB**, **19.6 TB/s** (from 288 GB, 8 TB/s). MI500 in 2027 |
-| Intel | Gaudi 3 | Crescent Island — **160 GB LPDDR5X**, inference-optimised. Sampling H2 2026 |
-| Huawei | Ascend 950PR Q1 2026 — 128 GB in-house memory, 1.6 TB/s | 950DT Q4 2026; 960 in 2027; 970 in 2028, each doubling |
+Every vendor is shipping more compute on schedule. None can get enough memory.
+The registry records four symptoms across two vendors: a desktop line whose top
+configuration cannot be upgraded at all, a machine whose price rose 18% mid-life
+with memory named as the reason, a laptop-class desktop that cannot be kept in
+stock, and a roadmap part designed for sixteen times today's capacity whose
+shipping is explicitly contingent on the memory market.
 
-Intel chose LPDDR5X over HBM on purpose: cheaper capacity, lower bandwidth. Two
-accelerators with similar capacity can differ tenfold in how fast they feed the
-chip.
+One cause sits behind all four. HBM4 entered mass production in 2026, and
+datacenter demand for it is bidding memory away from everything else.
 
-## Memory
+**What follows:** plan any fleet of owned machines assuming capacity is harder
+to buy next year, not easier.
 
-| | |
-|---|---|
-| **HBM4** | Mass production from early 2026. Interface doubles to 2048-bit; over 2.8 TB/s |
-| **16-high HBM4E** | Requested for Q4 2026 |
-| **HBF** — High Bandwidth Flash | A **new tier between HBM and SSD**. Standard published August 2026. Up to **512 GB at 0.4–3 TB/s**. Samples H2 2026; devices early 2027 |
+## 2. Capacity and throughput are different questions
 
-HBF is the structural change. Machine memory stops being one number and becomes
-a set of tiers with very different speeds.
+Memory size tells you whether weights *load*. Memory bandwidth tells you whether
+the result is *usable*. They rank machines differently, and the gap is not small.
 
-### Memory is the binding constraint, not compute
+On one 128 GB box, a dense 70B model generates 4–6 tokens per second while a
+120B mixture-of-experts model reaches 31–55 — because a mixture-of-experts model
+reads only a fraction of itself per token. Same memory, same box, an order of
+magnitude apart.
 
-Four independent signals, two vendors:
+Two machines in the registry make the same point from the other direction: a
+mid-range desktop and a purpose-built AI box move memory at an identical rate
+and differ by roughly three times in price.
 
-| Signal | Source |
-|---|---|
-| Mac Studio tops out at 96 GB; the M3 Ultra cannot be configured for memory at all | Apple spec page |
-| DGX Spark $2,999 → $3,999 → **$4,699**, attributed to memory supply | NVIDIA |
-| Mac mini out of stock, deliveries taking weeks to months | Bloomberg, 25 Aug 2026 |
-| M7 Ultra **designed for 1.5 TB**, but shipping it "will depend on the state of the industry" | Bloomberg, Jul 2026 |
+**What follows:** a `fits` verdict computed from capacity alone is not an answer.
+It needs a companion number, and today `usable_memory_bytes` is one integer.
 
-HBM4 demand is bidding memory away from everything else. Plan any fleet of owned
-machines on the assumption that capacity is harder to buy in 2027, not easier.
+## 3. "How much memory" has stopped having one answer
 
-## Local AI boxes
-
-A machine you own that runs models without renting anything. The category is now
-real: Apple cannot keep the Mac mini in stock because it became *"a popular tool
-for running artificial intelligence applications locally."*
-
-| Box | Memory | Bandwidth | Compute | Power |
-|---|---|---|---|---|
-| Mac Studio, M3 Ultra | 96 GB, **not configurable** | **819 GB/s** | — | — |
-| Mac Studio, M4 Max | 36 → 64 GB | 410 → 546 GB/s | — | — |
-| Mac mini, M4 Pro | 24 → 48 GB | **273 GB/s** | 16-core Neural Engine | — |
-| NVIDIA DGX Spark | 128 GB LPDDR5x | **273 GB/s** | 1 PFLOP FP4 sparse; Arm + Blackwell | 140 W chip |
-| AMD Ryzen AI Max+ 395 | 32–128 GB, **96 GB assignable as VRAM** | not published | 50+ TOPS NPU, 40 CU RDNA 3.5 | 55 W |
-| Xiaomi AI Cube | 160 GB | 1.22 TB/s | 200 TOPS NPU | 150 W |
-
-A mid-range Mac mini and a $4,699 DGX Spark move memory at the **same
-273 GB/s**. They differ in capacity and compute, not in feeding rate.
-
-**Capacity is not throughput.** On one 128 GB box: a dense 70B model generates
-4–6 tokens/s, while a 120B mixture-of-experts model reaches 31–55 — because a
-mixture-of-experts model reads only part of itself per token. Ranking on
-capacity alone gets this backwards.
-
-**Three memory models, not one:**
+Memory used to be a number. It is now an arrangement:
 
 ```
-  fully unified      Apple          CPU and GPU share all of it
-  partitionable      Ryzen AI Max   128 GB total, up to 96 GB assignable as VRAM
-  coherent unified   DGX Spark      128 GB shared across Arm and Blackwell
+  discrete       its own VRAM, separate from system RAM
+  unified        CPU and GPU share all of it
+  partitionable  shared, but a slice is assignable as VRAM
+  coherent       shared across heterogeneous cores
+  near-memory    compute sited next to the memory array
 ```
 
-"How much memory does this machine have" has a different answer per box.
+A part with 128 GB *partitionable* memory has two correct capacity answers
+depending on configuration. A new flash tier sitting between HBM and SSD adds a
+third speed band to machines that previously had two.
 
-## Client machines
+**What follows:** the fit check needs to know which arrangement it is looking at.
+`memory_model` is a required concept, not a detail.
 
-Every current laptop line ships a neural processing unit. Microsoft's Copilot+
-badge requires **40 TOPS or more**, so the floor is now universal:
+## 4. Every machine has an accelerator nothing can name
 
-| Part | NPU |
-|---|---|
-| AMD Ryzen AI 300 | 50 TOPS |
-| Intel Core Ultra 200V | 48 TOPS |
-| Qualcomm Snapdragon X Elite | 45 TOPS |
-| Apple M5 | 38 TOPS Neural Engine |
+The Copilot+ badge requires 40 TOPS or more, so every current client machine
+ships a neural processing unit. Apple, AMD, Intel and Qualcomm all have one.
 
-Every major OEM ships these — over thirty Copilot+ models were shown at one
-trade show in 2026.
-
-## What this changes
-
-**1. NPUs are universal and unnamed.** Every 2026 client machine has one, and no
-common backend vocabulary can express it. CUDA, Metal, ROCm and Vulkan all
+No common backend vocabulary can express it. CUDA, Metal, ROCm and Vulkan all
 describe GPUs. A scheduler that cannot name an NPU cannot route to one — and it
-is the accelerator most likely to be idle.
+is the accelerator most likely to be sitting idle.
 
-**2. Memory needs two numbers, not one.** Capacity says whether weights *load*.
-Bandwidth says whether the result is *usable*. With HBF and partitionable
-unified memory, a single "usable bytes" integer cannot express a real machine.
+The same gap has a cheaper version. A machine with a working Vulkan compute path
+and no ROCm installed is reported by most probes as having no usable
+accelerator, because their backend list has three entries and Vulkan is not one
+of them. That machine will run models. The probe says it cannot.
 
-**3. Scarcity strengthens warm residency.** If capacity is expensive and its
-ceiling is set by supply rather than engineering, evicting a loaded model to make
-room costs more. A machine that *already holds* a model is worth more than one
-that could. Warm residency stops being a latency optimisation and becomes an
-inventory argument.
+**What follows:** a backend is not one value per machine. It is a set of paths
+per device, and the set is larger than any probe currently knows. The registry's
+`compute_paths` vocabulary is deliberately wider than the probe's for this
+reason — it names paths we cannot yet route to, so the gap is visible.
 
-## Provenance
+## 5. Orchestration is now worth its own silicon
 
-Apple, NVIDIA and AMD figures come from their own specification pages and
-product blogs. AMD does not publish a memory-bandwidth number for the Ryzen
-AI Max+ 395; widely-quoted figures near 256 GB/s are third-party. Xiaomi's box
-is an engineering prototype with chips due in 2027. Roadmap items attributed to
-Bloomberg are reported plans, not vendor announcements, and Apple has declined
-to comment on them.
+A major vendor now ships a CPU designed specifically for the work *around*
+inference: tool calls, code execution, data processing and coordination between
+model calls. It is marketed on agentic throughput against x86, not on FLOPS.
 
-**Not established:** the chip in the next Mac mini. Reporting says Apple tested
-both M5 and M6 generations and a launch is days away.
+That is an outside party arriving at the same conclusion this project is built
+on — that deciding what runs where is real work, distinct from running it.
+
+## How to read the registry
+
+`spacepilot/registry/silicon/` holds one file per part. Every figure carries a
+source, an ISO date and an https link. Two source kinds exist and neither is
+`measured`:
+
+- `declared` — the vendor published it
+- `reported` — a named publication claimed it; the vendor has not confirmed
+
+A measurement never appears here. Measurements belong in the corpus, beside the
+machine that produced them, because a number somebody ran and a number somebody
+announced are not the same kind of fact and must never be averaged together.
+
+Silence is recorded too. Some vendors publish no bandwidth figure for a part;
+those fields are empty and the note says so, rather than being filled from
+third-party numbers that are probably right.
