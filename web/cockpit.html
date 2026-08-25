@@ -806,12 +806,12 @@
       </div>
     </div>
 
-    <!-- 5. Compute Provider Hub & SkyPilot Matrix (24px Radius) -->
+    <!-- 5. Compute Provider Hub (24px Radius) -->
     <div class="panel">
       <div class="metric-header">
         <div>
-          <h3 style="font-size: 18px; font-weight: 700;">Multi-Cloud Compute Provider Hub</h3>
-          <p style="font-size: 13px; color: var(--mv-text-muted); margin-top: 2px;">Route workloads to lowest-latency, lowest-cost spot clusters across 12+ cloud providers.</p>
+          <h3 style="font-size: 18px; font-weight: 700;">Compute Provider</h3>
+          <p style="font-size: 13px; color: var(--mv-text-muted); margin-top: 2px;">Where a launched instance comes from, and the credentials it uses.</p>
         </div>
         <select id="cfg-provider" class="form-select" style="min-width: 240px;">
           <option value="shadeform">🌐 Shadeform (20+ Clouds · Auto-Cheapest)</option>
@@ -839,43 +839,6 @@
           <label class="form-label">Local Host URL</label>
           <input type="text" id="cfg-local-host" class="form-input" placeholder="http://127.0.0.1:8000">
         </div>
-      </div>
-
-      <!-- SkyPilot Controls Header -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 14px; font-weight: 600; color: var(--mv-text);">SkyPilot Cluster Status:</span>
-          <span id="sky-active-name" style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--mv-text-muted);">Auto-Arbitrage Mode</span>
-          <span id="sky-active-badge" style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-emerald); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 2px 6px; border-radius: 4px;">● Checkpoint Synced</span>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button id="btn-sky-failover" class="btn-action" style="font-size: 11px; padding: 4px 10px; color: var(--accent-amber); border-color: rgba(245,158,11,0.3);">
-            ⚡ Trigger Failover
-          </button>
-          <button id="btn-sky-yaml" class="btn-action" style="font-size: 11px; padding: 4px 10px;">
-            📄 SkyPilot YAML
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Spot Arbitrage Matrix Table -->
-      <div style="margin-top: 12px; border: 1px solid var(--mv-border); border-radius: 12px; overflow: hidden; background: var(--mv-ground);">
-        <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; font-family: 'Geist Mono', monospace;">
-          <thead>
-            <tr style="background: var(--mv-surface); border-bottom: 1px solid var(--mv-border); color: var(--mv-text-muted);">
-              <th style="padding: 12px 16px;">Provider</th>
-              <th style="padding: 12px 16px;">GPU Accelerator</th>
-              <th style="padding: 12px 16px;">VRAM</th>
-              <th style="padding: 12px 16px;">Spot / Hr</th>
-              <th style="padding: 12px 16px;">On-Demand</th>
-              <th style="padding: 12px 16px;">Preemption Risk</th>
-              <th style="padding: 12px 16px;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="sky-arbitrage-tbody">
-            <!-- Populated dynamically by cockpit.js from /api/sky/clouds -->
-          </tbody>
-        </table>
       </div>
     </div>
 

@@ -94,6 +94,22 @@ def _post_routes(routes=None):
     return found
 
 
+def _all_route_paths(routes=None):
+    """Every path the app serves, at any method, however deeply nested.
+
+    Same wrapper problem as _post_routes: a one-level `getattr(route, "path")`
+    over app.routes sees four starlette routes and none of the API.
+    """
+    found = set()
+    for route in app.routes if routes is None else routes:
+        expand = getattr(route, "effective_route_contexts", None)
+        if callable(expand):
+            found |= _all_route_paths(list(expand()))
+        elif getattr(route, "path", None):
+            found.add(route.path)
+    return found
+
+
 def test_the_route_walk_is_not_empty():
     """Negative control: prove the guard below is looking at something.
 
@@ -156,10 +172,18 @@ def test_read_only_endpoints_stay_open():
 
 
 def test_skypilot_routes_are_removed():
-    """The retired multi-cloud fiction must not remain reachable as API routes."""
-    assert not any(
-        getattr(route, "path", "").startswith("/api/sky/") for route in app.routes
+    """The retired multi-cloud fiction must not remain reachable as API routes.
+
+    This walked app.routes one level deep, which under current FastAPI sees the
+    four starlette docs routes and none of the API — so it passed whether or not
+    /api/sky/* existed. Same vacuous-walk bug the POST gate guard had.
+    """
+    paths = _all_route_paths()
+    assert len(paths) > 50, (
+        f"the route walk found only {len(paths)} paths — it has gone blind, "
+        "so this guard proves nothing"
     )
+    assert not {p for p in paths if p.startswith("/api/sky/")}
 
 
 def test_healthz_is_dependency_free_liveness():
