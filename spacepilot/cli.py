@@ -462,7 +462,7 @@ def studio_python(cfg):
     return None
 
 
-def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     port = args.port or 8088
     studio_script = PLUTO_ROOT / "spacepilot" / "web_api.py"
 
@@ -471,7 +471,7 @@ def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print("  Error: no interpreter found with fastapi + uvicorn installed.")
         print("  Set SPACEPILOT_PYTHON, or add \"python_bin\" to .pluto_config.json,")
         print("  pointing at the environment where you ran: pip install -r requirements.txt")
-        return
+        return 1
 
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  🎬 LAUNCHING SPACEPILOT STUDIO ON http://localhost:{port}")
@@ -480,7 +480,7 @@ def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         import webbrowser
         time.sleep(1.0)
         webbrowser.open(f"http://localhost:{port}")
-    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "SPACEPILOT_STUDIO_PORT": str(port)})
+    return subprocess.run([python_bin, str(studio_script)], env={**os.environ, "SPACEPILOT_STUDIO_PORT": str(port)}).returncode
 
 
 def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
@@ -513,7 +513,7 @@ def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     sys.path.insert(0, str(PLUTO_ROOT))
     from spacepilot.device_probe import probe_local_device
     print("┌─────────────────────────────────────────────────────────────────┐")
@@ -594,9 +594,15 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         aws_data = json.loads(aws_res.stdout)
         print(f"  AWS Auth : ✅ Valid (Profile: {cfg.get('aws_profile', 'default')})")
         print(f"  Identity : {aws_data.get('Arn')}")
+    except FileNotFoundError:
+        print("  AWS Auth : ❌ AWS CLI is not installed")
     except Exception as e:
-        print("  AWS Auth : ❌ NOT AUTHENTICATED or AWS CLI not installed")
-        print("             Run 'aws configure' or check credentials")
+        # The real error, not a guess: "profile not found", "expired token"
+        # and "no network" have different fixes and used to print the same line.
+        detail = (getattr(e, "stderr", "") or str(e)).strip().splitlines()
+        print("  AWS Auth : ❌ NOT AUTHENTICATED")
+        for line in detail[:3]:
+            print(f"             {line}")
 
     # 5. Studio Token check
     token_path = PLUTO_ROOT / ".studio_token"
@@ -606,13 +612,15 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Session  : ⚠️ No local session token found")
 
     print("─────────────────────────────────────────────────────────────────")
+    return 0
 
 
-def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     import uvicorn
     print(f"Starting SpacePilot server on {args.host}:{args.port}")
     sys.path.insert(0, str(PLUTO_ROOT))
     uvicorn.run("spacepilot.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
+    return 0
 
 
 def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
@@ -1175,7 +1183,9 @@ def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> in
     """Send fleet requests to the local daemon; never poll peers from the CLI."""
     from spacepilot.daemon.fleet import FleetError
 
-    action = getattr(args, "fleet_action", None)
+    # No subcommand reads as `list`, like models/silicon/runtimes. This used
+    # to print "Unknown fleet action None." — Python's None, on screen.
+    action = getattr(args, "fleet_action", None) or "list"
     watch = bool(getattr(args, "watch", False))
     if action is None and watch:
         action = "list"
@@ -1653,11 +1663,15 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             for key, reason in system.unknown.items():
                 print(f"    {key}: {reason}")
 
+    as_json = getattr(args, "json", False)
+    out = sys.stderr if as_json else sys.stdout
     if getattr(args, "save", False):
         path = ms.write_system(system)
-        print(f"\n  recorded → {path}")
+        print(f"\n  recorded → {path}", file=out)
     else:
-        print("\n  (not saved; pass --save to write this to registry/systems/)")
+        # Under --json this trailer made stdout unparseable (`probe --json | jq`
+        # failed on "Extra data"); stdout carries only the JSON object.
+        print("\n  (not saved; pass --save to write this to registry/systems/)", file=out)
     return 0
 
 
@@ -1793,7 +1807,7 @@ def main(argv: list[str] | None = None):
     sweep_p = subparsers.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
     sweep_sub = sweep_p.add_subparsers(dest="sweep_action")
     sweep_run = sweep_sub.add_parser("run", help="Run (or dry-run) a sweep spec")
-    sweep_run.add_argument("spec", help="Path to a registry/sweeps/*.yaml spec")
+    sweep_run.add_argument("spec", help="Path to a spec, e.g. spacepilot/registry/sweeps/flux-schnell-4bit.yaml")
     sweep_run.add_argument("--dry-run", action="store_true",
                            help="Print the job grid and exit without running anything")
     sweep_run.add_argument("--max-jobs", type=int, default=None,
