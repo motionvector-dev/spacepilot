@@ -17,9 +17,10 @@ python_requires: ">=3.10,<3.11"
 verify:
   import: stable_audio_tools
 
-runs:
-  - stable-audio-open
+runs: []
 notes: >
+  Serves Stable Audio Open, which is not in the model registry yet — a runs
+  entry must point at a model file that exists.
   Pinned below Python 3.11 by its own metadata, so it will not install on this
   project's 3.11 environment. Listed because it is real and because the reason
   it is unavailable should be visible rather than discovered at install time.

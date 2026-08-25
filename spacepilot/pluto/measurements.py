@@ -443,6 +443,36 @@ def record(
     if state not in CONTENTION:
         raise MeasurementError(f"contention {state!r} not one of {sorted(CONTENTION)}")
 
+    # The subject should be a registry VARIANT. Four kokoro records were
+    # written under `kokoro-82m` — a truncation of `kokoro-82m-onnx` — and
+    # became invisible to both the export and `models list`: a real
+    # measurement the product then denied having. Refuse only the provably
+    # wrong ids: a known model id, or a truncation of an existing variant.
+    # A wholly unknown id still records — the registry lags reality, and
+    # losing a completed run is worse than a missing pin
+    # (test_an_unknown_model_records_without_a_revision holds that contract).
+    subject = fields.get("variant_id") or model_id
+    try:
+        from spacepilot.pluto.registry import registry as _registry
+        _reg = _registry()
+    except Exception:
+        _reg = None
+    if _reg is not None and _reg.variant(subject) is None:
+        model = _reg.model(subject)
+        if model is not None:
+            names = ", ".join(v.id for v in model.variants)
+            raise MeasurementError(
+                f"{subject!r} is a model, not a variant. A measurement names the "
+                f"exact weights that ran. Use one of: {names}"
+            )
+        truncated_of = [v.id for v in _reg.variants if v.id.startswith(subject + "-")]
+        if truncated_of:
+            raise MeasurementError(
+                f"{subject!r} is not a registry variant but looks like a "
+                f"truncation of: {', '.join(truncated_of)}. Records under it "
+                "would be invisible to the export and to `models list`."
+            )
+
     # Stamped at write time from the registry, because that is when the run
     # happened. Resolving it at read time would answer "what does this repo
     # point at now", which is the question a pin exists to stop anyone asking.

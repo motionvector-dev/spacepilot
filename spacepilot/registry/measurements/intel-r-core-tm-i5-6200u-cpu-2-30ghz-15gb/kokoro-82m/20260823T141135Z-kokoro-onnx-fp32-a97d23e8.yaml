@@ -1,6 +1,7 @@
 schema: 1
 system_id: intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb
 model_id: kokoro-82m
+variant_id: kokoro-82m-onnx
 metric: realtime_factor
 value: 0.8920811586885874
 contention: solo

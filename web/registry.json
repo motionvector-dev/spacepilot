@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-25",
+ "generated": "2026-08-26",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1287,7 +1287,39 @@
      ],
      "caveats": [],
      "compromised": [],
-     "notes": null
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "kokoro-82m-onnx",
+       "metric": "realtime_factor",
+       "solo_median": 4.021,
+       "solo_samples": 1,
+       "observed_median": 4.021,
+       "observed_samples": 1,
+       "failed_samples": 0
+      },
+      {
+       "system_id": "intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb",
+       "model_id": "kokoro-82m-onnx",
+       "metric": "realtime_factor",
+       "solo_median": 0.8920811586885874,
+       "solo_samples": 1,
+       "observed_median": 0.8920811586885874,
+       "observed_samples": 1,
+       "failed_samples": 0
+      },
+      {
+       "system_id": "intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb",
+       "model_id": "kokoro-82m-onnx",
+       "metric": "realtime_factor",
+       "solo_median": 0.8400000000000001,
+       "solo_samples": 2,
+       "observed_median": 0.8400000000000001,
+       "observed_samples": 2,
+       "failed_samples": 0
+      }
+     ]
     }
    ]
   },
