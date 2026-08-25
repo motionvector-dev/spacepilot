@@ -31,10 +31,11 @@ from spacepilot.paths import shipped_dir
 SCHEMA_VERSION = 1
 SILICON_DIR = shipped_dir("silicon")
 
-# What a part IS. A box is a whole machine you can buy; an accelerator is a part
-# that goes in someone else's machine. The distinction is not pedantry — you can
-# own a box, you can only rent time on most accelerators.
-KINDS = {"accelerator", "box", "memory", "client-soc"}
+# What a part IS, in terms of how you get access to it. You can own a box; you
+# usually rent time on a rack; an accelerator or a cpu is a part inside one of
+# those. The distinction is not pedantry — it decides whether a part can ever be
+# a machine you hold weights on, or only one you send work to.
+KINDS = {"accelerator", "cpu", "rack", "box", "memory", "client-soc"}
 
 # How the compute is reached. This is deliberately wider than the probe's own
 # backend list: the point of this file is to name paths we cannot yet route to.

@@ -1,0 +1,33 @@
+schema: 1
+id: hbf
+name: High Bandwidth Flash
+vendor: SanDisk and SK hynix
+kind: memory
+availability: sampling
+summary: >-
+  A new tier between HBM and SSD, and the reason a machine's memory can no longer
+  be one number. 512 GB at flash economics with a bandwidth range that overlaps
+  HBM at the top and SSDs at the bottom.
+compute_paths: []
+
+memory_bytes:
+  value: 549755813888
+  source: reported
+  checked: "2026-08-25"
+  url: https://news.skhynix.com/en/hbf-at-fms-2026/
+  note: up to 512 GB per device
+
+bandwidth_bytes_per_sec:
+  value: 3000000000000
+  source: reported
+  checked: "2026-08-25"
+  url: https://news.skhynix.com/en/hbf-at-fms-2026/
+  note: >-
+    quoted range is 0.4-3 TB/s; the upper bound is recorded here and the spread
+    is the point — a single figure cannot represent this tier
+
+note: >-
+  First technical specification published through the Open Compute Project in
+  August 2026, six months after the standardisation effort began. Samples in the
+  second half of 2026; inference devices using it expected early 2027. Google and
+  Tenstorrent joined the consortium during standardisation.

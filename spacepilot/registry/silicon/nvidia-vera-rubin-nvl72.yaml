@@ -1,0 +1,19 @@
+schema: 1
+id: nvidia-vera-rubin-nvl72
+name: NVIDIA Vera Rubin NVL72
+vendor: NVIDIA
+kind: rack
+availability: shipping
+summary: >-
+  A rack as the unit of purchase: 72 Rubin GPUs and 36 Vera CPUs wired as one
+  machine. The reference architecture the rest of the datacenter market is
+  measured against, and now the basis of an orbital deployment.
+compute_paths: [cuda, cpu]
+memory_model: coherent
+
+note: >-
+  72 Rubin GPUs, 36 Vera CPUs, ConnectX-9 SuperNICs and BlueField-4 DPUs, joined
+  by third-generation NVLink 6 and scaled out over Quantum-X800 InfiniBand or
+  Spectrum-X Ethernet. Carries a Transformer Engine with adaptive compression for
+  NVFP4 inference. NVIDIA publishes no per-rack memory, bandwidth, FLOPS or power
+  figure on its platform page, so none is recorded here.

@@ -1,0 +1,26 @@
+schema: 1
+id: hbm4
+name: HBM4
+vendor: JEDEC
+kind: memory
+availability: shipping
+summary: >-
+  The memory generation the whole 2026 accelerator roadmap is built on, and the
+  reason consumer memory got scarce. Doubling the interface width is what lets
+  MI450 reach 19.6 TB/s.
+compute_paths: []
+
+bandwidth_bytes_per_sec:
+  value: 2800000000000
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.eetimes.com/the-state-of-hbm4-chronicled-at-ces-2026/
+  note: >-
+    over 2.8 TB/s per stack at 11 Gbps, from an interface that doubles from
+    1024 to 2048 bits
+
+note: >-
+  Mass production from early 2026 across SK hynix, Samsung and Micron. 16-high
+  stacks, likely branded HBM4E, requested for Q4 2026. Demand for this part is
+  the direct cause of the capacity and price pressure visible in every consumer
+  box in this registry.

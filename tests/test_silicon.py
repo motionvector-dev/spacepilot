@@ -165,6 +165,31 @@ def test_compute_paths_cover_what_the_probe_cannot_yet_name():
 
 
 def test_kinds_and_availability_are_small_and_closed():
-    assert KINDS == {"accelerator", "box", "memory", "client-soc"}
+    assert KINDS == {"accelerator", "cpu", "rack", "box", "memory", "client-soc"}
     assert AVAILABILITY == {"shipping", "sampling", "announced", "prototype", "roadmap"}
     assert MEMORY_MODELS >= {"unified", "partitionable", "discrete"}
+
+
+def test_a_part_with_no_numbers_says_why():
+    """Silence must be explained, not merely permitted.
+
+    A part can legitimately carry no figures — NVIDIA publishes none per-rack for
+    NVL72, and AMD publishes no bandwidth for Ryzen AI Max. That is a fact worth
+    recording. What must never happen is a part reading as "we know nothing"
+    when the truth is "there is nothing published", or the reverse. So a part
+    with no claims has to say so in its note.
+    """
+    parts = load_silicon(shipped_dir("silicon"))
+    silent = [
+        p for p in parts.values()
+        if not any(getattr(p, f) for f in (
+            "memory_bytes", "bandwidth_bytes_per_sec",
+            "npu_tops", "power_watts", "price_usd"))
+    ]
+    assert silent, "no claim-free part present; this test proves nothing without one"
+    for part in silent:
+        assert part.note, f"{part.id} carries no figures and no explanation"
+        assert "publishes no" in part.note or "no public" in part.note, (
+            f"{part.id} carries no figures; its note must say that nothing is "
+            f"published rather than leaving the gap unexplained"
+        )
