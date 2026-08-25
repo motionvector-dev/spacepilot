@@ -87,7 +87,12 @@ _NoDuplicateSafeLoader.add_constructor(
 
 def load_yaml_strict(text: str | bytes) -> Any:
     try:
-        return yaml.load(text, Loader=_NoDuplicateSafeLoader)
+        # nosec B506 - _NoDuplicateSafeLoader subclasses yaml.SafeLoader and only
+        # overrides the mapping constructor to REJECT duplicate keys. It adds no
+        # constructor for any other tag, so no arbitrary object can be built.
+        # Bandit's check only recognises the literal yaml.safe_load spelling.
+        # test_orders_yaml_loader_cannot_construct_arbitrary_objects pins this.
+        return yaml.load(text, Loader=_NoDuplicateSafeLoader)  # nosec B506
     except OrdersError:
         raise
     except yaml.YAMLError as exc:

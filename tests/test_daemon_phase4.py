@@ -6,6 +6,7 @@ import datetime as dt
 import json
 import socket
 import stat
+import os
 import tempfile
 import threading
 import time
@@ -36,10 +37,23 @@ from spacepilot.substrate import DaemonClient, DirectLocal, SubstrateError
 UTC = dt.timezone.utc
 
 
+def _short_tmpdir(prefix: str):
+    """A tempdir short enough for sockaddr_un, on macOS and Linux alike.
+
+    sockaddr_un caps the path at 103 bytes and pytest's own tmp_path names blow
+    through that. This used to hardcode "/private/tmp", which is the macOS
+    spelling — the path does not exist on Linux, so every daemon test errored
+    in CI while passing locally. "/tmp" is short on both (on macOS it is the
+    symlink to /private/tmp).
+    """
+    base = "/tmp" if os.path.isdir("/tmp") else tempfile.gettempdir()
+    return tempfile.TemporaryDirectory(prefix=prefix, dir=base)
+
+
 @pytest.fixture
 def short_runtime():
     """macOS limits sockaddr_un paths to 103 bytes; pytest names are longer."""
-    with tempfile.TemporaryDirectory(prefix="sp-daemon-", dir="/private/tmp") as directory:
+    with _short_tmpdir("sp-daemon-") as directory:
         yield Path(directory)
 
 

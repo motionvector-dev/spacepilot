@@ -226,3 +226,37 @@ def test_store_never_replaces_a_symlink(tmp_path):
         store.initialize(author, _node(1, self_node=True), name="helm")
     assert path.is_symlink()
     assert target.read_text() == "keep"
+
+
+def test_orders_yaml_loader_cannot_construct_arbitrary_objects():
+    """The bandit B506 suppression in orders.py rests on exactly this.
+
+    load_yaml_strict calls yaml.load with a custom Loader, which bandit flags
+    because it only recognises the literal yaml.safe_load spelling. The
+    suppression is only honest while the loader stays a SafeLoader that has been
+    tightened rather than loosened — so pin both halves here. Without this test
+    the nosec comment could quietly become false.
+    """
+    import yaml
+
+    from spacepilot.daemon.orders import (
+        OrdersError,
+        _NoDuplicateSafeLoader,
+        load_yaml_strict,
+    )
+
+    assert issubclass(_NoDuplicateSafeLoader, yaml.SafeLoader)
+
+    # The only constructor it adds is the duplicate-key-rejecting mapping one.
+    added = set(_NoDuplicateSafeLoader.yaml_constructors) - set(yaml.SafeLoader.yaml_constructors)
+    assert not added, f"loader gained constructors for {added}"
+
+    # A python/object tag is refused, not instantiated.
+    with pytest.raises(OrdersError):
+        load_yaml_strict("!!python/object/apply:os.system ['echo pwned']\n")
+
+    # And the tightening it exists for still bites.
+    with pytest.raises(OrdersError):
+        load_yaml_strict("a: 1\na: 2\n")
+
+    assert load_yaml_strict("a: 1\nb: [2, 3]\n") == {"a": 1, "b": [2, 3]}
