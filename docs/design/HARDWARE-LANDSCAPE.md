@@ -89,6 +89,16 @@ on — that deciding what runs where is real work, distinct from running it.
 
 ## How to read the registry
 
+```
+spacepilot silicon            # the table: kind, availability, memory, bandwidth, source
+spacepilot silicon <id>       # one part, every claim with its date and its link
+spacepilot silicon --json     # the same, for anything that has to consume it
+```
+
+In the table a `*` marks a figure a publication reported rather than one the
+vendor published, and `not published` marks a figure nobody published at all.
+Neither is ever shown as a blank cell or a zero.
+
 `spacepilot/registry/silicon/` holds one file per part. Every figure carries a
 source, an ISO date and an https link. Two source kinds exist and neither is
 `measured`:
