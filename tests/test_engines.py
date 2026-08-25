@@ -195,56 +195,56 @@ def test_custom_engine_registration():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("engine_id", ["ltx-2.5", "wan-2.1-1.3b", "wan-2.1-14b", "hunyuan-video"])
-def test_engine_generate_and_extend(engine_id, tmp_path):
+def test_engine_generate_refuses_and_writes_nothing(engine_id, tmp_path):
+    """No engine here has ever run a model; generation must refuse, not render.
+
+    The old behaviour rendered an ffmpeg testsrc pattern (or, without ffmpeg,
+    a text file named .mp4) and returned status "completed" with invented
+    inference parameters — the mock= argument was never branched on.
+    """
     engine = get_video_engine(engine_id)
-    out_file = str(tmp_path / f"test_{engine_id}.mp4")
+    out_file = tmp_path / f"test_{engine_id}.mp4"
 
-    res = engine.generate_video(
-        prompt="A serene sunset over futuristic mountains",
-        width=512,
-        height=288,
-        seconds=1.0,
-        output_path=out_file,
-        mock=True,
-    )
-    assert res["status"] == "completed"
-    assert res["engine_id"] == engine.get_spec().engine_id
-    assert "job_id" in res
-    assert Path(out_file).exists()
+    with pytest.raises(NotImplementedError):
+        engine.generate_video(
+            prompt="A serene sunset over futuristic mountains",
+            width=512,
+            height=288,
+            seconds=1.0,
+            output_path=str(out_file),
+            mock=True,
+        )
+    assert not out_file.exists(), "the refusal still wrote a file"
 
-    # Test extend
-    ext_file = str(tmp_path / f"test_ext_{engine_id}.mp4")
-    ext_res = engine.extend_video(
-        video_path=out_file,
-        prompt="The stars emerge in the twilight sky",
-        seconds=1.0,
-        output_path=ext_file,
-        mock=True,
-    )
-    assert ext_res["status"] == "completed"
-    assert ext_res["engine_id"] == engine.get_spec().engine_id
-    assert Path(ext_file).exists()
+    ext_file = tmp_path / f"test_ext_{engine_id}.mp4"
+    with pytest.raises(NotImplementedError):
+        engine.extend_video(
+            video_path=str(out_file),
+            prompt="The stars emerge in the twilight sky",
+            seconds=1.0,
+            output_path=str(ext_file),
+            mock=True,
+        )
+    assert not ext_file.exists()
 
 
-def test_engine_image_to_video(tmp_path):
+def test_engine_image_to_video_refuses(tmp_path):
     img_file = tmp_path / "seed.png"
-    # Valid 1x1 PNG bytes
     valid_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00\x18\xdd\x8d\xb0\x00\x00\x00\x00IEND\xaeB`\x82"
-    with open(img_file, "wb") as f:
-        f.write(valid_png)
+    img_file.write_bytes(valid_png)
 
     for eng_id in ["ltx-2.5", "wan-2.1-14b", "hunyuan-video"]:
         engine = get_video_engine(eng_id)
-        out_file = str(tmp_path / f"i2v_{eng_id}.mp4")
-        res = engine.generate_video(
-            prompt="Animate this image into dynamic ocean waves",
-            image_path=str(img_file),
-            seconds=1.0,
-            output_path=out_file,
-            mock=True,
-        )
-        assert res["is_i2v"] is True
-        assert res["status"] == "completed"
+        out_file = tmp_path / f"i2v_{eng_id}.mp4"
+        with pytest.raises(NotImplementedError):
+            engine.generate_video(
+                prompt="Animate this image into dynamic ocean waves",
+                image_path=str(img_file),
+                seconds=1.0,
+                output_path=str(out_file),
+                mock=True,
+            )
+        assert not out_file.exists()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -282,6 +282,7 @@ def test_api_list_engines():
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "ok"
+    assert data["implemented"] is False, "the listing must say these are paper specs"
     assert len(data["engines"]) >= 4
     ids = [e["engine_id"] for e in data["engines"]]
     assert "ltx-2.5" in ids
@@ -304,7 +305,12 @@ def test_api_generate_multi_engine_auth_gating():
 
 
 @pytest.mark.parametrize("engine_id", ["ltx-2.5", "wan-2.1-1.3b", "wan-2.1-14b", "hunyuan-video"])
-def test_api_generate_multi_engine_success(engine_id):
+def test_api_generate_multi_engine_refuses_with_501(engine_id):
+    """A valid token gets an honest 501, and nothing is queued.
+
+    The old handler returned {"status": "queued"} with a job id for engines
+    that rendered test patterns and reported completed.
+    """
     res = client.post(
         "/api/generate/multi-engine",
         json={
@@ -312,13 +318,10 @@ def test_api_generate_multi_engine_success(engine_id):
             "engine_id": engine_id,
             "seconds": 2.0,
             "draft_mode": True,
-            "mock": True,
         },
         headers=AUTH_HEADERS,
     )
-    assert res.status_code == 200
-    data = res.json()
-    assert data["status"] == "queued"
-    assert "job_id" in data
-    assert "patch" in data
-    assert data["engine_id"] == get_video_engine(engine_id).get_spec().engine_id
+    assert res.status_code == 501
+    detail = res.json()["detail"]
+    assert "not" in detail and "implemented" in detail
+    assert "job_id" not in res.json()

@@ -122,7 +122,22 @@ def _build_status(cfg: dict) -> dict:
     """Build one status snapshot; callers must enforce refresh single-flight."""
     api_mod = sys.modules.get("spacepilot.web_api")
     gi_fn = getattr(api_mod, "get_instance_info", get_instance_info) if api_mod else get_instance_info
-    inst = gi_fn(cfg)
+    try:
+        inst = gi_fn(cfg)
+    except Exception as e:
+        # A failed AWS query is not a stopped box. Saying "stopped" here is
+        # what kept a green "Spot GPU: Active" pill honest-looking while a
+        # credential failure hid a billing instance.
+        return {
+            "instance": None,
+            "gpu_online": False,
+            "worker_ready": False,
+            "worker": None,
+            "uptime_minutes": 0.0,
+            "estimated_cost_usd": 0.0,
+            "aws_error": str(e),
+            "message": "Could not query AWS. Instance state is UNKNOWN, not off.",
+        }
     if not inst:
         return {
             "instance": None,
@@ -234,7 +249,11 @@ async def idle_watchdog_loop():
             elapsed = now - lat
             if elapsed > (idle_mins * 60):
                 gi_fn = getattr(api_mod, "get_instance_info", get_instance_info) if api_mod else get_instance_info
-                inst = await asyncio.to_thread(gi_fn, cfg)
+                try:
+                    inst = await asyncio.to_thread(gi_fn, cfg)
+                except Exception as e:
+                    print(f"[Watchdog] AWS query failed; cannot see the instance: {e}")
+                    inst = None
                 if inst and inst.get("state") == "running":
                     print(f"[Watchdog] Auto-terminating GPU instance {inst.get('id')} after {idle_mins}m of inactivity to save cost.")
                     _watchdog_event = {"event": "auto_shutdown", "time": now, "idle_mins": idle_mins}

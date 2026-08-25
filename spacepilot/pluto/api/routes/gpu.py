@@ -45,7 +45,10 @@ def launch_gpu(req: GpuActionRequest, background_tasks: BackgroundTasks, _: None
     rc_fn = _get_api_attr("run_cmd", run_cmd)
     
     cfg = lc_fn()
-    inst = gi_fn(cfg)
+    try:
+        inst = gi_fn(cfg)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AWS query failed; instance state unknown: {e}")
     if inst and inst.get("state") in ("running", "pending"):
         return {"status": "already_running", "instance_id": inst["id"], "ip": inst.get("ip")}
 
@@ -91,7 +94,10 @@ def deploy_worker_api(background_tasks: BackgroundTasks, _: None = Depends(requi
     rc_fn = _get_api_attr("run_cmd", run_cmd)
     
     cfg = lc_fn()
-    inst = gi_fn(cfg)
+    try:
+        inst = gi_fn(cfg)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AWS query failed; instance state unknown: {e}")
     if not inst or inst.get("state") != "running":
         raise HTTPException(status_code=400, detail="No running GPU instance found to deploy to.")
 
@@ -143,7 +149,12 @@ def get_cockpit_status():
     gs_fn = _get_api_attr("get_status", get_cached_status)
     
     cfg = lc_fn()
-    inst = gi_fn(cfg)
+    try:
+        inst = gi_fn(cfg)
+    except Exception:
+        # base_status already reports the query failure as UNKNOWN state;
+        # here it only gates the ssh hint, which an unknown instance can't have.
+        inst = None
     base_status = gs_fn()
 
     ssh_cmd = None

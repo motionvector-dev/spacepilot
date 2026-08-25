@@ -7,6 +7,7 @@ import asyncio
 
 import json
 import os
+import subprocess
 import sys
 import time
 import threading
@@ -251,8 +252,12 @@ def test_studio_enhance_prompt():
     assert "cinematic" in data["enhanced_prompt"].lower()
 
 
-def test_studio_generate_mock_pipeline():
-    """Verify /api/generate successfully creates and records a video."""
+def test_studio_generate_without_a_worker_fails_honestly():
+    """No GPU worker -> the job fails with a reason; nothing is rendered.
+
+    The old fallback rendered an ffmpeg testsrc pattern, set is_mock (which
+    nothing read) and reported "completed" while the response said "queued".
+    """
     response = client.post(
         "/api/generate",
         headers=AUTH,
@@ -267,18 +272,13 @@ def test_studio_generate_mock_pipeline():
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "queued"
-    assert "job_id" in data
-    assert "meta" in data
-    assert "patch" in data
+    assert data["status"] == "failed"
     job_id = data["job_id"]
+    assert "No video execution route" in data["meta"]["error"]
 
-    # Verify metadata on disk
-    meta_path = OUTPUTS_DIR / f"{job_id}.json"
-    assert meta_path.exists()
-    disk_meta = json.loads(meta_path.read_text())
-    assert disk_meta["id"] == job_id
-    assert "patch" in disk_meta
+    disk_meta = json.loads((OUTPUTS_DIR / f"{job_id}.json").read_text())
+    assert disk_meta["status"] == "failed"
+    assert not (OUTPUTS_DIR / f"{job_id}.mp4").exists(), "a clip was rendered for a model that never ran"
 
 
 def test_generate_patch_card_metadata():
@@ -341,23 +341,28 @@ def test_studio_assets_list():
     assert isinstance(data["assets"], list)
 
 
+
+def _make_test_clip(asset_id: str) -> "Path":
+    """Write a real 1s clip straight into OUTPUTS_DIR.
+
+    Tests that exercise ffmpeg post-processing (upscale, composite, asset
+    serving) used to obtain their source clip from /api/generate's mock
+    fallback. That fallback fabricated success and is gone; the routes under
+    test only need a file on disk, so make one directly.
+    """
+    out = OUTPUTS_DIR / f"{asset_id}.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=24",
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out)],
+        capture_output=True,
+    )
+    assert out.exists() and out.stat().st_size > 0
+    return out
+
 def test_studio_4k_upscale_chain():
     """Verify /api/upscale-4k handles 4K Super-Resolution export."""
-    # First create a mock asset if none exists
-    gen_res = client.post(
-        "/api/generate",
-        headers=AUTH,
-        json={"prompt": "4K test clip", "seconds": 1.0, "width": 1024, "height": 576},
-    )
-    asset_id = gen_res.json()["job_id"]
-    
-    # Wait for mock generation to finish file creation
-    import time
-    source_mp4 = OUTPUTS_DIR / f"{asset_id}.mp4"
-    for _ in range(30):
-        if source_mp4.exists():
-            break
-        time.sleep(0.2)
+    asset_id = "pytest_upscale_source"
+    _make_test_clip(asset_id)
 
     upscale_res = client.post(
         "/api/upscale-4k", json={"asset_id": asset_id, "scale": 4}, headers=AUTH
@@ -378,11 +383,9 @@ def test_studio_full_pipeline():
     assert script_data["scene_count"] == 5, f"Expected 5 scenes, got {script_data['scene_count']}"
     print(f"  ✓ Auto-script generated {script_data['scene_count']} scenes ({script_data['total_duration_sec']}s)")
 
-    # 7. Generate a mock asset for compositing
-    gen_res = client.post("/api/generate", json={"prompt": "Director scene plate", "seconds": 1.0}, headers=AUTH)
-    assert gen_res.status_code == 200
-    asset_id = gen_res.json()["job_id"]
-    time.sleep(0.5)
+    # 7. A real clip on disk for compositing
+    asset_id = "pytest_composite_source"
+    _make_test_clip(asset_id)
 
     # 8. Test MotionVector Compositor (P0 Composite Order Enforced)
     print("Testing MotionVector Compositor (/api/composite-motionvector)...")
@@ -473,13 +476,8 @@ def test_dotted_traversal_is_refused():
 
 def test_asset_file_route_requires_exact_name():
     """Verify a partial asset id no longer fuzzy-matches some other clip."""
-    gen_res = client.post("/api/generate", json={"prompt": "Exact name plate", "seconds": 1.0}, headers=AUTH)
-    asset_id = gen_res.json()["job_id"]
-    source_mp4 = OUTPUTS_DIR / f"{asset_id}.mp4"
-    for _ in range(30):
-        if source_mp4.exists():
-            break
-        time.sleep(0.2)
+    asset_id = "pytest_exactname_plate"
+    _make_test_clip(asset_id)
 
     assert client.get(f"/api/assets/{asset_id}/file").status_code == 200
     assert client.get(f"/api/assets/{asset_id[:6]}/file").status_code == 404
@@ -606,7 +604,8 @@ def test_generate_request_supports_ltx25_fields():
     assert res.status_code == 200
     data = res.json()
     assert "job_id" in data
-    assert data["status"] in ["queued", "processing", "completed"]
+    # No worker runs under pytest, so the honest status is "failed".
+    assert data["status"] == "failed"
 
 
 def test_static_asset_routing():
@@ -767,7 +766,7 @@ def test_generate_draft_mode():
     )
     assert res.status_code == 200, f"Draft generation failed: {res.text}"
     data = res.json()
-    assert data["status"] == "queued"
+    assert data["status"] == "failed"  # no worker under pytest; specs still recorded
     job_id = data["job_id"]
 
     # Verify response meta and patch specs
@@ -1252,7 +1251,7 @@ def test_generate_video_4take_batch():
     response = client.post("/api/generate", json=payload, headers=AUTH)
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "queued"
+    assert data["status"] == "failed"  # no worker under pytest; batch metadata still real
     assert "jobs" in data
     assert len(data["jobs"]) == 4
     assert "take_group_id" in data

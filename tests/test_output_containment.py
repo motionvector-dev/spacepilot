@@ -34,24 +34,22 @@ def _assert_contained(path_str: str) -> Path:
     return path
 
 
-@pytest.mark.parametrize("engine_cls", ENGINES)
-def test_generate_video_defaults_inside_outputs_dir(engine_cls):
-    res = engine_cls().generate_video("a test prompt", seconds=0.5, draft_mode=True, mock=True)
-    _assert_contained(res["video_path"])
+def test_default_render_path_is_inside_outputs_dir():
+    """The engines now refuse before rendering, so containment is asserted on
+    the path helper they all defaulted to, not on a produced file."""
+    from spacepilot.engines.base import default_render_path
 
-
-@pytest.mark.parametrize("engine_cls", ENGINES)
-def test_extend_video_defaults_inside_outputs_dir(engine_cls):
-    res = engine_cls().extend_video("base.mp4", "a test prompt", seconds=0.5, mock=True)
-    _assert_contained(res["video_path"])
-
-
-@pytest.mark.parametrize("engine_cls", ENGINES)
-def test_two_renders_do_not_collide(engine_cls):
-    engine = engine_cls()
-    first = engine.generate_video("p", seconds=0.5, draft_mode=True, mock=True)["video_path"]
-    second = engine.generate_video("p", seconds=0.5, draft_mode=True, mock=True)["video_path"]
+    first = _assert_contained(default_render_path("job-contained-a"))
+    second = _assert_contained(default_render_path("job-contained-b"))
     assert first != second
+
+
+@pytest.mark.parametrize("engine_cls", ENGINES)
+def test_engines_refuse_rather_than_render(engine_cls):
+    with pytest.raises(NotImplementedError):
+        engine_cls().generate_video("a test prompt", seconds=0.5, draft_mode=True, mock=True)
+    with pytest.raises(NotImplementedError):
+        engine_cls().extend_video("base.mp4", "a test prompt", seconds=0.5, mock=True)
 
 
 def test_checkpoint_storage_inside_outputs_dir():
