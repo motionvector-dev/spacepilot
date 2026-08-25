@@ -60,7 +60,12 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
     settings = get_settings()
     outputs_dir = settings.outputs_dir
     cfg = load_config()
-    inst = get_instance_info(cfg)
+    try:
+        inst = get_instance_info(cfg)
+        aws_error = None
+    except Exception as e:
+        inst = None
+        aws_error = str(e)
 
     job_id = f"pluto_{uuid.uuid4().hex[:10]}"
     target_prompt = req.prompt
@@ -277,63 +282,25 @@ def generate_video_api(req: GenerateRequest, background_tasks: BackgroundTasks, 
 
             background_tasks.add_task(_dispatch_remote)
         else:
-            def _mock_gen(current_job_id=job_id, current_meta=meta, current_meta_file=meta_file):
-                out_mp4 = outputs_dir / f"{current_job_id}.mp4"
-                thumb_png = outputs_dir / f"{current_job_id}.png"
-
-                current_meta["is_mock"] = True
-                if req.image_path and Path(req.image_path).exists() and req.last_image_path and Path(req.last_image_path).exists():
-                    gen_res = run_ffmpeg([
-                        "-loop", "1", "-i", str(req.image_path),
-                        "-loop", "1", "-i", str(req.last_image_path),
-                        "-filter_complex",
-                        f"[0:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=N/24/TB[v0];"
-                        f"[1:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=N/24/TB[v1];"
-                        f"[v1]format=yuva420p,fade=t=in:st=0:d={req.seconds}:alpha=1[v1a];"
-                        f"[v0][v1a]overlay[v]",
-                        "-map", "[v]",
-                        "-t", f"{req.seconds}",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-                    ])
-                elif req.image_path and Path(req.image_path).exists():
-                    gen_res = run_ffmpeg([
-                        "-loop", "1", "-i", str(req.image_path),
-                        "-t", f"{req.seconds}",
-                        "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-                    ])
-                else:
-                    gen_res = run_ffmpeg([
-                        "-f", "lavfi",
-                        "-i", f"testsrc=duration={req.seconds}:size={width}x{height}:rate=24",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out_mp4),
-                    ])
-                if gen_res.returncode != 0:
-                    current_meta["status"] = "failed"
-                    current_meta["error"] = ffmpeg_error(gen_res)
-                    discard_partial(out_mp4)
-                    write_meta(current_meta_file, current_meta)
-                    return
-
-                thumb_res = run_ffmpeg(["-ss", "00:00:00.5", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
-                if thumb_res.returncode != 0:
-                    thumb_res = run_ffmpeg(["-ss", "00:00:00", "-i", str(out_mp4), "-frames:v", "1", str(thumb_png)])
-                current_meta["status"] = "completed"
-                current_meta["file_path"] = str(out_mp4)
-                if thumb_res.returncode == 0:
-                    current_meta["thumbnail_path"] = str(thumb_png)
-                else:
-                    current_meta["thumbnail_error"] = ffmpeg_error(thumb_res)
-                write_meta(current_meta_file, current_meta)
-
-            background_tasks.add_task(_mock_gen)
+            # No worker: refuse rather than fabricate. The old fallback
+            # rendered an ffmpeg testsrc pattern, wrote is_mock (which nothing
+            # read) and reported "completed"; the UI showed a finished clip
+            # for a model that never ran (removed at e4b7910).
+            meta["status"] = "failed"
+            meta["error"] = (
+                "No video execution route: no GPU worker is running and local "
+                "video generation is not implemented. Nothing was rendered."
+                + (f" (AWS query failed: {aws_error})" if aws_error else "")
+            )
+            write_meta(meta_file, meta)
 
         jobs.append({"job_id": job_id, "meta": meta, "patch": patch})
         
+    overall = jobs[0]["meta"]["status"] if jobs else "failed"
     if req.takes > 1:
-        return {"status": "queued", "jobs": jobs, "take_group_id": take_group_id, "patch": jobs[0]["patch"]}
+        return {"status": overall, "jobs": jobs, "take_group_id": take_group_id, "patch": jobs[0]["patch"]}
     else:
-        return {"status": "queued", "job_id": jobs[0]["job_id"], "meta": jobs[0]["meta"], "patch": jobs[0]["patch"]}
+        return {"status": overall, "job_id": jobs[0]["job_id"], "meta": jobs[0]["meta"], "patch": jobs[0]["patch"]}
 
 
 @router.post("/api/video/extend")

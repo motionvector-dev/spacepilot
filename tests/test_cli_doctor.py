@@ -170,25 +170,15 @@ class TestCliDoctor(unittest.TestCase):
         self.assertEqual(DEFAULT_CONFIG["instance_type"], "g6e.2xlarge")
         self.assertEqual(DEFAULT_CONFIG["spot_hourly_rate"], 0.75)
 
-    @patch('spacepilot.cli.get_instance_info')
-    @patch('spacepilot.cli.run_cmd')
-    def test_cmd_deploy_token_forwarding(self, mock_run_cmd, mock_inst_info):
+    def test_cmd_deploy_refuses(self):
+        """The retired AWS deploy path refuses with exit 2 and runs nothing."""
+        from unittest.mock import MagicMock, patch as upatch
         from spacepilot.cli import cmd_deploy
-        mock_inst_info.return_value = {"id": "i-12345", "ip": "1.2.3.4", "state": "running"}
-        
-        args = MagicMock()
-        cfg = {"key_file": "/tmp/test.pem"}
-        
-        with patch.dict('os.environ', {'LOCAL_WORKER_TOKEN': 'secret_worker_token', 'HF_TOKEN': 'secret_hf_token'}):
-            cmd_deploy(args, cfg)
-            
-        # Verify run_cmd calls
-        self.assertEqual(mock_run_cmd.call_count, 4)
-        # Check that stdin_text passed both tokens
-        last_call = mock_run_cmd.call_args_list[-1]
-        stdin_text = last_call.kwargs.get("stdin_text") or (last_call[1].get("stdin_text") if len(last_call) > 1 else None)
-        self.assertIn("LOCAL_WORKER_TOKEN=secret_worker_token", stdin_text)
-        self.assertIn("HF_TOKEN=secret_hf_token", stdin_text)
+
+        with upatch('spacepilot.cli.run_cmd') as mock_run_cmd:
+            rc = cmd_deploy(MagicMock(), {"key_file": "/tmp/test.pem"})
+        self.assertEqual(rc, 2)
+        mock_run_cmd.assert_not_called()
 
     def test_cmd_generate_custom_output_arg(self):
         import argparse

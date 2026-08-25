@@ -28,7 +28,22 @@ def get_watchdog_event() -> Optional[Dict[str, Any]]:
 
 def build_status(cfg: dict) -> dict:
     """Build one status snapshot; callers must enforce refresh single-flight."""
-    inst = get_instance_info(cfg)
+    try:
+        inst = get_instance_info(cfg)
+    except Exception as e:
+        # A failed AWS query is not a stopped box. Reporting "stopped" here
+        # painted the cockpit green while a credential failure hid a billing
+        # instance; state is UNKNOWN and says so.
+        return {
+            "instance": None,
+            "gpu_online": False,
+            "worker_ready": False,
+            "worker": None,
+            "uptime_minutes": 0.0,
+            "estimated_cost_usd": 0.0,
+            "aws_error": str(e),
+            "message": "Could not query AWS. Instance state is UNKNOWN, not off.",
+        }
     if not inst:
         return {
             "instance": None,

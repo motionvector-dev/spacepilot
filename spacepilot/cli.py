@@ -240,22 +240,26 @@ def get_instance_info(cfg):
         "--query", "Reservations[].Instances[][InstanceId,State.Name,PublicIpAddress,InstanceType,LaunchTime]",
         "--output", "json",
     ]
+    # AWS is an external dependency and can leave a child behind when the
+    # CLI or network wedges. Status polling must always have a hard bound.
+    # Errors propagate: a credential or network failure must never be
+    # rendered as "no instance" — that made a billing box invisible. The one
+    # exception is the hard timeout itself: the child was killed at the bound,
+    # which is a safe "no answer yet" rather than a broken query.
     try:
-        # AWS is an external dependency and can leave a child behind when the
-        # CLI or network wedges. Status polling must always have a hard bound.
         raw = run_cmd(cmd, capture=True, timeout=3.0)
-        items = json.loads(raw) if raw else []
-        if items and len(items) > 0:
-            item = items[0]
-            return {
-                "id": item[0],
-                "state": item[1],
-                "ip": item[2] if len(item) > 2 else None,
-                "type": item[3] if len(item) > 3 else cfg["instance_type"],
-                "launch_time": item[4] if len(item) > 4 else None,
-            }
-    except Exception:
-        logger.warning("Failed to get instance info", exc_info=True)
+    except (TimeoutError, subprocess.TimeoutExpired):
+        return None
+    items = json.loads(raw) if raw else []
+    if items and len(items) > 0:
+        item = items[0]
+        return {
+            "id": item[0],
+            "state": item[1],
+            "ip": item[2] if len(item) > 2 else None,
+            "type": item[3] if len(item) > 3 else cfg["instance_type"],
+            "launch_time": item[4] if len(item) > 4 else None,
+        }
     return None
 
 
@@ -282,16 +286,26 @@ def fetch_worker_health(ip):
 # COMMAND HANDLERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
+def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     print("──────────────────────────────────────────────────────────────────────────")
     print("  SPACEPILOT GPU BOX & WORKER STATUS")
     print("──────────────────────────────────────────────────────────────────────────")
-    inst = get_instance_info(cfg)
+    try:
+        inst = get_instance_info(cfg)
+    except Exception as e:
+        # "Could not ask AWS" and "no instance" are different answers. The old
+        # code rendered both as a confident negative, exit 0, on the verb the
+        # docs call the free way to check a billing box.
+        print("  AWS Instance : could not be determined — the AWS query failed.")
+        print(f"  Error        : {e}")
+        print("  This is a detection failure, not proof the account is empty.")
+        print("──────────────────────────────────────────────────────────────────────────")
+        return 1
     if not inst:
         print("  AWS Instance : [STOPPED / NONE] No active GPU instance found.")
         print("  Launch with  : spacepilot launch")
         print("──────────────────────────────────────────────────────────────────────────")
-        return
+        return 0
 
     print(f"  Instance ID  : {inst['id']} ({inst['type']})")
     print(f"  AWS State    : {inst['state'].upper()}")
@@ -319,284 +333,84 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             print(f"  Active Jobs   : {health.get('active_jobs', 0)}")
             print(f"  HTTP Endpoint : http://{inst['ip']}:5000")
         elif health and health.get("status") == "warming_up":
-            print(f"  Worker State : [WARMING UP] Loading 78 GB model into VRAM (~170s)...")
+            print(f"  Worker State : [WARMING UP] Worker is loading its model; not serving yet.")
         else:
             print(f"  Worker State : [OFFLINE / STARTING] Server not responding on port 5000.")
             print("                 Check logs with: spacepilot logs")
     print("──────────────────────────────────────────────────────────────────────────")
+    return 0
 
 
-def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    print("──────────────────────────────────────────────────────────────────────────")
-    print("  LAUNCHING SPACEPILOT GPU BOX (AWS SPOT L40S)")
-    print("──────────────────────────────────────────────────────────────────────────")
-    inst = get_instance_info(cfg)
-    if inst and inst["state"] in ("running", "pending"):
-        print(f"  Already running: {inst['id']} ({inst['ip']})")
-        return
+def _refuse_legacy_aws(verb: str) -> int:
+    """The retired single-box AWS path refuses instead of half-working.
 
-    # Trigger launch script
-    infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
-    if not infra_script.exists():
-        print(f"  Error: {infra_script} not found.")
-        return
-
-    # Checked before launch: a box we cannot deploy to still bills by the hour.
-    if not WORKER_TOKEN:
-        print("  Error: LOCAL_WORKER_TOKEN is not set; the worker would start unauthenticated.")
-        print("  Export it before launching so the GPU box is not left billing idle.")
-        return
-
-    run_cmd(["bash", str(infra_script), "launch"])
-    time.sleep(2)
-    inst = get_instance_info(cfg)
-    if inst and inst["ip"]:
-        print(f"\n  Box ready at IP: {inst['ip']}")
-        print("  Deploying worker code to /scratch/worker...")
-        cmd_deploy(args, cfg)
+    These verbs drove one hardcoded g6e.2xlarge spot instance. Their handlers
+    exited 0 on every failure, `sync` printed "Sync complete!" regardless of
+    rsync, and the numbers on screen (load time, rate) were never measured.
+    They return as the docks surface (docs/BUILD-PLAN.md, Phase 4) with a
+    spend ceiling; the old bodies are in git history at e4b7910.
+    `status`, `ssh`, `logs` and `terminate` stay live so an already-running
+    box can still be seen, reached, and stopped.
+    """
+    print(f"  `spacepilot {verb}` is retired. It drove a single hardcoded AWS")
+    print("  spot instance and reported success regardless of what happened.")
+    print("  Renting compute returns as the docks surface (docs/BUILD-PLAN.md,")
+    print("  Phase 4). Nothing was started and nothing is billing.")
+    print("  A box that is already running: `spacepilot status` / `terminate`.")
+    return 2
 
 
-def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
-    if not inst or not inst["ip"]:
-        print("  Error: No running instance found to deploy to.")
-        return
-
-    ip = inst["ip"]
-    key = cfg["key_file"]
-    worker_token = os.environ.get("LOCAL_WORKER_TOKEN", WORKER_TOKEN)
-    if not worker_token:
-        print("  Error: LOCAL_WORKER_TOKEN is not set; the worker would start unauthenticated.")
-        return
-
-    print(f"  Syncing worker files to {ip}...")
-    run_cmd(["ssh", "-o", "StrictHostKeyChecking=accept-new", "-i", key, f"ubuntu@{ip}",
-             "sudo mkdir -p /opt/dlami/nvme/worker && ([ -L /scratch ] || sudo rm -rf /scratch) && sudo ln -sfn /opt/dlami/nvme /scratch && sudo chown -R ubuntu:ubuntu /opt/dlami/nvme /scratch"])
-    run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/spacepilot/ltx_worker.py", f"ubuntu@{ip}:/scratch/worker/ltx_worker.py"])
-    run_cmd(["scp", "-i", key, f"{PLUTO_ROOT}/infra/setup_ltx_ec2.sh", f"ubuntu@{ip}:/scratch/worker/setup.sh"])
-    print("  Starting setup & warmup in background...")
-    # Tokens arrive on stdin so they never land in the remote command line or process list.
-    hf_token = os.environ.get("HF_TOKEN", "")
-    token_payload = f"LOCAL_WORKER_TOKEN={worker_token}\nHF_TOKEN={hf_token}\n"
-    run_cmd(["ssh", "-i", key, f"ubuntu@{ip}",
-             "cd /scratch/worker && while IFS= read -r line; do export \"$line\"; done && bash setup.sh"],
-            stdin_text=token_payload)
-    print("\n  Deployment complete! Check status with: spacepilot status")
+def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("launch")
 
 
-def cmd_ssh(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
+def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("deploy")
+
+
+def _live_instance_or_none(cfg):
+    """Instance info, with AWS failures surfaced rather than swallowed."""
+    try:
+        return get_instance_info(cfg), None
+    except Exception as e:
+        return None, e
+
+
+def cmd_ssh(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    inst, err = _live_instance_or_none(cfg)
+    if err is not None:
+        print(f"  Error: the AWS query failed — {err}")
+        return 1
     if not inst or not inst["ip"]:
         print("  Error: No running instance found.")
-        return
+        return 1
     key = cfg["key_file"]
     ip = inst["ip"]
     print(f"Connecting to ubuntu@{ip}...")
-    subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}"])
+    return subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}"]).returncode
 
 
-def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
+def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    inst, err = _live_instance_or_none(cfg)
+    if err is not None:
+        print(f"  Error: the AWS query failed — {err}")
+        return 1
     if not inst or not inst["ip"]:
         print("  Error: No running instance found.")
-        return
+        return 1
     key = cfg["key_file"]
     ip = inst["ip"]
     print(f"Streaming worker logs from {ip} (Ctrl+C to stop)...")
-    subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}",
-                    "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"])
+    return subprocess.run(["ssh", "-i", key, f"ubuntu@{ip}",
+                    "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"]).returncode
 
 
-def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
-    if not inst or not inst["ip"]:
-        print("  Error: No running GPU box. Run 'spacepilot launch' first.")
-        return
-
-    ip = inst["ip"]
-    prompt = args.prompt
-    seconds = args.seconds or cfg["default_seconds"]
-    width, height = args.resolution or cfg["default_resolution"]
-    seed = args.seed
-    steps = args.steps or cfg["default_steps"]
-    image_path = getattr(args, "image", None)
-    fps = getattr(args, "fps", 24) or 24
-    negative_prompt = getattr(args, "negative_prompt", None)
-    stg = getattr(args, "stg", 1.0)
-    modality_scale = getattr(args, "modality_scale", 3.0)
-    guidance_scale = getattr(args, "guidance_scale", 3.0)
-    audio_guidance_scale = getattr(args, "audio_guidance_scale", 7.0)
-    guidance_rescale = getattr(args, "guidance_rescale", 0.7)
-    conditioning_scale = getattr(args, "conditioning_scale", 1.0)
-    image_noise_scale = getattr(args, "image_noise_scale", 0.0)
-
-    print("──────────────────────────────────────────────────────────────────────────")
-    print("  SPACEPILOT VIDEO GENERATION (LTX-2.5)")
-    print("──────────────────────────────────────────────────────────────────────────")
-    print(f"  Prompt     : \"{prompt}\"")
-    print(f"  Resolution : {width}x{height} | Duration: {seconds}s ({fps} fps) | Steps: {steps}")
-    if stg > 0:
-        print(f"  Guidance   : CFG={guidance_scale} | STG={stg} (blocks=[28]) | ModalitySync={modality_scale}")
-    if image_path:
-        print(f"  Image      : {image_path} (I2V mode, cond={conditioning_scale}, noise={image_noise_scale})")
-    print(f"  Target Box : http://{ip}:5000")
-    print("──────────────────────────────────────────────────────────────────────────")
-
-    remote_image_path = None
-    if image_path:
-        if not os.path.exists(image_path):
-            print(f"  Error: Image not found: {image_path}")
-            return
-        try:
-            headers = worker_headers({})
-        except RuntimeError as e:
-            print(f"  Error: {e}")
-            return
-        # Upload the image to the worker
-        import mimetypes
-        mime = mimetypes.guess_type(image_path)[0] or "image/png"
-        filename = os.path.basename(image_path)
-        print(f"  Uploading image to worker...")
-        with open(image_path, "rb") as f:
-            files = {"file": (filename, f, mime)}
-            import http.client
-            import io
-            boundary = f"----pluto{uuid.uuid4().hex}"
-            body = io.BytesIO()
-            for name, (fname, fobj, ftype) in files.items():
-                body.write(f"--{boundary}\r\n".encode())
-                body.write(f'Content-Disposition: form-data; name="{name}"; filename="{fname}"\r\n'.encode())
-                body.write(f"Content-Type: {ftype}\r\n\r\n".encode())
-                body.write(fobj.read())
-                body.write(b"\r\n")
-            body.write(f"--{boundary}--\r\n".encode())
-            body_bytes = body.getvalue()
-            headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
-            headers["Content-Length"] = str(len(body_bytes))
-            conn = http.client.HTTPConnection(ip, 5000, timeout=120)
-            conn.request("POST", "/upload", body=body_bytes, headers=headers)
-            resp = conn.getresponse()
-            data = resp.read().decode()
-            conn.close()
-            if resp.status != 200:
-                print(f"  Error uploading image: {resp.status} {data}")
-                return
-            upload_resp = json.loads(data)
-            remote_image_path = upload_resp["path"]
-            print(f"  Image uploaded: {remote_image_path}")
-
-    payload = {
-        "prompt": prompt,
-        "seconds": seconds,
-        "fps": fps,
-        "width": width,
-        "height": height,
-        "steps": steps,
-        "guidance_scale": guidance_scale,
-        "audio_guidance_scale": audio_guidance_scale,
-        "stg_scale": stg,
-        "modality_scale": modality_scale,
-        "guidance_rescale": guidance_rescale,
-        "conditioning_scale": conditioning_scale,
-        "image_noise_scale": image_noise_scale,
-    }
-    if negative_prompt:
-        payload["negative_prompt"] = negative_prompt
-    if seed is not None:
-        payload["seed"] = seed
-    if remote_image_path:
-        payload["image_path"] = remote_image_path
-
-    data = json.dumps(payload).encode()
-    try:
-        headers = worker_headers({"Content-Type": "application/json"})
-    except RuntimeError as e:
-        print(f"  Error: {e}")
-        return
-    try:
-        resp = httpx.post(
-            f"http://{ip}:5000/generate",
-            content=data,
-            headers=headers,
-            timeout=15,
-        )
-        resp.raise_for_status()
-        res = resp.json()
-        job_id = res.get("job_id")
-        print(f"  Job Queued : {job_id} (ETA: {res.get('eta_seconds', 15)}s)")
-    except Exception as e:
-        print(f"  Error submitting job: {e}")
-        return
-
-    # Poll status with a renderer that remains legible when piped.
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-    start_t = time.time()
-    renderer = output_renderer(args, cfg)
-
-    retries = 0
-    while True:
-        time.sleep(1.5)
-        try:
-            st_resp = httpx.get(
-                f"http://{ip}:5000/status/{job_id}", headers=worker_headers(), timeout=30
-            )
-            st_resp.raise_for_status()
-            st_data = st_resp.json()
-            retries = 0
-            renderer.progress(
-                "Rendering",
-                f"{st_data.get('status', 'unknown')} · elapsed {time.time() - start_t:.1f}s",
-            )
-            if st_data.get("status") == "completed":
-                dur = time.time() - start_t
-                renderer.finish()
-                print(f"  Rendering  : completed in {dur:.1f}s")
-
-                # Download MP4
-                if getattr(args, "output", None):
-                    out_path = Path(args.output).resolve()
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-                else:
-                    out_path = OUTPUTS_DIR / f"{job_id}.mp4"
-                with httpx.stream(
-                    "GET",
-                    f"http://{ip}:5000/download/{job_id}",
-                    headers=worker_headers(),
-                    timeout=60,
-                ) as dl_resp:
-                    dl_resp.raise_for_status()
-                    with open(out_path, "wb") as out_f:
-                        for chunk in dl_resp.iter_bytes():
-                            out_f.write(chunk)
-                print(f"  Output MP4 : {out_path} ({out_path.stat().st_size / (1024*1024):.2f} MB)")
-                
-                if args.open:
-                    subprocess.run(["open", str(out_path)])
-                break
-            elif st_data.get("status") == "failed":
-                renderer.finish()
-                print(f"  Error: Job failed: {st_data.get('error')}")
-                sys.exit(1)
-        except Exception:
-            logger.warning("Failed during worker status polling", exc_info=True)
-            retries += 1
-            if retries > 20:
-                renderer.finish()
-                print("  Error: Connection lost while polling worker status.")
-                break
+def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("generate")
 
 
-def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
-    if not inst or not inst["ip"]:
-        print("  Error: No running instance found.")
-        return
-    key = cfg["key_file"]
-    ip = inst["ip"]
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Syncing /scratch/out/ from {ip} to {OUTPUTS_DIR}...")
-    subprocess.run(["rsync", "-avz", "-e", f"ssh -i {key}", f"ubuntu@{ip}:/scratch/out/", f"{OUTPUTS_DIR}/"])
-    print("Sync complete!")
+def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("sync")
 
 
 def studio_python(cfg):
@@ -669,11 +483,15 @@ def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     subprocess.run([python_bin, str(studio_script)], env={**os.environ, "SPACEPILOT_STUDIO_PORT": str(port)})
 
 
-def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
-    inst = get_instance_info(cfg)
+def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    inst, err = _live_instance_or_none(cfg)
+    if err is not None:
+        print(f"  Error: the AWS query failed — {err}")
+        print("  Could not confirm whether an instance is running. Nothing was terminated.")
+        return 1
     if not inst:
         print("  No active instance found to terminate.")
-        return
+        return 0
 
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  TERMINATING GPU INSTANCE {inst['id']} ({inst.get('ip')})")
@@ -682,11 +500,17 @@ def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         confirm = input("  Are you sure you want to terminate this instance? (y/N): ").strip().lower()
         if confirm != "y":
             print("  Cancelled.")
-            return
+            return 1
 
     infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
-    run_cmd(["bash", str(infra_script), "terminate"])
+    try:
+        run_cmd(["bash", str(infra_script), "terminate"])
+    except Exception as e:
+        print(f"  Error: terminate did not complete — {e}")
+        print("  The instance may still be running and billing. Check `spacepilot status`.")
+        return 1
     print("  Instance terminated cleanly. Zero ongoing billing.")
+    return 0
 
 
 def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:

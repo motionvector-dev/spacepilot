@@ -140,37 +140,17 @@ class BaseVideoEngine(ABC):
         image_path: Optional[str] = None,
         engine_label: str = "DiT Engine",
     ) -> bool:
-        """Helper to create a test video using ffmpeg or fallback dummy file."""
-        out_p = Path(output_path)
-        out_p.parent.mkdir(parents=True, exist_ok=True)
+        """Refuses. This helper was the whole engine.
 
-        # Check if ffmpeg is available
-        if shutil.which("ffmpeg"):
-            try:
-                if image_path and Path(image_path).exists():
-                    cmd = [
-                        "ffmpeg", "-y",
-                        "-loop", "1", "-i", str(image_path),
-                        "-t", str(seconds),
-                        "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", str(fps),
-                        str(out_p)
-                    ]
-                else:
-                    cmd = [
-                        "ffmpeg", "-y",
-                        "-f", "lavfi",
-                        "-i", f"testsrc=duration={seconds}:size={width}x{height}:rate={fps}",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                        str(out_p)
-                    ]
-                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=30)
-                if res.returncode == 0 and out_p.exists() and out_p.stat().st_size > 0:
-                    return True
-            except Exception:
-                pass
-
-        # Fallback dummy write
-        with open(out_p, "wb") as f:
-            f.write(f"MOCK_VIDEO_DATA_{engine_label}_{width}x{height}_{seconds}s".encode())
-        return True
+        Every engine's generate_video/extend_video called this unconditionally
+        (the mock= argument was never branched on), rendered an ffmpeg testsrc
+        pattern — or, without ffmpeg, wrote a text file with an .mp4 name — and
+        reported status "completed" with invented inference parameters. Same
+        failure class as the seven MCP tools deleted in PRs #67/#68. It raises
+        until a real inference path exists.
+        """
+        raise NotImplementedError(
+            f"{engine_label}: video inference is not implemented. This engine "
+            "never ran a model; it rendered an ffmpeg test pattern and "
+            "reported success. It now refuses instead."
+        )
