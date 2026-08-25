@@ -1,0 +1,19 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: kokoro-82m-onnx
+metric: realtime_factor
+value: 1.2082032991529204
+contention: solo
+measured_on: '2026-08-25T19:21:13+00:00'
+variant_id: kokoro-82m-onnx
+runtime_id: kokoro-onnx
+quantisation: fp32
+backend: metal
+wall_seconds: 2.243
+knobs:
+  voice: af_heart
+  speed: 1.0
+  lang: en-us
+  audio_seconds: 2.71
+note: ordinary spacepilot run speech success; output artifact verified
+status: ok

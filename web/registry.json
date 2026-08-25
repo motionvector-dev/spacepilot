@@ -1293,10 +1293,10 @@
        "system_id": "apple-m1-max-32gb",
        "model_id": "kokoro-82m-onnx",
        "metric": "realtime_factor",
-       "solo_median": 4.021,
-       "solo_samples": 1,
-       "observed_median": 4.021,
-       "observed_samples": 1,
+       "solo_median": 2.61460164957646,
+       "solo_samples": 2,
+       "observed_median": 2.61460164957646,
+       "observed_samples": 2,
        "failed_samples": 0
       },
       {
@@ -2172,7 +2172,19 @@
      ],
      "caveats": [],
      "compromised": [],
-     "notes": null
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "whisper-small-en",
+       "metric": "realtime_factor",
+       "solo_median": 2.425544613548195,
+       "solo_samples": 1,
+       "observed_median": 2.425544613548195,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
     },
     {
      "id": "whisper-small-en-q5-1",
@@ -2475,7 +2487,7 @@
    "memory_unified": true,
    "vram_total_bytes": null,
    "host_fingerprint": "b0689f2dbc85",
-   "recorded_on": "2026-08-23",
+   "recorded_on": "2026-08-26",
    "unknown": {}
   },
   {

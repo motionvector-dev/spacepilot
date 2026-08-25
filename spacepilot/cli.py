@@ -952,16 +952,20 @@ def cmd_models(args, cfg=None) -> int:
     return 0
 
 
-def _run_candidate_facts(candidate) -> tuple[str, str, str]:
-    """One source of truth for both live and plain confirmation rows."""
-    from spacepilot.pluto.services.provenance import format_local_speed
-
-    verdict = candidate.verdict
+def _verdict_fit_text(verdict) -> str:
     fit = f"{verdict.verdict} — {verdict.reason}"
     if verdict.runnable_now is False:
         fit += f"; not runnable now, short {_gb(verdict.free_shortfall_bytes)}"
     if verdict.disk_ok is False:
         fit += f"; disk short {_gb(verdict.disk_shortfall_bytes)}"
+    return fit
+
+
+def _run_candidate_facts(candidate) -> tuple[str, str, str]:
+    """One source of truth for both live and plain confirmation rows."""
+    from spacepilot.pluto.services.provenance import format_local_speed
+
+    fit = _verdict_fit_text(candidate.verdict)
     provenance = format_local_speed(candidate.speed)
     if candidate.executable_ready:
         route = f"ready — {candidate.route.model_alias} via {candidate.executable}"
@@ -1009,6 +1013,159 @@ def run_confirmation_lines(plan, output: Path) -> list[str]:
     return lines
 
 
+def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = None) -> list[str]:
+    """Stable facts shared by both output modes for speech and transcribe."""
+    from spacepilot.pluto.services.provenance import format_local_speed
+
+    lines = [
+        f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE",
+    ]
+    for candidate in plan.candidates:
+        fit = _verdict_fit_text(candidate.verdict)
+        provenance = format_local_speed(candidate.speed)
+        lines.append(
+            f"  {candidate.variant.id:27s} {fit} · {provenance} · {candidate.route_detail}")
+
+    selected = plan.selected
+    if selected is None:
+        lines.append("\n  No safe local route is available; nothing can execute.")
+    else:
+        lines.extend([
+            f"\n  selected   {selected.variant.id} via {selected.route.runtime_id}",
+            f"  output     {output}",
+            "  network    local files only; a missing cached weight refuses instead of downloading",
+        ])
+        if extra:
+            lines.extend(extra)
+
+    unsafe = [
+        (candidate.variant.id, candidate.variant.precision, caveat)
+        for candidate in plan.candidates
+        for caveat in candidate.non_safe_caveats
+    ]
+    if unsafe:
+        lines.append("\n  capability caveats")
+        for variant_id, precision, caveat in unsafe:
+            method = _caveat_method(caveat, precision)
+            detail = f"{variant_id}: {caveat.capability} — {caveat.status} · {caveat.provenance}"
+            if method:
+                detail += f" · {method}"
+            lines.append(f"    {detail}")
+            lines.append(f"      {caveat.detail}")
+    return lines
+
+
+def _confirm_run(args) -> bool:
+    """The shared execute gate: --yes, or an interactive yes on a real tty."""
+    if getattr(args, "yes", False):
+        return True
+    if not sys.stdin.isatty():
+        print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+        return False
+    try:
+        answer = input("\n  Run? [Y/n] ").strip().lower()
+    except EOFError:
+        print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+        return False
+    if answer not in ("", "y", "yes"):
+        print("  Nothing ran.")
+        return False
+    return True
+
+
+def _cmd_run_speech(args, cfg=None) -> int:
+    from spacepilot.pluto.services.audio_execution import (
+        SpeechExecutionService, SpeechRequest, default_speech_output,
+    )
+    from spacepilot.pluto.services.execution import LocalExecutionError
+
+    service = SpeechExecutionService()
+    try:
+        plan = service.plan("speech")
+    except (ValueError, LocalExecutionError) as exc:
+        print(f"  Cannot plan run: {exc}")
+        return 1
+
+    output_arg = getattr(args, "output", None)
+    output = Path(output_arg).expanduser().resolve() if output_arg else default_speech_output()
+    print("\n".join(audio_run_confirmation_lines(plan, output)))
+    if plan.selected is None:
+        return 1
+    if not _confirm_run(args):
+        return 1
+
+    try:
+        result = service.execute(plan, SpeechRequest(
+            workload="speech",
+            text=args.text,
+            voice=args.voice,
+            output=output,
+        ))
+    except Exception as exc:
+        # Driver failures are user-facing route failures, not tracebacks or
+        # synthetic artifacts. The service writes no speed record for them.
+        print(f"\n  Run failed: {exc}")
+        return 1
+
+    print(f"\n  completed   {result.variant_id}")
+    print(f"  artifact    {result.output}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    print(f"  audio       {result.audio_seconds:.2f}s")
+    print(f"  speed       {result.realtime_factor:.2f}× realtime")
+    print(f"  measured    {result.measurement_path}")
+    print(f"  revision    {result.resolved_revision or 'unknown (weights came from an explicit path)'}")
+    return 0
+
+
+def _cmd_run_transcribe(args, cfg=None) -> int:
+    from spacepilot.pluto.services.audio_execution import (
+        TranscribeExecutionService, TranscribeRequest, default_transcript_output,
+    )
+    from spacepilot.pluto.services.execution import LocalExecutionError
+
+    service = TranscribeExecutionService()
+    try:
+        plan = service.plan("transcribe")
+    except (ValueError, LocalExecutionError) as exc:
+        print(f"  Cannot plan run: {exc}")
+        return 1
+
+    audio = Path(args.audio).expanduser().resolve()
+    output_arg = getattr(args, "output", None)
+    output = Path(output_arg).expanduser().resolve() if output_arg else default_transcript_output()
+    print("\n".join(audio_run_confirmation_lines(
+        plan, output, extra=[f"  input      {audio}"])))
+    if plan.selected is None:
+        return 1
+    if not audio.is_file():
+        print(f"\n  Cannot run: audio file does not exist: {audio}")
+        return 1
+    if not _confirm_run(args):
+        return 1
+
+    try:
+        result = service.execute(plan, TranscribeRequest(
+            workload="transcribe",
+            audio=audio,
+            output=output,
+        ))
+    except Exception as exc:
+        print(f"\n  Run failed: {exc}")
+        return 1
+
+    print(f"\n  completed   {result.variant_id}")
+    print(f"  artifact    {result.output}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    if result.realtime_factor is None:
+        print("  speed       unrecorded — audio duration unknown (only PCM wav can be timed)")
+    else:
+        print(f"  audio       {result.audio_seconds:.2f}s")
+        print(f"  speed       {result.realtime_factor:.2f}× realtime")
+        print(f"  measured    {result.measurement_path}")
+    print(f"  revision    {result.resolved_revision or 'unknown (weights came from an explicit path)'}")
+    return 0
+
+
 def cmd_run(args, cfg=None) -> int:
     """Plan, confirm and execute one real local workload."""
     from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
@@ -1017,6 +1174,10 @@ def cmd_run(args, cfg=None) -> int:
     )
 
     workload = getattr(args, "run_workload", None)
+    if workload == "speech":
+        return _cmd_run_speech(args, cfg)
+    if workload == "transcribe":
+        return _cmd_run_transcribe(args, cfg)
     service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
     try:
         plan = service.plan(workload)
@@ -1033,18 +1194,8 @@ def cmd_run(args, cfg=None) -> int:
     if plan.selected is None:
         return 1
 
-    if not getattr(args, "yes", False):
-        if not sys.stdin.isatty():
-            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
-            return 1
-        try:
-            answer = input("\n  Run? [Y/n] ").strip().lower()
-        except EOFError:
-            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
-            return 1
-        if answer not in ("", "y", "yes"):
-            print("  Nothing ran.")
-            return 1
+    if not _confirm_run(args):
+        return 1
 
     try:
         result = service.execute(plan, RunRequest(
@@ -1872,6 +2023,22 @@ def main(argv: list[str] | None = None):
     run_image.add_argument("--prompt", required=True, help="Text prompt for the image")
     run_image.add_argument("--output", "-o", default=None, help="Output image path")
     run_image.add_argument("--yes", action="store_true", help="Execute after printing the plan")
+    run_speech = run_sub.add_parser(
+        "speech", help="Synthesize speech through an exact local route")
+    run_speech.add_argument("--text", required=True, help="Text to synthesize")
+    run_speech.add_argument("--voice", default="af_heart",
+                            help="Kokoro voice id (default af_heart)")
+    run_speech.add_argument("--output", "--out", "-o", dest="output", default=None,
+                            help="Output wav path")
+    run_speech.add_argument("--yes", action="store_true",
+                            help="Execute after printing the plan")
+    run_tr = run_sub.add_parser(
+        "transcribe", help="Transcribe an audio file through an exact local route")
+    run_tr.add_argument("audio", help="Audio file to transcribe (wav, mp3, flac, ogg)")
+    run_tr.add_argument("--output", "--out", "-o", dest="output", default=None,
+                        help="Output transcript path (.txt)")
+    run_tr.add_argument("--yes", action="store_true",
+                        help="Execute after printing the plan")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")

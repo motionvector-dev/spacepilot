@@ -1,0 +1,17 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: whisper-small-en
+metric: realtime_factor
+value: 2.425544613548195
+contention: solo
+measured_on: '2026-08-25T19:22:38+00:00'
+variant_id: whisper-small-en
+runtime_id: whisper-cpp
+quantisation: f16
+backend: metal
+wall_seconds: 1.117
+knobs:
+  weights: ggml-small.en.bin
+  audio_seconds: 2.7093333333333334
+note: ordinary spacepilot run transcribe success; transcript artifact verified
+status: ok
