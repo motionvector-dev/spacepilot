@@ -1,6 +1,7 @@
 schema: 1
 system_id: intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb
 model_id: kokoro-82m
+variant_id: kokoro-82m-onnx
 metric: realtime_factor
 value: 1.139
 contention: solo

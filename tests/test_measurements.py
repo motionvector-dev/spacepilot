@@ -103,37 +103,37 @@ def test_a_record_without_contention_is_refused(tmp_path):
 
 def test_an_unknown_metric_is_refused():
     with pytest.raises(MeasurementError, match="not one of"):
-        record(system=System(id="x"), model_id="flux",
+        record(system=System(id="x"), model_id="flux-schnell-4bit",
                metric="vibes_per_second", value=1.0)
 
 
 def test_a_loaded_sample_never_moves_the_solo_ceiling(system, tmp_path):
     """Darkbloom keeps two streams because an averaged ceiling collapses under load."""
     for value, state in [(10.0, "solo"), (12.0, "solo"), (40.0, "loaded")]:
-        record(system=system, model_id="flux", metric="seconds_per_image",
+        record(system=system, model_id="flux-schnell-4bit", metric="seconds_per_image",
                value=value, contention=state, root=tmp_path, runtime_id="mflux")
 
     rows = load_measurements(tmp_path)
     assert len(rows) == 3
 
-    s = summarise(rows, system.id, "flux", "seconds_per_image")
+    s = summarise(rows, system.id, "flux-schnell-4bit", "seconds_per_image")
     assert s.solo_median == 11.0 and s.solo_samples == 2
     assert s.observed_median == 12.0 and s.observed_samples == 3
 
 
 def test_unknown_contention_is_excluded_from_the_solo_stream(system, tmp_path):
     """A sample that could not be classified must not be assumed idle."""
-    record(system=system, model_id="flux", metric="seconds_per_image",
+    record(system=system, model_id="flux-schnell-4bit", metric="seconds_per_image",
            value=9.0, contention="unknown", root=tmp_path)
-    s = summarise(load_measurements(tmp_path), system.id, "flux", "seconds_per_image")
+    s = summarise(load_measurements(tmp_path), system.id, "flux-schnell-4bit", "seconds_per_image")
     assert s.solo_samples == 0
     assert s.observed_samples == 1
 
 
 def test_records_land_under_system_and_model(system, tmp_path):
-    path = record(system=system, model_id="Kokoro-82M", metric="realtime_factor",
+    path = record(system=system, model_id="kokoro-82m-onnx", metric="realtime_factor",
                   value=4.6, contention="solo", root=tmp_path, runtime_id="kokoro-onnx")
-    assert path.parent == tmp_path / system.id / "kokoro-82m"
+    assert path.parent == tmp_path / system.id / "kokoro-82m-onnx"
     written = yaml.safe_load(path.read_text())
     assert written["runtime_id"] == "kokoro-onnx"
     assert written["backend"] == "metal"          # inherited from the system
@@ -143,7 +143,7 @@ def test_records_land_under_system_and_model(system, tmp_path):
 def test_knobs_survive_the_round_trip(system, tmp_path):
     """Steps and resolution decide the number; a record without them is unusable."""
     knobs = {"steps": 4, "resolution": [1024, 1024], "seed": 42}
-    record(system=system, model_id="flux", metric="seconds_per_image", value=12.5,
+    record(system=system, model_id="flux-schnell-4bit", metric="seconds_per_image", value=12.5,
            contention="solo", root=tmp_path, knobs=knobs, quantisation="4bit")
     got = load_measurements(tmp_path)[0]
     assert got.knobs == knobs
@@ -242,15 +242,15 @@ def test_a_failed_measurement_is_excluded_from_the_speed_summary(system, tmp_pat
     """An OOM at a given resolution/quantisation is real information — it says
     where this machine stops — but its `value` is not a speed number and must
     never move a median a caller reads as "how fast is this"."""
-    record(system=system, model_id="flux", metric="seconds_per_image", value=11.0,
+    record(system=system, model_id="flux-schnell-4bit", metric="seconds_per_image", value=11.0,
            contention="solo", root=tmp_path, status="ok")
-    record(system=system, model_id="flux", metric="seconds_per_image", value=0.4,
+    record(system=system, model_id="flux-schnell-4bit", metric="seconds_per_image", value=0.4,
            contention="solo", root=tmp_path, status="failed",
            error="mflux exited 1: out of memory", knobs={"resolution": [1024, 1024]})
 
     rows = load_measurements(tmp_path)
     assert len(rows) == 2
-    s = summarise(rows, system.id, "flux", "seconds_per_image")
+    s = summarise(rows, system.id, "flux-schnell-4bit", "seconds_per_image")
     assert s.solo_samples == 1 and s.solo_median == 11.0
     assert s.observed_samples == 1
     assert s.failed_samples == 1
@@ -258,5 +258,27 @@ def test_a_failed_measurement_is_excluded_from_the_speed_summary(system, tmp_pat
 
 def test_an_unknown_status_is_refused():
     with pytest.raises(MeasurementError, match="not one of"):
-        record(system=System(id="x"), model_id="flux", metric="seconds_per_image",
+        record(system=System(id="x"), model_id="flux-schnell-4bit", metric="seconds_per_image",
                value=1.0, status="crashed")
+
+
+def test_a_model_id_is_refused_with_the_variants_named(system, tmp_path):
+    """Four kokoro records were written under the model id and vanished from
+    the export and `models list`. The writer now refuses the ambiguous id."""
+    with pytest.raises(MeasurementError, match="kokoro-82m-onnx"):
+        record(system=system, model_id="kokoro", metric="realtime_factor",
+               value=4.0, contention="solo", root=tmp_path)
+
+
+def test_a_truncated_variant_id_is_refused(system, tmp_path):
+    """`kokoro-82m` is the exact id the four stranded records carried."""
+    with pytest.raises(MeasurementError, match="truncation"):
+        record(system=system, model_id="kokoro-82m", metric="realtime_factor",
+               value=4.0, contention="solo", root=tmp_path)
+
+
+def test_a_wholly_unknown_id_still_records(system, tmp_path):
+    """The registry lags reality; a completed run is never thrown away."""
+    path = record(system=system, model_id="brand-new-model-9b", metric="realtime_factor",
+                  value=4.0, contention="solo", root=tmp_path)
+    assert path.exists()

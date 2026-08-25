@@ -210,8 +210,8 @@ def test_a_record_written_under_the_override_is_read_back(tmp_path, monkeypatch)
     monkeypatch.setattr(ms, "SHIPPED_MEASUREMENTS_DIR", tmp_path / "shipped")
 
     system = ms.System(id="test-box", backend="cpu", os_name="linux")
-    path = ms.record(system=system, model_id="kokoro-82m",
+    path = ms.record(system=system, model_id="kokoro-82m-onnx",
                      metric="seconds_per_image", value=1.0, contention="solo")
 
     assert store in path.parents
-    assert [m.model_id for m in ms.load_measurements()] == ["kokoro-82m"]
+    assert [m.model_id for m in ms.load_measurements()] == ["kokoro-82m-onnx"]

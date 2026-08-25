@@ -113,8 +113,10 @@ SPEED_METRICS = {
     "seconds_per_second_of_video",
     "realtime_factor",
     # The warm-aware scheduler scores price + (cold ? load_seconds * value_of_latency
-    # : 0) (docs/DECISION-INBOX.md, "SpacePilot is an exchange, not a router",
-    # 2026-08-23) — load_seconds has to be its own measured metric, not folded
+    # : 0) ("SpacePilot is an exchange, not a router", 2026-08-23; archived in
+    # ~/code/motionvector/handoffs/DECISION-INBOX.md, planned in
+    # docs/BUILD-PLAN.md Phase 3) — load_seconds has to be its own measured
+    # metric, not folded
     # into a generation-speed number, because it is what makes a cold substrate
     # expensive even when its compute is cheap.
     "load_seconds",

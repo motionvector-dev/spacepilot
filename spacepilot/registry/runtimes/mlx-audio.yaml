@@ -18,6 +18,8 @@ verify:
   import: mlx_audio
 
 runs:
-  - musicgen
   - kokoro
-  - bark
+notes: >
+  Upstream also serves MusicGen and Bark; they are not listed under runs
+  because neither is in the model registry yet — a runs entry must point at
+  a model file that exists.

@@ -60,19 +60,20 @@ Anything that assumes two concurrent workers is wrong until that quota moves.
 
 ## Read these before asking
 
-Three docs exist so that no session re-derives what an earlier one already found.
-Read the relevant one before asking Saurabh, and update it when a fact moves.
+Repo docs were cleared for a rewrite on 2026-08-24 (commit 20bf158). What lives
+in the repo now:
 
-- **`docs/AWS.md`** — account and profile boundary, live quota values and codes, the
-  EC2 Mac table with its 24-hour minimum, Activate credit status, and how AWS Mac
-  pricing compares to OakHost / MacStadium / Scaleway. Read before spending money.
-- **`docs/INFERENCE.md`** — every model endpoint reachable from `doppler run`. Twelve
-  providers, each verified by a live API call. **Do not ask which LLM to use and do
-  not hunt for keys; this is the list.** Also records that `agy` is a CLI rather than
-  an API, and that Cloudflare 403s Python clients on Groq and Cerebras.
-- **`docs/PIPELINE-STATE.md`** — what has actually been exercised. Everything in
-  `outputs/` is `is_mock: True`; the real LTX renders and their measured per-clip
-  cost live in `~/Downloads/ltx-out`. Read before assuming any path works.
+- **`docs/design/CONCEPT.md`** — the product thesis: ships / docks / providers,
+  the honesty rules, the three words. Read this first.
+- **`docs/BUILD-PLAN.md`** — ground truth of what works and the phased work
+  list, verified against main with file:line evidence.
+
+The old operational docs (AWS.md, INFERENCE.md, PIPELINE-STATE.md,
+DECISION-INBOX.md) are archived at `~/code/motionvector/handoffs/` — context
+only, not current authority. Their load-bearing facts as of the archive date:
+the AWS boundary and quota live in this file above; the inference-provider
+list is Doppler-scoped (`doppler run --`, project `unfoundbox`); and nothing
+in `outputs/` was ever a real render.
 
 Music generation runs about 25× realtime and spins the fans. A 10s cue is
 ~4 minutes of full-tilt GPU. Ask before starting long runs.
