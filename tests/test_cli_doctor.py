@@ -16,6 +16,7 @@ class TestCliDoctor(unittest.TestCase):
         mock_profile.device_name = "M2 Max"
         mock_profile.vram_usable_gb = 24.0
         mock_profile.vram_total_gb = 32.0
+        mock_profile.memory_limit_source = "metal"
         mock_profile.ram_free_gb = 16.0
         mock_profile.ram_total_gb = 32.0
         mock_probe.return_value = mock_profile
@@ -43,6 +44,7 @@ class TestCliDoctor(unittest.TestCase):
         self.assertIn("Backend  : METAL", output)
         self.assertIn("Device   : M2 Max", output)
         self.assertIn("VRAM     : 24.0GB usable / 32.0GB total", output)
+        self.assertIn("limit source: metal", output)
         self.assertIn("FFmpeg   : ✅ Installed", output)
         self.assertIn("AWS Auth : ✅ Valid", output)
 

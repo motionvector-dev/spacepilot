@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('file', file);
       const token = await getAuthToken();
       const headers = {};
-      if (token) headers['X-Pluto-Token'] = token;
+      if (token) headers['X-SpacePilot-Token'] = token;
 
       const res = await fetch('/api/upload-image', {
         method: 'POST',
@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
 
       const headers = {};
-      if (token) headers['X-Pluto-Token'] = token;
+      if (token) headers['X-SpacePilot-Token'] = token;
 
       const res = await fetch('/api/upload-image', {
         method: 'POST',
@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['X-Pluto-Token'] = token;
+      if (token) headers['X-SpacePilot-Token'] = token;
 
       
       let endpoint = '/api/generate';
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Pluto-Token': token,
+            'X-SpacePilot-Token': token,
           },
           body: JSON.stringify(payload),
         });
@@ -1251,7 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Generate Voice Track
         const voiceRes = await fetch('/api/generate/voice', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({
             text: text,
             voice: voVoiceSelect?.value || 'af_heart',
@@ -1294,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bgmChoice !== 'none') {
           const duckRes = await fetch('/api/audio/mix-ducked', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+            headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
             body: JSON.stringify({
               voice_job_id: voiceJobId,
               bgm_preset: bgmChoice,
@@ -1348,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resultVideo && resultVideo.src) {
       const a = document.createElement('a');
       a.href = resultVideo.src;
-      a.download = `pluto_cinematic_${Date.now()}.mp4`;
+      a.download = `spacepilot_cinematic_${Date.now()}.mp4`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

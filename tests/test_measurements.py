@@ -1,6 +1,7 @@
 """The measurement store keeps the two streams apart and rejects vague records."""
 
 import datetime as dt
+import hashlib
 import os
 from pathlib import Path
 
@@ -60,6 +61,29 @@ def test_fingerprint_does_not_leak_the_hostname(system):
     if host:
         assert host not in system.host_fingerprint
         assert host.split(".")[0].lower() not in system.host_fingerprint.lower()
+
+
+def test_fingerprint_keeps_historical_default_salt_permanently(monkeypatch):
+    import spacepilot.pluto.measurements as ms
+    monkeypatch.delenv("SPACEPILOT_FINGERPRINT_SALT", raising=False)
+    monkeypatch.delenv("PLUTO_FINGERPRINT_SALT", raising=False)
+    monkeypatch.setattr(ms.platform, "node", lambda: "stable-host")
+    expected = hashlib.sha256(b"pluto-measurements-v1:stable-host").hexdigest()[:12]
+    assert ms.FINGERPRINT_SALT_DEFAULT == "pluto-measurements-v1"
+    assert ms._fingerprint() == expected
+
+
+def test_fingerprint_legacy_salt_env_remains_a_permanent_fallback(monkeypatch):
+    import spacepilot.pluto.measurements as ms
+    monkeypatch.delenv("SPACEPILOT_FINGERPRINT_SALT", raising=False)
+    monkeypatch.setenv("PLUTO_FINGERPRINT_SALT", "legacy-deployment-salt")
+    monkeypatch.setattr(ms.platform, "node", lambda: "stable-host")
+    expected = hashlib.sha256(b"legacy-deployment-salt:stable-host").hexdigest()[:12]
+    assert ms._fingerprint() == expected
+
+    monkeypatch.setenv("SPACEPILOT_FINGERPRINT_SALT", "canonical-salt")
+    canonical = hashlib.sha256(b"canonical-salt:stable-host").hexdigest()[:12]
+    assert ms._fingerprint() == canonical
 
 
 def test_a_record_without_contention_is_refused(tmp_path):

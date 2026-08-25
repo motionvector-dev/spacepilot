@@ -1,10 +1,8 @@
 import asyncio
 import fnmatch
-import os
 import time
 from pathlib import Path
-import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 import logging
 
@@ -12,6 +10,12 @@ import logging
 from spacepilot.device_probe import probe_local_device
 from spacepilot.pluto.services.compatibility import assess, assess_all, recommend
 from spacepilot.pluto.registry import Variant, registry
+from spacepilot.paths import (
+    concrete_snapshot_files,
+    legacy_weights_dir,
+    revision_from_snapshot,
+    weights_dir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +51,7 @@ class ModelRecipeSpec(BaseModel):
     license_note: Optional[str] = None
 
     speed: List[Dict[str, object]] = []
+    caveats: List[Dict[str, object]] = Field(default_factory=list)
 
     download_url: str = ""
     recommended_gpu: str = "any"
@@ -74,6 +79,7 @@ class DownloadJob(BaseModel):
     downloaded_bytes: int = 0
     total_bytes: Optional[int] = None   # from the recipe; None when unknown
     local_path: Optional[str] = None    # set on success, so callers can find the weights
+    resolved_files: List[str] = Field(default_factory=list)
     error: Optional[str] = None         # set on failure, so a caller can tell
 
     # What was asked for, and what the Hub actually handed back. They differ
@@ -105,19 +111,21 @@ def _spec_from_variant(v: Variant) -> "ModelRecipeSpec":
         license=v.license.id,
         license_note="; ".join(v.license.restrictions) or None,
         speed=[s.to_dict() for s in v.speed],
+        caveats=[c.to_dict() for c in v.caveats],
     )
 
 
 class ModelCatalogManager:
     """Manages the available model recipes and handles background downloads."""
     
-    def __init__(self):
+    def __init__(self, models_dir: Optional[Path] = None):
         # Recipes are a view over the registry, not a second copy of it.
         # registry/models/*.yaml is the one place a model is described.
         self.recipes: Dict[str, ModelRecipeSpec] = {
             v.id: _spec_from_variant(v) for v in registry().variants
         }
         self.jobs: Dict[str, DownloadJob] = {}
+        self.MODELS_DIR = Path(models_dir).expanduser().resolve() if models_dir else weights_dir()
 
     def get_all_recipes(self) -> List[ModelRecipeSpec]:
         """Every recipe, with is_local_runnable answered against this machine."""
@@ -151,20 +159,22 @@ class ModelCatalogManager:
         }
 
     def installed_repos(self) -> List[str]:
-        """Repo ids already in the local cache, read from the hub layout."""
-        hub = self.MODELS_DIR / "hub"
-        if not hub.exists():
-            return []
-        out = []
-        for d in hub.iterdir():
-            if d.is_dir() and d.name.startswith("models--"):
-                out.append(d.name[len("models--"):].replace("--", "/"))
-        return out
+        """Repo ids in the shared cache plus the read-only legacy fallback."""
+        roots = [self.MODELS_DIR]
+        legacy = legacy_weights_dir()
+        if legacy not in roots:
+            roots.append(legacy)
+        out = set()
+        for root in roots:
+            if not root.is_dir():
+                continue
+            for d in root.iterdir():
+                if d.is_dir() and d.name.startswith("models--"):
+                    out.add(d.name[len("models--"):].replace("--", "/"))
+        return sorted(out)
 
-    # Models live in one cache under ~/.spacepilot/models, the layout
-    # huggingface_hub uses natively (hub/ + locks/). One directory to inspect,
-    # one to delete when reclaiming disk.
-    MODELS_DIR = Path(os.environ.get("SPACEPILOT_MODELS_DIR", Path.home() / ".spacepilot" / "models"))
+    def _repo_dir(self, repo_id: str) -> Path:
+        return self.MODELS_DIR / ("models--" + repo_id.replace("/", "--"))
 
     @staticmethod
     def _dir_bytes(path: Path) -> int:
@@ -183,22 +193,7 @@ class ModelCatalogManager:
                       # couple of KB above the Hub's payload total. That is real
                       # disk used, which is the number a user cares about.
 
-    @staticmethod
-    def _revision_from_path(local_path: Optional[str]) -> Optional[str]:
-        """Read the resolved commit out of the hub cache path.
-
-        snapshot_download returns `<cache>/models--org--name/snapshots/<sha>`.
-        That last component is the commit the download actually landed on, and
-        it is the only place the answer exists when no revision was requested.
-        """
-        if not local_path:
-            return None
-        parts = Path(local_path).parts
-        if "snapshots" in parts:
-            idx = len(parts) - 1 - parts[::-1].index("snapshots")
-            if idx + 1 < len(parts):
-                return parts[idx + 1]
-        return None
+    _revision_from_path = staticmethod(revision_from_snapshot)
 
     def _run_download(self, job_id: str, repo_id: str, allow_patterns=None,
                       revision: Optional[str] = None) -> None:
@@ -207,15 +202,22 @@ class ModelCatalogManager:
 
         job = self.jobs[job_id]
         self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-        job.local_path = snapshot_download(
+        snapshot = Path(snapshot_download(
             repo_id=repo_id,
             cache_dir=str(self.MODELS_DIR),
             allow_patterns=allow_patterns,
             revision=revision,
-        )
+        ))
+        files = concrete_snapshot_files(snapshot, allow_patterns)
+        if not files:
+            wanted = ", ".join(allow_patterns or ["<whole snapshot>"])
+            raise RuntimeError(
+                f"downloaded {repo_id} but no complete concrete file set matched: {wanted}")
+        job.local_path = str(snapshot)
+        job.resolved_files = [str(path) for path in files]
         # Resolve even when a revision was requested: a tag is a pin only
         # until somebody moves it, and the SHA says which commit it meant.
-        job.resolved_revision = self._revision_from_path(job.local_path) or revision
+        job.resolved_revision = revision_from_snapshot(snapshot) or revision
 
     async def _download_task(self, job_id: str, repo_id: str, allow_patterns=None,
                              revision: Optional[str] = None):
@@ -230,7 +232,8 @@ class ModelCatalogManager:
         from huggingface_hub import HfApi
 
         job = self.jobs[job_id]
-        before = self._dir_bytes(self.MODELS_DIR) if self.MODELS_DIR.exists() else 0
+        repo_dir = self._repo_dir(repo_id)
+        before = self._dir_bytes(repo_dir) if repo_dir.exists() else 0
         try:
             job.status = "downloading"
 
@@ -259,7 +262,7 @@ class ModelCatalogManager:
             )
             while not task.done():
                 await asyncio.sleep(0.5)
-                got = max(0, self._dir_bytes(self.MODELS_DIR) - before)
+                got = max(0, self._dir_bytes(repo_dir) - before)
                 job.downloaded_bytes = got
                 elapsed = time.monotonic() - started
                 if elapsed > 0:
@@ -268,7 +271,7 @@ class ModelCatalogManager:
                     job.progress_percent = round(min(99.9, got / job.total_bytes * 100.0), 1)
             await task  # re-raises whatever the download raised
 
-            job.downloaded_bytes = max(0, self._dir_bytes(self.MODELS_DIR) - before)
+            job.downloaded_bytes = max(0, self._dir_bytes(repo_dir) - before)
             job.status = "completed"
             job.progress_percent = 100.0
             job.speed_mb_s = 0.0

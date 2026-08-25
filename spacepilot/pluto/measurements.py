@@ -205,6 +205,16 @@ class Measurement:
         return {k: v for k, v in asdict(self).items() if v not in (None, {}, [])}
 
 
+def subject_id(measurement: Measurement) -> str:
+    """The registry variant a measurement describes.
+
+    New records use ``variant_id``.  Older records used ``model_id`` for the
+    same purpose, so readers must consistently prefer the former without
+    orphaning the corpus written before that field existed.
+    """
+    return measurement.variant_id or measurement.model_id
+
+
 def _own_tree_pids(root_pid: Optional[int] = None) -> Set[int]:
     """This process, plus every descendant — recursively.
 
@@ -310,15 +320,27 @@ def system_id_for(profile: Any) -> str:
     return _slug(f"{chip}-{gib}gb") if gib else _slug(chip)
 
 
+FINGERPRINT_SALT_DEFAULT = "pluto-measurements-v1"
+
+
 def _fingerprint() -> Optional[str]:
-    """Truncated salted digest of the hostname. Dedupes boxes, names nobody."""
+    """Truncated salted digest of the hostname. Dedupes boxes, names nobody.
+
+    Both the old environment name and the historical default salt are
+    permanent compatibility inputs: changing either would assign every
+    existing machine a new identity.
+    """
     try:
         host = platform.node()
     except Exception:
         return None
     if not host:
         return None
-    salt = os.environ.get("PLUTO_FINGERPRINT_SALT", "pluto-measurements-v1")
+    from spacepilot.paths import env_value
+    salt = env_value(
+        "SPACEPILOT_FINGERPRINT_SALT", "PLUTO_FINGERPRINT_SALT",
+        default=FINGERPRINT_SALT_DEFAULT,
+    )
     return hashlib.sha256(f"{salt}:{host}".encode()).hexdigest()[:12]
 
 
@@ -357,11 +379,19 @@ def write_system(system: System, root: Optional[Path] = None) -> Path:
 _UNSET = object()
 
 
-def revision_for(*candidates: Optional[str]) -> Optional[str]:
-    """The registry's pinned revision for the first candidate id that matches.
+def revision_for(
+    *candidates: Optional[str],
+    resolved_revision: object = _UNSET,
+) -> Optional[str]:
+    """The executed revision, or the registry pin when execution cannot say.
 
     Records name their subject as `variant_id`, or — for records written before
     that field existed — as `model_id` holding the variant id. Both are tried.
+
+    ``resolved_revision`` is authoritative when supplied, including explicit
+    ``None`` for a constructor/env path whose provenance is unknown. This
+    prevents a registry SHA from being stamped onto different bytes merely
+    because they ran under the same variant id.
 
     Returns None when nothing matches or the registry cannot be read. A missing
     revision is exactly what an unpinned variant should produce, and a registry
@@ -369,6 +399,8 @@ def revision_for(*candidates: Optional[str]) -> Optional[str]:
     already happened, and losing the sample is strictly worse than recording it
     without this one field.
     """
+    if resolved_revision is not _UNSET:
+        return resolved_revision if isinstance(resolved_revision, str) else None
     try:
         from spacepilot.pluto.registry import registry as _registry
         reg = _registry()
@@ -414,8 +446,12 @@ def record(
     # Stamped at write time from the registry, because that is when the run
     # happened. Resolving it at read time would answer "what does this repo
     # point at now", which is the question a pin exists to stop anyone asking.
+    resolved_revision = fields.pop("resolved_revision", _UNSET)
     if fields.get("model_revision", _UNSET) is _UNSET:
-        fields["model_revision"] = revision_for(fields.get("variant_id"), model_id)
+        fields["model_revision"] = revision_for(
+            fields.get("variant_id"), model_id,
+            resolved_revision=resolved_revision,
+        )
 
     now = _dt.datetime.now(_dt.timezone.utc)
     m = Measurement(
@@ -524,7 +560,7 @@ class Summary:
 def summarise(measurements: List[Measurement], system_id: str,
               model_id: str, metric: str) -> Summary:
     rows = [m for m in measurements if m.system_id == system_id
-            and m.model_id == model_id and m.metric == metric]
+            and subject_id(m) == model_id and m.metric == metric]
     ok = [m for m in rows if m.is_ok]
     failed = [m for m in rows if not m.is_ok]
     solo = [m.value for m in ok if m.is_solo]

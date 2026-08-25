@@ -80,47 +80,55 @@ class GGUFDriver(InferenceDriver):
         )
         super().__init__(spec)
         self.model_path = model_path
+        self.resolved_revision: Optional[str] = None
         self._llm: Any = None
 
     def _discover_model_path(self) -> Optional[str]:
-        """Discover GGUF weights in standard local caches."""
-        if self.model_path and Path(self.model_path).is_file():
+        """Resolve one explicit file or one concrete registry snapshot file."""
+        from spacepilot.paths import env_value, resolve
+
+        if self.model_path:
+            if not Path(self.model_path).is_file():
+                raise FileNotFoundError(f"explicit GGUF model does not exist: {self.model_path}")
+            self.resolved_revision = None
             return self.model_path
 
-        home = Path.home()
-        candidates = [
-            os.environ.get("PLUTO_GGUF_MODEL"),
-            str(home / ".cache" / "pluto" / "models" / f"{self.driver_id}.gguf"),
-            str(home / ".cache" / "pluto" / "models" / self.driver_id),
-            str(home / ".cache" / "lm-studio" / "models"),
-            str(home / ".cache" / "ollama" / "models"),
-        ]
+        configured = env_value("SPACEPILOT_GGUF_MODEL", "PLUTO_GGUF_MODEL")
+        if configured:
+            if not Path(configured).is_file():
+                raise FileNotFoundError(f"configured GGUF model does not exist: {configured}")
+            self.resolved_revision = None
+            return configured
 
-        for cand in candidates:
-            if cand and Path(cand).is_file():
-                return cand
-        return None
+        from spacepilot.pluto.registry import registry
+
+        variant = registry().variant(self.driver_id)
+        if variant is None or not variant.files:
+            return None
+        resolved = resolve(variant.repo, variant.revision, variant.files)
+        if resolved is None:
+            return None
+        files = [path for path in resolved.files if path.suffix.lower() == ".gguf"]
+        if len(files) != 1:
+            return None
+        self.resolved_revision = resolved.revision
+        return str(files[0])
 
     def load(self) -> bool:
         """Load GGUF weights into memory / llama.cpp session."""
         try:
             m_path = self._discover_model_path()
-            if m_path:
-                try:
-                    from llama_cpp import Llama
-                    self._llm = Llama(
-                        model_path=m_path,
-                        n_ctx=4096,
-                        n_gpu_layers=-1,  # Offload all to Metal/CUDA
-                        verbose=False,
-                    )
-                    logger.info(f"Loaded GGUF model from {m_path}")
-                except Exception as e:
-                    logger.warning(f"Could not initialize llama_cpp ({e}); using internal neural cinematic engine.")
-                    self._llm = "in_process_neural_decomposer"
-            else:
-                self._llm = "in_process_neural_decomposer"
-
+            if not m_path:
+                raise FileNotFoundError(
+                    f"no cached GGUF weights are registered for {self.driver_id}")
+            from llama_cpp import Llama
+            self._llm = Llama(
+                model_path=m_path,
+                n_ctx=4096,
+                n_gpu_layers=-1,
+                verbose=False,
+            )
+            logger.info("Loaded GGUF model from %s", m_path)
             self.spec.is_loaded = True
             return True
         except Exception as e:
@@ -134,81 +142,25 @@ class GGUFDriver(InferenceDriver):
         self.spec.is_loaded = False
         return True
 
-    def _decompose_narrative_engine(
-        self,
-        script: str,
-        target_duration_sec: float = 60.0,
-        scene_count: int = 6,
-        style: str = "cinematic",
-        character_seed: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
-        """Deconstruct script into scene beats with camera vectors and locked seeds."""
-        cleaned = script.strip()
-        if not cleaned:
-            cleaned = "A cinematic narrative odyssey through space and time."
-
-        scene_count = max(4, min(10, scene_count))
-        base_seed = character_seed or (abs(hash(cleaned)) % 1000000)
-        per_scene_dur = round(target_duration_sec / scene_count, 1)
-
-        # Break script into semantic beats
-        sentences = [s.strip() for s in re.split(r"[.\n;]+", cleaned) if len(s.strip()) > 5]
-        if not sentences:
-            sentences = [cleaned]
-
-        scenes: List[Dict[str, Any]] = []
-        titles = [
-            "The Initial Spark",
-            "Threshold of Discovery",
-            "Ascent Through Uncertainty",
-            "The Core Revelation",
-            "Climactic Resonance",
-            "Convergence of Destinies",
-            "Temporal Horizon",
-            "Echoes of Eternity",
-            "The New Dawn",
-            "Coda: The Infinite Horizon",
-        ]
-
-        for idx in range(scene_count):
-            scene_num = idx + 1
-            cam_name, cam_vec = CAMERA_TRAJECTORIES[idx % len(CAMERA_TRAJECTORIES)]
-            shot_type = SHOT_TYPES[idx % len(SHOT_TYPES)]
-            lighting = LIGHTING_STYLES[idx % len(LIGHTING_STYLES)]
-            transition = TRANSITIONS[idx % len(TRANSITIONS)]
-            title = titles[idx % len(titles)]
-
-            snippet = sentences[idx % len(sentences)]
-            if len(sentences) <= idx:
-                snippet = f"{cleaned} (Part {scene_num})"
-
-            prompt = (
-                f"{shot_type} of {snippet}. {cam_name}, {lighting}, "
-                f"photorealistic 8k cinematic masterpiece, 35mm lens, atmospheric depth of field."
-            )
-            audio_cue = f"Ambient SFX: {cam_name.lower()} whoosh, subtle {lighting.split()[0].lower()} atmospheric bed."
-
-            scenes.append({
-                "scene_id": f"scene_{scene_num:02d}",
-                "scene_idx": scene_num,
-                "title": title,
-                "duration_sec": per_scene_dur,
-                "prompt": prompt,
-                "camera_motion": cam_name,
-                "camera_vector": cam_vec,
-                "shot_type": shot_type,
-                "lighting": lighting,
-                "environment": f"Cinematic {style} environment",
-                "transition": transition,
-                "audio_cue": audio_cue,
-                "character_seed": base_seed,
-                "takes_ready": 0,
-            })
-
-        # Ensure total duration sums up precisely to target_duration_sec
-        total_dur = sum(s["duration_sec"] for s in scenes)
-        scenes[-1]["duration_sec"] = round(scenes[-1]["duration_sec"] + (target_duration_sec - total_dur), 1)
-
+    @staticmethod
+    def _parse_scenes(text: str, expected_count: int) -> List[Dict[str, Any]]:
+        """Parse model-produced JSON. Invalid model output is a real failure."""
+        body = text.strip()
+        if body.startswith("```"):
+            body = re.sub(r"^```(?:json)?\s*|\s*```$", "", body, flags=re.IGNORECASE)
+        payload = json.loads(body)
+        scenes = payload.get("scenes") if isinstance(payload, dict) else None
+        if not isinstance(scenes, list) or len(scenes) != expected_count:
+            raise ValueError(f"GGUF model returned {len(scenes) if isinstance(scenes, list) else 0} scenes; expected {expected_count}")
+        required = {
+            "scene_id", "scene_idx", "title", "duration_sec", "prompt",
+            "camera_motion", "camera_vector", "shot_type", "lighting",
+            "environment", "transition", "audio_cue", "character_seed",
+        }
+        for index, scene in enumerate(scenes):
+            if not isinstance(scene, dict) or not required <= set(scene):
+                missing = required - set(scene) if isinstance(scene, dict) else required
+                raise ValueError(f"GGUF scene {index + 1} is missing {sorted(missing)}")
         return scenes
 
     def infer(
@@ -234,17 +186,35 @@ class GGUFDriver(InferenceDriver):
         """
         start_time = time.time()
         if not self.is_loaded:
-            self.load()
+            if not self.load():
+                raise RuntimeError("GGUFDriver could not load real model weights")
+        if self._llm is None:
+            raise RuntimeError("GGUFDriver has no loaded llama.cpp session")
+        if not script or not script.strip():
+            raise ValueError("script cannot be empty")
 
-        scenes = self._decompose_narrative_engine(
-            script=script,
-            target_duration_sec=target_duration_sec,
-            scene_count=scene_count,
-            style=style,
-            character_seed=character_seed,
+        scene_count = max(4, min(10, scene_count))
+        base_seed = character_seed if character_seed is not None else abs(hash(script.strip())) % 1000000
+        prompt = (
+            "Return JSON only with one key, scenes, containing exactly "
+            f"{scene_count} cinematic scene objects for the supplied script. "
+            "Every object must contain scene_id, scene_idx, title, duration_sec, "
+            "prompt, camera_motion, camera_vector (pan, tilt, zoom, roll, orbit), "
+            "shot_type, lighting, environment, transition, audio_cue, "
+            f"character_seed (always {base_seed}), and takes_ready. Total duration "
+            f"must be {target_duration_sec} seconds. Style: {style}. Script:\n{script}"
         )
+        response = self._llm.create_chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            seed=base_seed,
+        )
+        try:
+            content = response["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("llama.cpp returned no assistant content") from exc
+        scenes = self._parse_scenes(content, scene_count)
 
-        base_seed = character_seed or (abs(hash(script.strip())) % 1000000)
         elapsed_sec = round(time.time() - start_time, 3)
 
         return {
@@ -252,6 +222,7 @@ class GGUFDriver(InferenceDriver):
             "driver_id": self.driver_id,
             "task": self.task,
             "backend": self.backend,
+            "model_revision": self.resolved_revision,
             "source": f"gguf_driver ({self.driver_id})",
             "original_script": script,
             "style": style,

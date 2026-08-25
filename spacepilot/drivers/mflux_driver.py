@@ -71,8 +71,9 @@ def mflux_bin_dir(cfg: Optional[Dict[str, Any]] = None) -> str:
     """Where the mflux CLI entry points live. Configurable because the path is
     this-machine-specific: env var wins, then .pluto_config.json, then the
     conda env layout this Mac actually uses."""
+    from spacepilot.paths import env_value
     return (
-        os.environ.get("PLUTO_MFLUX_BIN")
+        env_value("SPACEPILOT_MFLUX_BIN", "PLUTO_MFLUX_BIN")
         or (cfg or {}).get("mflux_bin_dir")
         or _default_bin_dir()
     )
@@ -115,7 +116,7 @@ class MfluxDriver(InferenceDriver):
         """No persistent session to warm — mflux loads weights fresh inside its
         own subprocess on every `infer()` call. This only records readiness."""
         exe = Path(self.bin_dir) / _DEFAULT_COMMAND
-        self.spec.is_loaded = exe.is_file()
+        self.spec.is_loaded = exe.is_file() and os.access(exe, os.X_OK)
         return self.spec.is_loaded
 
     def unload(self) -> bool:
@@ -124,9 +125,10 @@ class MfluxDriver(InferenceDriver):
 
     def _resolve_executable(self, model: str) -> str:
         exe = Path(self.bin_dir) / command_for_alias(model)
-        if not exe.is_file():
+        if not exe.is_file() or not os.access(exe, os.X_OK):
             raise MfluxSubprocessError(
-                f"mflux executable not found: {exe}. Set PLUTO_MFLUX_BIN or "
+                f"mflux executable not found or not executable: {exe}. "
+                f"Set SPACEPILOT_MFLUX_BIN (or PLUTO_MFLUX_BIN) or "
                 f"\"mflux_bin_dir\" in .pluto_config.json to the bin/ directory "
                 f"of the mflux conda env."
             )

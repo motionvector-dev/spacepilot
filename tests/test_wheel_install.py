@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # A model and a runtime that ship in the registry. If either is renamed this
 # test should be updated, not deleted — the point is to prove real catalogue
 # content survives the trip into the wheel.
-A_SHIPPED_MODEL = "kokoro-82m"
+A_SHIPPED_MODEL = "kokoro-82m-onnx"
 A_SHIPPED_RUNTIME = "mflux"
 
 

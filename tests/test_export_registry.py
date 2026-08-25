@@ -112,3 +112,18 @@ def test_an_empty_store_changes_nothing(store):
     models = [{"id": "kokoro", "variants": [{"id": "kokoro-82m"}]}]
     assert module.attach_measurements(models) == 0
     assert "measurements" not in models[0]["variants"][0]
+
+
+def test_variant_id_remains_the_join_key_when_model_id_is_a_legacy_family_name(store):
+    """New records can retain a family ``model_id`` while naming the exact variant.
+
+    The exporter must not re-filter those rows by the old field after it has
+    already correctly grouped them under ``variant_id``.
+    """
+    _record(store, model_id="kokoro", variant_id="kokoro-82m")
+    module = _exporter()
+    models = [{"id": "kokoro", "variants": [{"id": "kokoro-82m"}]}]
+
+    assert module.attach_measurements(models) == 1
+    summary = models[0]["variants"][0]["measurements"][0]
+    assert summary["solo_median"] == 10.0

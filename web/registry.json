@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-23",
+ "generated": "2026-08-25",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -162,7 +162,7 @@
    "name": "Distil-Whisper",
    "family": "distil-whisper",
    "kind": "transcription",
-   "summary": "A distilled Whisper large-v3 in the GGML build whisper.cpp reads. Faster than its parent at transcription, and the wrong tool for anything that cuts on a word boundary \u2014 see the caveats, which is the only place that fact exists.\n",
+   "summary": "A distilled Whisper large-v3 in the GGML build whisper.cpp reads. Faster than its parent at transcription. Only segment-level output was distilled, so word timestamps are inherited from the parent's attention heads untrained \u2014 fine for subtitles, wrong for cutting on a word boundary. That follows from the distillation method; SpacePilot has not measured it, and it is deliberately not a caveat entry because no published source states it.\n",
    "homepage": "https://huggingface.co/distil-whisper/distil-large-v3-ggml",
    "license": {
     "id": "mit",
@@ -217,21 +217,16 @@
      "speed": [],
      "caveats": [
       {
-       "capability": "transcription",
+       "capability": "audio.transcription",
        "status": "preserved",
-       "detail": "Segment-level transcription is what the distillation was trained on, and it is the reason to reach for this model at all.",
+       "detail": "The publisher's GGML model card reports this exact Whisper.cpp artifact within 0.8% WER of Whisper large-v3 on long-form audio in its provisional M1 benchmark. Declared, not measured by SpacePilot. Source checked 2026-08-25: https://huggingface.co/distil-whisper/distil-large-v3-ggml",
+       "provenance": "declared",
+       "metric": "long-form WER (English)",
+       "method": "GGML f16 conversion",
        "is_safe": true
-      },
-      {
-       "capability": "word_timestamps",
-       "status": "untrained",
-       "detail": "Only segment-level output was distilled. Word timestamps are inherited from the parent's attention heads with no dedicated training, so they are unvalidated rather than merely less accurate. Fine for subtitles; wrong for cutting filler words, where the cut lands on a word boundary this model was never taught to place.",
-       "is_safe": false
       }
      ],
-     "compromised": [
-      "word_timestamps"
-     ],
+     "compromised": [],
      "notes": null
     }
    ]
@@ -1194,9 +1189,9 @@
    },
    "variants": [
     {
-     "id": "kokoro-82m",
+     "id": "kokoro-82m-pytorch",
      "model_id": "kokoro",
-     "name": "Kokoro 82M",
+     "name": "Kokoro 82M PyTorch",
      "kind": "speech",
      "family": "hexgrad",
      "params": "82M",
@@ -1214,6 +1209,53 @@
       "value": 366000000.0,
       "source": "huggingface-api",
       "checked": "2026-08-22",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 751619276.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "checkpoint plus roughly one checkpoint-sized runtime and activation margin; this PyTorch path has not been measured here",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "kokoro-82m-onnx",
+     "model_id": "kokoro",
+     "name": "Kokoro 82M ONNX",
+     "kind": "speech",
+     "family": "hexgrad",
+     "params": "82M",
+     "precision": "fp32",
+     "repo": "fastrtc/kokoro-onnx",
+     "files": [
+      "kokoro-v1.0.onnx",
+      "voices-v1.0.bin"
+     ],
+     "revision": "8d07950c9b6c87ce6809e9bba7bd494336217c2a",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 353746785.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-25",
       "note": null,
       "is_measured": true
      },
@@ -1245,39 +1287,7 @@
      ],
      "caveats": [],
      "compromised": [],
-     "notes": null,
-     "measurements": [
-      {
-       "system_id": "apple-m1-max-32gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 4.021,
-       "solo_samples": 1,
-       "observed_median": 4.021,
-       "observed_samples": 1,
-       "failed_samples": 0
-      },
-      {
-       "system_id": "intel-r-core-tm-i5-6200u-cpu-2-30ghz-15gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 0.8920811586885874,
-       "solo_samples": 1,
-       "observed_median": 0.8920811586885874,
-       "observed_samples": 1,
-       "failed_samples": 0
-      },
-      {
-       "system_id": "intel-r-core-tm-i5-8210y-cpu-1-60ghz-8gb",
-       "model_id": "kokoro-82m",
-       "metric": "realtime_factor",
-       "solo_median": 0.8400000000000001,
-       "solo_samples": 2,
-       "observed_median": 0.8400000000000001,
-       "observed_samples": 2,
-       "failed_samples": 0
-      }
-     ]
+     "notes": null
     }
    ]
   },
@@ -2063,23 +2073,8 @@
       "is_permissive": true
      },
      "speed": [],
-     "caveats": [
-      {
-       "capability": "word_timestamps",
-       "status": "preserved",
-       "detail": "whisper.cpp computes timestamps in its own decoder logic, independent of the quantisation level of the weights, so q5_1 aligns as well as f16 does. This is what separates quantisation from distillation here.",
-       "is_safe": true
-      },
-      {
-       "capability": "transcription_accuracy",
-       "status": "degraded",
-       "detail": "q5_1 costs under 1% WER against the f16 build. q4_0 roughly doubles that cost for a modest further size saving, which is why q5_1 is the quantisation carried here and q4_0 is not.",
-       "is_safe": false
-      }
-     ],
-     "compromised": [
-      "transcription_accuracy"
-     ],
+     "caveats": [],
+     "compromised": [],
      "notes": "The default choice on a small machine: a third of the download, and the timestamps a caption or a filler-word cut depends on are unaffected.\n"
     },
     {
@@ -2189,23 +2184,8 @@
       "is_permissive": true
      },
      "speed": [],
-     "caveats": [
-      {
-       "capability": "word_timestamps",
-       "status": "preserved",
-       "detail": "Timestamps come from whisper.cpp's own decoder logic rather than from the weights' precision, so quantisation does not move them.",
-       "is_safe": true
-      },
-      {
-       "capability": "transcription_accuracy",
-       "status": "degraded",
-       "detail": "q5_1 costs under 1% WER against the f16 build.",
-       "is_safe": false
-      }
-     ],
-     "compromised": [
-      "transcription_accuracy"
-     ],
+     "caveats": [],
+     "compromised": [],
      "notes": null
     },
     {
@@ -2296,14 +2276,7 @@
       "is_permissive": true
      },
      "speed": [],
-     "caveats": [
-      {
-       "capability": "word_timestamps",
-       "status": "preserved",
-       "detail": "Quantisation does not touch whisper.cpp's timestamp logic. The alignment is as good as the f16 build's.",
-       "is_safe": true
-      }
-     ],
+     "caveats": [],
      "compromised": [],
      "notes": null
     }

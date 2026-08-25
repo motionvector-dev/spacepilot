@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/launch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/deploy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message || data.status}`, 'success');
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token }
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       appendLog(`[Cockpit] ${data.message}`, 'success');
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/gpu/terminate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ confirm: true })
       });
       const data = await res.json();
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await fetch('/api/cockpit/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({ config: keyData })
         });
         localStorage.setItem('spacepilot_onboarded', 'true');
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/cockpit/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
         body: JSON.stringify({ config: updated })
       });
       if (res.ok) {
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = await getAuthToken();
     try {
       const res = await fetch('/api/gpu/inspect/metrics', {
-        headers: { 'X-Pluto-Token': token }
+        headers: { 'X-SpacePilot-Token': token }
       });
       const data = await res.json();
       if (res.ok && data.gpu) {
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/gpu/inspect/action', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
+          headers: { 'Content-Type': 'application/json', 'X-SpacePilot-Token': token },
           body: JSON.stringify({ action })
         });
         const data = await res.json();
@@ -707,135 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  // ─────────────────────────────────────────────────────────────────────────
-  // SkyPilot Multi-Cloud Spot Arbitrage & Preemption Failover
-  // ─────────────────────────────────────────────────────────────────────────
-  const skyTbody = document.getElementById('sky-arbitrage-tbody');
-  const skyActiveName = document.getElementById('sky-active-name');
-  const skyActiveBadge = document.getElementById('sky-active-badge');
-  const skyFailoverCount = document.getElementById('sky-failover-count');
-  const btnSkyFailover = document.getElementById('btn-sky-failover');
-  const btnSkyYaml = document.getElementById('btn-sky-yaml');
-
-  async function fetchSkyStatus() {
-    try {
-      const res = await fetch('/api/sky/status');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (skyActiveName) {
-        skyActiveName.textContent = data.active ? `${data.cluster_name} (${data.provider})` : 'Auto-Arbitrage Mode';
-      }
-      if (skyActiveBadge) {
-        skyActiveBadge.textContent = data.active ? `● ${data.spot_hourly_rate_usd ? '$' + data.spot_hourly_rate_usd + '/hr' : 'Active'} · R2 Synced` : '● R2 Checkpoint Synced';
-        skyActiveBadge.style.color = data.active ? 'var(--accent-emerald)' : 'var(--text-dim)';
-      }
-      if (skyFailoverCount) {
-        skyFailoverCount.textContent = data.preemption_failover_count || '0';
-      }
-    } catch (e) {
-      console.warn('SkyPilot status fetch error:', e);
-    }
-  }
-
-  async function fetchSkyClouds() {
-    if (!skyTbody) return;
-    try {
-      const res = await fetch('/api/sky/clouds');
-      if (!res.ok) return;
-      const data = await res.json();
-      const clouds = data.arbitrage_matrix || [];
-
-      skyTbody.innerHTML = '';
-      clouds.forEach(cloud => {
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid var(--border-light)';
-        
-        const riskColor = cloud.preemption_risk === 'very-low' ? 'var(--accent-emerald)' : (cloud.preemption_risk === 'low' ? 'var(--accent-cyan)' : 'var(--accent-amber)');
-        const isBestBadge = cloud.is_cheapest ? '<span style="background: rgba(16,185,129,0.2); color: var(--accent-emerald); font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 6px;">Cheapest</span>' : '';
-
-        tr.innerHTML = `
-          <td style="padding: 8px; font-weight: 600; color: var(--text-main);">${cloud.name} ${isBestBadge}</td>
-          <td style="padding: 8px; color: var(--text-muted);">${cloud.accelerator}</td>
-          <td style="padding: 8px; color: var(--text-dim);">${cloud.vram_gb} GB</td>
-          <td style="padding: 8px; font-weight: 700; color: var(--accent-emerald);">$${cloud.spot_price_usd.toFixed(2)}</td>
-          <td style="padding: 8px; color: var(--text-dim); text-decoration: line-through;">$${cloud.ondemand_price_usd.toFixed(2)}</td>
-          <td style="padding: 8px; color: ${riskColor}; font-weight: 600;">${cloud.preemption_risk.toUpperCase()} (${cloud.preemption_rate_pct}%)</td>
-          <td style="padding: 8px;">
-            <button class="btn-action btn-sky-launch" data-provider="${cloud.provider}" data-accel="${cloud.accelerator}" style="font-size: 11px; padding: 3px 8px;">
-              Route
-            </button>
-          </td>
-        `;
-        skyTbody.appendChild(tr);
-      });
-
-      // Attach launch handlers
-      document.querySelectorAll('.btn-sky-launch').forEach(b => {
-        b.addEventListener('click', async (e) => {
-          const prov = e.target.getAttribute('data-provider');
-          const accel = e.target.getAttribute('data-accel');
-          e.target.disabled = true;
-          e.target.textContent = 'Scheduling...';
-          const token = await getAuthToken();
-          try {
-            const schedRes = await fetch('/api/sky/schedule', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
-              body: JSON.stringify({ task_name: `spacepilot-${prov}-worker`, provider: prov, accelerator: accel, use_spot: true })
-            });
-            const sData = await schedRes.json();
-            showToast(sData.message || `Scheduled on ${prov}`);
-            fetchSkyStatus();
-          } catch (err) {
-            showToast(`SkyPilot dispatch error: ${err.message}`);
-          } finally {
-            e.target.disabled = false;
-            e.target.textContent = 'Route';
-          }
-        });
-      });
-
-    } catch (e) {
-      console.warn('SkyPilot clouds fetch error:', e);
-    }
-  }
-
-  if (btnSkyFailover) {
-    btnSkyFailover.addEventListener('click', async () => {
-      btnSkyFailover.disabled = true;
-      btnSkyFailover.textContent = 'Failing over...';
-      const token = await getAuthToken();
-      try {
-        const res = await fetch('/api/sky/failover', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Pluto-Token': token },
-          body: JSON.stringify({ reason: 'Simulated spot preemption / arbitrage rebalance' })
-        });
-        const data = await res.json();
-        showToast(data.message || 'Preemption failover complete');
-        fetchSkyStatus();
-        fetchSkyClouds();
-      } catch (err) {
-        showToast(`Failover error: ${err.message}`);
-      } finally {
-        btnSkyFailover.disabled = false;
-        btnSkyFailover.textContent = '⚡ Trigger Preemption Failover';
-      }
-    });
-  }
-
-  if (btnSkyYaml) {
-    btnSkyYaml.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/sky/yaml?cloud=lambda&accelerators=L40S:1');
-        const data = await res.json();
-        alert(`📄 Declarative SkyPilot YAML Specification (infra/skypilot.yaml):\n\n${data.yaml}`);
-      } catch (e) {
-        showToast('Failed to load SkyPilot YAML');
-      }
-    });
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Local Compute & Model Registry
   // ─────────────────────────────────────────────────────────────────────────
@@ -911,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'X-Pluto-Token': token
+                  'X-SpacePilot-Token': token
                 },
                 body: JSON.stringify({ model_id: modelId })
               });
@@ -937,8 +808,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initial fetch
-  fetchSkyStatus();
-  fetchSkyClouds();
   loadLocalComputeProfile();
 
 });

@@ -5,8 +5,11 @@ family: distil-whisper
 kind: transcription
 summary: >
   A distilled Whisper large-v3 in the GGML build whisper.cpp reads. Faster than
-  its parent at transcription, and the wrong tool for anything that cuts on a
-  word boundary — see the caveats, which is the only place that fact exists.
+  its parent at transcription. Only segment-level output was distilled, so word
+  timestamps are inherited from the parent's attention heads untrained — fine
+  for subtitles, wrong for cutting on a word boundary. That follows from the
+  distillation method; SpacePilot has not measured it, and it is deliberately
+  not a caveat entry because no published source states it.
 homepage: https://huggingface.co/distil-whisper/distil-large-v3-ggml
 
 license:
@@ -37,14 +40,11 @@ variants:
     caveats:
       - capability: transcription
         status: preserved
+        provenance: declared
+        metric: long-form WER (English)
+        method: GGML f16 conversion
         detail: >
-          Segment-level transcription is what the distillation was trained on,
-          and it is the reason to reach for this model at all.
-      - capability: word_timestamps
-        status: untrained
-        detail: >
-          Only segment-level output was distilled. Word timestamps are inherited
-          from the parent's attention heads with no dedicated training, so they
-          are unvalidated rather than merely less accurate. Fine for subtitles;
-          wrong for cutting filler words, where the cut lands on a word boundary
-          this model was never taught to place.
+          The publisher's GGML model card reports this exact Whisper.cpp artifact
+          within 0.8% WER of Whisper large-v3 on long-form audio in its provisional
+          M1 benchmark. Declared, not measured by SpacePilot. Source checked
+          2026-08-25: https://huggingface.co/distil-whisper/distil-large-v3-ggml

@@ -1,12 +1,12 @@
-# SpacePilot 🚀 (Pluto Engine)
+# SpacePilot 🚀
 
 **Status**: Current
-**Verified**: 2026-08-22 via `python -m pytest tests/ -q` (172 passed, 57.81s) and `gh pr list`
+**Verified**: 2026-08-25 via `python -m pytest tests/ -q` (682 passed, 3 skipped) and `gh pr list`
 **Supersedes / Superseded by**: none
 
-> **"SkyPilot pilots your cloud servers. SpacePilot pilots your generative cinema."**
+> **"SpacePilot pilots your generative cinema."**
 
-**SpacePilot** is the high-performance generative cinema workstation and zero-markup compute platform for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine, backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers with SkyPilot multi-cloud spot arbitrage ($0.012/take instead of 20x SaaS subscription markups).
+**SpacePilot** is the high-performance generative cinema workstation and compute toolkit for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine are backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers.
 
 ---
 
@@ -19,7 +19,7 @@
 │                                                                             │
 │  1. Compute Provider Modules (Pluggable Execution Runtimes)                 │
 │     ├── Local Host Driver: Apple Metal MPS / CUDA / CPU ($0.00 / Zero Cloud)│
-│     ├── SkyPilot Spot Mesh: AWS, Shadeform, Lambda, RunPod, GCP Arbitrage   │
+│     ├── Local Execution: Apple Metal MPS / CUDA / CPU                       │
 │     └── Hardware Probe: Auto-detects VRAM headroom & recommends models      │
 │                                                                             │
 │  2. Generative Model Modules (Polymorphic BaseVideoEngine Adapters)         │
@@ -36,7 +36,7 @@
 │                                                                             │
 │  4. UI Component Modules (Zero-Build Obsidian UI)                           │
 │     ├── Create Studio (/create): Camera Compass, Dual Keyframe, VO Ducking │
-│     ├── Cockpit (/cockpit): Live Host Telemetry, Model Hub, Spot Arbitrage  │
+│     ├── Cockpit (/cockpit): Live Host Telemetry, Model Hub                  │
 │     ├── Oven (/oven.html): Real-time 5-Lane ADLC Swarm Kanban Board         │
 │     └── Director (/studio): Multi-track NLE timeline & asset inspector      │
 │                                                                             │
@@ -55,17 +55,17 @@ pip install -r requirements.txt
 
 Secrets are centrally scoped with **Doppler**, project `unfoundbox`, config `dev_personal` at `~/code`:
 ```bash
-doppler run -- ./bin/pluto studio
+doppler run -- spacepilot studio
 ```
 
-**`LOCAL_WORKER_TOKEN`** is required for gated compute operations. The GPU worker requires it, and all mutating POST endpoints enforce `X-Pluto-Token`.
+**`LOCAL_WORKER_TOKEN`** is required for gated compute operations. The GPU worker requires it, and all mutating POST endpoints enforce `X-SpacePilot-Token`.
 
 ---
 
 ## Running the Studio
 
 ```bash
-doppler run -- ./bin/pluto studio        # or: python spacepilot/web_api.py
+doppler run -- spacepilot studio          # or: python spacepilot/web_api.py
 ```
 
 Serves the Web UI and API on:
@@ -82,7 +82,7 @@ Serves the Web UI and API on:
 
 ## API Routes & Security Gate
 
-Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token` (`require_token`). Read-only and telemetry routes stay open.
+Every endpoint that spends compute or creates assets is gated by `X-SpacePilot-Token` (`require_token`). Read-only and telemetry routes stay open.
 
 | Route | Method | Auth | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -91,8 +91,7 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 | `/api/audio/synthesize-local` | `POST` | Yes | In-process Kokoro TTS audio synthesis (-16 LUFS normalized). |
 | `/api/audio/mix-ducked` | `POST` | Yes | Voiceover & background music dynamic sidechain ducking. |
 | `/api/narrative/decompose-local` | `POST` | Yes | In-process GGUF screenplay deconstruction into 3D camera shots. |
-| `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/pluto/models/`. |
-| `/api/sky/schedule` · `/failover` | `POST` | Yes | SkyPilot multi-cloud spot scheduling & preemption recovery. |
+| `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/spacepilot/models/`. |
 | `/api/gpu/launch` · `/terminate` | `POST` | Yes | Spot GPU infrastructure lifecycle management. |
 | `/api/compute/local-profile` | `GET` | No | Hardware capability telemetry (backend, usable VRAM headroom). |
 | `/api/compute/models/recommended` | `GET` | No | Curated model recommendations scored for host hardware. |
@@ -106,12 +105,9 @@ Every endpoint that spends compute or creates assets is gated by `X-Pluto-Token`
 
 Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 
-* `pluto_probe_hardware`: Probes host GPU VRAM and compute headroom.
-* `pluto_recommend_models`: Returns task-matched model catalog for current device.
-* `pluto_generate_video`: Generates cinematic video via LTX-Video 2.5.
-* `pluto_generate_audio` / `pluto_generate_music`: Generates voiceover and music cues.
-* `pluto_skypilot_arbitrage`: Calculates real-time cheapest spot cloud across 12+ providers.
-* `pluto_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
+* `spacepilot_probe_hardware`: Probes host GPU VRAM and compute headroom.
+* `spacepilot_recommend_models`: Returns task-matched model catalog for current device.
+* `spacepilot_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
 
 ---
 
@@ -121,8 +117,9 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 /Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -m pytest tests/ -v
 ```
 
-**172 passing tests**, 0 failed, in 57.81s (verified 2026-08-22). Covers:
-- Polymorphic DiT engines (LTX, Wan 1.3B/14B, HunyuanVideo spatial/temporal constraints).
+**682 passing tests**, 0 failed, 3 skipped (verified 2026-08-25). Covers:
+- Polymorphic DiT engine adapters (LTX, Wan 1.3B/14B, HunyuanVideo). Mock renders only —
+  every BaseVideoEngine path writes an ffmpeg test pattern; no real video runs here yet.
 - In-process Kokoro TTS and GGUF narrative drivers.
 - Device capability probing and safety headroom calculations.
 - FastMCP tool wrappers.
@@ -151,7 +148,6 @@ src/
 │   ├── base.py                 InferenceDriver ABC & DriverSpec
 │   ├── kokoro_driver.py        Kokoro TTS ONNX driver (-16 LUFS ducking)
 │   └── gguf_driver.py          GGUF screenplay deconstruction driver
-├── skypilot_orchestrator.py    SkyPilot spot cluster manager & arbitrage
 ├── storyboard_decomposer.py    Screenplay-to-shot decomposition
 ├── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
 └── pluto/api/routes/           Modular FastAPI backend, live on main: 14 route
@@ -164,7 +160,7 @@ web/                         Zero-build Obsidian UI
 ├── cockpit.html / cockpit.js   Cockpit (Host Hardware HUD, Model Registry)
 ├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
 └── app.css                  Obsidian design system
-infra/                          SkyPilot YAML, GPU startup scripts, IAM
-tests/                          Pytest integration test suite (172 tests)
+infra/                          GPU startup scripts, IAM
+tests/                          Pytest integration test suite (682 tests)
 docs/                           Architecture blueprints, plans, and research
 ```

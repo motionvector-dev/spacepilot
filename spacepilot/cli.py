@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pluto CLI - Remote GPU Box & Video Generation Tool
+"""SpacePilot CLI - local and remote inference tools.
 
 Controls remote AWS Spot GPU instances, monitors real-time VRAM / GPU metrics,
 streams live worker logs, and triggers remote LTX-2.5 video generations
@@ -14,8 +14,9 @@ import logging
 import uuid
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Mapping, TextIO
 
 import httpx
 
@@ -30,9 +31,18 @@ PLUTO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(PLUTO_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUTO_ROOT))
-OUTPUTS_DIR = Path(os.environ.get("PLUTO_OUTPUTS_DIR", PLUTO_ROOT / "outputs"))
-CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
-KEY_FILE_DEFAULT = Path(os.environ.get("PLUTO_SSH_KEY", Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"))
+from spacepilot.paths import env_value, fleet_orders_path
+
+OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(PLUTO_ROOT / "outputs")))
+CONFIG_FILE = PLUTO_ROOT / ".spacepilot_config.json"
+LEGACY_CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
+KEY_FILE_DEFAULT = Path(
+    env_value(
+        "SPACEPILOT_SSH_KEY",
+        "PLUTO_SSH_KEY",
+        default=str(Path.home() / ".ssh" / "pluto-gpu-key-2026-07-26.pem"),
+    )
+)
 
 DEFAULT_CONFIG = {
     "aws_profile": "default",
@@ -49,6 +59,102 @@ DEFAULT_CONFIG = {
     "default_steps": 30,
 }
 
+OUTPUT_MODES = frozenset({"live", "plain"})
+
+
+def _valid_output_mode(value: object, source: str) -> str | None:
+    """Normalise one configured output mode, rejecting a misleading typo."""
+    if value is None:
+        return None
+    if not isinstance(value, str) or value.strip().lower() not in OUTPUT_MODES:
+        raise ValueError(f"{source} must be one of: live, plain")
+    return value.strip().lower()
+
+
+def resolve_output_mode(
+    explicit: object = None,
+    cfg: Mapping[str, Any] | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    stdout: TextIO | None = None,
+) -> str:
+    """Resolve rendering mode with invocation, env, config, then TTY precedence."""
+    selected = _valid_output_mode(explicit, "--live/--plain")
+    if selected:
+        return selected
+
+    env = os.environ if environ is None else environ
+    if "SPACEPILOT_OUTPUT_MODE" in env:
+        return _valid_output_mode(env["SPACEPILOT_OUTPUT_MODE"], "SPACEPILOT_OUTPUT_MODE")  # type: ignore[index]
+
+    config = cfg or {}
+    if "output_mode" in config:
+        return _valid_output_mode(config["output_mode"], "output_mode in config")
+
+    stream = sys.stdout if stdout is None else stdout
+    return "live" if stream.isatty() else "plain"
+
+
+class OutputRenderer:
+    """Small mode boundary shared by present and future progress displays.
+
+    The text after the label is deliberately assembled once, before choosing a
+    renderer: mode may change presentation, never the operational facts.
+    """
+
+    def __init__(self, mode: str, *, stdout: TextIO | None = None,
+                 environ: Mapping[str, str] | None = None) -> None:
+        self.mode = mode
+        self.stream = sys.stdout if stdout is None else stdout
+        env = os.environ if environ is None else environ
+        self.no_color = "NO_COLOR" in env
+        self._console = None
+        if mode == "live":
+            # Rich is intentionally loaded only for live output: piping should
+            # not add terminal control codes or a rendering-only import path.
+            from rich.console import Console
+            self._console = Console(file=self.stream, no_color=self.no_color)
+
+    def progress(self, label: str, facts: str) -> None:
+        line = f"  {label}: {facts}"
+        if self.mode == "plain":
+            print(line, file=self.stream)
+        else:
+            assert self._console is not None
+            self._console.print(line, end="\r", markup=False)
+
+    def finish(self) -> None:
+        if self.mode == "live":
+            assert self._console is not None
+            self._console.print()
+
+
+def output_renderer(args: argparse.Namespace, cfg: Mapping[str, Any] | None = None) -> OutputRenderer:
+    explicit = getattr(args, "output_mode", None)
+    # Direct handler tests often use MagicMock args. Only a real string is an
+    # invocation override; otherwise resolve from config/TTY as normal.
+    if not isinstance(explicit, str):
+        explicit = None
+    return OutputRenderer(resolve_output_mode(explicit, cfg))
+
+
+def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
+    """Allow --plain/--live either side of a subcommand, but never after --."""
+    selected: list[str] = []
+    cleaned: list[str] = []
+    passthrough = False
+    for arg in argv:
+        if arg == "--":
+            passthrough = True
+            cleaned.append(arg)
+        elif not passthrough and arg in ("--live", "--plain"):
+            selected.append(arg[2:])
+        else:
+            cleaned.append(arg)
+    if len(set(selected)) > 1:
+        raise ValueError("--live and --plain are mutually exclusive")
+    return cleaned, (selected[0] if selected else None)
+
 
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
 
@@ -64,9 +170,13 @@ def worker_headers(extra=None):
 
 
 def load_config():
-    if CONFIG_FILE.exists():
+    # Canonical configuration wins whenever it exists. A malformed canonical
+    # file must not silently fall through to a stale legacy file containing
+    # different infrastructure settings or credentials.
+    source = CONFIG_FILE if CONFIG_FILE.exists() else LEGACY_CONFIG_FILE
+    if source.exists():
         try:
-            with open(CONFIG_FILE, "r") as f:
+            with open(source, "r") as f:
                 cfg = json.load(f)
                 return {**DEFAULT_CONFIG, **cfg}
         except Exception:
@@ -75,8 +185,34 @@ def load_config():
 
 
 def save_config(cfg):
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(cfg, f, indent=2)
+    """Atomically write only the canonical private config file.
+
+    The config can carry provider credentials.  Writing through a private
+    sibling and replacing it avoids partially-written JSON and makes the final
+    file mode independent of the caller's umask.
+    """
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{CONFIG_FILE.name}.", suffix=".tmp", dir=CONFIG_FILE.parent,
+    )
+    temp_path = Path(temp_name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            fd = -1
+            json.dump(cfg, stream, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, CONFIG_FILE)
+        CONFIG_FILE.chmod(0o600)
+    finally:
+        if fd != -1:
+            os.close(fd)
+        try:
+            temp_path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def run_cmd(cmd, check=True, capture=False, stdin_text=None, timeout=None):
@@ -128,7 +264,7 @@ def fetch_worker_health(ip):
         return None
     url = f"http://{ip}:5000/health"
     try:
-        resp = httpx.get(url, headers={"User-Agent": "PlutoCLI/1.0"}, timeout=3)
+        resp = httpx.get(url, headers={"User-Agent": "SpacePilotCLI/1.0"}, timeout=3)
         if resp.is_error:
             # urlopen raised HTTPError here and the body was still readable; an
             # unhealthy worker answers 503 with a JSON reason worth surfacing.
@@ -148,7 +284,7 @@ def fetch_worker_health(ip):
 
 def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  PLUTO GPU BOX & WORKER STATUS")
+    print("  SPACEPILOT GPU BOX & WORKER STATUS")
     print("──────────────────────────────────────────────────────────────────────────")
     inst = get_instance_info(cfg)
     if not inst:
@@ -192,7 +328,7 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
 def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  LAUNCHING PLUTO GPU BOX (AWS SPOT L40S)")
+    print("  LAUNCHING SPACEPILOT GPU BOX (AWS SPOT L40S)")
     print("──────────────────────────────────────────────────────────────────────────")
     inst = get_instance_info(cfg)
     if inst and inst["state"] in ("running", "pending"):
@@ -295,7 +431,7 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     image_noise_scale = getattr(args, "image_noise_scale", 0.0)
 
     print("──────────────────────────────────────────────────────────────────────────")
-    print("  PLUTO VIDEO GENERATION (LTX-2.5)")
+    print("  SPACEPILOT VIDEO GENERATION (LTX-2.5)")
     print("──────────────────────────────────────────────────────────────────────────")
     print(f"  Prompt     : \"{prompt}\"")
     print(f"  Resolution : {width}x{height} | Duration: {seconds}s ({fps} fps) | Steps: {steps}")
@@ -392,15 +528,14 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Error submitting job: {e}")
         return
 
-    # Poll status with progress bar
+    # Poll status with a renderer that remains legible when piped.
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     start_t = time.time()
-    print("  Rendering  : [", end="", flush=True)
+    renderer = output_renderer(args, cfg)
 
     retries = 0
     while True:
         time.sleep(1.5)
-        print("█", end="", flush=True)
         try:
             st_resp = httpx.get(
                 f"http://{ip}:5000/status/{job_id}", headers=worker_headers(), timeout=30
@@ -408,9 +543,14 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             st_resp.raise_for_status()
             st_data = st_resp.json()
             retries = 0
+            renderer.progress(
+                "Rendering",
+                f"{st_data.get('status', 'unknown')} · elapsed {time.time() - start_t:.1f}s",
+            )
             if st_data.get("status") == "completed":
                 dur = time.time() - start_t
-                print(f"] Done in {dur:.1f}s!")
+                renderer.finish()
+                print(f"  Rendering  : completed in {dur:.1f}s")
 
                 # Download MP4
                 if getattr(args, "output", None):
@@ -434,13 +574,15 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
                     subprocess.run(["open", str(out_path)])
                 break
             elif st_data.get("status") == "failed":
-                print(f"\n  Error: Job failed: {st_data.get('error')}")
+                renderer.finish()
+                print(f"  Error: Job failed: {st_data.get('error')}")
                 sys.exit(1)
         except Exception:
             logger.warning("Failed during worker status polling", exc_info=True)
             retries += 1
             if retries > 20:
-                print(f"\n  Error: Connection lost while polling worker status.")
+                renderer.finish()
+                print("  Error: Connection lost while polling worker status.")
                 break
 
 
@@ -464,7 +606,7 @@ def studio_python(cfg):
     for a Python environment with fastapi and uvicorn installed.
     """
     candidates = [
-        os.environ.get("PLUTO_PYTHON"),
+        env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON"),
         cfg.get("python_bin"),
         sys.executable,
         str(Path.home() / "miniconda3" / "envs" / "py312" / "bin" / "python"),
@@ -513,18 +655,18 @@ def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     python_bin = studio_python(cfg)
     if not python_bin:
         print("  Error: no interpreter found with fastapi + uvicorn installed.")
-        print("  Set PLUTO_PYTHON, or add \"python_bin\" to .pluto_config.json,")
+        print("  Set SPACEPILOT_PYTHON, or add \"python_bin\" to .pluto_config.json,")
         print("  pointing at the environment where you ran: pip install -r requirements.txt")
         return
 
     print("──────────────────────────────────────────────────────────────────────────")
-    print(f"  🎬 LAUNCHING PLUTO STUDIO ON http://localhost:{port}")
+    print(f"  🎬 LAUNCHING SPACEPILOT STUDIO ON http://localhost:{port}")
     print("──────────────────────────────────────────────────────────────────────────")
     if args.open:
         import webbrowser
         time.sleep(1.0)
         webbrowser.open(f"http://localhost:{port}")
-    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "PLUTO_STUDIO_PORT": str(port)})
+    subprocess.run([python_bin, str(studio_script)], env={**os.environ, "SPACEPILOT_STUDIO_PORT": str(port)})
 
 
 def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
@@ -577,7 +719,9 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
             print(f"  Runtime  : {profile.compute_runtime} present but unrouted "
                   f"— {profile.compute_runtime_detail}")
     else:
-        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total (Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
+        source = getattr(profile, "memory_limit_source", None) or "unknown"
+        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total "
+              f"(limit source: {source}; Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
     print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")
     for gpu in (profile.gpus if isinstance(profile.gpus, list) else []):
         vram = f"{gpu['vram_total_bytes'] / (1024 ** 3):.2f}GB" if gpu.get("vram_total_bytes") else "VRAM unknown"
@@ -605,7 +749,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     #    driver never checks.
     try:
         from spacepilot.drivers.kokoro_driver import KokoroDriver
-        m_path, v_path = KokoroDriver()._discover_asset_paths()
+        m_path, v_path = KokoroDriver().asset_paths()
         kokoro_found = bool(m_path and v_path)
     except Exception:
         m_path = None
@@ -614,8 +758,8 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print(f"  Kokoro   : ✅ Found ONNX weights ({Path(m_path).name})")
     else:
         print("  Kokoro   : ❌ ONNX weights NOT FOUND (Required for TTS)")
-        print("             Point PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES at a local")
-        print("             kokoro-v1.0.onnx + voices-v1.0.bin (auto-fetch not built yet).")
+        print("             Run: spacepilot recipes download kokoro-82m-onnx")
+        print("             or set SPACEPILOT_KOKORO_MODEL / SPACEPILOT_KOKORO_VOICES.")
         
     print("")
 
@@ -642,7 +786,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
 
 def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
     import uvicorn
-    print(f"Starting Pluto server on {args.host}:{args.port}")
+    print(f"Starting SpacePilot server on {args.host}:{args.port}")
     sys.path.insert(0, str(PLUTO_ROOT))
     uvicorn.run("spacepilot.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
 
@@ -711,6 +855,7 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         return 0
 
     if action == "download":
+        renderer = output_renderer(args, cfg)
         rid = args.recipe_name
         recipe = catalog_manager.get_recipe(rid)
         if not recipe:
@@ -740,13 +885,14 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         while thread.is_alive():
             job = catalog_manager.get_download_progress(rid)
             if job:
-                sys.stdout.write(
-                    f"\r  {_progress_bar(job.progress_percent)} "
-                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s")
-                sys.stdout.flush()
+                renderer.progress(
+                    "Downloading",
+                    f"{_progress_bar(job.progress_percent)} "
+                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s",
+                )
             time.sleep(0.5)
         thread.join()
-        sys.stdout.write("\n")
+        renderer.finish()
 
         if "error" in outcome:
             print(f"  Download failed: {outcome['error']}")
@@ -756,7 +902,9 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             reason = getattr(job, "error", None) or "unknown"
             print(f"  Download did not complete: {reason}")
             return 1
-        print(f"  Done → {job.local_path}")
+        print("  Done:")
+        for resolved_file in job.resolved_files:
+            print(f"    {resolved_file}")
         if job.resolved_revision:
             print(f"  revision: {job.resolved_revision}")
         return 0
@@ -774,15 +922,97 @@ def _gb(b) -> str:
     return f"{(b or 0) / 1024 ** 3:.1f} GB"
 
 
+def _caveat_method(caveat, precision: str | None) -> str | None:
+    """Render an absent compression method as an explicit unknown, not a blank."""
+    if caveat.method:
+        return caveat.method
+    normalized = (precision or "").lower()
+    uncompressed = {"f16", "fp16", "bf16", "fp32", "float16", "float32"}
+    if normalized and normalized not in uncompressed:
+        return "method unrecorded"
+    return None
+
+
+def _caveat_summary(variant) -> str:
+    """A compact, factual table cell; no caveats remains deliberately blank."""
+    return "; ".join(
+        f"{c.capability} · {c.status} · {c.provenance}"
+        for c in variant.caveats
+    )
+
+
+def _print_caveats(variant) -> None:
+    """Print the full capability evidence for one model variant, when present."""
+    if not variant.caveats:
+        return
+    print("  caveats")
+    for caveat in variant.caveats:
+        print(f"    {caveat.capability} — {caveat.status} · {caveat.provenance}")
+        if caveat.metric:
+            print(f"      metric  {caveat.metric}")
+        method = _caveat_method(caveat, variant.precision)
+        if method:
+            print(f"      method  {method}")
+        print(f"      {caveat.detail}")
+
+
+def _load_declared_provider_rates():
+    """Read the locally pinned, signed provider projection without network I/O.
+
+    Returns (providers, failure). A failure is the signed-ORDERS design working
+    — a bad signature, a rolled-back file, a foreign owner — and must reach the
+    screen. This used to swallow every exception into an empty tuple and log at
+    DEBUG, which rendered byte-identically to "this machine has no fleet": the
+    detection fired and the user saw nothing.
+    """
+    from spacepilot.daemon.orders import OrdersError, OrdersStore
+
+    try:
+        orders = OrdersStore(fleet_orders_path()).load()
+    except OrdersError as exc:
+        logger.debug("Local ORDERS provider projection did not verify: %s", exc)
+        return (), str(exc)
+    return (orders.providers if orders is not None else ()), None
+
+
+def _print_provider_rates(providers, failure=None) -> None:
+    if failure:
+        print("\n  PROVIDERS — unavailable")
+        print(f"  The local ORDERS file did not verify: {failure}")
+        print("  This is a detection, not an absence. Nothing below reflects a fleet.")
+        return
+    if not providers:
+        return
+    print("\n  PROVIDERS — on paper only")
+    print("  Declared API pricing; no local fit verdict, no flown/unflown speed axis, and no execution support is implied.")
+    print("  PROVIDER / VARIANT / MODEL                         INPUT USD/1M TOKENS  OUTPUT USD/1M TOKENS  SOURCE · CHECKED")
+    for rate in providers:
+        print(
+            f"  {rate.provider_id} / {rate.variant_id} / {rate.provider_model}"
+            f"  {rate.input_usd_per_1m_tokens}  {rate.output_usd_per_1m_tokens}"
+            f"  {rate.source} · checked {rate.checked}"
+        )
+
+
 def cmd_models(args, cfg=None) -> int:
     """List the registry, or one variant, judged against this machine."""
     from spacepilot.device_probe import probe_local_device, usable_memory_bytes
+    from spacepilot.pluto import measurements as ms
     from spacepilot.pluto.registry import registry
     from spacepilot.pluto.services.compatibility import assess
     from spacepilot.pluto.services.model_catalog import catalog_manager
+    from spacepilot.pluto.services.provenance import (
+        format_fact, format_local_speed, format_metric, local_speeds, primary_speed,
+        speed_provenance,
+    )
 
     reg = registry()
     profile = probe_local_device()
+    system_id = ms.system_from_profile(profile).id
+    measurements = ms.load_measurements()
+
+    def local_speed(v):
+        return primary_speed(local_speeds(measurements, system_id=system_id, variant_id=v.id))
 
     # `list` is reserved, so this reads the same way as `runtimes list`; no
     # variant may be named that.
@@ -796,43 +1026,365 @@ def cmd_models(args, cfg=None) -> int:
         print(f"{v.name}  [{v.id}]")
         print(f"  {v.kind} · {v.params or '?'} · {v.precision or '?'} · runs on {', '.join(v.backends)}")
         print(f"  repo      {v.repo}" + (f"   files: {', '.join(v.files)}" if v.files else "   (whole repo)"))
-        checked = f", checked {v.download.checked}" if v.download.checked else ""
-        print(f"  download  {_gb(v.download.value)}   [{v.download.source}{checked}]")
-        print(f"  needs     {_gb(v.working_set.value)}   [{v.working_set.source}]")
+        print(f"  download  {format_fact(v.download, _gb(v.download.value))}")
+        print(f"  needs     {format_fact(v.working_set, _gb(v.working_set.value))}")
         if v.working_set.note:
             print(f"            {v.working_set.note}")
         print(f"  licence   {v.license.id}")
         for r in v.license.restrictions:
             print(f"            ! {r}")
-        print(f"  here      {verdict.verdict} — {verdict.reason}")
+        _print_caveats(v)
+        # `assess` legitimately needs an estimated footprint to decide whether
+        # a model can fit, but its numeric ratio is not a measured fact and
+        # must not be rendered as one.
+        if v.working_set.source == "estimated":
+            here_reason = "fit assessment uses an unflown footprint"
+        else:
+            here_reason = verdict.reason
+        print(f"  here      {verdict.verdict} — {here_reason}")
+        here = local_speed(v)
+        print(f"  speed here {format_local_speed(here)}")
         if v.speed:
             for sp in v.speed:
-                print(f"  speed     {sp.value} {sp.metric} on {sp.device}   [{sp.source}]")
+                evidence = speed_provenance(sp)
+                if evidence.value is None:
+                    shown = "unflown"
+                else:
+                    date = evidence.checked or "date unrecorded"
+                    shown = (f"{format_metric(sp.metric, evidence.value)} · {evidence.state} · "
+                             f"{evidence.source} · checked {date}")
+                print(f"  speed     {shown} on {sp.device}")
                 if sp.note:
                     print(f"            {sp.note.strip()}")
-        else:
-            print("  speed     not measured on any machine yet")
         return 0
 
     usable = usable_memory_bytes(profile)
     src = profile.memory_limit_source or "unknown"
     print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
           f"· {_gb(usable)} available to models [{src}]\n")
-    print(f"  {'VERDICT':10s}{'MODEL':36s}{'DOWNLOAD':>10s}{'NEEDS':>9s}   {'SPEED':<11s}LICENCE")
+    print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE   CAVEATS")
 
     order = {"fits": 0, "tight": 1, "unknown": 2, "wont_fit": 3, "blocked": 4}
     rows = [(assess(catalog_manager.recipes[v.id], profile), v) for v in reg.variants]
     rows.sort(key=lambda rv: (order.get(rv[0].verdict, 9), -rv[1].working_set.value))
 
     for verdict, v in rows:
-        speed = ("measured" if any(s.source == "measured" for s in v.speed)
-                 else "published" if v.speed else "—")
+        download = format_fact(v.download, _gb(v.download.value))
+        speed = format_local_speed(local_speed(v))
         lic = v.license.id + ("" if v.license.is_permissive else "  !")
-        print(f"  {verdict.verdict:10s}{v.id:36s}{_gb(v.download.value):>10s}"
-              f"{_gb(v.working_set.value):>9s}   {speed:<11s}{lic}")
+        caveats = _caveat_summary(v)
+        print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
-    print("  SPEED is how the number was obtained, not how fast it is — most are unmeasured.")
+    print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
+    _print_provider_rates(*_load_declared_provider_rates())
     return 0
+
+
+def _run_candidate_facts(candidate) -> tuple[str, str, str]:
+    """One source of truth for both live and plain confirmation rows."""
+    from spacepilot.pluto.services.provenance import format_local_speed
+
+    verdict = candidate.verdict
+    fit = f"{verdict.verdict} — {verdict.reason}"
+    if verdict.runnable_now is False:
+        fit += f"; not runnable now, short {_gb(verdict.free_shortfall_bytes)}"
+    if verdict.disk_ok is False:
+        fit += f"; disk short {_gb(verdict.disk_shortfall_bytes)}"
+    provenance = format_local_speed(candidate.speed)
+    if candidate.executable_ready:
+        route = f"ready — {candidate.route.model_alias} via {candidate.executable}"
+    else:
+        route = f"no route — executable missing or not executable: {candidate.executable}"
+    return fit, provenance, route
+
+
+def run_confirmation_lines(plan, output: Path) -> list[str]:
+    """Stable facts shared by both output modes; only their renderer may vary."""
+    lines = [
+        f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE",
+    ]
+    for candidate in plan.candidates:
+        fit, provenance, route = _run_candidate_facts(candidate)
+        lines.append(f"  {candidate.variant.id:27s} {fit} · {provenance} · {route}")
+
+    selected = plan.selected
+    if selected is None:
+        lines.append("\n  No safe local route is available; nothing can execute.")
+    else:
+        lines.extend([
+            f"\n  selected   {selected.variant.id} (exact alias {selected.route.model_alias})",
+            f"  output     {output}",
+            "  weights    mflux owns its cache; the exact loaded revision is unobserved",
+            "  network    disabled for this run; a missing cached weight fails instead of downloading",
+        ])
+
+    unsafe = [
+        (candidate.variant.id, caveat)
+        for candidate in plan.candidates
+        for caveat in candidate.non_safe_caveats
+    ]
+    if unsafe:
+        lines.append("\n  capability caveats")
+        for variant_id, caveat in unsafe:
+            method = _caveat_method(caveat, next(
+                c.variant.precision for c in plan.candidates if c.variant.id == variant_id
+            ))
+            detail = f"{variant_id}: {caveat.capability} — {caveat.status} · {caveat.provenance}"
+            if method:
+                detail += f" · {method}"
+            lines.append(f"    {detail}")
+            lines.append(f"      {caveat.detail}")
+    return lines
+
+
+def cmd_run(args, cfg=None) -> int:
+    """Plan, confirm and execute one real local workload."""
+    from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
+    from spacepilot.pluto.services.execution import (
+        LocalExecutionError, LocalExecutionService, RunRequest, default_image_output,
+    )
+
+    workload = getattr(args, "run_workload", None)
+    service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
+    try:
+        plan = service.plan(workload)
+    except (ValueError, LocalExecutionError) as exc:
+        print(f"  Cannot plan run: {exc}")
+        return 1
+
+    output_arg = getattr(args, "output", None)
+    output = Path(output_arg).expanduser().resolve() if output_arg else default_image_output()
+    # Deliberately identical fact strings in live and plain modes. This is a
+    # confirmation snapshot, not progress animation; terminal mode cannot
+    # make a refusal, caveat or provenance mark disappear.
+    print("\n".join(run_confirmation_lines(plan, output)))
+    if plan.selected is None:
+        return 1
+
+    if not getattr(args, "yes", False):
+        if not sys.stdin.isatty():
+            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+            return 1
+        try:
+            answer = input("\n  Run? [Y/n] ").strip().lower()
+        except EOFError:
+            print("\n  No terminal to confirm on. Re-run with --yes to execute.")
+            return 1
+        if answer not in ("", "y", "yes"):
+            print("  Nothing ran.")
+            return 1
+
+    try:
+        result = service.execute(plan, RunRequest(
+            workload=workload,
+            prompt=args.prompt,
+            output=output,
+        ))
+    except Exception as exc:
+        # Driver failures are user-facing route failures, not tracebacks or
+        # synthetic artifacts. The service writes no speed record for them.
+        print(f"\n  Run failed: {exc}")
+        return 1
+
+    print(f"\n  completed   {result.variant_id}")
+    print(f"  artifact    {result.output}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    if result.seconds_per_image is None:
+        print("  speed       unrecorded — mflux exposed no generation boundary")
+    else:
+        print(f"  speed       {result.seconds_per_image:.3f} s/image")
+        print(f"  measured    {result.measurement_path}")
+    print(f"  revision    {result.resolved_revision or 'unknown (mflux did not expose it)'}")
+    return 0
+
+
+def cmd_daemon(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> int:
+    """Manage the local daemon through its OS user-service supervisor."""
+    from spacepilot.daemon import service
+
+    action = getattr(args, "daemon_action", None)
+    try:
+        if action == "install":
+            path = service.install_daemon()
+            print(f"  daemon installed: {path}")
+            if sys.platform.startswith("linux"):
+                state = service.daemon_status()
+                if state.lingering is False:
+                    print("  lingering is off; the daemon stops when this user logs out.")
+                elif state.lingering is None:
+                    print("  lingering could not be checked; it was not changed.")
+            return 0
+        if action == "run":
+            return service.run_foreground()
+        if action == "status":
+            state = service.daemon_status()
+            print(f"  definition  {state.definition}")
+            print(f"  installed   {'yes' if state.installed else 'no'}")
+            if state.active is None:
+                print("  state       unknown")
+            else:
+                print(f"  state       {'active' if state.active else 'inactive'}")
+            if state.platform == "linux":
+                if state.lingering is True:
+                    print("  lingering   on")
+                elif state.lingering is False:
+                    print("  lingering   off (daemon stops at logout)")
+                else:
+                    print("  lingering   unknown")
+            print(f"  local door  {'reachable' if state.reachable else 'unreachable'}")
+            if state.reachable:
+                print(f"  picture     {_daemon_age_suffix(state.picture_age_seconds).removeprefix(' · ')}")
+                if state.peer_state:
+                    peer = state.peer_state
+                    if state.peer_address:
+                        peer += f" ({state.peer_address})"
+                    print(f"  peer        {peer}{_daemon_age_suffix(state.peer_age_seconds)}")
+                else:
+                    print("  peer        unknown")
+                if state.key_id:
+                    print(f"  key         {state.key_id}{_daemon_age_suffix(state.key_age_seconds)}")
+                else:
+                    print("  key         unknown")
+            elif state.reachability_detail:
+                print(f"  local error {state.reachability_detail}")
+            if state.detail:
+                print(f"  supervisor  {state.detail}")
+            return 0 if state.installed or state.reachable else 1
+        if action == "stop":
+            service.stop_daemon()
+            print("  daemon stopped")
+            return 0
+    except service.ServiceError as exc:
+        print(f"  daemon: {exc}")
+        return 1
+    except (OSError, RuntimeError) as exc:
+        # Supervisor failures are real state failures, not an invitation to
+        # guess a PID and kill it ourselves.
+        print(f"  daemon supervisor error: {exc}")
+        return 1
+    print(f"  Unknown daemon action {action!r}.")
+    return 2
+
+
+def _daemon_age_suffix(seconds: float | None) -> str:
+    """Render an observed age without pretending a missing timestamp is fresh."""
+    if seconds is None:
+        return " · checked unknown"
+    if seconds < 60:
+        return f" · checked {seconds:.0f}s ago"
+    if seconds < 3600:
+        return f" · checked {seconds / 60:.0f}m ago"
+    return f" · checked {seconds / 3600:.1f}h ago"
+
+
+def _fleet_admin_client():
+    """The CLI's only fleet door is the local daemon's UDS admin contract."""
+    from spacepilot.daemon.fleet import local_fleet_admin
+    return local_fleet_admin()
+
+
+def _fleet_snapshot(admin):
+    from spacepilot.daemon.fleet import FleetSnapshot
+    return FleetSnapshot.from_wire(admin.list())
+
+
+def _fleet_frame_lines(admin) -> list[str]:
+    """One fact frame shared unchanged by plain and Rich Live presentations."""
+    from spacepilot.daemon.fleet import render_fleet_snapshot, utc_now
+    return render_fleet_snapshot(_fleet_snapshot(admin), now=utc_now())
+
+
+def _render_fleet_snapshot(snapshot) -> None:
+    """Render a single non-watch fleet snapshot."""
+    from spacepilot.daemon.fleet import render_fleet_snapshot, utc_now
+    print("\n".join(render_fleet_snapshot(snapshot, now=utc_now())))
+
+
+def _watch_fleet(
+    admin,
+    *,
+    interval: float,
+    output_mode: str = "plain",
+    sleep=time.sleep,
+    max_frames: int | None = None,
+    live_factory=None,
+    console_factory=None,
+) -> int:
+    """Refresh daemon-produced facts while recomputing ages at every frame."""
+    frames = 0
+    if output_mode == "live":
+        from rich.console import Console
+        from rich.live import Live
+        from rich.text import Text
+
+        # screen=False keeps this a compact updating table, not an alternate
+        # screen TUI. The actual rows come exclusively from `_fleet_frame_lines`.
+        make_console = console_factory or Console
+        make_live = live_factory or Live
+        console = make_console(no_color="NO_COLOR" in os.environ)
+        try:
+            with make_live(Text(""), console=console, screen=False, transient=False) as live:
+                while max_frames is None or frames < max_frames:
+                    lines = _fleet_frame_lines(admin)
+                    live.update(Text("\n".join(lines)))
+                    frames += 1
+                    sleep(interval)
+        except KeyboardInterrupt:
+            console.print("\n  fleet watch stopped")
+        return 0
+
+    try:
+        while max_frames is None or frames < max_frames:
+            # Timestamping each printed snapshot makes an old block visibly
+            # old when plain output is redirected to a log or CI artifact.
+            from spacepilot.daemon.fleet import utc_now
+            print(f"  snapshot   {utc_now().isoformat(timespec='seconds')}")
+            print("\n".join(_fleet_frame_lines(admin)))
+            frames += 1
+            sleep(interval)
+    except KeyboardInterrupt:
+        print("\n  fleet watch stopped")
+    return 0
+
+
+def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> int:
+    """Send fleet requests to the local daemon; never poll peers from the CLI."""
+    from spacepilot.daemon.fleet import FleetError
+
+    action = getattr(args, "fleet_action", None)
+    watch = bool(getattr(args, "watch", False))
+    if action is None and watch:
+        action = "list"
+    try:
+        admin = _fleet_admin_client()
+        if action == "init":
+            result = admin.init(args.name)
+            version = result.get("orders_version", "unknown")
+            print(f"  fleet initialized · ORDERS v{version}")
+            return 0
+        if action == "add":
+            result = admin.add(args.selector)
+            print(f"  fleet member added · ORDERS v{result.get('orders_version', 'unknown')}")
+            return 0
+        if action == "join":
+            result = admin.join(args.author_key_id, args.author_selector, args.fleet_id)
+            print(f"  joined fleet · ORDERS v{result.get('orders_version', 'unknown')}")
+            return 0
+        if action == "list":
+            interval = float(getattr(args, "interval", 2.0))
+            if interval <= 0:
+                print("  --interval must be greater than zero")
+                return 2
+            if watch:
+                mode = getattr(args, "output_mode", "plain")
+                return _watch_fleet(admin, interval=interval, output_mode=mode)
+            _render_fleet_snapshot(_fleet_snapshot(admin))
+            return 0
+    except (FleetError, OSError, RuntimeError) as exc:
+        print(f"  fleet: {exc}")
+        return 1
+    print(f"  Unknown fleet action {action!r}.")
+    return 2
 
 
 def cmd_runtimes(args, cfg=None) -> int:
@@ -1111,7 +1663,7 @@ def cmd_measure(args, cfg=None) -> int:
         command = command[1:]
     if not command:
         print("Nothing to measure. Put the command after --, e.g.")
-        print("  pluto measure --model flux --metric seconds_per_image -- "
+        print("  spacepilot measure --model flux --metric seconds_per_image -- "
               "mflux-generate --model schnell --steps 4")
         return 1
 
@@ -1285,16 +1837,22 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-def main():
+def main(argv: list[str] | None = None):
     cfg = load_config()
     parser = argparse.ArgumentParser(
         prog="spacepilot",
         description="SpacePilot — inference orchestration across the machines you can reach.",
     )
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--live", dest="output_mode", action="store_const", const="live",
+                              help="Render live terminal updates")
+    output_group.add_argument("--plain", dest="output_mode", action="store_const", const="plain",
+                              help="Render plain newline-delimited output")
     subparsers = parser.add_subparsers(dest="command")
 
-    # doctor
+    # doctor/check
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
+    subparsers.add_parser("check", help="Alias for doctor")
 
     # probe
     probe_p = subparsers.add_parser(
@@ -1311,6 +1869,40 @@ def main():
     serve_p.add_argument("--port", type=int, default=8088, help="Port (default: 8088)")
     serve_p.add_argument("--reload", action="store_true", help="Enable reload")
 
+    # daemon
+    daemon_p = subparsers.add_parser("daemon", help="Run and supervise this machine's local daemon")
+    daemon_sub = daemon_p.add_subparsers(dest="daemon_action", required=True)
+    daemon_sub.add_parser("install", help="Install and start the per-user daemon service")
+    daemon_sub.add_parser("run", help="Run the daemon in this foreground terminal")
+    daemon_sub.add_parser("status", help="Ask the OS supervisor for daemon status")
+    daemon_sub.add_parser("stop", help="Stop the daemon through its OS supervisor")
+
+    # fleet
+    fleet_p = subparsers.add_parser("fleet", help="Manage ships through the local daemon")
+    fleet_p.add_argument("--watch", action="store_true", help="Continuously render daemon fleet facts")
+    fleet_p.add_argument("--interval", type=float, default=2.0,
+                         help="Seconds between daemon snapshot requests (default: 2)")
+    fleet_sub = fleet_p.add_subparsers(dest="fleet_action")
+    fleet_init = fleet_sub.add_parser("init", help="Create this fleet's signed ORDERS")
+    fleet_init.add_argument("name", help="This ship's real name")
+    fleet_add = fleet_sub.add_parser("add", help="Add a signed ship member")
+    fleet_add.add_argument("selector", help="One live Tailscale peer selector")
+    fleet_join = fleet_sub.add_parser("join", help="Join with a signed fleet invitation")
+    fleet_join.add_argument("--author-key-id", required=True,
+                            help="Pinned permanent author Ed25519 key id")
+    fleet_join.add_argument("--author-selector", required=True,
+                            help="Live Tailscale selector for the pinned author")
+    fleet_join.add_argument("--fleet-id", default=None, help="Optional pinned fleet UUID")
+    fleet_list = fleet_sub.add_parser("list", help="Render the daemon's current fleet facts")
+    # SUPPRESS, not a default: argparse writes a subparser default over whatever
+    # the parent already parsed, so `fleet --watch --interval 5 list` silently
+    # became a single snapshot at 2s. With SUPPRESS the attribute is only set
+    # when the flag is actually given after the subcommand.
+    fleet_list.add_argument("--watch", action="store_true", default=argparse.SUPPRESS,
+                            help="Continuously render fleet facts")
+    fleet_list.add_argument("--interval", type=float, default=argparse.SUPPRESS,
+                            help="Seconds between daemon snapshot requests (default: 2)")
+
     # lora
     lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
     lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
@@ -1325,7 +1917,7 @@ def main():
     recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
 
     # studio
-    studio_p = subparsers.add_parser("studio", help="Launch interactive Pluto Studio Web UI")
+    studio_p = subparsers.add_parser("studio", help="Launch interactive SpacePilot Studio Web UI")
     studio_p.add_argument("--port", type=int, default=8088, help="Port to bind (default: 8088)")
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
@@ -1351,6 +1943,12 @@ def main():
                        help="`list` for the table (the default), or a part id for detail")
     sil_p.add_argument("--json", action="store_true",
                        help="Print the registry as JSON, sources and dates included")
+    run_p = subparsers.add_parser("run", help="Run a real workload on this machine")
+    run_sub = run_p.add_subparsers(dest="run_workload", required=True)
+    run_image = run_sub.add_parser("image", help="Generate one image through an exact local route")
+    run_image.add_argument("--prompt", required=True, help="Text prompt for the image")
+    run_image.add_argument("--output", "-o", default=None, help="Output image path")
+    run_image.add_argument("--yes", action="store_true", help="Execute after printing the plan")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
@@ -1424,21 +2022,32 @@ def main():
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    try:
+        parse_argv, explicit_mode = _extract_output_mode_flags(raw_argv)
+    except ValueError as exc:
+        parser.error(str(exc))
 
-    args = parser.parse_args()
+    if not parse_argv:
+        parser.print_help()
+        return 0
+
+    args = parser.parse_args(parse_argv)
+    args.output_mode = resolve_output_mode(explicit_mode or args.output_mode, cfg)
 
     dispatch = {
         "doctor": cmd_doctor,
+        "check": cmd_doctor,
         "probe": cmd_probe,
         "serve": cmd_serve,
+        "daemon": cmd_daemon,
+        "fleet": cmd_fleet,
         "lora": cmd_lora,
         "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
         "silicon": cmd_silicon,
+        "run": cmd_run,
         "runtimes": cmd_runtimes,
         "measure": cmd_measure,
         "sweep": cmd_sweep,
@@ -1460,6 +2069,12 @@ def main():
     # exited 0 — including ones that had just printed a refusal or an error,
     # which made pluto unusable from a script or a CI step.
     return handler(args, cfg) or 0
+
+
+def pluto_main() -> int:
+    """Compatibility executable retained for one deprecation window."""
+    print("pluto is deprecated; use spacepilot", file=sys.stderr)
+    return main()
 
 
 if __name__ == "__main__":

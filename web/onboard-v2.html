@@ -527,7 +527,7 @@ let TOKEN = new URLSearchParams(location.search).get("token") || "";
 async function authHeaders() {
   // Same source the rest of the studio uses, so one server session, one token.
   if (!TOKEN) TOKEN = (await (await fetch("/api/token")).json()).token;
-  return { "X-Pluto-Token": TOKEN };
+  return { "X-SpacePilot-Token": TOKEN };
 }
 async function api(path, opts = {}) {
   const res = await fetch(path, { ...opts, headers: { ...(await authHeaders()), ...(opts.headers || {}) } });

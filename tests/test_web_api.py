@@ -39,9 +39,6 @@ GATED_POSTS = [
     ("/api/generate/music", {"prompt": "x", "lyrics": "[Intro]"}),
     ("/api/generate/voice", {"text": "x"}),
     ("/api/gpu/inspect/action", {"action": "clear_tmp"}),
-    ("/api/sky/schedule", {"task_name": "worker"}),
-    ("/api/sky/failover", {"reason": "preemption"}),
-    ("/api/sky/terminate", {}),
     ("/api/storyboard/decompose", {"script": "astronaut on moon"}),
     ("/api/audio/mix-ducked", {"voice_job_id": "test_voice"}),
     ("/api/compute/models/download", {"model_id": "kokoro-82m-tts"}),
@@ -97,6 +94,22 @@ def _post_routes(routes=None):
     return found
 
 
+def _all_route_paths(routes=None):
+    """Every path the app serves, at any method, however deeply nested.
+
+    Same wrapper problem as _post_routes: a one-level `getattr(route, "path")`
+    over app.routes sees four starlette routes and none of the API.
+    """
+    found = set()
+    for route in app.routes if routes is None else routes:
+        expand = getattr(route, "effective_route_contexts", None)
+        if callable(expand):
+            found |= _all_route_paths(list(expand()))
+        elif getattr(route, "path", None):
+            found.add(route.path)
+    return found
+
+
 def test_the_route_walk_is_not_empty():
     """Negative control: prove the guard below is looking at something.
 
@@ -140,9 +153,37 @@ def test_compute_endpoints_all_require_the_token():
         assert client.post(path, json=body, headers={"X-Pluto-Token": "wrong"}).status_code == 401
 
 
+def test_canonical_and_legacy_token_headers_are_accepted_but_conflicts_fail_closed():
+    path, body = GATED_POSTS[0]
+    token = STUDIO_TOKEN
+    assert client.post(path, json=body, headers={"X-SpacePilot-Token": token}).status_code != 401
+    assert client.post(path, json=body, headers={"X-Pluto-Token": token}).status_code != 401
+    assert client.post(path, json=body, headers={
+        "X-SpacePilot-Token": token, "X-Pluto-Token": token,
+    }).status_code != 401
+    assert client.post(path, json=body, headers={
+        "X-SpacePilot-Token": token, "X-Pluto-Token": "different-test-value",
+    }).status_code == 401
+
+
 def test_read_only_endpoints_stay_open():
     for path in ["/api/status", "/api/assets"]:
         assert client.get(path).status_code == 200
+
+
+def test_skypilot_routes_are_removed():
+    """The retired multi-cloud fiction must not remain reachable as API routes.
+
+    This walked app.routes one level deep, which under current FastAPI sees the
+    four starlette docs routes and none of the API — so it passed whether or not
+    /api/sky/* existed. Same vacuous-walk bug the POST gate guard had.
+    """
+    paths = _all_route_paths()
+    assert len(paths) > 50, (
+        f"the route walk found only {len(paths)} paths — it has gone blind, "
+        "so this guard proves nothing"
+    )
+    assert not {p for p in paths if p.startswith("/api/sky/")}
 
 
 def test_healthz_is_dependency_free_liveness():
@@ -1224,63 +1265,6 @@ def test_generate_video_4take_batch():
         assert job["meta"]["take_group_id"] == data["take_group_id"]
 
 
-def test_sky_arbitrage_clouds_endpoint():
-    """Verify /api/sky/clouds returns 12+ cloud arbitrage matrix with pricing and preemption rates."""
-    response = client.get("/api/sky/clouds")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "ok"
-    assert data["providers_count"] >= 12
-    matrix = data["arbitrage_matrix"]
-    assert len(matrix) >= 12
-    # Verify fields in matrix items
-    for item in matrix:
-        assert "provider" in item
-        assert "spot_price_usd" in item
-        assert "ondemand_price_usd" in item
-        assert "preemption_risk" in item
-        assert "vram_gb" in item
-        assert "savings_vs_ondemand_pct" in item
-
-
-def test_sky_status_and_yaml_endpoint():
-    """Verify /api/sky/status and /api/sky/yaml return valid telemetry and declarative YAML."""
-    res_status = client.get("/api/sky/status")
-    assert res_status.status_code == 200
-    st = res_status.json()
-    assert "active" in st
-    assert "arbitrage_best_option" in st
-    assert "multi_cloud_providers_tracked" in st
-    assert st["multi_cloud_providers_tracked"] >= 12
-
-    res_yaml = client.get("/api/sky/yaml?cloud=lambda&accelerators=L40S:1")
-    assert res_yaml.status_code == 200
-    yaml_data = res_yaml.json()
-    assert yaml_data["status"] == "ok"
-    assert "spacepilot-ltx-worker" in yaml_data["yaml"]
-    assert "L40S:1" in yaml_data["yaml"]
-    assert "use_spot: true" in yaml_data["yaml"]
-
-
-def test_sky_schedule_and_failover_lifecycle():
-    """Gated 2026-08-24: /api/sky/schedule and /api/sky/failover fabricated a
-    deployment (mock 198.51.x IPs, invented failover). They must return 501 Not
-    Implemented, not a fake success payload."""
-    req = {
-        "task_name": "spacepilot-cinematic-prod",
-        "provider": "lambda",
-        "accelerator": "L40S:1",
-        "use_spot": True,
-        "auto_failover": True,
-    }
-    sched_res = client.post("/api/sky/schedule", json=req, headers=AUTH)
-    assert sched_res.status_code == 501
-
-    failover_res = client.post(
-        "/api/sky/failover", json={"reason": "Spot 2-minute preemption signal"}, headers=AUTH)
-    assert failover_res.status_code == 501
-
-
 def test_storyboard_decompose_endpoint():
     """Verify /api/storyboard/decompose parses a prompt into structured scenes with 3D camera vectors."""
     payload = {
@@ -1329,4 +1313,3 @@ def test_storyboard_decompose_custom_scene_count_and_vectors():
     assert data["scene_count"] == 8
     assert len(data["scenes"]) == 8
     assert abs(data["total_duration_sec"] - 48.0) < 0.5
-

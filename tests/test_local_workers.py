@@ -23,6 +23,49 @@ client = TestClient(app)
 AUTH = {"X-Pluto-Token": STUDIO_TOKEN}
 
 
+@pytest.fixture(autouse=True)
+def _fake_heavy_model_sessions(monkeypatch):
+    """Lifecycle tests exercise orchestration, never machine-local weights."""
+    import re
+    import numpy as np
+
+    class FakeKokoro:
+        def create(self, text, voice, speed, lang):
+            return np.full(24000, 0.1, dtype=np.float32), 24000
+
+    def load_kokoro(self):
+        self._session = FakeKokoro()
+        self.spec.is_loaded = True
+        return True
+
+    class FakeLlama:
+        def create_chat_completion(self, messages, **kwargs):
+            prompt = messages[0]["content"]
+            count = int(re.search(r"exactly (\d+)", prompt).group(1))
+            duration = float(re.search(r"Total duration must be ([0-9.]+)", prompt).group(1))
+            seed = kwargs["seed"]
+            scenes = []
+            for index in range(count):
+                scenes.append({
+                    "scene_id": f"scene_{index + 1:02d}", "scene_idx": index + 1,
+                    "title": f"Scene {index + 1}", "duration_sec": duration / count,
+                    "prompt": "A real model-produced scene", "camera_motion": "static",
+                    "camera_vector": {"pan": 0, "tilt": 0, "zoom": 1, "roll": 0, "orbit": 0},
+                    "shot_type": "wide", "lighting": "natural", "environment": "exterior",
+                    "transition": "cut", "audio_cue": "room tone",
+                    "character_seed": seed, "takes_ready": 0,
+                })
+            return {"choices": [{"message": {"content": json.dumps({"scenes": scenes})}}]}
+
+    def load_gguf(self):
+        self._llm = FakeLlama()
+        self.spec.is_loaded = True
+        return True
+
+    monkeypatch.setattr(KokoroDriver, "load", load_kokoro)
+    monkeypatch.setattr(GGUFDriver, "load", load_gguf)
+
+
 class DummyDriver(InferenceDriver):
     """Test stub for InferenceDriver abstract class validation."""
     def load(self) -> bool:
