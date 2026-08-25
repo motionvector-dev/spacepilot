@@ -107,8 +107,6 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 
 * `spacepilot_probe_hardware`: Probes host GPU VRAM and compute headroom.
 * `spacepilot_recommend_models`: Returns task-matched model catalog for current device.
-* `spacepilot_generate_video`: Generates cinematic video via LTX-Video 2.5.
-* `spacepilot_generate_audio` / `spacepilot_generate_music`: Generates voiceover and music cues.
 * `spacepilot_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
 
 ---

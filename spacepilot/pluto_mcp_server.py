@@ -16,78 +16,6 @@ from typing import Optional, Dict, Any, List
 mcp = MCPServer("SpacePilot")
 
 @mcp.tool()
-def spacepilot_generate_video(prompt: str, seconds: float = 4.0, camera_pan: str = None, camera_tilt: str = None, camera_zoom: str = None, camera_intensity: int = 3, draft_mode: bool = False) -> Dict[str, Any]:
-    """Generate a video using Pluto.
-    
-    Args:
-        prompt (str): The prompt describing the video to generate.
-        seconds (float, optional): Length of the video in seconds. Defaults to 4.0.
-        camera_pan (str, optional): Horizontal camera movement (e.g., "left", "right"). Defaults to None.
-        camera_tilt (str, optional): Vertical camera movement (e.g., "up", "down"). Defaults to None.
-        camera_zoom (str, optional): Zoom direction (e.g., "in", "out"). Defaults to None.
-        camera_intensity (int, optional): The intensity of the camera movement, from 1 to 5. Defaults to 3.
-        draft_mode (bool, optional): Whether to use draft mode ($0.012/gen) or cinema mode ($0.04/gen). Defaults to False.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id and status.
-    """
-    return {"job_id": "vid-12345", "status": "processing"}
-
-@mcp.tool()
-def spacepilot_extend_video(asset_id: str, prompt: str, seconds: float = 4.0) -> Dict[str, Any]:
-    """Extend an existing video.
-    
-    Args:
-        asset_id (str): The ID of the video asset to extend.
-        prompt (str): The prompt describing how to extend the video.
-        seconds (float, optional): How many seconds to add to the video. Defaults to 4.0.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the new job_id and status.
-    """
-    return {"job_id": "vid-67890", "status": "processing"}
-
-@mcp.tool()
-def spacepilot_generate_audio(text: str, voice: str = "af_heart", speed: float = 1.0) -> Dict[str, Any]:
-    """Generate audio using Kokoro TTS.
-    
-    Args:
-        text (str): The text to synthesize into speech.
-        voice (str, optional): The voice to use from the catalogue (e.g., "af_heart"). Defaults to "af_heart".
-        speed (float, optional): The speech rate multiplier. Defaults to 1.0.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id and status.
-    """
-    return {"job_id": "aud-12345", "status": "processing"}
-
-@mcp.tool()
-def spacepilot_generate_music(prompt: str, lyrics: str, duration_seconds: float = 30.0) -> Dict[str, Any]:
-    """Generate music.
-    
-    Args:
-        prompt (str): A description of the musical style.
-        lyrics (str): The lyrics to sing.
-        duration_seconds (float, optional): The duration of the generated track. Defaults to 30.0.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id and status.
-    """
-    return {"job_id": "mus-12345", "status": "processing"}
-
-@mcp.tool()
-def spacepilot_get_render_status(job_id: str) -> Dict[str, Any]:
-    """Get the status of a render job.
-    
-    Args:
-        job_id (str): The unique ID of the render job.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id and its current status.
-    """
-    return {"job_id": job_id, "status": "completed"}
-
-@mcp.tool()
 def spacepilot_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
     """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
     
@@ -425,11 +353,6 @@ def spacepilot_system_summary(system_id: Optional[str] = None) -> dict:
 # Direct-import compatibility for one release. These aliases are ordinary
 # Python names, not separately registered MCP tools; clients see only the
 # canonical ``spacepilot_*`` surface above.
-pluto_generate_video = spacepilot_generate_video
-pluto_extend_video = spacepilot_extend_video
-pluto_generate_audio = spacepilot_generate_audio
-pluto_generate_music = spacepilot_generate_music
-pluto_get_render_status = spacepilot_get_render_status
 pluto_decompose_storyboard = spacepilot_decompose_storyboard
 pluto_probe_hardware = spacepilot_probe_hardware
 pluto_recommend_models = spacepilot_recommend_models
@@ -463,6 +386,13 @@ pluto_system_summary = spacepilot_system_summary
 #     hardcoded job_id ("wan-12345", "hunyuan-12345") with status "processing" for a job that
 #     was never queued, so the caller polled forever; the non-failing path only ever rendered
 #     an ffmpeg test pattern, because both engines ignore their own mock= argument
+#   spacepilot_generate_video, spacepilot_extend_video, spacepilot_generate_audio,
+#     spacepilot_generate_music, spacepilot_get_render_status: one-line stubs returning
+#     "vid-12345", "vid-67890", "aud-12345", "mus-12345" for jobs that were never queued.
+#     get_render_status was the worst of them — it answered "completed" for ANY job id,
+#     including one that never existed, so a polling agent could never learn otherwise.
+#     The real work exists over HTTP (routes/generate.py, routes/audio.py); these tools
+#     never called it. Restore them only by wiring them to it.
 # Restore a tool here only once its implementation is real.
 
 if __name__ == "__main__":

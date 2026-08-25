@@ -201,7 +201,7 @@ def test_peer_api_has_picture_but_no_plan_or_run(tmp_path, monkeypatch):
     monkeypatch.setattr("spacepilot.daemon.api.allocate_output", lambda name: tmp_path / name)
     substrate, service = _substrate(tmp_path)
     local = TestClient(create_local_app(substrate))
-    peer = TestClient(create_peer_app(substrate))
+    peer = TestClient(create_peer_app(substrate, allow_unauthenticated=True))
 
     assert local.post("/v1/plan", json={"workload": "image"}).status_code == 200
     assert local.post("/v1/run", json={
@@ -253,7 +253,7 @@ def test_shutdown_exists_only_on_local_api(tmp_path):
     substrate, _ = _substrate(tmp_path)
     requested = []
     local = TestClient(create_local_app(substrate, shutdown=lambda: requested.append(True)))
-    peer = TestClient(create_peer_app(substrate))
+    peer = TestClient(create_peer_app(substrate, allow_unauthenticated=True))
     assert local.post("/v1/shutdown").json() == {"status": "stopping"}
     assert requested == [True]
     assert peer.post("/v1/shutdown").status_code == 404
@@ -310,7 +310,7 @@ def test_peer_picture_can_be_wrapped_in_a_signed_envelope(tmp_path):
         seen.append(picture)
         return {"kind": "picture", "payload": picture, "signature": "test-signature"}
 
-    peer = TestClient(create_peer_app(substrate, picture_signer=signer))
+    peer = TestClient(create_peer_app(substrate, picture_signer=signer, allow_unauthenticated=True))
     response = peer.get("/v1/picture")
     assert response.status_code == 200
     assert response.json()["kind"] == "picture"
@@ -326,6 +326,7 @@ def test_peer_picture_verifies_with_persisted_ed25519_identity(tmp_path, monkeyp
     peer = TestClient(create_peer_app(
         substrate,
         picture_signer=lambda picture: sign_picture(identity, picture),
+        allow_unauthenticated=True,
     ))
     envelope = peer.get("/v1/picture").json()
     assert envelope["key_id"] == identity.key_id

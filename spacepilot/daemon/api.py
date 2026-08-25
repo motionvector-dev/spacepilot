@@ -182,8 +182,14 @@ def create_peer_app(
     picture_signer: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
     peer_reads: PeerReads | None = None,
     peer_authenticator: PeerAuthenticator | None = None,
+    allow_unauthenticated: bool = False,
 ) -> FastAPI:
-    """Read-only tailnet door; mutation routes do not exist on this app."""
+    """Read-only tailnet door; mutation routes do not exist on this app.
+
+    `allow_unauthenticated` exists only for the picture-only adapter tests. A
+    security boundary must not open because an argument was forgotten, so the
+    opt-out has to be named out loud at the call site.
+    """
     app = FastAPI(
         title="SpacePilot peer daemon",
         docs_url=None,
@@ -192,10 +198,12 @@ def create_peer_app(
     )
     async def authenticate(request: Request) -> None:
         if peer_authenticator is None:
-            # Compatibility for the Phase-4 picture-only app used in direct
-            # adapter tests. Fleet-aware server construction injects an
-            # authenticator alongside PeerReads.
-            if peer_reads is None:
+            # Fail closed. This used to return — serving the signed picture to
+            # any tailnet node — whenever both peer_authenticator and peer_reads
+            # were absent, so a future caller that forgot one argument would
+            # have silently unauthenticated the door while `daemon status` still
+            # read "listening". Only an explicit opt-out opens it now.
+            if allow_unauthenticated:
                 return
             raise HTTPException(status_code=503, detail="peer membership authentication is unavailable")
         header = request.headers.get(PEER_AUTH_HEADER)
