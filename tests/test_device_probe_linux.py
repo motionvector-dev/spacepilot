@@ -130,6 +130,50 @@ IDEAPAD_CARDS = [
 ]
 
 
+# Real output, captured from the Lenovo (Ubuntu 24.04, Mesa 25.2.8) on
+# 2026-08-25 with `vulkaninfo --summary`. Trimmed to the Devices section, which
+# is the only part the probe reads. GPU2 is llvmpipe — Mesa's CPU rasteriser —
+# and it is kept here on purpose: it is the reason the probe filters on
+# deviceType instead of trusting that vulkaninfo printed anything at all.
+VULKANINFO_SUMMARY = """Devices:
+========
+GPU0:
+\tapiVersion         = 1.4.318
+\tdriverVersion      = 25.2.8
+\tvendorID           = 0x8086
+\tdeviceID           = 0x1916
+\tdeviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+\tdeviceName         = Intel(R) HD Graphics 520 (SKL GT2)
+\tdriverID           = DRIVER_ID_INTEL_OPEN_SOURCE_MESA
+\tdriverName         = Intel open-source Mesa driver
+GPU1:
+\tapiVersion         = 1.4.318
+\tdriverVersion      = 25.2.8
+\tvendorID           = 0x1002
+\tdeviceID           = 0x6900
+\tdeviceType         = PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+\tdeviceName         = AMD Radeon R7 M360 (RADV ICELAND)
+\tdriverID           = DRIVER_ID_MESA_RADV
+\tdriverName         = radv
+GPU2:
+\tapiVersion         = 1.4.318
+\tdriverVersion      = 25.2.8
+\tvendorID           = 0x10005
+\tdeviceID           = 0x0000
+\tdeviceType         = PHYSICAL_DEVICE_TYPE_CPU
+\tdeviceName         = llvmpipe (LLVM 20.1.2, 256 bits)
+\tdriverID           = DRIVER_ID_MESA_LLVMPIPE
+\tdriverName         = llvmpipe
+"""
+
+LLVMPIPE_ONLY_SUMMARY = """Devices:
+========
+GPU0:
+\tdeviceType         = PHYSICAL_DEVICE_TYPE_CPU
+\tdeviceName         = llvmpipe (LLVM 20.1.2, 256 bits)
+"""
+
+
 def fake_run(responses: Optional[Dict[str, str]] = None):
     """A `run` that answers only the commands named, and None for the rest.
 
@@ -241,6 +285,51 @@ def test_rocm_present_promotes_the_backend(tmp_path):
     assert p.backend == "rocm"
     assert p.compute_runtime == "rocm"
     assert "compute_runtime" not in p.unknown
+
+
+def test_vulkan_is_named_when_found_but_never_promoted_to_a_backend(tmp_path):
+    """The Lenovo runs Flux over Vulkan and SpacePilot called it a dead machine.
+
+    Naming the runtime is the honest half. Promoting the backend is not: no
+    shipped runtime or model recipe declares a vulkan backend, so a promotion
+    would flip every CPU-capable runtime to "n/a here" and admit drivers with
+    no Vulkan path behind them.
+    """
+    p = probe(build_tree(tmp_path, cards=IDEAPAD_CARDS),
+              run=fake_run({"lspci": LSPCI_OUTPUT,
+                            "vulkaninfo": VULKANINFO_SUMMARY}))
+
+    assert p.compute_runtime == "vulkan"
+    assert "RADV ICELAND" in p.compute_runtime_detail
+    assert p.backend == "cpu", "no shipped runtime routes through Vulkan"
+    assert p.is_local_capable is False
+    assert "vulkan" in p.unknown["compute_runtime"].lower()
+    assert "not usable here yet" in p.unknown["compute_runtime"]
+
+
+def test_llvmpipe_alone_is_not_a_vulkan_accelerator(tmp_path):
+    """Mesa advertises a CPU rasteriser as a Vulkan device on every machine.
+
+    Without the deviceType filter, "vulkaninfo printed something" would report
+    a Vulkan compute path on a box with no working GPU at all.
+    """
+    p = probe(build_tree(tmp_path, cards=IDEAPAD_CARDS),
+              run=fake_run({"lspci": LSPCI_OUTPUT,
+                            "vulkaninfo": LLVMPIPE_ONLY_SUMMARY}))
+
+    assert p.compute_runtime is None
+    assert "rocm" in p.unknown["compute_runtime"].lower()
+
+
+def test_rocm_wins_over_vulkan_when_both_are_present(tmp_path):
+    """ROCm is a path we can actually route through; Vulkan is not, yet."""
+    p = probe(build_tree(tmp_path, cards=IDEAPAD_CARDS),
+              run=fake_run({"lspci": LSPCI_OUTPUT,
+                            "rocminfo": "Name: gfx900",
+                            "vulkaninfo": VULKANINFO_SUMMARY}))
+
+    assert p.backend == "rocm"
+    assert p.compute_runtime == "rocm"
 
 
 def test_lspci_absent_reports_the_pci_ids_and_flags_the_name_unknown(tmp_path):

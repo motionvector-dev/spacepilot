@@ -549,6 +549,7 @@ def _linux_compute_runtime(src: LinuxSources, profile: DeviceProfile, gpus: List
     """
     amd = [g for g in gpus if g.get("vendor") == "AMD"]
     if not amd:
+        _linux_vulkan_compute(src, profile)
         return
 
     product = src.run(["rocm-smi", "--showproductname"], timeout=8.0)
@@ -572,11 +573,63 @@ def _linux_compute_runtime(src: LinuxSources, profile: DeviceProfile, gpus: List
         profile.compute_runtime_detail = f"rocminfo reports agent {m.group(1)}" if m else "rocminfo reports an agent"
         return
 
+    if _linux_vulkan_compute(src, profile):
+        return
+
     profile.unknown["compute_runtime"] = (
         "an AMD card was detected but neither rocm-smi nor rocminfo is installed, "
         "so no runtime was found that can reach it; the card is present and not usable "
         "for compute until one is"
     )
+
+
+# vulkaninfo lists a device per block; only deviceName and deviceType are read.
+# deviceType matters: Mesa always advertises llvmpipe, a CPU rasteriser, as a
+# Vulkan device, so "vulkaninfo printed something" is not evidence of a GPU.
+_VK_DEVICE_NAME = re.compile(r"^\s*deviceName\s*=\s*(.+?)\s*$", re.MULTILINE)
+_VK_DEVICE_TYPE = re.compile(r"^\s*deviceType\s*=\s*(\S+)\s*$", re.MULTILINE)
+
+
+def _linux_vulkan_compute(src: LinuxSources, profile: DeviceProfile) -> bool:
+    """Record a Vulkan compute path without claiming the card is usable here.
+
+    The Lenovo runs Flux through a Vulkan sd-cli while SpacePilot reports
+    "Backend: CPU, 0GB usable" and blocks every model, because the backend
+    vocabulary has three entries and Vulkan is not one of them. Naming what was
+    found is the honest half and costs nothing.
+
+    Promoting `profile.backend` to "vulkan" is the dishonest half and is not
+    done here: no shipped runtime or model recipe declares a vulkan backend
+    (see pluto/registry.py BACKENDS), so the promotion would flip every
+    CPU-capable runtime to "n/a here" and admit accelerator-only drivers that
+    have no Vulkan path behind them. Absence of a report becomes a wrong one.
+    """
+    summary = src.run(["vulkaninfo", "--summary"], timeout=8.0)
+    if not summary:
+        return False
+
+    names = _VK_DEVICE_NAME.findall(summary)
+    types = _VK_DEVICE_TYPE.findall(summary)
+    gpus = [
+        (name, kind.upper())
+        for name, kind in zip(names, types)
+        if "CPU" not in kind.upper()
+    ]
+    if not gpus:
+        return False
+
+    # A laptop lists its integrated GPU first. Name the discrete card when there
+    # is one — that is the part the user bought and the part that runs models.
+    gpus.sort(key=lambda g: 0 if "DISCRETE" in g[1] else 1)
+    best = gpus[0][0]
+
+    profile.compute_runtime = "vulkan"
+    profile.compute_runtime_detail = f"vulkaninfo reports {best}"
+    profile.unknown["compute_runtime"] = (
+        f"a Vulkan compute path was found ({best}), but SpacePilot ships no "
+        "runtime that routes through Vulkan, so the card is not usable here yet"
+    )
+    return True
 
 
 def _linux_machine_name(src: LinuxSources, profile: DeviceProfile) -> None:
