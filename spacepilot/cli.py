@@ -569,7 +569,13 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> None:
         print("  VRAM     : unknown — not measured (system RAM is not a substitute)")
     elif profile.backend not in ACCELERATED_BACKENDS:
         print(f"  VRAM     : {profile.vram_total_gb:.1f}GB present, 0GB usable "
-              "— no compute runtime can reach this card")
+              "— no compute runtime SpacePilot can use was detected")
+        # "can reach this card" stated a negative detection as a fact about the
+        # hardware. The probe only knows that it looked and found nothing it
+        # can route through — which on the Lenovo is a card Vulkan reaches fine.
+        if profile.compute_runtime and profile.compute_runtime_detail:
+            print(f"  Runtime  : {profile.compute_runtime} present but unrouted "
+                  f"— {profile.compute_runtime_detail}")
     else:
         print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total (Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
     print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")

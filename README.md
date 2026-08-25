@@ -109,8 +109,6 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 * `pluto_probe_hardware`: Probes host GPU VRAM and compute headroom.
 * `pluto_recommend_models`: Returns task-matched model catalog for current device.
 * `pluto_generate_video`: Generates cinematic video via LTX-Video 2.5.
-* `pluto_generate_video_wan`: Generates video using Wan2.1 (1.3B or 14B).
-* `pluto_generate_video_hunyuan`: Generates 720p/1080p video using HunyuanVideo.
 * `pluto_generate_audio` / `pluto_generate_music`: Generates voiceover and music cues.
 * `pluto_skypilot_arbitrage`: Calculates real-time cheapest spot cloud across 12+ providers.
 * `pluto_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.

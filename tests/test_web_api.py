@@ -19,7 +19,6 @@ sys.path.append(str(PLUTO_ROOT))
 sys.path.append(str(PLUTO_ROOT / "spacepilot"))
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from spacepilot.web_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
 
@@ -51,14 +50,21 @@ GATED_POSTS = [
     ("/api/narrative/decompose-local", {"script": "astronaut on mars"}),
 ]
 
-# POST routes that spend nothing and so need no token. Both are pure local
-# computation: /api/enhance appends adjectives to a string, and
-# /api/director/auto-script returns a hardcoded storyboard. A route belongs
-# here only if it cannot cost money or GPU time.
-UNGATED_BY_DESIGN = {"/api/enhance", "/api/director/auto-script", "/api/upload-image"}
+# POST routes that spend nothing and so need no token. All are pure local
+# computation or a plain file write: /api/enhance and /api/enhance-prompt append
+# adjectives to a string, /api/director/auto-script returns a hardcoded
+# storyboard, and the two upload-image paths are the same handler under an old
+# and a new name. A route belongs here only if it cannot cost money or GPU time.
+UNGATED_BY_DESIGN = {
+    "/api/enhance",
+    "/api/enhance-prompt",
+    "/api/director/auto-script",
+    "/api/upload-image",
+    "/api/assets/upload-image",
+}
 
 
-def _requires_token(route: APIRoute) -> bool:
+def _requires_token(route) -> bool:
     """True if require_token appears anywhere in the route's dependency tree."""
     stack = list(route.dependant.dependencies)
     while stack:
@@ -67,6 +73,46 @@ def _requires_token(route: APIRoute) -> bool:
             return True
         stack.extend(dep.dependencies)
     return False
+
+
+def _post_routes(routes=None):
+    """Every POST route the app will actually serve, however it is nested.
+
+    FastAPI used to flatten included routers into app.routes, so filtering for
+    APIRoute found everything. It no longer does: an included router is stored
+    as a single wrapper object that resolves its routes on demand. Under that
+    change the old one-level `isinstance(route, APIRoute)` filter matched
+    nothing at all and the guard below passed vacuously, which is how two
+    ungated /api/billing POST routes lived here unnoticed. Handle both shapes,
+    and see test_the_route_walk_is_not_empty for the control that catches it
+    going blind again.
+    """
+    found = []
+    for route in app.routes if routes is None else routes:
+        expand = getattr(route, "effective_route_contexts", None)
+        if callable(expand):
+            found.extend(_post_routes(list(expand())))
+        elif "POST" in (getattr(route, "methods", None) or ()) and hasattr(route, "dependant"):
+            found.append(route)
+    return found
+
+
+def test_the_route_walk_is_not_empty():
+    """Negative control: prove the guard below is looking at something.
+
+    A structural guard that silently walks zero routes reads exactly like a
+    passing one. Cross-check the walk against the OpenAPI schema, which FastAPI
+    builds by a different code path, so both would have to break together.
+    """
+    walked = {route.path for route in _post_routes()}
+    documented = {
+        path for path, ops in app.openapi()["paths"].items() if "post" in ops
+    }
+    assert documented, "openapi() reports no POST routes at all"
+    assert not documented - walked, (
+        f"the route walk cannot see these POST routes: {sorted(documented - walked)}. "
+        "It has gone blind — fix _post_routes, do not relax this."
+    )
 
 
 def test_every_post_route_is_gated_or_explicitly_exempt():
@@ -78,11 +124,8 @@ def test_every_post_route_is_gated_or_explicitly_exempt():
     """
     missing = sorted(
         route.path
-        for route in app.routes
-        if isinstance(route, APIRoute)
-        and "POST" in route.methods
-        and route.path not in UNGATED_BY_DESIGN
-        and not _requires_token(route)
+        for route in _post_routes()
+        if route.path not in UNGATED_BY_DESIGN and not _requires_token(route)
     )
     assert not missing, (
         f"POST routes with neither require_token nor an UNGATED_BY_DESIGN entry: {missing}. "

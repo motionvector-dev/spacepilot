@@ -10,6 +10,7 @@ Tests:
 - Studio API multi-engine route and authentication gating
 """
 
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -32,10 +33,7 @@ from spacepilot.engines import (
     normalize_engine_id,
     DEFAULT_ENGINE_ID,
 )
-from spacepilot.pluto_mcp_server import (
-    pluto_generate_video_wan,
-    pluto_generate_video_hunyuan,
-)
+import spacepilot.pluto_mcp_server as pluto_mcp_server
 from spacepilot.web_api import app, STUDIO_TOKEN
 
 
@@ -253,22 +251,26 @@ def test_engine_image_to_video(tmp_path):
 # 5. MCP SERVER TOOLS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def test_mcp_wan_video_generation():
-    res = pluto_generate_video_wan(prompt="Cyberpunk flying car", model_size="14B")
-    assert "job_id" in res
-    assert res["status"] in ("processing", "completed")
-    assert "wan" in res["engine_id"]
+def test_no_mcp_tool_fabricates_a_wan_or_hunyuan_job():
+    """Both tools swallowed every exception and returned a hardcoded job_id.
 
-    res_13b = pluto_generate_video_wan(prompt="Cyberpunk flying car", model_size="1.3B")
-    assert "job_id" in res_13b
-    assert "wan" in res_13b["engine_id"]
+    A caller got "wan-12345" or "hunyuan-12345" back for a job that was never
+    queued, and polled it forever. They are gone rather than fixed: the engines
+    behind them ignore their own mock= argument and only ever render an ffmpeg
+    test pattern, so there was no honest success left to return.
+    """
+    exposed = {
+        tool.name for tool in asyncio.run(pluto_mcp_server.mcp.list_tools())
+    }
+    assert exposed, "list_tools() returned nothing — this assertion proves nothing"
+    assert "pluto_generate_video_wan" not in exposed
+    assert "pluto_generate_video_hunyuan" not in exposed
 
-
-def test_mcp_hunyuan_video_generation():
-    res = pluto_generate_video_hunyuan(prompt="Ethereal space nebula", resolution="720p")
-    assert "job_id" in res
-    assert res["status"] in ("processing", "completed")
-    assert res["engine_id"] == "hunyuan-video"
+    # The fabricated ids survive only inside the deliberately-absent comment
+    # block near the end of pluto_mcp_server.py, which is the point of it.
+    assert not [
+        name for name in exposed if "wan" in name or "hunyuan" in name
+    ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

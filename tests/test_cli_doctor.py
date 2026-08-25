@@ -109,7 +109,7 @@ class TestCliDoctor(unittest.TestCase):
 
     @patch('spacepilot.device_probe.probe_local_device')
     @patch('subprocess.run')
-    def test_doctor_reports_a_card_with_no_runtime_as_unusable(self, mock_subprocess_run, mock_probe):
+    def test_doctor_reports_a_card_with_no_runtime_as_unreached(self, mock_subprocess_run, mock_probe):
         from spacepilot.device_probe import GIB, DeviceProfile
         profile = DeviceProfile(
             os_name="Linux", arch="x86_64", backend="cpu",
@@ -128,7 +128,40 @@ class TestCliDoctor(unittest.TestCase):
         output = captured_output.getvalue()
 
         self.assertIn("4.0GB present, 0GB usable", output)
-        self.assertIn("no compute runtime can reach this card", output)
+        # "can reach this card" was a claim about the hardware. The probe only
+        # knows what it looked for and did not find.
+        self.assertIn("no compute runtime SpacePilot can use was detected", output)
+        self.assertNotIn("can reach this card", output)
+
+    @patch('spacepilot.device_probe.probe_local_device')
+    @patch('subprocess.run')
+    def test_doctor_names_a_runtime_it_found_but_cannot_route_through(self, mock_subprocess_run, mock_probe):
+        """The Lenovo runs Flux over Vulkan and still reads as a dead machine.
+
+        Silence there is the bug: the user has no way to tell "we found nothing"
+        from "we found a path we do not support yet".
+        """
+        from spacepilot.device_probe import GIB, DeviceProfile
+        profile = DeviceProfile(
+            os_name="Linux", arch="x86_64", backend="cpu",
+            memory_total_bytes=16_231_648 * 1024, vram_total_bytes=4 * GIB,
+            gpu_name="Topaz XT [Radeon R7 M260/M340/M360]",
+            compute_runtime="vulkan",
+            compute_runtime_detail="vulkaninfo reports AMD Radeon R7 M360 (RADV ICELAND)",
+        )
+        mock_probe.return_value = profile
+        mock_subprocess_run.side_effect = Exception("no tools here")
+
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        try:
+            cmd_doctor(MagicMock(), {"aws_profile": "default"})
+        finally:
+            sys.stdout = sys.__stdout__
+        output = captured_output.getvalue()
+
+        self.assertIn("vulkan present but unrouted", output)
+        self.assertIn("RADV ICELAND", output)
 
     def test_default_config_sizing(self):
         from spacepilot.cli import DEFAULT_CONFIG
