@@ -132,15 +132,18 @@ the verb that produces the product's one real artifact — is documented nowhere
 
 ## Phase 2 — Providers via a router (the missing third leg, least code first)
 
+**GATED ON SAURABH.** Anything on the money path — provider choice, keys, live
+prices, spend — happens only with him present. No agent starts P2 or P4
+unattended (his words, 2026-08-25: "we can't do money path in my absence").
+
 Decision (this session, confirmed direction from Saurabh): **do not hand-build N
 provider integrations — integrate a router.** Note `litellm>=1.98.0` is already
 a declared dependency (pyproject.toml:33) that no shipped code imports.
 
-> **Market scan pending** — a cited comparison of OpenRouter / Replicate /
-> fal.ai / Together / HF Inference Providers / LiteLLM (modalities × model-list
-> API × pricing API) is being produced by a research agent and will be appended
-> as Appendix C before this doc merges. The items below are shaped so the
-> router choice is a parameter, not a rewrite.
+> Router choice (OpenRouter / Replicate / fal.ai / LiteLLM / …) is an open
+> decision for a session with Saurabh present; the market scan was deliberately
+> not run unattended. The items below are shaped so the router choice is a
+> parameter, not a rewrite.
 
 **2.1 Provider registry schema.** New `spacepilot/registry/providers/*.yaml`
 mirroring the silicon discipline: every price `declared` with https cite + ISO
@@ -272,7 +275,3 @@ speech 1, text 1, vision 1. Measured speed exists for 5 of 42 variants
   **does not exist on this machine**; whether those runs survive anywhere is
   unknown.
 - LoRA panel / fine-tuning panel: removed by deletion; backend 501s correctly.
-
-## Appendix C — Provider router market scan
-
-*(pending — research agent, cited; appended before merge)*
