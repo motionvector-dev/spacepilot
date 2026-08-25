@@ -953,6 +953,140 @@ def cmd_runtimes(args, cfg=None) -> int:
     return 1
 
 
+# An absent figure is a fact about the vendor, not about the part. Printing it
+# as 0, or as an empty cell, turns "nobody published this" into "this is zero" —
+# the one reading the silicon registry exists to prevent.
+NOT_PUBLISHED = "not published"
+
+# A figure the vendor did not publish itself is marked, everywhere it appears.
+# `declared` and `reported` are both claims, but only one of them is the claim
+# of the party that built the thing.
+REPORTED_MARK = "*"
+
+
+def _bandwidth(v: float) -> str:
+    """Bandwidth in the decimal units every vendor quotes it in.
+
+    Memory uses `_gb` and its 1024s because that is how a machine reports its
+    own capacity; bandwidth does not, and converting one with the other's base
+    silently moves 819 GB/s to 763.
+    """
+    return f"{v / 1e12:.2f} TB/s" if v >= 1e12 else f"{v / 1e9:.0f} GB/s"
+
+
+FIGURES = (
+    ("memory", "memory_bytes", _gb),
+    ("bandwidth", "bandwidth_bytes_per_sec", _bandwidth),
+    ("npu", "npu_tops", lambda v: f"{v:.0f} TOPS"),
+    ("power", "power_watts", lambda v: f"{v:.0f} W"),
+    ("price", "price_usd", lambda v: f"${v:,.0f}"),
+)
+
+
+def _figure(claim, render) -> tuple:
+    """One figure as (text, provenance mark), kept as two fields.
+
+    The mark travels outside the value so the numbers still line up under one
+    another. A reported figure that shifts its column by a character is a
+    figure nobody compares against the one above it.
+    """
+    if claim is None:
+        return NOT_PUBLISHED, " "
+    return render(claim.value), (" " if claim.is_vendor else REPORTED_MARK)
+
+
+def _source_kind(part) -> str:
+    kinds = {c.source for c in (getattr(part, f) for _, f, _ in FIGURES) if c}
+    if not kinds:
+        return "nothing published"
+    return kinds.pop() if len(kinds) == 1 else "mixed"
+
+
+def _wrapped(text: str, indent: str, first: str = None) -> str:
+    import textwrap
+    return textwrap.fill(" ".join(text.split()), width=88,
+                         initial_indent=first if first is not None else indent,
+                         subsequent_indent=indent)
+
+
+def cmd_silicon(args, cfg=None) -> int:
+    """The parts that exist, as opposed to the machines this project has probed.
+
+    Nothing here is measured, so nothing here is printed without its source.
+    """
+    from spacepilot.pluto import silicon as si
+
+    parts = si.silicon()
+    ordered = sorted(parts.values(), key=lambda p: (p.kind, p.id))
+    as_json = getattr(args, "json", False)
+
+    # `list` is reserved so this reads the same way as `models list`, and no
+    # part may be named that.
+    part_id = getattr(args, "part_id", None)
+    if part_id and part_id != "list":
+        part = parts.get(part_id)
+        if not part:
+            print(f"No part '{part_id}'. Run `spacepilot silicon` to list them.")
+            return 1
+        if as_json:
+            print(json.dumps({"schema": si.SCHEMA_VERSION, **part.to_dict()}, indent=2))
+            return 0
+
+        buyable = "buyable today" if part.is_buyable else "not buyable"
+        print(f"{part.name}  [{part.id}]")
+        print(f"  {part.kind} · {part.vendor} · {part.availability} ({buyable})")
+        mem = f" · {part.memory_model} memory" if part.memory_model else ""
+        print(f"  reached by {', '.join(part.compute_paths)}{mem}" if part.compute_paths
+              else f"  no compute path — a component, not a machine you run on{mem}")
+        print(_wrapped(part.summary, "  "))
+        print()
+
+        for label, field, render in FIGURES:
+            claim = getattr(part, field)
+            if claim is None:
+                print(f"  {label:11s}{NOT_PUBLISHED}")
+                continue
+            print(f"  {label:11s}{render(claim.value):<13s}"
+                  f"[{claim.source}, checked {claim.checked}]")
+            print(f"  {'':11s}{claim.url}")
+            if claim.note:
+                print(_wrapped(claim.note, " " * 13))
+        if part.note:
+            print()
+            print(_wrapped(part.note, " " * 13, f"  {'note':11s}"))
+        print(f"\n  {NOT_PUBLISHED} means the vendor publishes no such figure. It is not zero.")
+        return 0
+
+    if as_json:
+        print(json.dumps({"schema": si.SCHEMA_VERSION,
+                          "parts": [p.to_dict() for p in ordered]}, indent=2))
+        return 0
+
+    print(f"{len(ordered)} parts · nothing here is measured — every figure is "
+          f"somebody's claim, dated\n")
+    # Widths come from the data, not from constants. A hardcoded column pays no
+    # dividend when an id gets shorter, and silently truncates when one grows.
+    kind_w = max(len("KIND"), *(len(p.kind) for p in ordered)) + 2
+    part_w = max(len("PART"), *(len(p.id) for p in ordered)) + 2
+    avail_w = max(len("AVAILABILITY"), *(len(p.availability) for p in ordered)) + 1
+
+    print(f"  {'KIND':{kind_w}s}{'PART':{part_w}s}{'AVAILABILITY':{avail_w}s}"
+          f"{'MEMORY':>13s}    {'BANDWIDTH':>13s}    SOURCE")
+
+    for p in ordered:
+        mem, mem_mark = _figure(p.memory_bytes, _gb)
+        bw, bw_mark = _figure(p.bandwidth_bytes_per_sec, _bandwidth)
+        print(f"  {p.kind:{kind_w}s}{p.id:{part_w}s}{p.availability:{avail_w}s}"
+              f"{mem:>13s} {mem_mark}  {bw:>13s} {bw_mark}  {_source_kind(p)}")
+
+    print("\n  `spacepilot silicon <id>` for detail, with every claim's date and link.")
+    print(f"  {REPORTED_MARK} marks a figure a publication reported, not one the vendor "
+          f"published.")
+    print("    SOURCE reads every figure a part carries, including ones with no column here.")
+    print(f"  {NOT_PUBLISHED} means the vendor publishes no such figure. It is not zero.")
+    return 0
+
+
 def cmd_measure(args, cfg=None) -> int:
     """Time a real command and write down what happened.
 
@@ -1205,6 +1339,13 @@ def main():
     models_p.add_argument("model_id", nargs="?",
                           help="`list` for the table (the default), or a variant id for detail")
 
+    sil_p = subparsers.add_parser(
+        "silicon", help="Parts that exist, whether or not this project has one")
+    sil_p.add_argument("part_id", nargs="?",
+                       help="`list` for the table (the default), or a part id for detail")
+    sil_p.add_argument("--json", action="store_true",
+                       help="Print the registry as JSON, sources and dates included")
+
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
     meas_p.add_argument("--metric", required=True,
@@ -1291,6 +1432,7 @@ def main():
         "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
+        "silicon": cmd_silicon,
         "runtimes": cmd_runtimes,
         "measure": cmd_measure,
         "sweep": cmd_sweep,
