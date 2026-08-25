@@ -48,83 +48,6 @@ def pluto_extend_video(asset_id: str, prompt: str, seconds: float = 4.0) -> Dict
     return {"job_id": "vid-67890", "status": "processing"}
 
 @mcp.tool()
-def pluto_generate_video_wan(
-    prompt: str,
-    model_size: str = "14B",
-    seconds: float = 4.0,
-    image_path: Optional[str] = None,
-    aspect_ratio: str = "16:9",
-    draft_mode: bool = False,
-) -> Dict[str, Any]:
-    """Generate a video using the Wan2.1 DiT engine (1.3B or 14B with 3D Causal VAE).
-    
-    Args:
-        prompt (str): The prompt describing the video to generate.
-        model_size (str, optional): Wan2.1 model parameter size ("1.3B" or "14B"). Defaults to "14B".
-        seconds (float, optional): Length of the video in seconds. Defaults to 4.0.
-        image_path (str, optional): Path to input image for image-to-video generation. Defaults to None.
-        aspect_ratio (str, optional): Aspect ratio ("16:9", "9:16", "1:1", "4:3"). Defaults to "16:9".
-        draft_mode (bool, optional): Whether to use fast draft inference. Defaults to False.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id, engine_id, and status.
-    """
-    try:
-        from spacepilot.engines import get_video_engine
-        engine_id = "wan-2.1-1.3b" if "1.3" in model_size else "wan-2.1-14b"
-        engine = get_video_engine(engine_id)
-        w, h = (1280, 720) if aspect_ratio == "16:9" else (720, 1280) if aspect_ratio == "9:16" else (832, 480)
-        res = engine.generate_video(
-            prompt=prompt,
-            width=w,
-            height=h,
-            seconds=seconds,
-            image_path=image_path,
-            draft_mode=draft_mode,
-            mock=True,
-        )
-        return {"job_id": res["job_id"], "engine_id": res["engine_id"], "status": "processing", "model_size": model_size}
-    except Exception:
-        return {"job_id": "wan-12345", "engine_id": f"wan-2.1-{model_size}", "status": "processing"}
-
-@mcp.tool()
-def pluto_generate_video_hunyuan(
-    prompt: str,
-    seconds: float = 4.0,
-    image_path: Optional[str] = None,
-    resolution: str = "720p",
-    draft_mode: bool = False,
-) -> Dict[str, Any]:
-    """Generate a high-fidelity video using the HunyuanVideo 13B dual-stream DiT engine.
-    
-    Args:
-        prompt (str): The prompt describing the video to generate.
-        seconds (float, optional): Length of the video in seconds. Defaults to 4.0.
-        image_path (str, optional): Path to input image for image-to-video generation. Defaults to None.
-        resolution (str, optional): Target resolution ("720p" or "1080p"). Defaults to "720p".
-        draft_mode (bool, optional): Whether to use fast draft mode. Defaults to False.
-        
-    Returns:
-        Dict[str, Any]: A dictionary containing the job_id, engine_id, and status.
-    """
-    try:
-        from spacepilot.engines import get_video_engine
-        engine = get_video_engine("hunyuan-video")
-        w, h = (1280, 720) if resolution == "720p" else (1920, 1080)
-        res = engine.generate_video(
-            prompt=prompt,
-            width=w,
-            height=h,
-            seconds=seconds,
-            image_path=image_path,
-            draft_mode=draft_mode,
-            mock=True,
-        )
-        return {"job_id": res["job_id"], "engine_id": res["engine_id"], "status": "processing", "resolution": resolution}
-    except Exception:
-        return {"job_id": "hunyuan-12345", "engine_id": "hunyuan-video", "status": "processing"}
-
-@mcp.tool()
 def pluto_generate_audio(text: str, voice: str = "af_heart", speed: float = 1.0) -> Dict[str, Any]:
     """Generate audio using Kokoro TTS.
     
@@ -464,6 +387,10 @@ def pluto_install_runtime(runtime_id: str, allow_downgrade: bool = False) -> dic
 #     there is no fleet, and the one box is usually not running at all
 #   pluto://models/ltx25, pluto://voices/catalogue: hardcoded prose stating a 48GB
 #     VRAM figure and a voice list as fact, neither read from anything
+#   pluto_generate_video_wan, pluto_generate_video_hunyuan: on any failure both returned a
+#     hardcoded job_id ("wan-12345", "hunyuan-12345") with status "processing" for a job that
+#     was never queued, so the caller polled forever; the non-failing path only ever rendered
+#     an ffmpeg test pattern, because both engines ignore their own mock= argument
 # Restore a tool here only once its implementation is real.
 
 if __name__ == "__main__":
