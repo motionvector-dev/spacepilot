@@ -80,7 +80,9 @@ def test_measured_speed_entries_match_the_corpus():
                 continue
             checked += 1
             where = f"{variant.id} speed ({entry.device}, {entry.metric})"
-            if not math.isclose(entry.value, record.value, rel_tol=1e-9):
+            # rel_tol 1e-3: a model file may round for humans (1.167 for
+            # 1.16726...), but real drift (4.6 vs 4.021) still fails.
+            if not math.isclose(entry.value, record.value, rel_tol=1e-3):
                 problems.append(
                     f"{where}: model file says {entry.value}, corpus's latest "
                     f"record says {record.value} ({record.measured_on}) — the "

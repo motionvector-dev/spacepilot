@@ -49,8 +49,10 @@ variants:
       - device: Apple M1 Max 32GB
         backend: cpu
         metric: realtime_factor
-        value: 4.021
+        value: 1.167
         source: measured
-        measured_on: "2026-08-23"
-        note: 11.7s of speech in 2.9s wall clock, median of 3, kokoro-v1.0.onnx via
-          kokoro-onnx; copied from measurements/apple-m1-max-32gb/kokoro-82m
+        measured_on: "2026-08-25"
+        note: per-invocation via `spacepilot run speech` — 4.25s of speech in 3.6s
+          wall clock, model load included (each CLI run reloads the model). Warm
+          in-process synthesis measured 4.0x on 2026-08-23; both live in
+          measurements/apple-m1-max-32gb/kokoro-82m-onnx
