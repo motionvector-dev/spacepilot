@@ -675,6 +675,14 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 
     if action == "list":
         recipes = catalog_manager.get_all_recipes()
+        if getattr(args, "json", False):
+            print(json.dumps({"recipes": [
+                {"id": r.recipe_id, "download_bytes": r.download_bytes,
+                 "runs_here": r.is_local_runnable, "repo": r.hf_repo,
+                 "pinned": r.is_pinned}
+                for r in sorted(recipes, key=lambda x: x.recipe_id)
+            ]}, indent=2, default=str))
+            return 0
         if not recipes:
             print("  No recipes in the registry.")
             return 0
@@ -846,6 +854,18 @@ def cmd_models(args, cfg=None) -> int:
     def local_speed(v):
         return primary_speed(local_speeds(measurements, system_id=system_id, variant_id=v.id))
 
+    as_json = getattr(args, "json", False)
+
+    def _variant_row(v):
+        from dataclasses import asdict
+        verdict = assess(catalog_manager.recipes[v.id], profile)
+        summary = local_speed(v)
+        return {
+            **v.to_dict(),
+            "verdict": asdict(verdict),
+            "speed_here": asdict(summary) if summary is not None else None,
+        }
+
     # `list` is reserved, so this reads the same way as `runtimes list`; no
     # variant may be named that.
     model_id = getattr(args, "model_id", None)
@@ -854,6 +874,9 @@ def cmd_models(args, cfg=None) -> int:
         if not v:
             print(f"No variant '{model_id}'. Run `spacepilot models` to list them.")
             return 1
+        if as_json:
+            print(json.dumps(_variant_row(v), indent=2, default=str))
+            return 0
         verdict = assess(catalog_manager.recipes[v.id], profile)
         print(f"{v.name}  [{v.id}]")
         print(f"  {v.kind} · {v.params or '?'} · {v.precision or '?'} · runs on {', '.join(v.backends)}")
@@ -892,6 +915,18 @@ def cmd_models(args, cfg=None) -> int:
 
     usable = usable_memory_bytes(profile)
     src = profile.memory_limit_source or "unknown"
+    if as_json:
+        doc = {
+            "system": {
+                "chip": profile.chip,
+                "accelerator_memory_bytes": profile.accelerator_memory_bytes,
+                "usable_memory_bytes": usable,
+                "memory_limit_source": src,
+            },
+            "variants": [_variant_row(v) for v in reg.variants],
+        }
+        print(json.dumps(doc, indent=2, default=str))
+        return 0
     print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
           f"· {_gb(usable)} available to models [{src}]\n")
     print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE   CAVEATS")
@@ -1050,6 +1085,10 @@ def cmd_daemon(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> i
             return service.run_foreground()
         if action == "status":
             state = service.daemon_status()
+            if getattr(args, "json", False):
+                from dataclasses import asdict
+                print(json.dumps(asdict(state), indent=2, default=str))
+                return 0 if state.installed and state.reachable else 1
             print(f"  definition  {state.definition}")
             print(f"  installed   {'yes' if state.installed else 'no'}")
             if state.active is None:
@@ -1205,6 +1244,9 @@ def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> in
             print(f"  joined fleet · ORDERS v{result.get('orders_version', 'unknown')}")
             return 0
         if action == "list":
+            if getattr(args, "json", False):
+                print(json.dumps(dict(admin.list()), indent=2, default=str))
+                return 0
             interval = float(getattr(args, "interval", 2.0))
             if interval <= 0:
                 print("  --interval must be greater than zero")
@@ -1232,21 +1274,41 @@ def cmd_runtimes(args, cfg=None) -> int:
     if action == "list":
         profile = probe_local_device()
         backend = profile.backend
+
+        def _state_of(r, st):
+            if not st.python_compatible:
+                return "unusable"
+            if st.below_minimum:
+                return "outdated"
+            if st.installed:
+                return "installed"
+            if backend and backend not in r.backends:
+                return "n/a here"
+            return "available"
+
+        if getattr(args, "json", False):
+            rows = []
+            for r in sorted(reg.values(), key=lambda x: x.id):
+                st = rt.check(r)
+                rows.append({
+                    "id": r.id, "state": _state_of(r, st),
+                    "serves": r.serves, "backends": r.backends,
+                    "runs": r.runs, "version": st.version,
+                    "python_note": st.python_note or None,
+                })
+            print(json.dumps({
+                "system": {"chip": profile.chip, "backend": backend,
+                           "interpreter": rt.interpreter()},
+                "runtimes": rows,
+            }, indent=2, default=str))
+            return 0
+
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
               f"· {rt.interpreter()}\n")
         print(f"  {'STATE':11s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
         for r in sorted(reg.values(), key=lambda x: x.id):
             st = rt.check(r)
-            if not st.python_compatible:
-                state = "unusable"
-            elif st.below_minimum:
-                state = "outdated"
-            elif st.installed:
-                state = "installed"
-            elif backend and backend not in r.backends:
-                state = "n/a here"
-            else:
-                state = "available"
+            state = _state_of(r, st)
             print(f"  {state:11s}{r.id:20s}{','.join(r.serves):16s}"
                   f"{','.join(r.backends):20s}{st.version or '-'}")
             if not st.python_compatible:
@@ -1712,7 +1774,8 @@ def main(argv: list[str] | None = None):
     daemon_sub = daemon_p.add_subparsers(dest="daemon_action", required=True)
     daemon_sub.add_parser("install", help="Install and start the per-user daemon service")
     daemon_sub.add_parser("run", help="Run the daemon in this foreground terminal")
-    daemon_sub.add_parser("status", help="Ask the OS supervisor for daemon status")
+    daemon_status_p = daemon_sub.add_parser("status", help="Ask the OS supervisor for daemon status")
+    daemon_status_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
     daemon_sub.add_parser("stop", help="Stop the daemon through its OS supervisor")
 
     # fleet
@@ -1732,6 +1795,7 @@ def main(argv: list[str] | None = None):
                             help="Live Tailscale selector for the pinned author")
     fleet_join.add_argument("--fleet-id", default=None, help="Optional pinned fleet UUID")
     fleet_list = fleet_sub.add_parser("list", help="Render the daemon's current fleet facts")
+    fleet_list.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
     # SUPPRESS, not a default: argparse writes a subparser default over whatever
     # the parent already parsed, so `fleet --watch --interval 5 list` silently
     # became a single snapshot at 2s. With SUPPRESS the attribute is only set
@@ -1750,7 +1814,8 @@ def main(argv: list[str] | None = None):
     # recipes
     recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
     recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
-    recipes_subparsers.add_parser("list", help="List recipes")
+    recipes_list_p = recipes_subparsers.add_parser("list", help="List recipes")
+    recipes_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
     recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
     recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
 
@@ -1762,7 +1827,8 @@ def main(argv: list[str] | None = None):
     # status
     rt_p = subparsers.add_parser("runtimes", help="Packages that execute models")
     rt_sub = rt_p.add_subparsers(dest="runtimes_action")
-    rt_sub.add_parser("list", help="What is installed and what is available")
+    rt_list_p = rt_sub.add_parser("list", help="What is installed and what is available")
+    rt_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
     rt_check = rt_sub.add_parser("check", help="One runtime in detail")
     rt_check.add_argument("runtime_id")
     rt_inst = rt_sub.add_parser("install", help="Install a runtime")
@@ -1774,6 +1840,7 @@ def main(argv: list[str] | None = None):
     models_p = subparsers.add_parser("models", help="List models and whether they run here")
     models_p.add_argument("model_id", nargs="?",
                           help="`list` for the table (the default), or a variant id for detail")
+    models_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
 
     sil_p = subparsers.add_parser(
         "silicon", help="Parts that exist, whether or not this project has one")

@@ -7,6 +7,9 @@ from spacepilot.cli import cmd_recipes
 
 
 def _run(**kwargs):
+    # A bare MagicMock answers truthy to every getattr, which silently turns
+    # on flags like --json; default them off unless the test sets them.
+    kwargs.setdefault("json", False)
     args = MagicMock(**kwargs)
     out = StringIO()
     sys.stdout = out
