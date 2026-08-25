@@ -18,13 +18,18 @@ classifiers = [
 ]
 dependencies = [
     "fastapi>=0.100.0,<1.0",
+    "starlette>=0.37",  # imported directly by pluto/api/security.py, not only via fastapi
     "uvicorn>=0.22.0",
+    "python-multipart>=0.0.9",  # fastapi upload parsing, imported by pluto/api/routes/assets.py
     "pydantic>=2.0",
     "httpx>=0.24.0",
     "mcp>=2.0,<3",  # 2.0 renamed FastMCP to MCPServer; 1.x will not import
     "soundfile>=0.12.0",
     "numpy>=1.24.0",
+    "Pillow>=10.0",  # pluto/services/image_utils.py, pluto/api/routes/generate.py
     "PyYAML>=6.0",
+    "packaging>=23.0",  # pluto/runtimes.py parses the interpreter gates shown by `runtimes list`
+    "huggingface_hub>=0.20",  # paths.py resolves the shared model cache
     "litellm>=1.98.0",
     "psutil>=5.9.0",
 ]
@@ -36,9 +41,25 @@ local-ml = [
     "torch>=2.1.0",
     "scipy>=1.11.0",
 ]
+# The stack `spacepilot/ltx_worker.py` needs, and only it.  The worker runs on
+# the GPU box, never on a laptop or in CI, so none of this is a core dependency
+# — installing it on ubuntu-latest pulls ~2.5 GB of CUDA wheels per run.
+# Mirrors requirements-gpu.txt; keep the two together.
+gpu-worker = [
+    "flask>=3.0",
+    "torch>=2.1.0",
+    "torchao>=0.1",
+    "transformers>=4.36.0",
+    "diffusers>=0.25.0",
+    "accelerate>=0.25.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
+    # tests/test_ltx_worker.py builds the worker's Flask test client to assert
+    # its auth and path-traversal refusals.  Without flask those seven security
+    # tests do not fail — they error out and read as infrastructure noise.
+    "flask>=3.0",
 ]
 
 [project.urls]
