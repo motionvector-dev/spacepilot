@@ -1064,13 +1064,19 @@ def cmd_silicon(args, cfg=None) -> int:
 
     print(f"{len(ordered)} parts · nothing here is measured — every figure is "
           f"somebody's claim, dated\n")
-    print(f"  {'KIND':13s}{'PART':27s}{'AVAILABILITY':12s}"
+    # Widths come from the data, not from constants. A hardcoded column pays no
+    # dividend when an id gets shorter, and silently truncates when one grows.
+    kind_w = max(len("KIND"), *(len(p.kind) for p in ordered)) + 2
+    part_w = max(len("PART"), *(len(p.id) for p in ordered)) + 2
+    avail_w = max(len("AVAILABILITY"), *(len(p.availability) for p in ordered)) + 1
+
+    print(f"  {'KIND':{kind_w}s}{'PART':{part_w}s}{'AVAILABILITY':{avail_w}s}"
           f"{'MEMORY':>13s}    {'BANDWIDTH':>13s}    SOURCE")
 
     for p in ordered:
         mem, mem_mark = _figure(p.memory_bytes, _gb)
         bw, bw_mark = _figure(p.bandwidth_bytes_per_sec, _bandwidth)
-        print(f"  {p.kind:13s}{p.id:27s}{p.availability:12s}"
+        print(f"  {p.kind:{kind_w}s}{p.id:{part_w}s}{p.availability:{avail_w}s}"
               f"{mem:>13s} {mem_mark}  {bw:>13s} {bw_mark}  {_source_kind(p)}")
 
     print("\n  `spacepilot silicon <id>` for detail, with every claim's date and link.")
