@@ -106,3 +106,42 @@ def test_unknown_install_method_is_rejected():
     }
     with pytest.raises(RuntimeError_, match="method"):
         parse_runtime(bad, "bad.yaml")
+
+
+def test_check_finds_a_runtime_installed_in_its_own_environment(tmp_path, monkeypatch):
+    """mflux is reached as a subprocess from its own env, never imported here.
+
+    An import check against this interpreter says "missing" while `run image`
+    executes it fine; the external-binary route is what makes the two verbs
+    agree. The fake bin dir stands in for the conda env; /usr/bin/false stands
+    in for an interpreter where the import fails.
+    """
+    from spacepilot.pluto import runtimes as rt
+    r = runtimes()["mflux"]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    exe = bin_dir / "mflux-generate"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setenv("SPACEPILOT_MFLUX_BIN", str(bin_dir))
+
+    st = rt.check(r, py="/usr/bin/false")
+    assert st.installed
+    assert st.external
+    assert st.external_path == str(exe)
+    assert st.version == "unknown"  # no python in the fake env to ask
+
+
+def test_external_route_requires_the_binary_to_actually_exist(tmp_path, monkeypatch):
+    """A configured bin dir with no entry point in it is still not installed."""
+    from spacepilot.pluto import runtimes as rt
+    r = runtimes()["mflux"]
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    monkeypatch.setenv("SPACEPILOT_MFLUX_BIN", str(empty))
+
+    st = rt.check(r, py="/usr/bin/false")
+    assert not st.installed
+    assert not st.external
+    assert st.external_path is None
+    assert st.reason

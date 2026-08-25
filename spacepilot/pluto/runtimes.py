@@ -13,6 +13,7 @@ compiled extension matches this CPU, or that it found a GPU.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 import sys
@@ -202,26 +203,94 @@ class Status:
     python_compatible: bool = True
     python_note: Optional[str] = None
     interpreter: Optional[str] = None
+    # Installed in its own environment, reached as a subprocess rather than
+    # imported here. mflux runs this way on purpose — installing it into the
+    # project interpreter downgrades opencv-python.
+    external: bool = False
+    external_path: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
 
 
-def check(r: Runtime, py: Optional[str] = None) -> Status:
+# Runtimes that deliberately live in their own environment and are reached as
+# a subprocess, keyed to the CLI entry point whose presence proves the install.
+_EXTERNAL_ENTRY_POINT = {"mflux": "mflux-generate"}
+
+
+def external_binary(r: Runtime, cfg: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    """Resolved path of the runtime's CLI when it runs from its own environment.
+
+    An import check against this project's interpreter says mflux is missing
+    while `run image` in the same session executes it fine — the driver shells
+    out to a separate conda env. This resolves the same bin dir the driver
+    uses, so `runtimes check` and `run image` agree. Nothing is imported.
+    """
+    entry = _EXTERNAL_ENTRY_POINT.get(r.id)
+    if not entry:
+        return None
+    from spacepilot.drivers.mflux_driver import mflux_bin_dir
+    exe = Path(mflux_bin_dir(cfg)) / entry
+    if exe.is_file() and os.access(exe, os.X_OK):
+        return str(exe)
+    return None
+
+
+def _version_probe(r: Runtime) -> str:
+    # mflux imports cleanly but carries no __version__, so fall back to the
+    # installed distribution's metadata before settling for "unknown".
+    return (
+        f"import importlib,importlib.metadata,sys\n"
+        f"m=importlib.import_module({r.verify_import!r})\n"
+        f"v=getattr(m,'__version__', '')\n"
+        f"if not v:\n"
+        f"    try: v=importlib.metadata.version({r.install.package!r})\n"
+        f"    except Exception: v=''\n"
+        f"print(v or 'unknown')"
+    )
+
+
+def _external_status(r: Runtime, path: str) -> Status:
+    env_py = Path(path).parent / "python"
+    version = "unknown"
+    if env_py.is_file():
+        out = subprocess.run(
+            [str(env_py), "-c", _version_probe(r)],
+            capture_output=True, text=True, timeout=90,
+        )
+        if out.returncode == 0:
+            version = out.stdout.strip() or "unknown"
+    below = False
+    if r.install.min_version and version != "unknown":
+        try:
+            from packaging.version import Version
+            below = Version(version) < Version(r.install.min_version)
+        except Exception:
+            below = False
+    return Status(
+        r.id, True, version,
+        reason=(f"{version} is older than the {r.install.min_version} this "
+                f"registry was checked against") if below else None,
+        below_minimum=below, wanted_version=r.install.min_version,
+        interpreter=str(env_py) if env_py.is_file() else None,
+        external=True, external_path=path,
+    )
+
+
+def check(r: Runtime, py: Optional[str] = None,
+          cfg: Optional[Dict[str, Any]] = None) -> Status:
     """Import it in the real interpreter and report the version it actually has.
 
     Nothing here trusts a package manager's exit code. A wheel can unpack and
     still fail to import — a compiled extension built for a different CPU, a
-    missing system library, a partially written install.
+    missing system library, a partially written install. A runtime that lives
+    in its own environment (see `external_binary`) counts as installed when
+    its CLI resolves, because that is the route the drivers actually run.
     """
     py = py or interpreter()
     compatible, note = python_ok(r, py)
 
-    probe = (
-        f"import importlib,sys\n"
-        f"m=importlib.import_module({r.verify_import!r})\n"
-        f"print(getattr(m,'__version__', '') or 'unknown')"
-    )
+    probe = _version_probe(r)
     out = subprocess.run([py, "-c", probe], capture_output=True, text=True, timeout=90)
     if out.returncode == 0:
         version = out.stdout.strip() or "unknown"
@@ -237,6 +306,10 @@ def check(r: Runtime, py: Optional[str] = None) -> Status:
                               f"registry was checked against") if below else None,
                       below_minimum=below, wanted_version=r.install.min_version,
                       python_compatible=compatible, python_note=note or None, interpreter=py)
+
+    ext = external_binary(r, cfg)
+    if ext:
+        return _external_status(r, ext)
 
     err = (out.stderr or "").strip().splitlines()
     reason = err[-1] if err else "import failed with no message"
