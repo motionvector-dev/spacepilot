@@ -1,5 +1,5 @@
 schema: 1
-id: huawei-ascend-950pr
+id: ascend-950pr
 name: Huawei Ascend 950PR
 vendor: Huawei
 kind: accelerator

@@ -1,5 +1,5 @@
 schema: 1
-id: intel-crescent-island
+id: crescent-island
 name: Intel Crescent Island
 vendor: Intel
 kind: accelerator

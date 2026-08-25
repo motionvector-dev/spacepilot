@@ -1,5 +1,5 @@
 schema: 1
-id: nvidia-dgx-spark
+id: dgx-spark
 name: NVIDIA DGX Spark
 vendor: NVIDIA
 kind: box
