@@ -5,9 +5,13 @@
 # tests/test_dependency_declarations.py fails if this file and pyproject.toml
 # disagree, or if the CI workflow goes back to hand-listing packages.
 
-# Core Web API
+# Core Web API. starlette and python-multipart arrive with fastapi, but
+# pluto/api/security.py and pluto/api/routes/assets.py import them directly, so
+# they are ours to declare rather than fastapi's to keep.
 fastapi>=0.100.0
+starlette>=0.37
 uvicorn>=0.22.0
+python-multipart>=0.0.9
 pydantic>=2.0
 httpx>=0.24.0
 
@@ -23,8 +27,11 @@ numpy>=1.24.0
 # voices-v1.0.bin on disk (PLUTO_KOKORO_MODEL / PLUTO_KOKORO_VOICES).
 kokoro-onnx
 
-# Model and runtime registry (spacepilot/pluto/registry.py, spacepilot/pluto/runtimes.py)
+# Model and runtime registry (spacepilot/pluto/registry.py, spacepilot/pluto/runtimes.py).
+# packaging parses the interpreter gates `runtimes list` prints, e.g.
+# "needs Python >=3.10,<3.14; this interpreter is 3.14.7".
 PyYAML>=6.0
+packaging>=23.0
 
 # Contention sampling (src/pluto/measurements.py): sums CPU% of processes
 # outside our own process tree, which os.getloadavg() cannot distinguish.
@@ -36,14 +43,21 @@ cryptography>=42.0
 # across providers through one interface.
 litellm>=1.98.0
 
+# Image handling (pluto/services/image_utils.py, pluto/api/routes/generate.py)
+pillow>=10.0
+
+# Shared model cache resolution (paths.py)
+huggingface_hub>=0.20
+
 # Utilities
-pillow
-huggingface_hub
 sentencepiece
 protobuf
 
-# GPU worker control plane (ltx_worker.py runs on the box; this is the client).
-flask
+# ltx_worker.py imports flask at module level. The worker itself only ever runs
+# on the GPU box, but tests/test_ltx_worker.py builds its Flask test client to
+# assert seven auth and path-traversal refusals — without flask those tests do
+# not fail, they error, and read as infrastructure noise.
+flask>=3.0
 
 # Tests
 pytest

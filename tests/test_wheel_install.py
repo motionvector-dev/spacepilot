@@ -173,3 +173,106 @@ def test_measure_writes_outside_site_packages(install):
 
     systems = sorted(install.home.rglob("registry/systems/*.yaml"))
     assert systems, "the system record went somewhere else than the measurement"
+
+
+@pytest.fixture(scope="module")
+def isolated_install(tmp_path_factory, wheel):
+    """The wheel in a venv of its own, with its declared dependencies resolved.
+
+    The `install` fixture above deliberately uses `--system-site-packages` and
+    `--no-deps`, which makes it fast and lets it prove the *contents* of the
+    wheel. The cost is that it borrows every third-party module from the outer
+    environment, so a package the wheel imports but never declares still works
+    there — and CI populates that outer environment from requirements.txt, which
+    is how `flask`, `Pillow`, `packaging`, `python-multipart` and `starlette`
+    reached a release undeclared with this job green.
+
+    This fixture resolves dependencies from the wheel's own metadata and nothing
+    else, so an undeclared import has nowhere to come from.
+    """
+    base = tmp_path_factory.mktemp("isolated")
+    venv = base / "venv"
+    home = base / "home"
+    cwd = base / "cwd"
+    home.mkdir()
+    cwd.mkdir()
+
+    subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
+    bin_dir = venv / ("Scripts" if os.name == "nt" else "bin")
+    proc = subprocess.run(
+        [str(bin_dir / "python"), "-m", "pip", "install", "--quiet", str(wheel)],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        pytest.fail(
+            "installing the wheel with its declared dependencies failed:\n"
+            f"{proc.stdout}\n{proc.stderr}"
+        )
+
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "SPACEPILOT_DATA_DIR")}
+    env["HOME"] = str(home)
+    env["XDG_DATA_HOME"] = str(home / ".local" / "share")
+
+    def run(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([str(bin_dir / args[0]), *args[1:]],
+                              capture_output=True, text=True, cwd=str(cwd), env=env)
+
+    return run
+
+
+def test_the_cli_runs_with_only_its_declared_dependencies(isolated_install):
+    """What a `pip install spacepilot` or `pipx install spacepilot` actually gets.
+
+    Every other test in this file runs against an environment that carries more
+    than the wheel asks for.
+    """
+    for command in (["doctor"], ["models", "list"], ["runtimes", "list"]):
+        proc = isolated_install("spacepilot", *command)
+        assert proc.returncode == 0, (
+            f"`spacepilot {' '.join(command)}` exited {proc.returncode} on an "
+            f"install carrying only the wheel's declared dependencies:\n{proc.stderr}"
+        )
+
+
+def test_no_shipped_module_imports_something_undeclared(isolated_install):
+    """Import every module in the wheel, on an install with nothing borrowed.
+
+    This catches a **module-level** import of an undeclared package, which the
+    CLI smoke test above can miss: a module the CLI never loads still ships, and
+    still breaks whoever imports it.
+
+    It does NOT catch a lazily-imported one. `Pillow` sits inside functions in
+    `pluto/services/image_utils.py` and `pluto/api/routes/generate.py`, so every
+    module here imports cleanly without it and this test stays green — which is
+    exactly how Pillow reached a release undeclared.  Removing Pillow from
+    pyproject.toml was verified to leave this test passing.
+    `tests/test_dependency_declarations.py` is what covers that direction: it
+    reads the imports out of the source, so where the import sits does not
+    matter.  The two tests are a pair; neither is sufficient alone.
+    """
+    script = (
+        "import importlib, pkgutil, sys, spacepilot\n"
+        "bad = []\n"
+        "for m in pkgutil.walk_packages(spacepilot.__path__, 'spacepilot.'):\n"
+        "    try:\n"
+        "        importlib.import_module(m.name)\n"
+        "    except ModuleNotFoundError as e:\n"
+        "        bad.append(f'{m.name}: {e.name}')\n"
+        "    except Exception:\n"
+        "        pass\n"   # anything that is not a missing module is another test's problem
+        "print('\\n'.join(bad))\n"
+    )
+    proc = isolated_install("python", "-c", script)
+    assert proc.returncode == 0, proc.stderr
+
+    # `spacepilot.ltx_worker` is the GPU worker. It imports flask, torch,
+    # diffusers, transformers and torchao at module level and is installed from
+    # the `gpu-worker` extra on the box, never as part of a normal install.
+    missing = [
+        line for line in proc.stdout.strip().splitlines()
+        if line and not line.startswith("spacepilot.ltx_worker:")
+    ]
+    assert not missing, (
+        "modules in the wheel that cannot import on a clean install — each is a "
+        "dependency that is used but not declared:\n  " + "\n  ".join(missing)
+    )
