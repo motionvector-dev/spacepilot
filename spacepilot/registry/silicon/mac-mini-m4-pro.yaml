@@ -1,0 +1,30 @@
+schema: 1
+id: apple-mac-mini-m4-pro
+name: Mac mini (M4 Pro)
+vendor: Apple
+kind: box
+availability: shipping
+summary: >-
+  The cheapest way to reach 273 GB/s. Demand for it as a local inference machine
+  outran supply during 2026, which is the clearest signal that owning a small
+  box to run models is now an ordinary thing to do.
+compute_paths: [metal, npu, cpu]
+memory_model: unified
+
+memory_bytes:
+  value: 51539607552
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: 48 GB maximum; base configuration is 24 GB
+
+bandwidth_bytes_per_sec:
+  value: 273000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: identical to DGX Spark's figure, at a fraction of the price
+
+note: >-
+  16-core Neural Engine. A successor is reported to be days away, tested on both
+  M5 and M6 generations; the chip is not established.

@@ -1,0 +1,38 @@
+schema: 1
+id: amd-ryzen-ai-max-plus-395
+name: AMD Ryzen AI Max+ 395
+vendor: AMD
+kind: client-soc
+availability: shipping
+summary: >-
+  The part that makes memory partitioning a first-class problem: 128 GB shared,
+  of which up to 96 GB can be handed to the GPU. "How much memory does this have"
+  has two correct answers depending on how it is configured.
+compute_paths: [vulkan, rocm, hip, directml, npu, cpu]
+memory_model: partitionable
+
+memory_bytes:
+  value: 137438953472
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.amd.com/en/blogs/2025/amd-ryzen-ai-max-395-processor-breakthrough-ai-.html
+  note: 32-128 GB unified, of which up to 96 GB is assignable as VRAM through Variable Graphics Memory
+
+npu_tops:
+  value: 50
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.amd.com/en/blogs/2025/amd-ryzen-ai-max-395-processor-breakthrough-ai-.html
+  note: XDNA 2 NPU, stated as 50+ peak AI TOPS
+
+power_watts:
+  value: 55
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.amd.com/en/blogs/2025/amd-ryzen-ai-max-395-processor-breakthrough-ai-.html
+  note: TDP; 16 Zen 5 cores and 40 RDNA 3.5 compute units in the same envelope
+
+note: >-
+  AMD publishes no memory-bandwidth figure for this part. Third-party numbers
+  near 256 GB/s circulate widely and are deliberately not recorded here, because
+  a number without a source is exactly what this registry exists to refuse.

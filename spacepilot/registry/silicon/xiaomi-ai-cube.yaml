@@ -1,0 +1,44 @@
+schema: 1
+id: xiaomi-ai-cube
+name: Xiaomi AI Cube
+vendor: Xiaomi
+kind: box
+availability: prototype
+summary: >-
+  Three separate chips in one small chassis — a CPU-plus-GPU SoC, a dedicated AI
+  accelerator, and an automotive part supplying the memory controller. The single
+  clearest case that a machine cannot be described by one backend name.
+compute_paths: [npu, cpu]
+memory_model: near-memory
+
+memory_bytes:
+  value: 171798691840
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.notebookcheck.net/Xiaomi-unveils-AI-Cube-mini-PC-with-three-Xring-chips-and-150-W-performance.1376717.0.html
+  note: 160 GB unified, supported by the Xring D100 — a 3nm smart-driving chip, not the compute part
+
+bandwidth_bytes_per_sec:
+  value: 1220000000000
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.notebookcheck.net/Xiaomi-unveils-AI-Cube-mini-PC-with-three-Xring-chips-and-150-W-performance.1376717.0.html
+  note: 1.22 TB/s near-memory bandwidth from the Xring O100, via 3D wafer-level stacking — a different chip from the one holding the memory
+
+npu_tops:
+  value: 200
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.notebookcheck.net/Xiaomi-unveils-AI-Cube-mini-PC-with-three-Xring-chips-and-150-W-performance.1376717.0.html
+  note: on the Xring O3, alongside a 10-core CPU and 16-core GPU
+
+power_watts:
+  value: 150
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.notebookcheck.net/Xiaomi-unveils-AI-Cube-mini-PC-with-three-Xring-chips-and-150-W-performance.1376717.0.html
+
+note: >-
+  Engineering prototype shown 24 August 2026. The O100 and D100 are scheduled for
+  commercial use in 2027 and no retail version has been announced. Headline specs
+  circulating as one list actually belong to three different chips.
