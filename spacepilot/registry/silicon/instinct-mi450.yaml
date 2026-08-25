@@ -1,0 +1,30 @@
+schema: 1
+id: instinct-mi450
+name: AMD Instinct MI450
+vendor: AMD
+kind: accelerator
+availability: announced
+summary: >-
+  AMD's 2026 answer to Vera Rubin, and the first part where HBM4 capacity is the
+  headline rather than compute — 432 GB at 19.6 TB/s, up from 288 GB at 8 TB/s.
+compute_paths: [rocm, hip]
+memory_model: discrete
+
+memory_bytes:
+  value: 463856467968
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.techpowerup.com/342826/amd-positions-instinct-mi400-against-nvidia-vera-rubin-mi500-coming-in-2027
+  note: 432 GB HBM4, up from 288 GB HBM3e on MI350
+
+bandwidth_bytes_per_sec:
+  value: 19600000000000
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.techpowerup.com/342826/amd-positions-instinct-mi400-against-nvidia-vera-rubin-mi500-coming-in-2027
+  note: 19.6 TB/s, roughly 2.5x the 8 TB/s of the previous generation
+
+note: >-
+  CDNA 5. Reported at up to 40 FP4 and 20 FP8 PFLOPS, about twice MI350. Two
+  variants: MI455X for training and inference, MI430X for HPC and sovereign
+  deployments. MI500 follows in 2027 on an annual cadence.

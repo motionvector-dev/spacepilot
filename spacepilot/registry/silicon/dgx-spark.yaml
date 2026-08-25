@@ -1,0 +1,44 @@
+schema: 1
+id: dgx-spark
+name: NVIDIA DGX Spark
+vendor: NVIDIA
+kind: box
+availability: shipping
+summary: >-
+  A desk-side Grace Blackwell box. The reference point every other local AI
+  machine is measured against, and the clearest illustration of memory pricing:
+  announced at $2,999, launched at $3,999, raised to $4,699 for memory supply.
+compute_paths: [cuda, cpu]
+memory_model: coherent
+
+memory_bytes:
+  value: 137438953472
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.nvidia.com/en-us/products/workstations/dgx-spark/
+  note: 128 GB LPDDR5x, coherent unified system memory, shared across a 20-core Arm CPU and a Blackwell GPU
+
+bandwidth_bytes_per_sec:
+  value: 273000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.nvidia.com/en-us/products/workstations/dgx-spark/
+  note: 273 GB/s — the same figure as a mid-range Mac mini, at roughly three times the price
+
+power_watts:
+  value: 140
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.nvidia.com/en-us/products/workstations/dgx-spark/
+  note: GB10 chip TDP; the supplied power unit is rated 240 W
+
+price_usd:
+  value: 4699
+  source: reported
+  checked: "2026-08-25"
+  url: https://forums.developer.nvidia.com/t/2-23-2026-price-change-announcement/361713
+  note: raised from $3,999 in late February 2026, attributed to memory supply constraints
+
+note: >-
+  Rated up to 1 PFLOP FP4 with sparsity. ASUS, HP and Acer ship systems on the
+  same GB10 part, so this is a category rather than one product.

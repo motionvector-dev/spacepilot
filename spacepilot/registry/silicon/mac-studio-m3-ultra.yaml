@@ -1,0 +1,31 @@
+schema: 1
+id: mac-studio-m3-ultra
+name: Mac Studio (M3 Ultra)
+vendor: Apple
+kind: box
+availability: shipping
+summary: >-
+  The bandwidth leader among boxes you can own, and the sharpest evidence of the
+  memory squeeze: its memory is not configurable at all, and 96 GB is now the
+  ceiling across Apple's entire desktop line.
+compute_paths: [metal, npu, cpu]
+memory_model: unified
+
+memory_bytes:
+  value: 103079215104
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-studio/specs/
+  note: 96 GB, not configurable — Apple lists no larger option on any Mac Studio
+
+bandwidth_bytes_per_sec:
+  value: 819000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-studio/specs/
+  note: 819 GB/s, the highest of any machine in this registry that ships today
+
+note: >-
+  Reporting says an M7 Ultra is designed for up to 1.5 TB, roughly sixteen times
+  this, but that shipping it depends on the memory market. Treat 96 GB as a
+  trough rather than a trajectory.

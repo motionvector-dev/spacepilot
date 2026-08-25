@@ -1,0 +1,25 @@
+schema: 1
+id: crescent-island
+name: Intel Crescent Island
+vendor: Intel
+kind: accelerator
+availability: sampling
+summary: >-
+  The counter-argument to HBM. Intel pairs a large LPDDR5X pool with an
+  inference-optimised GPU and competes on capacity per watt per dollar rather
+  than bandwidth — the clearest case that two accelerators with similar memory
+  can be structurally different products.
+compute_paths: [sycl, openvino, opencl]
+memory_model: discrete
+
+memory_bytes:
+  value: 171798691840
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.phoronix.com/review/intel-crescent-island
+  note: 160 GB LPDDR5X — notably not HBM, which is the whole design argument
+
+note: >-
+  Xe3P architecture, optimised for inference around power efficiency and cost.
+  Customer sampling from the second half of 2026; Intel has published no broad
+  availability date, and no bandwidth figure, so none is recorded here.

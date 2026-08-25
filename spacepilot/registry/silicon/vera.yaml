@@ -1,0 +1,35 @@
+schema: 1
+id: vera
+name: NVIDIA Vera
+vendor: NVIDIA
+kind: cpu
+availability: shipping
+summary: >-
+  A CPU designed for the work that surrounds inference rather than inference
+  itself — tool calls, code execution, data processing and orchestration between
+  model calls. The first mainstream admission that the control plane is a
+  bottleneck worth building silicon for.
+compute_paths: [cpu]
+memory_model: coherent
+
+memory_bytes:
+  value: 1649267441664
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.nvidia.com/en-us/data-center/vera-cpu/
+  note: up to 1.5 TB LPDDR5X
+
+bandwidth_bytes_per_sec:
+  value: 1200000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.nvidia.com/en-us/data-center/vera-cpu/
+  note: >-
+    up to 1.2 TB/s. NVIDIA claims 2x the bandwidth and 3x the bandwidth per core
+    of leading x86 CPUs with DDR5, at half the power
+
+note: >-
+  88 custom Olympus cores; Spatial Multithreading yields 176 threads with
+  partitioned core resources. NVIDIA claims up to 1.8x faster agentic workloads
+  than leading x86. First systems delivered to Anthropic, OpenAI, Oracle Cloud
+  Infrastructure and SpaceX AI.

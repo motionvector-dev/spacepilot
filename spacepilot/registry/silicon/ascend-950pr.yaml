@@ -1,0 +1,31 @@
+schema: 1
+id: ascend-950pr
+name: Huawei Ascend 950PR
+vendor: Huawei
+kind: accelerator
+availability: announced
+summary: >-
+  Notable less for its numbers than for its memory: Huawei designed its own
+  HBM-alternative rather than buying one, which removes a supply dependency
+  every other vendor on this list still has.
+compute_paths: [cann]
+memory_model: discrete
+
+memory_bytes:
+  value: 137438953472
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.tomshardware.com/tech-industry/semiconductors/huawei-unveils-ascend-roadmap-backed-by-in-house-hbm
+  note: 128 GB of HiBL 1.0, Huawei's own low-cost HBM-like memory
+
+bandwidth_bytes_per_sec:
+  value: 1600000000000
+  source: reported
+  checked: "2026-08-25"
+  url: https://www.tomshardware.com/tech-industry/semiconductors/huawei-unveils-ascend-roadmap-backed-by-in-house-hbm
+  note: 1.6 TB/s, tuned for compute-intensive and memory-light work such as prefill
+
+note: >-
+  Q1 2026 in card and SuperPoD server form. A 950DT variant for training and
+  decode follows in Q4 2026; the 960 in 2027 and 970 in 2028 each roughly double
+  compute, memory bandwidth, capacity and interconnect.
