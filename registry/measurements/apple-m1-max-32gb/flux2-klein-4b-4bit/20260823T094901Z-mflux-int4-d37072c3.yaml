@@ -1,0 +1,19 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: flux2-klein-4b-4bit
+metric: seconds_per_image
+value: 23.361
+contention: loaded
+measured_on: '2026-08-23T09:49:01+00:00'
+runtime_id: mflux
+runtime_version: 0.19.0
+quantisation: int4
+backend: metal
+knobs:
+  steps: 4
+  width: 512
+  height: 512
+  seed: 42
+  model_alias: flux2-klein-4b
+  quantisation: int4
+note: 4-step denoise + VAE decode, 512x512
