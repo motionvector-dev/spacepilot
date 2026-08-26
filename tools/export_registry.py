@@ -11,6 +11,17 @@ rather than repeating them as literals, and a change to the reserve fraction or
 the footprint bands moves both at once.
 
     python tools/export_registry.py [--out web/registry.json]
+
+Being generated, the file rots: edit a model and the page keeps publishing the
+old one until somebody remembers this command. Three modes share one comparison
+so they cannot disagree about what "stale" means:
+
+    (default)  write the file
+    --check    exit 1 if the file no longer matches its sources
+    --sync     rewrite it only when the data actually moved
+
+`generated` is excluded from every comparison. It advances on its own, and a
+file that rewrites itself daily is a file nobody reads the diff of.
 """
 
 import argparse
@@ -77,11 +88,18 @@ def attach_measurements(models: list) -> int:
             attached += 1
     return attached
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="web/registry.json")
-    args = ap.parse_args()
+def data_of(payload: dict) -> dict:
+    """The part of the payload that has to match its sources.
 
+    `generated` is the one field allowed to differ. It is a date, it moves
+    without anybody editing a model, and comparing it would call every shipped
+    file stale the morning after it was written.
+    """
+    return {k: v for k, v in payload.items() if k != "generated"}
+
+
+def build() -> tuple[dict, int]:
+    """The payload the page reads, and how many variants carry measured runs."""
     reg = load_registry()
     payload = {
         "generated": dt.date.today().isoformat(),
@@ -97,11 +115,22 @@ def main() -> int:
     }
     measured_variants = attach_measurements(payload["models"])
     payload["systems"] = [s.to_dict() for s in load_systems().values()]
+    return payload, measured_variants
 
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=1, sort_keys=False) + "\n")
 
+def render(payload: dict) -> str:
+    return json.dumps(payload, indent=1, sort_keys=False) + "\n"
+
+
+def shipped_data(out: Path) -> dict | None:
+    """What `out` currently publishes, or None if it is absent or unreadable."""
+    try:
+        return data_of(json.loads(out.read_text()))
+    except (OSError, ValueError):
+        return None
+
+
+def summarise_write(out: Path, payload: dict, measured_variants: int) -> None:
     variants = sum(len(m["variants"]) for m in payload["models"])
     measured = sum(1 for m in payload["models"] for v in m["variants"]
                    if any(s["source"] == "measured" for s in v["speed"]))
@@ -116,6 +145,35 @@ def main() -> int:
         # reach a reader without somebody having seen that fact.
         print(f"  !! {unpinned} variant(s) publish unpinned — the page will describe "
               f"weights that can change under it")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default="web/registry.json")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true",
+                      help="exit 1 if the file no longer matches its sources; write nothing")
+    mode.add_argument("--sync", action="store_true",
+                      help="rewrite only when the data moved; exit 0 either way")
+    args = ap.parse_args()
+
+    payload, measured_variants = build()
+    out = Path(args.out)
+    fresh = data_of(payload)
+
+    if args.check:
+        if shipped_data(out) == fresh:
+            print(f"{out} is current")
+            return 0
+        print(f"{out} is stale — run: python tools/export_registry.py", file=sys.stderr)
+        return 1
+
+    if args.sync and shipped_data(out) == fresh:
+        return 0
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(render(payload))
+    summarise_write(out, payload, measured_variants)
     return 0
 
 

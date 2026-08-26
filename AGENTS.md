@@ -78,6 +78,23 @@ in `outputs/` was ever a real render.
 Music generation runs about 25× realtime and spins the fans. A 10s cue is
 ~4 minutes of full-tilt GPU. Ask before starting long runs.
 
+## Hooks
+
+```bash
+tools/install_hooks.sh
+```
+
+Once per clone. It points `core.hooksPath` at `.githooks/`, which covers every
+worktree of this repo at once.
+
+The one hook regenerates `web/registry.json` when the data behind it moved.
+That file is generated and committed — the public page has no server to ask —
+so it falls behind `spacepilot/registry/` silently, and the thing that used to
+notice was a red CI run on a PR that never touched the registry.
+`test_exported_json_matches_the_registry` is still the gate; the hook is what
+stops it firing. `--no-verify` skips it when a commit is deliberately
+mid-edit.
+
 ## Conventions
 
 Every endpoint that spends compute or money takes `X-Pluto-Token` via the

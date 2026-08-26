@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Keep web/registry.json from rotting.
+#
+# The file is generated from spacepilot/registry/ and from constants in three
+# Python modules, and it is committed because the public page has no server to
+# ask. So it falls behind its sources silently, and the first thing that
+# notices is a red CI run on a PR that changed nothing to do with the registry.
+#
+# This regenerates it and stages the result, but only when the data actually
+# moved: --sync ignores the `generated` date, so an ordinary commit does not
+# pick up a one-line diff every morning.
+#
+# Install: tools/install_hooks.sh
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+# No interpreter, no hook. Refusing the commit would be worse than the rot:
+# a stale file fails one CI job, an unusable hook blocks every commit.
+python="$(command -v python3 || command -v python || true)"
+if [ -z "$python" ]; then
+  echo "pre-commit: no python found; skipping the registry export" >&2
+  exit 0
+fi
+
+before="$(git hash-object web/registry.json 2>/dev/null || echo none)"
+
+if ! "$python" tools/export_registry.py --sync >/dev/null; then
+  echo "pre-commit: tools/export_registry.py failed — the registry does not load." >&2
+  echo "            Fix the model file, or commit with --no-verify if this is deliberate." >&2
+  exit 1
+fi
+
+after="$(git hash-object web/registry.json 2>/dev/null || echo none)"
+
+if [ "$before" != "$after" ]; then
+  git add web/registry.json
+  echo "pre-commit: web/registry.json was stale; regenerated and staged."
+fi
