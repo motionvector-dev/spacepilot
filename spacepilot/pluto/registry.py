@@ -64,22 +64,62 @@ MOVING_REFS = {"main", "master", "head", "latest", "default"}
 
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
-SPEED_METRICS = {
-    "tokens_per_second",
-    "seconds_per_image",
-    "seconds_per_second_of_video",
-    "realtime_factor",
+# Which way each metric points, so a stopwatch reading can be turned into the
+# number the name promises. A "rate" is units / wall and higher is faster; a
+# "cost" is wall / units and lower is faster. Filing one as the other stores
+# the reciprocal under a name meaning its inverse, and nothing downstream can
+# tell them apart: kokoro's hand-written realtime_factor 4.6 (12.5s of speech
+# in 2.7s) and a machine-written 0.158 for the same shape of run were both
+# "realtime_factor", and averaging or ranking them is meaningless.
+METRIC_DIRECTION = {
+    "tokens_per_second": "rate",
+    "seconds_per_image": "cost",
+    "seconds_per_second_of_video": "cost",
+    "realtime_factor": "rate",
     # The warm-aware scheduler scores price + (cold ? load_seconds * value_of_latency
     # : 0) (docs/DECISION-INBOX.md, "SpacePilot is an exchange, not a router",
     # 2026-08-23) — load_seconds has to be its own measured metric, not folded
     # into a generation-speed number, because it is what makes a cold substrate
     # expensive even when its compute is cheap.
-    "load_seconds",
+    "load_seconds": "cost",
 }
+
+SPEED_METRICS = set(METRIC_DIRECTION)
 
 
 class RegistryError(ValueError):
     """A registry file is wrong. Always names the file and the field."""
+
+
+def metric_direction(metric: str) -> str:
+    """"rate" (units / wall) or "cost" (wall / units) for a known metric."""
+    try:
+        return METRIC_DIRECTION[metric]
+    except KeyError:
+        raise RegistryError(
+            f"metric '{metric}' not one of {sorted(SPEED_METRICS)}") from None
+
+
+def value_from_wall(metric: str, wall_seconds: float,
+                    units: Optional[float] = None) -> float:
+    """Turn a stopwatch reading into the number `metric` names.
+
+    Dividing wall time by units is right for a cost metric and exactly wrong
+    for a rate one, so the metric name — not the caller — decides which way
+    the division goes.
+    """
+    direction = metric_direction(metric)
+    if wall_seconds <= 0:
+        raise RegistryError(f"wall_seconds must be positive, got {wall_seconds}")
+    if units is None:
+        if direction == "rate":
+            raise RegistryError(
+                f"'{metric}' is a rate: it counts units per second, so wall time "
+                f"alone cannot produce it. Pass the unit count.")
+        return float(wall_seconds)
+    if units <= 0:
+        raise RegistryError(f"units must be positive, got {units}")
+    return units / wall_seconds if direction == "rate" else wall_seconds / units
 
 
 @dataclass(frozen=True)

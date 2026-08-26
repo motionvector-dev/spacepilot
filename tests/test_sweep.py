@@ -128,6 +128,18 @@ def test_load_spec_rejects_an_unknown_metric(tmp_path):
         load_spec(bad)
 
 
+def test_load_spec_rejects_a_rate_metric(tmp_path):
+    """A sweep times jobs and counts no units, so it can only ever produce
+    seconds. Under a rate name those seconds are the reciprocal of the number."""
+    bad = tmp_path / "bad.yaml"
+    bad.write_text(
+        "schema: 1\nid: x\nmodel_id: y\nmodel_alias: z\nmetric: realtime_factor\n"
+        "fixed:\n  prompt: hi\n  seed: 1\naxes:\n  resolution: [[512, 512]]\n  steps: [4]\n"
+    )
+    with pytest.raises(SweepSpecError, match="rate"):
+        load_spec(bad)
+
+
 def test_load_spec_rejects_a_bad_schema_version(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("schema: 99\nid: x\n")

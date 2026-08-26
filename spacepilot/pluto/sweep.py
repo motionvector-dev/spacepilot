@@ -32,6 +32,7 @@ import yaml
 
 from spacepilot.paths import shipped_dir, writable_dir
 from spacepilot.pluto import measurements as ms
+from spacepilot.pluto import registry
 
 SCHEMA_VERSION = 1
 
@@ -120,6 +121,13 @@ def load_spec(path: Path | str) -> SweepSpec:
     metric = _require(raw, "metric", where)
     if metric not in ms.SPEED_METRICS:
         raise SweepSpecError(f"{where}: metric {metric!r} not one of {sorted(ms.SPEED_METRICS)}")
+    # A sweep records the seconds a job took. That is a cost metric by
+    # construction: it counts no units, so it cannot produce a rate, and
+    # filing seconds under a rate name would store the reciprocal.
+    if registry.metric_direction(metric) == "rate":
+        raise SweepSpecError(
+            f"{where}: metric {metric!r} is a rate (units per second), and a sweep "
+            f"only times jobs. Use a seconds-per-unit metric.")
 
     fixed = raw.get("fixed", {}) or {}
     prompt = _require(fixed, "prompt", f"{where}: fixed")

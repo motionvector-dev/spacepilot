@@ -3,8 +3,56 @@
 import pytest
 
 from spacepilot.pluto.registry import (
-    SOURCES, Registry, RegistryError, load_registry, parse_model, registry,
+    METRIC_DIRECTION, SOURCES, SPEED_METRICS, Registry, RegistryError,
+    load_registry, metric_direction, parse_model, registry, value_from_wall,
 )
+
+
+# Written out longhand rather than read from METRIC_DIRECTION, so that adding a
+# metric fails here until somebody says which way it points. `pluto measure`
+# recorded 0.158 for a realtime_factor of 6.3 for as long as one division
+# served every metric.
+EXPECTED_DIRECTION = {
+    "tokens_per_second": "rate",
+    "seconds_per_image": "cost",
+    "seconds_per_second_of_video": "cost",
+    "realtime_factor": "rate",
+    "load_seconds": "cost",
+}
+
+
+def test_every_speed_metric_declares_a_direction():
+    assert set(METRIC_DIRECTION) == SPEED_METRICS
+    assert METRIC_DIRECTION == EXPECTED_DIRECTION
+
+
+@pytest.mark.parametrize("metric,direction", sorted(EXPECTED_DIRECTION.items()))
+def test_direction_decides_which_way_wall_time_divides(metric, direction):
+    value = value_from_wall(metric, wall_seconds=4.0, units=8.0)
+    assert value == (2.0 if direction == "rate" else 0.5)
+    assert metric_direction(metric) == direction
+
+
+def test_realtime_factor_is_units_over_wall():
+    """The registry's own kokoro entry is the fixed point: 12.5s of speech in
+    2.7s of wall clock is 4.6, not 0.22."""
+    assert value_from_wall("realtime_factor", 2.7, 12.5) == pytest.approx(4.63, abs=0.01)
+    assert value_from_wall("seconds_per_second_of_video", 2.7, 12.5) == pytest.approx(0.216, abs=0.001)
+
+
+def test_a_rate_cannot_be_computed_from_wall_time_alone():
+    with pytest.raises(RegistryError, match="rate"):
+        value_from_wall("realtime_factor", 30.0)
+    assert value_from_wall("seconds_per_image", 30.0) == 30.0
+
+
+def test_unknown_metric_and_impossible_units_are_refused():
+    with pytest.raises(RegistryError, match="not one of"):
+        value_from_wall("rt_factor", 1.0, 1.0)
+    with pytest.raises(RegistryError, match="units must be positive"):
+        value_from_wall("realtime_factor", 1.0, 0.0)
+    with pytest.raises(RegistryError, match="wall_seconds must be positive"):
+        value_from_wall("seconds_per_image", 0.0, 1.0)
 
 
 def test_registry_loads_and_ids_are_unique():

@@ -15,7 +15,7 @@ import uuid
 import argparse
 import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -819,6 +819,21 @@ def cmd_runtimes(args, cfg=None) -> int:
     return 1
 
 
+def _unknown_model_message(model_id: str, reg) -> Optional[str]:
+    """Complain if `model_id` names nothing in the registry, else None.
+
+    A registry that cannot be read is not evidence that the model is wrong, so
+    that case says nothing rather than blocking a real measurement.
+    """
+    try:
+        r = reg.registry()
+    except reg.RegistryError:
+        return None
+    if r.model(model_id) or r.variant(model_id):
+        return None
+    return f"No model or variant '{model_id}' in the registry."
+
+
 def cmd_measure(args, cfg=None) -> int:
     """Time a real command and write down what happened.
 
@@ -831,6 +846,7 @@ def cmd_measure(args, cfg=None) -> int:
 
     from spacepilot.device_probe import probe_local_device
     from spacepilot.pluto import measurements as ms
+    from spacepilot.pluto import registry as reg
 
     command = list(getattr(args, "command_argv", []) or [])
     if command and command[0] == "--":   # REMAINDER keeps the separator
@@ -840,6 +856,29 @@ def cmd_measure(args, cfg=None) -> int:
         print("  pluto measure --model flux --metric seconds_per_image -- "
               "mflux-generate --model schnell --steps 4")
         return 1
+
+    units = getattr(args, "units", None)
+
+    # Everything the arguments alone can settle is settled before the command
+    # runs. A bad metric used to surface at record time, which is after the
+    # measured run — the number was already earned and then thrown away.
+    if args.metric not in reg.SPEED_METRICS:
+        print(f"Unknown metric '{args.metric}'. One of: {', '.join(sorted(reg.SPEED_METRICS))}")
+        return 1
+    if reg.metric_direction(args.metric) == "rate" and not units:
+        print(f"'{args.metric}' counts units per second, so wall time alone cannot "
+              f"produce it.")
+        print(f"  Pass --units with how much was produced, e.g. --units 180 for "
+              f"180 seconds of audio.")
+        return 1
+
+    if err := _unknown_model_message(args.model, reg):
+        if not getattr(args, "allow_unknown_model", False):
+            print(err)
+            print("  A typo here files the run under a model nobody can look up.")
+            print("  Add it to the registry first, or pass --allow-unknown-model.")
+            return 1
+        print(f"  {err}  (--allow-unknown-model)")
 
     profile = probe_local_device()
     system = ms.system_from_profile(profile)
@@ -867,7 +906,7 @@ def cmd_measure(args, cfg=None) -> int:
     contention = "solo" if before == after == "solo" else (
         "unknown" if "unknown" in (before, after) else "loaded")
 
-    value = wall / args.units if getattr(args, "units", None) else wall
+    value = reg.value_from_wall(args.metric, wall, units)
     # ru_maxrss is bytes on macOS and kibibytes on Linux.
     peak = (rss_after - rss_before) if rss_after > rss_before else None
     if peak and sys.platform != "darwin":
@@ -877,8 +916,8 @@ def cmd_measure(args, cfg=None) -> int:
     for pair in getattr(args, "knob", None) or []:
         key, _, val = pair.partition("=")
         knobs[key.strip()] = val.strip() if val else True
-    if getattr(args, "units", None):
-        knobs["units"] = args.units
+    if units:
+        knobs["units"] = units
 
     path = ms.record(
         system=system, model_id=args.model, metric=args.metric, value=value,
@@ -1012,12 +1051,16 @@ def main():
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
     meas_p.add_argument("--metric", required=True,
                         help="seconds_per_image, tokens_per_second, realtime_factor, "
-                             "seconds_per_second_of_video")
+                             "seconds_per_second_of_video, load_seconds")
     meas_p.add_argument("--runtime", default=None, help="Runtime id, e.g. mflux")
     meas_p.add_argument("--quantisation", default=None, help="e.g. 4bit, 8bit, bf16")
     meas_p.add_argument("--units", type=float, default=None,
-                        help="Divide wall time by this many units (images, seconds of "
-                             "video) to get a per-unit rate")
+                        help="How much the run produced (images, seconds of audio or "
+                             "video, tokens). The metric decides which way it divides: "
+                             "wall/units for a cost metric, units/wall for a rate one. "
+                             "Required for a rate metric")
+    meas_p.add_argument("--allow-unknown-model", action="store_true",
+                        help="Record against a model id the registry does not know")
     meas_p.add_argument("--knob", action="append", metavar="KEY=VALUE",
                         help="Record a setting that changes the number (repeatable)")
     meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
