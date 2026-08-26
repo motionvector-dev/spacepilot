@@ -125,4 +125,8 @@ def test_exported_json_matches_the_registry(tmp_path):
     b = json.loads(fresh.read_text())
     a.pop("generated", None)          # the date moves on its own; the data must not
     b.pop("generated", None)
-    assert a == b, "web/registry.json is stale — re-run tools/export_registry.py"
+    assert a == b, (
+        "web/registry.json is stale — run: python tools/export_registry.py\n"
+        "To stop this recurring, install the hook that does it for you: "
+        "tools/install_hooks.sh"
+    )
