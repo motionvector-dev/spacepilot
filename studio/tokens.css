@@ -1,0 +1,281 @@
+/* SpacePilot design tokens — the one palette, type ramp and motion grammar.
+ *
+ * Canonical names come from the product design system in
+ * motionvector/studio/src/tokens.css, and the motion grammar from
+ * docs/design/motion-language.md (status: approved).
+ *
+ * Three vocabularies existed here before this file: --bg-*/--text-* in
+ * studio.css, an identical --mv-* duplicate beside it, and a private block
+ * inside each page. The LEGACY ALIASES section at the bottom maps every old
+ * name onto a canonical value, so 3400 lines of studio.css keep working while
+ * pages migrate one at a time. Nothing has to move in a single commit.
+ *
+ * Geometry is deliberately untouched. Spacing, control heights and the legacy
+ * radius scale keep their existing values, because rounding a 20px step onto a
+ * 24px scale would shift every layout for no visual gain. This file changes
+ * colour, type and motion only.
+ */
+
+@font-face {
+  font-family: 'Geist Variable';
+  src: url('/fonts/geist-variable.woff2') format('woff2');
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ---------------------------------------------------------------- type */
+  --font-sans: 'Geist Variable', 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', 'SF Mono', ui-monospace, Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* Chrome gets exactly two sizes. Rank is carried by the text colour ramp
+     and by position, never by inventing more steps. */
+  --text-size-meta: 11px;     /* labels, counts, receipts, hints */
+  --text-size-chrome: 13px;   /* every control, and the primary line */
+  --text-size-xs: 11px;
+  --text-size-sm: 12px;
+  --text-size-md: 13px;
+  --text-size-xl: 20px;
+  --text-size-display: 32px;
+  --tracking-display: -0.02em;
+  --tracking-normal: 0;
+  --tracking-meta: -0.02em;
+  --tracking-mono-label: 0.04em;
+
+  /* -------------------------------------------------------------- motion */
+  --motion-fast: 120ms;       /* hover, colour, press */
+  --motion-base: 160ms;       /* chips, rows, small entrances */
+  --motion-slow: 220ms;       /* cards, popovers */
+  --motion-slower: 300ms;     /* dialogs and sheets — a ceiling, not a default */
+  --motion-exit: 120ms;       /* every exit, on every surface */
+  --motion-loop-spin: 900ms;
+  --motion-loop-pulse: 1400ms;
+  --motion-loop-shimmer: 1600ms;
+  --motion-loop-play: running;
+  --motion-rise-sm: 4px;
+  --motion-rise-md: 6px;
+  --motion-rise-lg: 10px;
+  --motion-press: 0.985;      /* the only :active scale in the system */
+  --motion-enter-scale: 0.98; /* the entrance floor — never scale(0) */
+  --stagger-step: 40ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: linear(0, 0.06, 0.22, 0.47, 0.72, 0.92, 1.05, 1.09, 1.07, 1.03, 1, 0.99, 1);
+  --travel: 1;
+
+  /* ------------------------------------------------------------ geometry */
+  --hairline: 0.5px;
+  --border-strong: 1px;
+  --h-control: 30px;
+  --h-control-primary: 34px;
+  --radius-1: 4px; --radius-2: 6px; --radius-3: 8px; --radius-4: 12px;
+
+  /* ------------------------------------------- palette — light (default) */
+  color-scheme: light;
+  --app-ground: #ffffff;
+  --surface: #f4f4f5;
+  --surface-hover: #efeff1;
+  --surface-raised: #efeff1;
+  --surface-raised-hover: #e9e9eb;
+  --surface-inset: #e9e9eb;
+  --surface-strong: #e4e4e7;
+
+  --border-100: #f0f0f1;
+  --border-200: #ececee;
+  --border-300: #e4e4e7;
+  --border-400: #dadade;
+  --border-500: #d4d4d8;
+
+  --text-300: #a1a1aa;
+  --text-500: #71717a;
+  --text-700: #52525b;
+  --text-900: #3f3f46;
+  --text-1000: #111113;
+
+  /* There is no accent hue in this product. The one primary action per view
+     is inverted foreground: dark on light, light on dark. */
+  --accent: var(--text-1000);
+  --accent-contrast: var(--app-ground);
+  --accent-soft: rgba(17, 17, 19, .06);
+  --accent-border: rgba(17, 17, 19, .16);
+
+  /* Colour is spent only on things that are true, wrong, or the agent. */
+  --danger: #d93036;  --danger-soft: rgba(217, 48, 54, .09);
+  --verify: #16a34a;  --verify-soft: rgba(22, 163, 74, .10);
+  --agent: #7c6bb3;   --agent-soft: rgba(124, 107, 179, .08);
+  --agent-border: rgba(124, 107, 179, .28);
+
+  --canvas-ground: #fafafa;
+  --focus-ring: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent-border);
+  --mark-ink: #09090b;
+  --mark-recessive: #a1a1aa;
+}
+
+/* Dark, two ways: the system default, and an explicit choice. Both are spelled
+   out so the toggle wins in either direction. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(body.light-theme) { color-scheme: dark; }
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --app-ground: #000000;
+    --surface: #18181b;
+    --surface-hover: #1d1d20;
+    --surface-raised: #1d1d20;
+    --surface-raised-hover: #232326;
+    --surface-inset: #232326;
+    --surface-strong: #27272a;
+    --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
+    --border-400: #333338; --border-500: #3f3f46;
+    --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
+    --text-900: #d4d4d8; --text-1000: #ffffff;
+    --accent-soft: rgba(250, 250, 250, .08);
+    --accent-border: rgba(250, 250, 250, .18);
+    --danger: #e5484d;  --danger-soft: rgba(229, 72, 77, .12);
+    --verify: #4ade80;  --verify-soft: rgba(74, 222, 128, .12);
+    --agent: #a396d6;   --agent-soft: rgba(163, 150, 214, .10);
+    --agent-border: rgba(163, 150, 214, .30);
+    --canvas-ground: #050506;
+    --mark-ink: #fafafa; --mark-recessive: #52525b;
+  }
+}
+:root[data-theme="dark"], body.dark-theme {
+  color-scheme: dark;
+  --app-ground: #000000;
+  --surface: #18181b;
+  --surface-hover: #1d1d20;
+  --surface-raised: #1d1d20;
+  --surface-raised-hover: #232326;
+  --surface-inset: #232326;
+  --surface-strong: #27272a;
+  --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
+  --border-400: #333338; --border-500: #3f3f46;
+  --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
+  --text-900: #d4d4d8; --text-1000: #ffffff;
+  --accent-soft: rgba(250, 250, 250, .08);
+  --accent-border: rgba(250, 250, 250, .18);
+  --danger: #e5484d;  --danger-soft: rgba(229, 72, 77, .12);
+  --verify: #4ade80;  --verify-soft: rgba(74, 222, 128, .12);
+  --agent: #a396d6;   --agent-soft: rgba(163, 150, 214, .10);
+  --agent-border: rgba(163, 150, 214, .30);
+  --canvas-ground: #050506;
+  --mark-ink: #fafafa; --mark-recessive: #52525b;
+}
+
+/* Reduced motion zeroes DISTANCE, not TIME. A crossfade is the accessible
+   affordance; removing it leaves an unexplained jump cut. Every loop must
+   declare animation-play-state: var(--motion-loop-play) and must have a 0%
+   frame that reads correctly when paused. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-rise-sm: 0px; --motion-rise-md: 0px; --motion-rise-lg: 0px;
+    --motion-press: 1; --motion-enter-scale: 1;
+    --ease-spring: var(--ease-out);
+    --stagger-step: 0ms; --motion-loop-play: paused; --travel: 0;
+  }
+}
+:root[data-motion="reduce"] {
+  --motion-rise-sm: 0px; --motion-rise-md: 0px; --motion-rise-lg: 0px;
+  --motion-press: 1; --motion-enter-scale: 1;
+  --ease-spring: var(--ease-out);
+  --stagger-step: 0ms; --motion-loop-play: paused; --travel: 0;
+}
+
+/* =====================================================================
+   LEGACY ALIASES
+   Old names, canonical values. Delete a line only once nothing references
+   it — `grep -rn "\--bg-panel" studio/` before removing any of these.
+   ===================================================================== */
+:root {
+  /* surfaces, in the elevation order the old names implied */
+  --bg-root:      var(--app-ground);
+  --bg-ground:    var(--surface);
+  --bg-panel:     var(--surface-raised);
+  --bg-card:      var(--surface-inset);
+  --bg-raised:    var(--surface-strong);
+  --bg-glass:     color-mix(in srgb, var(--surface) 85%, transparent);
+  --bg-glass-card: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+
+  /* the --mv-* set was a byte-identical duplicate of the above */
+  --mv-bg:            var(--app-ground);
+  --mv-ground:        var(--surface);
+  --mv-surface:       var(--surface-raised);
+  --mv-card:          var(--surface-inset);
+  --mv-card-hover:    var(--surface-strong);
+  --mv-border:        var(--border-200);
+  --mv-border-medium: var(--border-300);
+  --mv-border-focus:  var(--border-500);
+  --mv-text:          var(--text-1000);
+  --mv-text-muted:    var(--text-700);
+  --mv-text-dim:      var(--text-500);
+  --mv-text-faint:    var(--text-300);
+
+  --border-subtle:    var(--border-200);
+  --border-medium:    var(--border-300);
+  --border-highlight: var(--border-400);
+  --border-focus:     var(--border-500);
+
+  --text-main:  var(--text-1000);
+  --text-muted: var(--text-700);
+  --text-dim:   var(--text-500);
+  --text-faint: var(--text-300);
+
+  /* Truth and error keep their colour. Warning does not have one in this
+     system — amber becomes neutral emphasis, so any surface that relied on
+     the hue to mean "careful" now has to say so in words. */
+  --accent-emerald:   var(--verify);
+  --semantic-online:  var(--verify);
+  --accent-rose:      var(--danger);
+  --semantic-error:   var(--danger);
+  --accent-amber:     var(--text-900);
+  --semantic-warning: var(--text-900);
+
+  --btn-primary-bg:           var(--accent);
+  --btn-primary-text:         var(--accent-contrast);
+  --btn-primary-border:       transparent;
+  --btn-primary-hover-bg:     var(--accent);
+  --btn-primary-hover-text:   var(--accent-contrast);
+  --btn-primary-shadow:       none;
+  --btn-secondary-bg:         transparent;
+  --btn-secondary-text:       var(--text-700);
+  --btn-secondary-border:     var(--border-300);
+  --btn-secondary-hover-bg:   var(--surface-raised-hover);
+  --btn-secondary-hover-border: var(--border-400);
+
+  /* Elevation is luminance, never a shadow. Glows were the amber/emerald/rose
+     halos; with no accent hue there is nothing left for them to glow. */
+  --shadow-sm: none; --shadow-md: none;
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, .35);
+  --shadow-glow-emerald: none;
+  --shadow-glow-amber:   none;
+  --shadow-glow-rose:    none;
+
+  /* geometry, unchanged on purpose */
+  --space-0: 0;     --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px;  --space-5: 20px; --space-6: 24px; --space-7: 32px;
+  --space-8: 40px;  --space-9: 48px; --space-10: 64px; --space-11: 80px;
+  --space-12: 96px;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px;
+  --radius-full: 9999px;
+  --height-xs: 24px; --height-sm: 28px; --height-md: 32px; --height-lg: 36px;
+  --height-xl: 40px; --height-2xl: 48px; --height-header: 46px;
+  --height-tl-ruler: 20px; --height-tl-toolbar: 28px;
+  --height-tl-track: 36px; --height-tl-footer: 160px;
+}
+
+/* ------------------------------------------------------------------ base */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--app-ground);
+  color: var(--text-900);
+  font-family: var(--font-sans);
+  font-size: var(--text-size-md);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
