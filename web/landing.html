@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpacePilot</title>
+<meta name="description" content="SpacePilot — the generative cinema workstation. Own your renders, your machines, your cost per take.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens: dark-first, three-state ---------- */
+:root {
+  --bg: #000000;
+  --ground: #0c0b0a;
+  --panel: #131211;
+  --card: #171614;
+  --line: rgba(242, 240, 234, 0.10);
+  --line-soft: rgba(242, 240, 234, 0.06);
+  --line-strong: rgba(242, 240, 234, 0.22);
+  --ink: #f2f0ea;
+  --ink-2: #a8a49a;
+  --ink-3: #6d6a62;
+  --accent: #ff5c1f;
+  --accent-soft: rgba(255, 92, 31, 0.12);
+  --accent-line: rgba(255, 92, 31, 0.35);
+  --btn-bg: #f2f0ea;
+  --btn-ink: #0c0b0a;
+  --star-opacity: 1;
+  --scheme: dark;
+}
+:root:not([data-theme="dark"]) {
+  --bg: #f6f5f1;
+  --ground: #f0eee8;
+  --panel: #ffffff;
+  --card: #ffffff;
+  --line: rgba(19, 18, 16, 0.12);
+  --line-soft: rgba(19, 18, 16, 0.07);
+  --line-strong: rgba(19, 18, 16, 0.26);
+  --ink: #131210;
+  --ink-2: #55524b;
+  --ink-3: #8b877d;
+  --accent: #d64a0c;
+  --accent-soft: rgba(214, 74, 12, 0.09);
+  --accent-line: rgba(214, 74, 12, 0.32);
+  --btn-bg: #131210;
+  --btn-ink: #f6f5f1;
+  --star-opacity: 0;
+  --scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --ground: #0c0b0a;
+    --panel: #131211;
+    --card: #171614;
+    --line: rgba(242, 240, 234, 0.10);
+    --line-soft: rgba(242, 240, 234, 0.06);
+    --line-strong: rgba(242, 240, 234, 0.22);
+    --ink: #f2f0ea;
+    --ink-2: #a8a49a;
+    --ink-3: #6d6a62;
+    --accent: #ff5c1f;
+    --accent-soft: rgba(255, 92, 31, 0.12);
+    --accent-line: rgba(255, 92, 31, 0.35);
+    --btn-bg: #f2f0ea;
+    --btn-ink: #0c0b0a;
+    --star-opacity: 1;
+    --scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --ground: #0c0b0a;
+  --panel: #131211;
+  --card: #171614;
+  --line: rgba(242, 240, 234, 0.10);
+  --line-soft: rgba(242, 240, 234, 0.06);
+  --line-strong: rgba(242, 240, 234, 0.22);
+  --ink: #f2f0ea;
+  --ink-2: #a8a49a;
+  --ink-3: #6d6a62;
+  --accent: #ff5c1f;
+  --accent-soft: rgba(255, 92, 31, 0.12);
+  --accent-line: rgba(255, 92, 31, 0.35);
+  --btn-bg: #f2f0ea;
+  --btn-ink: #0c0b0a;
+  --star-opacity: 1;
+  --scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: var(--scheme);
+}
+.serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+.mono, code, .tag { font-family: "IBM Plex Mono", "SF Mono", Consolas, monospace; }
+a { color: inherit; }
+::selection { background: var(--accent); color: #000; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-soft);
+}
+.nav-inner {
+  height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.wordmark {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+.wordmark .dot {
+  width: 8px; height: 8px; background: var(--accent); border-radius: 50%;
+  box-shadow: 0 0 12px var(--accent);
+}
+.nav-links { display: flex; gap: 26px; align-items: center; }
+.nav-links a {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; text-decoration: none; color: var(--ink-3);
+  transition: color 120ms ease;
+}
+.nav-links a:hover, .nav-links a:focus-visible { color: var(--ink); }
+@media (max-width: 760px) { .nav-links .hide-sm { display: none; } }
+
+.theme-toggle {
+  display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden;
+}
+.theme-toggle button {
+  appearance: none; border: 0; background: transparent; color: var(--ink-3);
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 5px 10px; cursor: pointer;
+}
+.theme-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.theme-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none;
+  padding: 13px 22px; border-radius: 4px; border: 1px solid transparent;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--btn-bg); color: var(--btn-ink); }
+.btn-primary:hover { background: var(--accent); color: #000; }
+.btn-ghost { border-color: var(--line-strong); color: var(--ink); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line-soft); }
+#stars {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: var(--star-opacity); transition: opacity 300ms ease; pointer-events: none;
+}
+.hero-inner { position: relative; padding: 110px 0 0; }
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.3em;
+  text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 14px;
+}
+.eyebrow::before { content: ""; width: 36px; height: 1px; background: var(--accent-line); }
+.hero h1 {
+  font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
+  font-size: clamp(52px, 9vw, 108px); line-height: 0.98; letter-spacing: -0.015em;
+  margin: 28px 0 0; max-width: 15ch; text-wrap: balance;
+}
+.hero h1 em { font-style: italic; color: var(--accent); }
+.hero-sub {
+  margin-top: 28px; max-width: 58ch; font-size: 17px; color: var(--ink-2);
+}
+.hero-sub strong { color: var(--ink); font-weight: 500; }
+.hero-cta { display: flex; gap: 14px; margin-top: 40px; flex-wrap: wrap; }
+
+.reveal { opacity: 0; transform: translateY(14px); animation: rise 700ms cubic-bezier(.2,.7,.2,1) forwards; }
+.reveal.d1 { animation-delay: 80ms; } .reveal.d2 { animation-delay: 180ms; }
+.reveal.d3 { animation-delay: 300ms; } .reveal.d4 { animation-delay: 420ms; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+
+/* telemetry strip */
+.telemetry {
+  margin-top: 84px; border-top: 1px solid var(--line-soft);
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+.telemetry > div { padding: 26px 24px 34px; border-left: 1px solid var(--line-soft); }
+.telemetry > div:first-child { border-left: 0; padding-left: 0; }
+.telemetry .val {
+  font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 600;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.telemetry .val small { font-size: 13px; color: var(--ink-3); font-weight: 400; }
+.telemetry .lbl {
+  margin-top: 6px; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3);
+}
+@media (max-width: 760px) {
+  .telemetry { grid-template-columns: 1fr 1fr; }
+  .telemetry > div { padding-left: 0; border-left: 0; }
+}
+
+/* ---------- sequence sections ---------- */
+.seq { border-bottom: 1px solid var(--line-soft); padding: 96px 0; }
+.seq-head { display: flex; align-items: baseline; gap: 22px; margin-bottom: 14px; }
+.seq-t {
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.2em; color: var(--accent);
+  border: 1px solid var(--accent-line); background: var(--accent-soft);
+  padding: 4px 10px; border-radius: 3px; white-space: nowrap;
+}
+.seq h2 {
+  font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
+  font-size: clamp(34px, 5vw, 52px); line-height: 1.05; letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.seq-lede { color: var(--ink-2); max-width: 62ch; margin-top: 14px; }
+.seq-lede strong { color: var(--ink); font-weight: 500; }
+
+/* engines */
+.engine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line-soft); margin-top: 48px; border: 1px solid var(--line-soft); }
+.engine {
+  background: var(--ground); padding: 30px 26px 34px; position: relative;
+  transition: background 160ms ease;
+}
+.engine:hover { background: var(--panel); }
+.engine .tag {
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3);
+}
+.engine h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 10px 0 8px; }
+.engine p { font-size: 14px; color: var(--ink-2); }
+.engine .spec {
+  margin-top: 16px; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+  color: var(--accent); letter-spacing: 0.06em;
+}
+@media (max-width: 900px) { .engine-grid { grid-template-columns: 1fr; } }
+
+/* compute */
+.compute { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin-top: 48px; }
+.compute-cell { background: var(--ground); padding: 36px 30px 40px; }
+.compute-cell h3 { font-size: 20px; font-weight: 600; display: flex; align-items: baseline; gap: 12px; }
+.price {
+  font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 600; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.compute-cell p { color: var(--ink-2); font-size: 15px; margin-top: 12px; max-width: 46ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.05em;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; color: var(--ink-2);
+}
+@media (max-width: 820px) { .compute { grid-template-columns: 1fr; } }
+
+.bars { margin-top: 56px; display: grid; gap: 18px; }
+.bar-row { display: grid; grid-template-columns: 190px 1fr 90px; align-items: center; gap: 18px; }
+.bar-row .who { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+.bar-track { height: 10px; background: var(--panel); border: 1px solid var(--line-soft); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; background: var(--ink-3); width: 0; transition: width 900ms cubic-bezier(.2,.7,.2,1); }
+.bar-row.us .bar-fill { background: var(--accent); box-shadow: 0 0 14px var(--accent-soft); }
+.bar-row .amt { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.bar-row.us .amt { color: var(--accent); }
+.bar-note { font-size: 13px; color: var(--ink-3); margin-top: 4px; }
+@media (max-width: 640px) { .bar-row { grid-template-columns: 110px 1fr 78px; } }
+
+/* studio surfaces */
+.rooms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin-top: 48px; }
+.room { background: var(--ground); padding: 28px 24px 32px; text-decoration: none; display: block; transition: background 160ms ease; }
+.room:hover { background: var(--panel); }
+.room .path { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; color: var(--accent); }
+.room h3 { font-size: 17px; font-weight: 600; margin: 10px 0 6px; }
+.room p { font-size: 13.5px; color: var(--ink-2); }
+@media (max-width: 900px) { .rooms { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .rooms { grid-template-columns: 1fr; } }
+
+/* protocol / terminal */
+.proto { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; margin-top: 48px; }
+@media (max-width: 880px) { .proto { grid-template-columns: 1fr; } }
+.proto-list { display: grid; gap: 26px; }
+.proto-item { border-left: 2px solid var(--line); padding-left: 20px; }
+.proto-item:hover { border-left-color: var(--accent); }
+.proto-item h3 { font-size: 17px; font-weight: 600; }
+.proto-item p { font-size: 14.5px; color: var(--ink-2); margin-top: 6px; max-width: 48ch; }
+
+.term {
+  background: #0a0908; border: 1px solid var(--line); border-radius: 8px;
+  overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+:root:not([data-theme="dark"]) .term { box-shadow: 0 20px 50px rgba(19,18,16,0.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .term { box-shadow: 0 24px 60px rgba(0,0,0,0.45); } }
+.term-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  border-bottom: 1px solid rgba(242,240,234,0.08); background: #131211;
+}
+.term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2c2a27; display: block; }
+.term-bar span {
+  margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+  letter-spacing: 0.14em; color: #6d6a62; text-transform: uppercase;
+}
+.term pre {
+  padding: 20px 18px 24px; font-family: "IBM Plex Mono", monospace; font-size: 12.5px;
+  line-height: 1.75; color: #a8a49a; overflow-x: auto;
+}
+.term .p { color: #ff5c1f; }
+.term .ok { color: #f2f0ea; }
+.term .dim { color: #55524b; }
+
+/* launch / footer */
+.launch { padding: 130px 0 120px; text-align: center; position: relative; overflow: hidden; }
+.launch h2 {
+  font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
+  font-size: clamp(44px, 7vw, 84px); line-height: 1; letter-spacing: -0.015em; text-wrap: balance;
+}
+.launch h2 em { font-style: italic; color: var(--accent); }
+.launch p { color: var(--ink-2); margin: 22px auto 0; max-width: 52ch; }
+.launch .hero-cta { justify-content: center; }
+.launch code.cmd {
+  display: inline-block; margin-top: 34px; font-size: 13px; color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 6px; padding: 12px 18px; background: var(--panel);
+}
+.launch code.cmd b { color: var(--accent); font-weight: 600; }
+
+footer { border-top: 1px solid var(--line-soft); }
+.foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 30px 0; flex-wrap: wrap;
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.foot a { text-decoration: none; color: var(--ink-3); }
+.foot a:hover { color: var(--ink); }
+.foot .links { display: flex; gap: 22px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="wordmark" href="#"><span class="dot"></span>SpacePilot</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#engines">Engines</a>
+      <a class="hide-sm" href="#compute">Compute</a>
+      <a class="hide-sm" href="#studio">Studio</a>
+      <a class="hide-sm" href="#protocol">Protocol</a>
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button data-set="system" aria-pressed="true">Sys</button>
+        <button data-set="light" aria-pressed="false">Lt</button>
+        <button data-set="dark" aria-pressed="false">Dk</button>
+      </div>
+      <a class="btn btn-primary" href="#launch" style="padding:9px 16px">Launch</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="wrap hero-inner">
+    <p class="eyebrow reveal d1">Generative cinema workstation</p>
+    <h1 class="reveal d2">Direct the machine.<br>Own every <em>take</em>.</h1>
+    <p class="hero-sub reveal d3">
+      SkyPilot pilots your cloud servers. <strong>SpacePilot pilots your generative
+      cinema.</strong> An open workstation for Apple&nbsp;Silicon and CUDA that runs
+      frontier video models on your own hardware — or arbitrages spot GPUs across
+      five clouds when you need more thrust. No subscription. No markup. No black box.
+    </p>
+    <div class="hero-cta reveal d4">
+      <a class="btn btn-primary" href="#launch">Start the sequence</a>
+      <a class="btn btn-ghost" href="#engines">Inspect the engines</a>
+    </div>
+    <div class="telemetry reveal d4">
+      <div><div class="val">$0.012<small>/take</small></div><div class="lbl">Spot-mesh render</div></div>
+      <div><div class="val">$0.00<small>/local</small></div><div class="lbl">On your own silicon</div></div>
+      <div><div class="val">3<small>&nbsp;engines</small></div><div class="lbl">LTX · Wan · Hunyuan</div></div>
+      <div><div class="val">12+<small>&nbsp;tools</small></div><div class="lbl">Native MCP server</div></div>
+    </div>
+  </div>
+</header>
+
+<section class="seq" id="engines">
+  <div class="wrap">
+    <div class="seq-head"><span class="seq-t">T-04</span><h2>Engine check</h2></div>
+    <p class="seq-lede">
+      Three frontier diffusion-transformer engines behind <strong>one polymorphic
+      interface</strong>. Swap models like lenses — the studio, the CLI, and your
+      agents don't care which one is bolted on.
+    </p>
+    <div class="engine-grid">
+      <article class="engine">
+        <span class="tag">Primary engine</span>
+        <h3>LTX-Video 2.5</h3>
+        <p>13B-parameter DiT tuned for long, coherent shots. The workhorse for narrative sequences.</p>
+        <div class="spec">13B DiT · 8k+1 frames</div>
+      </article>
+      <article class="engine">
+        <span class="tag">Light &amp; heavy</span>
+        <h3>Wan 2.1</h3>
+        <p>1.3B for fast previz on a laptop, 14B for finals. 3D causal VAE keeps motion honest.</p>
+        <div class="spec">1.3B / 14B · 3D causal VAE</div>
+      </article>
+      <article class="engine">
+        <span class="tag">High resolution</span>
+        <h3>HunyuanVideo</h3>
+        <p>13B dual-stream DiT with cross-attention, for takes that must hold up at 1080p.</p>
+        <div class="spec">13B dual-stream · 720p/1080p</div>
+      </article>
+      <article class="engine">
+        <span class="tag">Voice</span>
+        <h3>Kokoro-82M</h3>
+        <p>In-process ONNX voiceover with broadcast loudness sidechained under your score.</p>
+        <div class="spec">ONNX · −16 LUFS ducking</div>
+      </article>
+      <article class="engine">
+        <span class="tag">Narrative</span>
+        <h3>Screenplay deconstruction</h3>
+        <p>Local GGUF models break a script into shots, beats, and camera vectors — before a frame renders.</p>
+        <div class="spec">In-process GGUF · 3D vectors</div>
+      </article>
+      <article class="engine">
+        <span class="tag">Hardware probe</span>
+        <h3>Auto-fit</h3>
+        <p>SpacePilot reads your VRAM headroom and recommends the largest engine that actually fits.</p>
+        <div class="spec">Metal MPS · CUDA · CPU</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="seq" id="compute">
+  <div class="wrap">
+    <div class="seq-head"><span class="seq-t">T-03</span><h2>Fuel at cost</h2></div>
+    <p class="seq-lede">
+      Zero-markup compute is the whole point. Render free on the machine in front of
+      you, or let the spot mesh find the cheapest GPU on the market —
+      <strong>you pay the cloud, not a middleman</strong>.
+    </p>
+    <div class="compute">
+      <div class="compute-cell">
+        <h3>Local host <span class="price">$0.00</span></h3>
+        <p>In-process drivers run the engines directly on Apple Metal, CUDA, or CPU. Your footage never leaves the machine.</p>
+        <div class="chips"><span class="chip">Apple Silicon</span><span class="chip">CUDA</span><span class="chip">CPU</span><span class="chip">Zero cloud</span></div>
+      </div>
+      <div class="compute-cell">
+        <h3>Spot mesh <span class="price">$0.012 / take</span></h3>
+        <p>SkyPilot arbitrage across five providers bids for interruptible GPUs and deploys the worker automatically.</p>
+        <div class="chips"><span class="chip">AWS</span><span class="chip">Lambda</span><span class="chip">RunPod</span><span class="chip">Shadeform</span><span class="chip">GCP</span></div>
+      </div>
+    </div>
+    <div class="bars" id="bars">
+      <div class="bar-row"><span class="who">SaaS video tools</span><div class="bar-track"><div class="bar-fill" data-w="100%"></div></div><span class="amt">~20×</span></div>
+      <div class="bar-row us"><span class="who">SpacePilot spot</span><div class="bar-track"><div class="bar-fill" data-w="5%"></div></div><span class="amt">$0.012</span></div>
+      <div class="bar-row us"><span class="who">SpacePilot local</span><div class="bar-track"><div class="bar-fill" data-w="0.5%"></div></div><span class="amt">$0.00</span></div>
+    </div>
+    <p class="bar-note">Cost per generated take. SaaS subscription pricing measured against equivalent spot-instance renders.</p>
+  </div>
+</section>
+
+<section class="seq" id="studio">
+  <div class="wrap">
+    <div class="seq-head"><span class="seq-t">T-02</span><h2>Four rooms, one ship</h2></div>
+    <p class="seq-lede">
+      A zero-build web studio served straight from the host. Every room reads the
+      same state, spends through the same token gate, and streams the same telemetry.
+    </p>
+    <div class="rooms">
+      <a class="room" href="/create">
+        <span class="path">/create</span>
+        <h3>Create Studio</h3>
+        <p>Camera compass, dual keyframes, and voiceover ducking — compose the shot before you spend a cent.</p>
+      </a>
+      <a class="room" href="/cockpit">
+        <span class="path">/cockpit</span>
+        <h3>Cockpit</h3>
+        <p>Live host telemetry, the model hub, and spot-price arbitrage on one instrument panel.</p>
+      </a>
+      <a class="room" href="/studio">
+        <span class="path">/studio</span>
+        <h3>Director</h3>
+        <p>A multi-track NLE timeline with an asset inspector, for cutting takes into sequences.</p>
+      </a>
+      <a class="room" href="/oven.html">
+        <span class="path">/oven</span>
+        <h3>The Oven</h3>
+        <p>A five-lane kanban where an agent swarm bakes storyboards into finished renders.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="seq" id="protocol">
+  <div class="wrap">
+    <div class="seq-head"><span class="seq-t">T-01</span><h2>Built for crews of agents</h2></div>
+    <p class="seq-lede">
+      SpacePilot is agent-native, not agent-tolerant. Every capability in the studio
+      is also a tool an AI can call — <strong>the UI and the swarm share one protocol</strong>.
+    </p>
+    <div class="proto">
+      <div class="proto-list">
+        <div class="proto-item">
+          <h3>Native MCP tool server</h3>
+          <p>Twelve-plus FastMCP tools expose generation, assets, and telemetry to any MCP-speaking agent.</p>
+        </div>
+        <div class="proto-item">
+          <h3>DocIR 2.0 edit protocol</h3>
+          <p>Byte-exact, reversible patches. Agents edit the document, never the render — every change can be undone.</p>
+        </div>
+        <div class="proto-item">
+          <h3>WebSocket PTY bridge</h3>
+          <p>A live interactive shell and worker stream, so you can watch a remote GPU think in real time.</p>
+        </div>
+        <div class="proto-item">
+          <h3>Token-gated spend</h3>
+          <p>Every endpoint that burns compute or money requires a signed token. Read-only stays open.</p>
+        </div>
+      </div>
+      <div class="term" aria-hidden="true">
+        <div class="term-bar"><i></i><i></i><i></i><span>flight deck</span></div>
+        <pre><span class="p">$</span> doppler run -- ./bin/pluto studio
+<span class="dim">boot · engines: ltx-2.5, wan-2.1, hunyuan</span>
+<span class="dim">probe: apple-m3-max · 48G unified · headroom OK</span>
+<span class="ok">studio    → http://spacepilot.localhost:8088</span>
+<span class="ok">mcp       → 12 tools registered</span>
+
+<span class="p">$</span> pluto launch --spot
+<span class="dim">bidding g6e.2xlarge across 5 providers…</span>
+<span class="ok">won  us-east-1  $0.75/hr  → $0.012/take</span>
+<span class="dim">worker deployed · token verified · streaming</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="launch" id="launch">
+  <div class="wrap">
+    <p class="eyebrow" style="justify-content:center">T-00 · Ignition</p>
+    <h2 style="margin-top:26px">Your cinema.<br>Your <em>hardware</em>.</h2>
+    <p>Clone the repo, point it at your silicon, and render your first take tonight — for the price of the electricity.</p>
+    <div class="hero-cta" style="margin-top:36px">
+      <a class="btn btn-primary" href="https://github.com/motionvector-dev/spacepilot">Get SpacePilot</a>
+      <a class="btn btn-ghost" href="#engines">Read the specs</a>
+    </div>
+    <code class="cmd mono"><b>$</b> git clone motionvector-dev/spacepilot &amp;&amp; ./bin/pluto studio</code>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>SpacePilot · MotionVector</span>
+    <div class="links">
+      <a href="#engines">Engines</a>
+      <a href="#compute">Compute</a>
+      <a href="#studio">Studio</a>
+      <a href="https://github.com/motionvector-dev/spacepilot">GitHub</a>
+    </div>
+    <span>MIT · Fly your own hardware</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btns = document.querySelectorAll('.theme-toggle button');
+  function apply(mode) {
+    if (mode === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', mode);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.set === mode)); });
+    try { localStorage.setItem('sp-theme', mode); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { apply(b.dataset.set); }); });
+  var saved = null;
+  try { saved = localStorage.getItem('sp-theme'); } catch (e) {}
+  if (saved === 'light' || saved === 'dark') apply(saved);
+
+  // starfield
+  var cv = document.getElementById('stars');
+  var ctx = cv.getContext('2d');
+  var stars = [], W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size() {
+    var r = cv.parentElement.getBoundingClientRect();
+    W = r.width; H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = [];
+    var n = Math.floor(W * H / 9000);
+    for (var i = 0; i < n; i++) {
+      stars.push({ x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.1 + 0.2, p: Math.random() * Math.PI * 2,
+        s: 0.4 + Math.random() * 0.8 });
+    }
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      var a = reduced ? 0.5 : 0.28 + 0.32 * (0.5 + 0.5 * Math.sin(st.p + t * 0.0009 * st.s));
+      ctx.globalAlpha = a * st.r;
+      ctx.fillStyle = '#f2f0ea';
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (!reduced) requestAnimationFrame(draw);
+  }
+  size(); window.addEventListener('resize', size);
+  requestAnimationFrame(draw);
+
+  // cost bars animate on scroll
+  var bars = document.getElementById('bars');
+  var fills = bars.querySelectorAll('.bar-fill');
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        fills.forEach(function (f) { f.style.width = f.dataset.w; });
+        io.disconnect();
+      }
+    });
+  }, { threshold: 0.4 });
+  io.observe(bars);
+})();
+</script>
+</body>
+</html>
