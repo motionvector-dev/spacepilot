@@ -69,8 +69,8 @@ Homepage = "https://spacepilot.dev"
 Source = "https://github.com/motionvector-dev/spacepilot"
 
 [project.scripts]
-pluto = "spacepilot.cli:pluto_main"
 spacepilot = "spacepilot.cli:main"
+spacepilot-mcp = "spacepilot.pluto_mcp_server:main"
 
 [tool.setuptools.packages.find]
 # Without this, setuptools flattened the source tree into sixteen generic

@@ -115,6 +115,15 @@ def test_the_wheel_stays_a_single_top_level_package(wheel):
         assert z.read(name).decode().split() == ["spacepilot"]
 
 
+def test_the_wheel_exposes_only_spacepilot_commands(wheel):
+    with zipfile.ZipFile(wheel) as z:
+        name = next(n for n in z.namelist() if n.endswith("entry_points.txt"))
+        entry_points = z.read(name).decode()
+    assert "spacepilot = spacepilot.cli:main" in entry_points
+    assert "spacepilot-mcp = spacepilot.pluto_mcp_server:main" in entry_points
+    assert "\npluto =" not in entry_points
+
+
 def test_the_wheel_carries_the_registry(wheel):
     """The whole defect in one assertion: the shipped wheel had zero of these."""
     with zipfile.ZipFile(wheel) as z:

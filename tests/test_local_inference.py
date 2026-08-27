@@ -20,9 +20,9 @@ from spacepilot.model_recommender import (
     PLUTO_MODELS_CACHE,
 )
 from spacepilot.pluto_mcp_server import (
-    pluto_probe_hardware,
-    pluto_recommend_models,
-    pluto_get_local_status,
+    spacepilot_get_local_status,
+    spacepilot_probe_hardware,
+    spacepilot_recommend_models,
 )
 from spacepilot.web_api import app, STUDIO_TOKEN
 
@@ -130,15 +130,15 @@ def test_download_model_mock_lifecycle():
 
 def test_fastmcp_tools():
     """Test FastMCP hardware and model recommender tool wrappers."""
-    hw_res = pluto_probe_hardware()
+    hw_res = spacepilot_probe_hardware()
     assert hw_res["status"] == "success"
     assert "profile" in hw_res
 
-    rec_res = pluto_recommend_models()
+    rec_res = spacepilot_recommend_models()
     assert rec_res["status"] == "success"
     assert len(rec_res["recommendations"]) > 0
 
-    status_res = pluto_get_local_status()
+    status_res = spacepilot_get_local_status()
     assert status_res["status"] == "online"
     assert "vram_usable_gb" in status_res
 

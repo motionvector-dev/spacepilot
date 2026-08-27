@@ -6,7 +6,7 @@ try:
     from mcp.server import MCPServer
 except ImportError as exc:  # pragma: no cover - import guard
     raise SystemExit(
-        "pluto_mcp_server needs the mcp SDK (>=2.0).\n"
+        "SpacePilot MCP server needs the mcp SDK (>=2.0).\n"
         "  pip install 'mcp>=2.0'\n"
         f"import failed: {exc}"
     ) from exc
@@ -263,7 +263,7 @@ def spacepilot_list_runtimes() -> dict:
 def spacepilot_preview_runtime_install(runtime_id: str) -> dict:
     """Resolve what installing a runtime would change, without changing anything.
 
-    Call this before pluto_install_runtime and show the result to the person.
+    Call this before spacepilot_install_runtime and show the result to the person.
     Installing into a shared environment is not additive: resolving mflux
     downgrades opencv-python from 5.0 to 4.14, which breaks whatever needed the
     newer one, later, somewhere else.
@@ -285,7 +285,7 @@ def spacepilot_install_runtime(runtime_id: str, allow_downgrade: bool = False) -
     Ask the person first — this mutates their Python environment. Refuses when
     the resolution would downgrade something, unless allow_downgrade is set, and
     that flag should only ever be set because a human said so after seeing
-    pluto_preview_runtime_install.
+    spacepilot_preview_runtime_install.
     """
     from spacepilot.pluto import runtimes as rt
     r = rt.runtimes().get(runtime_id)
@@ -350,39 +350,18 @@ def spacepilot_system_summary(system_id: Optional[str] = None) -> dict:
         return {"error": str(exc)}
 
 
-# Direct-import compatibility for one release. These aliases are ordinary
-# Python names, not separately registered MCP tools; clients see only the
-# canonical ``spacepilot_*`` surface above.
-pluto_decompose_storyboard = spacepilot_decompose_storyboard
-pluto_probe_hardware = spacepilot_probe_hardware
-pluto_recommend_models = spacepilot_recommend_models
-pluto_get_local_status = spacepilot_get_local_status
-pluto_create_checkpoint = spacepilot_create_checkpoint
-pluto_list_checkpoints = spacepilot_list_checkpoints
-pluto_restore_checkpoint = spacepilot_restore_checkpoint
-pluto_list_model_recipes = spacepilot_list_model_recipes
-pluto_download_model_recipe = spacepilot_download_model_recipe
-pluto_list_lora_adapters = spacepilot_list_lora_adapters
-pluto_train_lora = spacepilot_train_lora
-pluto_list_runtimes = spacepilot_list_runtimes
-pluto_preview_runtime_install = spacepilot_preview_runtime_install
-pluto_install_runtime = spacepilot_install_runtime
-pluto_check = spacepilot_check
-pluto_measurements = spacepilot_measurements
-pluto_system_summary = spacepilot_system_summary
-
 # Deliberately NOT exposed as tools — each returns a plausible success with nothing
 # behind it, and an agent calling one has no way to tell:
-#   pluto_skypilot_arbitrage: no arbitrage is possible on one 8 vCPU box; the G-family spot quota permits exactly one g6e.2xlarge
-#   pluto_download_model: model_catalog._mock_download_task downloads nothing (TODO(real-download))
-#   pluto_get_billing_usage: no metering, credits or entitlements exist, so there is nothing to report usage against
-#   pluto_verify_agent_payment: same — x402 verification has no ledger behind it
-#   pluto_get_fleet_status: returned a fixed {vram_usage: 0.5, instances: 10, healthy};
+#   spacepilot_skypilot_arbitrage: no arbitrage is possible on one 8 vCPU box; the G-family spot quota permits exactly one g6e.2xlarge
+#   spacepilot_download_model: model_catalog._mock_download_task downloads nothing (TODO(real-download))
+#   spacepilot_get_billing_usage: no metering, credits or entitlements exist, so there is nothing to report usage against
+#   spacepilot_verify_agent_payment: same — x402 verification has no ledger behind it
+#   spacepilot_get_fleet_status: returned a fixed {vram_usage: 0.5, instances: 10, healthy};
 #     there is no fleet, and the one box is usually not running at all
-#   pluto://models/ltx25, pluto://voices/catalogue: hardcoded prose stating a 48GB
+#   legacy model and voice resources: hardcoded prose stating a 48GB
 #     VRAM figure and a voice list as fact, neither read from anything
-#   spacepilot_generate_video_wan, spacepilot_generate_video_hunyuan (and their pluto_*
-#     aliases): on any failure both returned a
+#   spacepilot_generate_video_wan and spacepilot_generate_video_hunyuan: on any
+#     failure both returned a
 #     hardcoded job_id ("wan-12345", "hunyuan-12345") with status "processing" for a job that
 #     was never queued, so the caller polled forever; the non-failing path only ever rendered
 #     an ffmpeg test pattern, because both engines ignore their own mock= argument
@@ -395,5 +374,10 @@ pluto_system_summary = spacepilot_system_summary
 #     never called it. Restore them only by wiring them to it.
 # Restore a tool here only once its implementation is real.
 
-if __name__ == "__main__":
+def main() -> None:
+    """Run SpacePilot's stdio MCP server."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
