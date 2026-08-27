@@ -32,11 +32,11 @@ variants:
       - vocab.json
     backends: [metal]
     download:
-      value: 16085535415
+      value: 16081486965
       source: huggingface-api
       checked: "2026-08-27"
       note: Sum of the ten text-inference files named above; excludes README and vision processor metadata.
     working_set:
       value: 19327352832
       source: estimated
-      note: 16.086 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.
+      note: 16.081 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.

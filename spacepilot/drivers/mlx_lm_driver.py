@@ -104,7 +104,7 @@ class MlxLmDriver(InferenceDriver):
         snapshot, revision = resolved
         cmd = [
             self.python_bin, "-m", "spacepilot.drivers.mlx_lm_runner",
-            "--model", snapshot, "--prompt", prompt, "--output", out_path,
+            "--model", snapshot, "--output", out_path,
             "--max-tokens", str(max_tokens), "--max-kv-size", str(max_kv_size),
             "--temperature", str(temperature),
         ]
@@ -113,7 +113,8 @@ class MlxLmDriver(InferenceDriver):
         env["TRANSFORMERS_OFFLINE"] = "1"
         try:
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout, env=env,
+                cmd, input=prompt, capture_output=True, text=True,
+                timeout=timeout, env=env,
             )
         except subprocess.TimeoutExpired as exc:
             raise MlxLmSubprocessError(

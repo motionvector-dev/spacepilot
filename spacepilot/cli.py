@@ -1193,12 +1193,15 @@ def _cmd_run_transcribe(args, cfg=None) -> int:
 
 
 def _cmd_run_text(args, cfg=None) -> int:
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+    from spacepilot.pluto import runtimes as rt
     from spacepilot.pluto.services.execution import LocalExecutionError
     from spacepilot.pluto.services.text_execution import (
         TextExecutionService, TextRequest, default_text_output,
     )
 
-    service = TextExecutionService()
+    driver = MlxLmDriver(python_bin=rt.interpreter(cfg))
+    service = TextExecutionService(driver=driver)
     try:
         plan = service.plan("text")
     except (ValueError, LocalExecutionError) as exc:
@@ -1495,6 +1498,7 @@ def cmd_runtimes(args, cfg=None) -> int:
     from spacepilot.pluto import runtimes as rt
 
     reg = rt.runtimes()
+    runtime_python = rt.interpreter(cfg)
     action = getattr(args, "runtimes_action", None) or "list"
 
     if action == "list":
@@ -1530,13 +1534,13 @@ def cmd_runtimes(args, cfg=None) -> int:
                 })
             print(json.dumps({
                 "system": {"chip": profile.chip, "backend": backend,
-                           "interpreter": rt.interpreter()},
+                           "interpreter": runtime_python},
                 "runtimes": rows,
             }, indent=2, default=str))
             return 0
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
-              f"· {rt.interpreter()}\n")
+              f"· {runtime_python}\n")
         width = max(11, max(len(_state_of(r, st)) for r, st in checked) + 2)
         print(f"  {'STATE':{width}s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
         for r, st in checked:
@@ -1593,16 +1597,16 @@ def cmd_runtimes(args, cfg=None) -> int:
             print(f"Cannot install {r.name}: {st.python_note}")
             return 1
 
-        argv = rt.install_command(r)
+        argv = rt.install_command(r, py=runtime_python)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
-        print(f"  into       {rt.interpreter()}")
+        print(f"  into       {runtime_python}")
         print(f"  licence    {r.license}")
         if r.notes:
             print(f"  note       {r.notes}")
 
         print("\n  resolving what this would change...")
-        imp = rt.preview(r)
+        imp = rt.preview(r, py=runtime_python)
         if imp.error:
             print(f"  could not resolve: {imp.error}")
             return 1
@@ -1635,7 +1639,7 @@ def cmd_runtimes(args, cfg=None) -> int:
                 return 1
 
         print(f"\n  installing {r.install.package}...")
-        st = rt.install(r)
+        st = rt.install(r, py=runtime_python)
         if st.installed and not st.below_minimum:
             print(f"  {r.name} {st.version} installed and imports cleanly.")
             return 0

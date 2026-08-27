@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -19,12 +20,15 @@ RESULT_PREFIX = "SPACEPILOT_RESULT "
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
-    parser.add_argument("--prompt", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--max-tokens", required=True, type=int)
     parser.add_argument("--max-kv-size", required=True, type=int)
     parser.add_argument("--temperature", required=True, type=float)
     args = parser.parse_args(argv)
+
+    prompt = sys.stdin.read()
+    if not prompt.strip():
+        raise ValueError("prompt on stdin cannot be empty")
 
     from mlx_lm import load, stream_generate
     from mlx_lm.sample_utils import make_sampler
@@ -34,7 +38,6 @@ def main(argv=None) -> int:
     model, tokenizer = load(args.model)
     load_seconds = time.perf_counter() - load_started
 
-    prompt = args.prompt
     if tokenizer.has_chat_template:
         prompt = tokenizer.apply_chat_template(
             [{"role": "user", "content": prompt}], tokenize=False,

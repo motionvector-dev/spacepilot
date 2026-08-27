@@ -77,6 +77,7 @@ def test_registry_has_exact_pinned_qwen_route():
     assert variant.repo == "mlx-community/Qwen3.8-27B-4bit"
     assert variant.revision == "3e6447f082e89cc7f0bc6e5441afd38dfce760ff"
     assert variant.download.source == "huggingface-api"
+    assert variant.download.value == 16_081_486_965
     assert variant.working_set.source == "estimated"
     assert len(variant.files) == 10
     runtime = load_runtimes()["mlx-lm"]
@@ -165,10 +166,31 @@ def test_driver_uses_local_snapshot_offline_and_no_sysctl(tmp_path, monkeypatch)
     argv = seen["argv"]
     assert argv[:3] == ["/fake/python", "-m", "spacepilot.drivers.mlx_lm_runner"]
     assert str(snapshot) in argv
+    assert "hello" not in argv
+    assert seen["kwargs"]["input"] == "hello"
     assert "sysctl" not in " ".join(argv)
     assert seen["kwargs"]["env"]["HF_HUB_OFFLINE"] == "1"
     assert seen["kwargs"]["env"]["TRANSFORMERS_OFFLINE"] == "1"
     assert result["generation_tps"] == 5.0
+
+
+def test_cli_text_uses_the_configured_runtime_interpreter(tmp_path):
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+
+    service = _service(tmp_path, driver=_Driver(ready=False))
+    args = type("Args", (), {
+        "run_workload": "text", "prompt": "hello", "output": str(tmp_path / "x.txt"),
+        "max_tokens": 64, "max_kv_size": 1024, "temperature": 0.0, "yes": False,
+    })()
+    with patch("spacepilot.pluto.services.text_execution.TextExecutionService",
+               return_value=service) as service_cls, \
+         patch("spacepilot.drivers.mlx_lm_driver.MlxLmDriver",
+               wraps=MlxLmDriver) as driver_cls:
+        assert cli.cmd_run(args, {"python_bin": "/configured/python"}) == 1
+    assert driver_cls.call_args.kwargs["python_bin"] == "/configured/python"
+    selected_driver = service_cls.call_args.kwargs["driver"]
+    assert isinstance(selected_driver, MlxLmDriver)
+    assert selected_driver.python_bin == "/configured/python"
 
 
 def test_cli_parser_accepts_safe_text_defaults(tmp_path):

@@ -1729,7 +1729,7 @@
       "metal"
      ],
      "download": {
-      "value": 16085535415.0,
+      "value": 16081486965.0,
       "source": "huggingface-api",
       "checked": "2026-08-27",
       "note": "Sum of the ten text-inference files named above; excludes README and vision processor metadata.",
@@ -1739,7 +1739,7 @@
       "value": 19327352832.0,
       "source": "estimated",
       "checked": null,
-      "note": "16.086 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.",
+      "note": "16.081 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.",
       "is_measured": false
      },
      "license": {

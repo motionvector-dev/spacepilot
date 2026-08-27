@@ -88,6 +88,28 @@ def test_install_command_names_the_interpreter():
     assert argv[-1].startswith("mflux>=")
 
 
+def test_configured_interpreter_wins_over_the_calling_pipx_python(monkeypatch):
+    """A pipx CLI must execute runtimes in the configured ML environment."""
+    from spacepilot.pluto import runtimes as rt
+
+    monkeypatch.delenv("SPACEPILOT_PYTHON", raising=False)
+    monkeypatch.delenv("PLUTO_PYTHON", raising=False)
+    assert rt.interpreter({"python_bin": "/opt/spacepilot/ml/bin/python"}) == \
+        "/opt/spacepilot/ml/bin/python"
+
+
+def test_mlx_lm_install_carries_the_known_good_transformers_constraint():
+    from spacepilot.pluto import runtimes as rt
+
+    runtime = runtimes()["mlx-lm"]
+    assert runtime.install.constraints == ["transformers>=5.12.1,<5.13"]
+    argv = rt.install_command(runtime, py="/tmp/python")
+    assert argv == [
+        "/tmp/python", "-m", "pip", "install", "mlx-lm>=0.31.3",
+        "transformers>=5.12.1,<5.13",
+    ]
+
+
 def test_unknown_backend_is_rejected():
     bad = {
         "schema": 1, "id": "x", "name": "X", "summary": "s", "license": "MIT",
