@@ -1,0 +1,29 @@
+schema: 1
+id: stable-audio
+name: Stable Audio Open
+family: stability-ai
+kind: audio
+summary: Fast text-to-audio and sound effect synthesis model generating variable-length audio stems.
+homepage: https://huggingface.co/stabilityai/stable-audio-open-1.0
+
+license:
+  id: stability-community
+  spdx: LicenseRef-Stability-Community
+  open_source: true
+  url: https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/LICENSE.md
+
+variants:
+  - id: stable-audio-open-1-0
+    name: Stable Audio Open 1.0
+    params: 1B
+    precision: fp16
+    repo: stabilityai/stable-audio-open-1.0
+    backends: [metal, cuda, cpu]
+    download:
+      value: 3221225472
+      source: estimated
+      note: "Full 1B parameter checkpoint and autoencoder weights"
+    working_set:
+      value: 3758096384
+      source: estimated
+      note: "Continuous-time diffusion transformer working set resident during audio synthesis"

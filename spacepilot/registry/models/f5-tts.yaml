@@ -1,0 +1,29 @@
+schema: 1
+id: f5-tts
+name: F5-TTS
+family: shanghai-ai
+kind: speech
+summary: Zero-shot voice cloning and text-to-speech built with Flow Matching Diffusion Transformers.
+homepage: https://huggingface.co/SWivid/F5-TTS
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: f5-tts-base
+    name: F5-TTS Base
+    params: 380M
+    precision: fp16
+    repo: SWivid/F5-TTS
+    backends: [metal, cuda, cpu]
+    download:
+      value: 1610612736
+      source: estimated
+      note: "F5-TTS base checkpoint and vocoder weights"
+    working_set:
+      value: 2147483648
+      source: estimated
+      note: "Flow matching DiT weights resident plus Mel spectrogram generation buffers"

@@ -1,0 +1,44 @@
+schema: 1
+id: stable-diffusion-3-5
+name: Stable Diffusion 3.5
+family: stability-ai
+kind: image
+summary: Multimodal Diffusion Transformer (MMDiT) with improved prompt adherence, typography, and aesthetic fidelity.
+homepage: https://huggingface.co/stabilityai/stable-diffusion-3.5-medium
+
+license:
+  id: stability-community
+  spdx: LicenseRef-Stability-Community
+  open_source: true
+  url: https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md
+
+variants:
+  - id: sd-3-5-medium
+    name: Stable Diffusion 3.5 Medium (2.5B)
+    params: 2.5B
+    precision: fp16
+    repo: stabilityai/stable-diffusion-3.5-medium
+    backends: [metal, cuda]
+    download:
+      value: 5905580032
+      source: estimated
+      note: "MMDiT 2.5B parameter base weights and text encoders"
+    working_set:
+      value: 6442450944
+      source: estimated
+      note: "MMDiT transformer working set resident during image synthesis (~6.0 GB VRAM)"
+
+  - id: sd-3-5-large-fp8
+    name: Stable Diffusion 3.5 Large (8B FP8)
+    params: 8B
+    precision: fp8
+    repo: stabilityai/stable-diffusion-3.5-large-turbo
+    backends: [metal, cuda]
+    download:
+      value: 9663676416
+      source: estimated
+      note: "8B MMDiT transformer quantized in FP8 format"
+    working_set:
+      value: 13421772800
+      source: estimated
+      note: "FP8 quantized MMDiT working set resident during generation (~12.5 GB VRAM)"

@@ -1,0 +1,29 @@
+schema: 1
+id: minimax-music
+name: MiniMax Music 3.0
+family: minimax
+kind: audio
+summary: End-to-end music and vocal generation model with local MLX inference support on Apple Silicon.
+homepage: https://huggingface.co/MiniMaxAI/MiniMax-Music3
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: minimax-music3-mlx-8bit
+    name: MiniMax Music 3.0 (MLX 8-bit)
+    params: 11B
+    precision: int8
+    repo: ddalcu/MiniMax-Music3-MLX-Serve-8bit
+    backends: [metal]
+    download:
+      value: 12000000000
+      source: estimated
+      note: "8-bit quantized weights and vocoder for local MLX serving"
+    working_set:
+      value: 11811160064
+      source: estimated
+      note: "Quantized weights plus audio generation buffer for local mlx-serve resident runner (~11 GB VRAM)"
