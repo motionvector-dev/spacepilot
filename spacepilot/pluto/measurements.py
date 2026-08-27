@@ -42,7 +42,9 @@ import hashlib
 import os
 import platform
 import re
+import shutil
 import statistics
+import subprocess
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
@@ -111,6 +113,72 @@ _LOAD_PER_CORE_IDLE = 0.4
 # sampling to be meaningful and short enough not to matter next to the runs
 # it brackets, which are seconds to minutes.
 _CONTENTION_SAMPLE_SECONDS = 0.15
+
+# NVIDIA reports both counters in real time through nvidia-smi.  A non-zero
+# allocation is not automatically contention: an idle resident model is a
+# readiness fact, not proof that it is competing with this run.  Sustained
+# compute use is, and a nearly-full device is conservatively treated as busy
+# because it can prevent an otherwise feasible run from allocating.
+_NVIDIA_GPU_BUSY_PERCENT = 5.0
+_NVIDIA_GPU_MEMORY_PRESSURE = 0.90
+
+
+def _nvidia_gpu_contention() -> Optional[str]:
+    """Return CUDA host contention, or ``None`` where it cannot be probed.
+
+    The result is deliberately a host-level guard rather than an attribution
+    claim: nvidia-smi cannot tell this caller which GPU a future subprocess
+    will select.  Seeing *any* accessible GPU busy therefore marks the sample
+    ``loaded`` conservatively; seeing all of them quiet only supplements the
+    CPU reading.  No nvidia-smi is normal on Metal, ROCm, and CPU-only hosts,
+    so absence is ``None`` rather than a fabricated GPU-idle observation.
+
+    A present but failed or malformed nvidia-smi response is ``unknown``.  It
+    must not turn an unobservable accelerator into a clean ``solo`` sample.
+    """
+    executable = shutil.which("nvidia-smi")
+    if executable is None:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                executable,
+                "--query-gpu=utilization.gpu,memory.used,memory.total",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2.0,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+    if result.returncode != 0:
+        return "unknown"
+
+    rows = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not rows:
+        return "unknown"
+    try:
+        samples = []
+        for row in rows:
+            utilization, used_mib, total_mib = (part.strip() for part in row.split(","))
+            used = float(used_mib)
+            total = float(total_mib)
+            if total <= 0:
+                return "unknown"
+            samples.append((float(utilization), used / total))
+    except (TypeError, ValueError):
+        return "unknown"
+    return (
+        "loaded"
+        if any(
+            utilization > _NVIDIA_GPU_BUSY_PERCENT
+            or memory_ratio >= _NVIDIA_GPU_MEMORY_PRESSURE
+            for utilization, memory_ratio in samples
+        )
+        else "solo"
+    )
 
 
 class MeasurementError(ValueError):
@@ -290,11 +358,12 @@ def sample_contention(
     what makes a measurement of that work `loaded`. See `_LOAD_PER_CORE_IDLE`
     for why this replaced a plain load-average check.
 
-    This still says nothing about GPU or memory contention, so it can call a
-    GPU-saturated box `solo` if nothing else is fighting for CPU. That is the
-    same limitation the load-average version had; a wrong answer here
-    degrades a sample rather than a conclusion, because summaries report the
-    two streams separately and never merge them.
+    On NVIDIA hosts it also samples instantaneous device utilization and
+    memory pressure through nvidia-smi.  That is host-level rather than
+    process-attributed telemetry, so any busy accessible GPU conservatively
+    marks the sample loaded; Metal and ROCm remain explicitly unobserved by
+    this sampler until their native telemetry adapters exist.  A probe error
+    is unknown, not a made-up GPU-idle reading.
 
     `profile` is accepted and ignored — kept for call-site compatibility; it
     was never read even before this fix. `own_pids` overrides what counts as
@@ -303,14 +372,23 @@ def sample_contention(
     that is actually outside CI's own process tree.
     """
     if psutil is None:
+        cpu_state = "unknown"
+    else:
+        cores = os.cpu_count() or 1
+        pids = own_pids if own_pids is not None else _own_tree_pids()
+        external = _external_cpu_percent(pids, interval)
+        if external is None:
+            cpu_state = "unknown"
+        else:
+            external_load_per_core = (external / 100.0) / cores
+            cpu_state = "solo" if external_load_per_core <= _LOAD_PER_CORE_IDLE else "loaded"
+
+    gpu_state = _nvidia_gpu_contention()
+    if "unknown" in {cpu_state, gpu_state}:
         return "unknown"
-    cores = os.cpu_count() or 1
-    pids = own_pids if own_pids is not None else _own_tree_pids()
-    external = _external_cpu_percent(pids, interval)
-    if external is None:
-        return "unknown"
-    external_load_per_core = (external / 100.0) / cores
-    return "solo" if external_load_per_core <= _LOAD_PER_CORE_IDLE else "loaded"
+    if "loaded" in {cpu_state, gpu_state}:
+        return "loaded"
+    return "solo"
 
 
 def system_id_for(profile: Any) -> str:

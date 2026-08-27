@@ -214,6 +214,7 @@ def test_our_own_heavy_work_can_record_solo(monkeypatch):
 
     monkeypatch.setattr(ms.psutil, "process_iter",
                          lambda *a, **k: _own_and_external(own_cpu=800.0, external_cpu=2.0))
+    monkeypatch.setattr(ms, "_nvidia_gpu_contention", lambda: None)
     state = sample_contention(own_pids={1}, interval=0.0)
     assert state == "solo", (
         "CPU attributed to our own process tree was counted as contention — "
@@ -233,9 +234,40 @@ def test_a_genuine_competitor_mid_run_still_reads_loaded(monkeypatch):
 
     monkeypatch.setattr(ms.psutil, "process_iter",
                          lambda *a, **k: _own_and_external(own_cpu=800.0, external_cpu=2.0))
+    monkeypatch.setattr(ms, "_nvidia_gpu_contention", lambda: None)
     # pid 1 (the heavy one) is deliberately absent from own_pids here.
     state = sample_contention(own_pids={os.getpid()}, interval=0.0)
     assert state == "loaded"
+
+
+def test_busy_cuda_device_prevents_a_false_solo_label(monkeypatch):
+    """CPU-idle cannot certify a CUDA run is uncontended.
+
+    This regression fails against the original CPU-only sampler: its mocked
+    process list reports no external CPU work and it returns ``solo`` even
+    though the injected CUDA probe observed a competing GPU workload.
+    """
+    import spacepilot.pluto.measurements as ms
+
+    monkeypatch.setattr(ms.psutil, "process_iter",
+                         lambda *a, **k: _own_and_external(own_cpu=800.0, external_cpu=2.0))
+    monkeypatch.setattr(ms, "_nvidia_gpu_contention", lambda: "loaded", raising=False)
+
+    assert sample_contention(own_pids={1}, interval=0.0) == "loaded"
+
+
+def test_nvidia_probe_uses_compute_or_memory_pressure(monkeypatch):
+    """The probe is entirely fixture-driven; it never needs an actual GPU."""
+    import spacepilot.pluto.measurements as ms
+
+    class _Completed:
+        returncode = 0
+        stdout = "2, 24500, 24576\\n"
+
+    monkeypatch.setattr(ms.shutil, "which", lambda name: "/mock/nvidia-smi")
+    monkeypatch.setattr(ms.subprocess, "run", lambda *args, **kwargs: _Completed())
+
+    assert ms._nvidia_gpu_contention() == "loaded"
 
 
 def test_a_failed_measurement_is_excluded_from_the_speed_summary(system, tmp_path):
