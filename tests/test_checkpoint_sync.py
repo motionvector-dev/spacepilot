@@ -3,7 +3,11 @@ import pytest
 from fastapi.testclient import TestClient
 from spacepilot.pluto.app import create_app
 from spacepilot.pluto.services.checkpoint_sync import CheckpointSyncEngine
-from spacepilot.pluto_mcp_server import pluto_create_checkpoint, pluto_list_checkpoints, pluto_restore_checkpoint
+from spacepilot.pluto_mcp_server import (
+    spacepilot_create_checkpoint,
+    spacepilot_list_checkpoints,
+    spacepilot_restore_checkpoint,
+)
 
 @pytest.fixture(autouse=True)
 def reset_engine():
@@ -95,15 +99,15 @@ def test_api_auth_gate(client, method, endpoint, payload):
     assert resp.status_code == 401
 
 def test_mcp_tools(reset_engine):
-    res_create = pluto_create_checkpoint("mcp-job", 50, 1, 0.2, [])
+    res_create = spacepilot_create_checkpoint("mcp-job", 50, 1, 0.2, [])
     assert res_create["status"] == "success"
     snap_id = res_create["snapshot"]["snapshot_id"]
     
-    res_list = pluto_list_checkpoints("mcp-job")
+    res_list = spacepilot_list_checkpoints("mcp-job")
     assert res_list["status"] == "success"
     assert len(res_list["snapshots"]) == 1
     
-    res_restore = pluto_restore_checkpoint(snap_id)
+    res_restore = spacepilot_restore_checkpoint(snap_id)
     assert res_restore["status"] == "success"
 
 def test_edge_cases(client):

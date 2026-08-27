@@ -1,9 +1,9 @@
 ---
-name: pluto-studio-design-system
+name: spacepilot-design-system
 version: 2.5.0   # unverified — no dated record of when this was set; do not bump without evidence
 author: Antigravity Team
 description: |
-  Comprehensive design system specification for Pluto Studio + MotionVector.
+  Comprehensive design system specification for SpacePilot + MotionVector.
   Inspired by Cardboard (usecardboard.com), Diffusion Studio, DaVinci Resolve 19,
   Adobe Premiere Pro, Descript, and Linear/Claude Design Systems.
 
@@ -79,7 +79,7 @@ tokens:
     desktop: ">= 1024px"
 ---
 
-# Pluto Studio Design System (DESIGN.md)
+# SpacePilot Design System (DESIGN.md)
 
 **Status**: Current
 **Verified**: 2026-08-22 (`version: 2.5.0` above is unverified — no dated record of when it was set)

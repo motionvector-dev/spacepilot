@@ -60,9 +60,3 @@ def test_check_alias_dispatches_to_doctor_with_resolved_output_mode(argv):
     ) as doctor:
         assert cli.main(argv) == 0
     assert doctor.call_args.args[0].output_mode == "plain"
-
-
-def test_pluto_wrapper_warns_and_preserves_main_exit_code(capsys):
-    with patch("spacepilot.cli.main", return_value=7):
-        assert cli.pluto_main() == 7
-    assert capsys.readouterr().err.strip() == "pluto is deprecated; use spacepilot"

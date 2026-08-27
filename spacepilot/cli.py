@@ -2244,14 +2244,8 @@ def main(argv: list[str] | None = None):
         return 2
     # Return the handler's status. This used to be discarded, so every command
     # exited 0 — including ones that had just printed a refusal or an error,
-    # which made pluto unusable from a script or a CI step.
+    # which made SpacePilot unusable from a script or a CI step.
     return handler(args, cfg) or 0
-
-
-def pluto_main() -> int:
-    """Compatibility executable retained for one deprecation window."""
-    print("pluto is deprecated; use spacepilot", file=sys.stderr)
-    return main()
 
 
 if __name__ == "__main__":

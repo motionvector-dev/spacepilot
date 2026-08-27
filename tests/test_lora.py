@@ -77,10 +77,13 @@ def test_lora_validation(client, auth_headers):
     assert resp.status_code == 422
 
 def test_mcp_tools():
-    from spacepilot.pluto_mcp_server import pluto_train_lora, pluto_list_lora_adapters
+    from spacepilot.pluto_mcp_server import (
+        spacepilot_list_lora_adapters,
+        spacepilot_train_lora,
+    )
     
     # Train
-    job_res = pluto_train_lora(
+    job_res = spacepilot_train_lora(
         name="MCPStyle",
         base_model="ltx-video",
         image_paths=["/tmp/a.jpg"],
@@ -91,5 +94,5 @@ def test_mcp_tools():
     assert "not implemented" in job_res.get("message", "").lower()
 
     # List
-    list_res = pluto_list_lora_adapters()
+    list_res = spacepilot_list_lora_adapters()
     assert "adapters" in list_res

@@ -6,9 +6,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 from spacepilot.pluto_mcp_server import (
     mcp,
-    pluto_decompose_storyboard,
-    pluto_list_model_recipes,
     spacepilot_decompose_storyboard,
+    spacepilot_list_model_recipes,
 )
 
 # Five tools used to live here as one-line stubs: generate_video, extend_video,
@@ -26,7 +25,7 @@ FABRICATORS = {
 }
 
 
-def test_mcp_registers_only_spacepilot_names_but_keeps_python_pluto_aliases():
+def test_mcp_registers_only_spacepilot_names():
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
     assert names
@@ -35,7 +34,6 @@ def test_mcp_registers_only_spacepilot_names_but_keeps_python_pluto_aliases():
     assert "spacepilot_check" in names
     assert "spacepilot_measurements" in names
     assert "spacepilot_system_summary" in names
-    assert pluto_decompose_storyboard is spacepilot_decompose_storyboard
 
 
 def test_no_tool_returns_a_job_id_for_work_it_never_started():
@@ -57,14 +55,14 @@ def test_no_tool_returns_a_job_id_for_work_it_never_started():
         assert not hasattr(server, alias), f"{alias} alias survives the removal"
 
 
-def test_pluto_decompose_storyboard():
-    result = pluto_decompose_storyboard(script="Cosmic voyage across the multiverse", scene_count=6)
+def test_spacepilot_decompose_storyboard():
+    result = spacepilot_decompose_storyboard(script="Cosmic voyage across the multiverse", scene_count=6)
     assert result["status"] == "success"
     assert len(result["scenes"]) == 6
 
 
 def test_model_recipes_mcp_carries_caveats():
-    result = pluto_list_model_recipes()
+    result = spacepilot_list_model_recipes()
     assert result["status"] == "success"
     distil = next(r for r in result["recipes"] if r["recipe_id"] == "distil-large-v3-ggml")
     assert distil["caveats"][0]["capability"] == "audio.transcription"

@@ -150,7 +150,7 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 ## Directory Layout
 
 ```
-bin/pluto                       CLI launcher & command router
+spacepilot/cli.py               CLI command router
 src/
 ├── web_api.py               SpacePilot Studio FastAPI server & web UI router
 ├── pluto_mcp_server.py         Native FastMCP tool server

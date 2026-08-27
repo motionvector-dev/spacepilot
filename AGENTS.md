@@ -1,4 +1,4 @@
-# Working in pluto
+# Working in SpacePilot
 
 Cross-tool agent instructions. `CLAUDE.md` is a symlink to this file, so Claude
 Code, Codex, Cursor, Copilot, Antigravity and the rest all read the same rules.
@@ -9,15 +9,15 @@ Edit this file, never the symlink.
 The repo carries no `.venv`, and bare `python3` is usually the wrong
 interpreter — on the primary dev machine it resolves to base conda, which lacks
 fastapi. Use the environment where `requirements.txt` was installed, or set
-`PLUTO_PYTHON` / `python_bin` in `.pluto_config.json` (gitignored, machine-local)
+`SPACEPILOT_PYTHON` / `python_bin` in `.spacepilot_config.json` (gitignored, machine-local)
 and let the CLI resolve it. Anything that imports `spacepilot/web_api.py` —
 including pytest — needs that interpreter.
 
 mflux (`spacepilot/drivers/mflux_driver.py`) is a second, separate interpreter on
 purpose: installing mflux into the repo env downgrades opencv-python from 5.0
 to 4.14, so it lives in its own conda env and is only ever invoked as a
-subprocess, never imported. Point the driver at it with `PLUTO_MFLUX_BIN` or
-`"mflux_bin_dir"` in `.pluto_config.json` — the bin/ directory of that env
+subprocess, never imported. Point the driver at it with `SPACEPILOT_MFLUX_BIN` or
+`"mflux_bin_dir"` in `.spacepilot_config.json` — the bin/ directory of that env
 (default guess: `~/miniconda3/envs/mflux/bin`).
 
 ## Secrets
@@ -26,7 +26,7 @@ Doppler, project `unfoundbox`, config `dev_personal`, scoped at `~/code`. Prefix
 with `doppler run --`. Never write secrets into `.env`, into code, or into a
 command line that lands in a process list or shell history.
 
-`LOCAL_WORKER_TOKEN` is required: the worker exits without it and `pluto launch`
+`LOCAL_WORKER_TOKEN` is required: the worker exits without it and `spacepilot launch`
 refuses to start a billing instance it could not deploy to.
 
 ## Tests
@@ -35,7 +35,7 @@ refuses to start a billing instance it could not deploy to.
 python -m pytest tests/ -q
 ```
 
-`tests/conftest.py` redirects `PLUTO_OUTPUTS_DIR` to a temp dir before
+`tests/conftest.py` redirects `SPACEPILOT_OUTPUTS_DIR` to a temp dir before
 `spacepilot.web_api` is imported. Keep it that way — the suite used to write
 generated clips into the real asset library on every run.
 
@@ -45,8 +45,8 @@ believing it.
 
 ## Money and hardware
 
-`pluto launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour that
-bills until terminated. Never launch one to check something; `pluto status`
+`spacepilot launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour that
+bills until terminated. Never launch one to check something; `spacepilot status`
 answers most questions for free.
 
 **Account 842954813809, profile `antigravity-dev-user`, region `us-east-1`.**
@@ -97,7 +97,7 @@ mid-edit.
 
 ## Conventions
 
-Every endpoint that spends compute or money takes `X-Pluto-Token` via the
+Every endpoint that spends compute or money takes `X-SpacePilot-Token` via the
 `require_token` dependency. Read-only routes stay open. Adding a compute route
 without the dependency is a bug; `test_compute_endpoints_all_require_the_token`
 walks the list and will fail.

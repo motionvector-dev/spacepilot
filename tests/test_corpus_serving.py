@@ -79,14 +79,14 @@ def test_corrupt_measurements_are_a_503_not_a_plausible_empty_corpus(monkeypatch
 
 def test_mcp_corpus_tools_filter_exact_ids_and_preserve_caveats(monkeypatch):
     _fixture_corpus(monkeypatch)
-    from spacepilot.pluto_mcp_server import pluto_measurements, pluto_system_summary
+    from spacepilot.pluto_mcp_server import spacepilot_measurements, spacepilot_system_summary
 
-    rows = pluto_measurements("distil-large-v3-ggml")["measurements"]
+    rows = spacepilot_measurements("distil-large-v3-ggml")["measurements"]
     assert len(rows) == 2
     assert rows[0]["caveats"][0]["capability"] == "audio.transcription"
-    assert pluto_measurements("not-a-variant")["measurements"] == []
+    assert spacepilot_measurements("not-a-variant")["measurements"] == []
 
-    summaries = pluto_system_summary("test-system")["summaries"]
+    summaries = spacepilot_system_summary("test-system")["summaries"]
     assert len(summaries) == 1
     assert summaries[0]["variant_id"] == "distil-large-v3-ggml"
     assert summaries[0]["caveats"][0]["status"] == "preserved"
@@ -95,12 +95,12 @@ def test_mcp_corpus_tools_filter_exact_ids_and_preserve_caveats(monkeypatch):
 def test_mcp_check_is_a_read_only_probe_with_local_summary(monkeypatch):
     _fixture_corpus(monkeypatch)
     from spacepilot.device_probe import DeviceProfile
-    from spacepilot.pluto_mcp_server import pluto_check
+    from spacepilot.pluto_mcp_server import spacepilot_check
 
     profile = DeviceProfile(chip="Test Chip", backend="cpu", memory_total_bytes=8 * 1024 ** 3)
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", lambda: profile)
 
-    result = pluto_check()
+    result = spacepilot_check()
     assert result["profile"]["chip"] == "Test Chip"
     assert result["system"]["id"] == "test-chip-8gb"
     # The fixture's records are another system class; check does not pretend
