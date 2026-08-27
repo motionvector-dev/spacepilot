@@ -1055,6 +1055,32 @@ def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = N
     return lines
 
 
+def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
+                                max_kv_size: int, temperature: float) -> list[str]:
+    """All material facts shown before a large local text-model allocation."""
+    from spacepilot.pluto.services.provenance import format_local_speed
+
+    lines = [f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE"]
+    for candidate in plan.candidates:
+        lines.append(
+            f"  {candidate.variant.id:27s} {_verdict_fit_text(candidate.verdict)} · "
+            f"{format_local_speed(candidate.speed)} · {candidate.route_detail}")
+    selected = plan.selected
+    if selected is None:
+        lines.append("\n  No safe local route is available; nothing can execute.")
+    else:
+        lines.extend([
+            f"\n  selected   {selected.variant.id} via mlx-lm",
+            f"  output     {output}",
+            f"  bounds     max {max_tokens} output tokens · max {max_kv_size} KV tokens",
+            f"  sampling   temperature {temperature}",
+            "  memory     working set is an estimate, not a measured peak or ceiling",
+            "  network    disabled; only the exact pinned local snapshot may load",
+            "  system     one-shot child process; no iogpu.wired_limit_mb change",
+        ])
+    return lines
+
+
 def _confirm_run(args) -> bool:
     """The shared execute gate: --yes, or an interactive yes on a real tty."""
     if getattr(args, "yes", False):
@@ -1166,6 +1192,51 @@ def _cmd_run_transcribe(args, cfg=None) -> int:
     return 0
 
 
+def _cmd_run_text(args, cfg=None) -> int:
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+    from spacepilot.pluto import runtimes as rt
+    from spacepilot.pluto.services.execution import LocalExecutionError
+    from spacepilot.pluto.services.text_execution import (
+        TextExecutionService, TextRequest, default_text_output,
+    )
+
+    driver = MlxLmDriver(python_bin=rt.interpreter(cfg))
+    service = TextExecutionService(driver=driver)
+    try:
+        plan = service.plan("text")
+    except (ValueError, LocalExecutionError) as exc:
+        print(f"  Cannot plan run: {exc}")
+        return 1
+    output_arg = getattr(args, "output", None)
+    output = Path(output_arg).expanduser().resolve() if output_arg else default_text_output()
+    print("\n".join(text_run_confirmation_lines(
+        plan, output, max_tokens=args.max_tokens,
+        max_kv_size=args.max_kv_size, temperature=args.temperature,
+    )))
+    if plan.selected is None:
+        return 1
+    if not _confirm_run(args):
+        return 1
+    try:
+        result = service.execute(plan, TextRequest(
+            workload="text", prompt=args.prompt, output=output,
+            max_tokens=args.max_tokens, max_kv_size=args.max_kv_size,
+            temperature=args.temperature,
+        ))
+    except Exception as exc:
+        print(f"\n  Run failed: {exc}")
+        return 1
+    print(f"\n  completed   {result.variant_id}")
+    print(f"  artifact    {result.output}")
+    print(f"  wall        {result.wall_seconds:.3f}s ({result.load_seconds:.3f}s load)")
+    print(f"  tokens      {result.prompt_tokens} prompt + {result.generation_tokens} generated")
+    print(f"  speed       {result.generation_tps:.3f} tokens/s")
+    print(f"  peak memory {result.peak_memory_gb:.3f} GB (reported by MLX-LM)")
+    print(f"  measured    {result.measurement_path}")
+    print(f"  revision    {result.resolved_revision or 'unknown'}")
+    return 0
+
+
 def cmd_run(args, cfg=None) -> int:
     """Plan, confirm and execute one real local workload."""
     from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
@@ -1178,6 +1249,8 @@ def cmd_run(args, cfg=None) -> int:
         return _cmd_run_speech(args, cfg)
     if workload == "transcribe":
         return _cmd_run_transcribe(args, cfg)
+    if workload == "text":
+        return _cmd_run_text(args, cfg)
     service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
     try:
         plan = service.plan(workload)
@@ -1425,6 +1498,7 @@ def cmd_runtimes(args, cfg=None) -> int:
     from spacepilot.pluto import runtimes as rt
 
     reg = rt.runtimes()
+    runtime_python = rt.interpreter(cfg)
     action = getattr(args, "runtimes_action", None) or "list"
 
     if action == "list":
@@ -1460,13 +1534,13 @@ def cmd_runtimes(args, cfg=None) -> int:
                 })
             print(json.dumps({
                 "system": {"chip": profile.chip, "backend": backend,
-                           "interpreter": rt.interpreter()},
+                           "interpreter": runtime_python},
                 "runtimes": rows,
             }, indent=2, default=str))
             return 0
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
-              f"· {rt.interpreter()}\n")
+              f"· {runtime_python}\n")
         width = max(11, max(len(_state_of(r, st)) for r, st in checked) + 2)
         print(f"  {'STATE':{width}s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
         for r, st in checked:
@@ -1523,16 +1597,16 @@ def cmd_runtimes(args, cfg=None) -> int:
             print(f"Cannot install {r.name}: {st.python_note}")
             return 1
 
-        argv = rt.install_command(r)
+        argv = rt.install_command(r, py=runtime_python)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
-        print(f"  into       {rt.interpreter()}")
+        print(f"  into       {runtime_python}")
         print(f"  licence    {r.license}")
         if r.notes:
             print(f"  note       {r.notes}")
 
         print("\n  resolving what this would change...")
-        imp = rt.preview(r)
+        imp = rt.preview(r, py=runtime_python)
         if imp.error:
             print(f"  could not resolve: {imp.error}")
             return 1
@@ -1565,7 +1639,7 @@ def cmd_runtimes(args, cfg=None) -> int:
                 return 1
 
         print(f"\n  installing {r.install.package}...")
-        st = rt.install(r)
+        st = rt.install(r, py=runtime_python)
         if st.installed and not st.below_minimum:
             print(f"  {r.name} {st.version} installed and imports cleanly.")
             return 0
@@ -2039,6 +2113,19 @@ def main(argv: list[str] | None = None):
                         help="Output transcript path (.txt)")
     run_tr.add_argument("--yes", action="store_true",
                         help="Execute after printing the plan")
+    run_text = run_sub.add_parser(
+        "text", help="Generate text through the conservative pinned MLX-LM route")
+    run_text.add_argument("--prompt", required=True, help="Prompt for the model")
+    run_text.add_argument("--output", "--out", "-o", dest="output", default=None,
+                          help="Output text path (.txt)")
+    run_text.add_argument("--max-tokens", type=int, default=256,
+                          help="Maximum generated tokens (safe route limit: 256)")
+    run_text.add_argument("--max-kv-size", type=int, default=4096,
+                          help="Maximum KV-cache tokens (safe route limit: 4096)")
+    run_text.add_argument("--temperature", type=float, default=0.0,
+                          help="Sampling temperature, 0.0..2.0 (default 0)")
+    run_text.add_argument("--yes", action="store_true",
+                          help="Execute after printing the plan")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")

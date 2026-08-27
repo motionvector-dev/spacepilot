@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-26",
+ "generated": "2026-08-27",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1669,6 +1669,77 @@
       "source": "estimated",
       "checked": null,
       "note": "weights plus KV cache at a short context; long contexts cost considerably more",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "qwen3-8",
+   "name": "Qwen3.8",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Large local Qwen text generation, initially exposed through one conservative MLX route.",
+   "homepage": "https://huggingface.co/mlx-community/Qwen3.8-27B-4bit",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-8-27b-4bit",
+     "model_id": "qwen3-8",
+     "name": "Qwen3.8 27B 4-bit (MLX)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "27B",
+     "precision": "4bit",
+     "repo": "mlx-community/Qwen3.8-27B-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00003.safetensors",
+      "model-00002-of-00003.safetensors",
+      "model-00003-of-00003.safetensors",
+      "model.safetensors.index.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.json"
+     ],
+     "revision": "3e6447f082e89cc7f0bc6e5441afd38dfce760ff",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 16081486965.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-27",
+      "note": "Sum of the ten text-inference files named above; excludes README and vision processor metadata.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 19327352832.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "16.081 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.",
       "is_measured": false
      },
      "license": {

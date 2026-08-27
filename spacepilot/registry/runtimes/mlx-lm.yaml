@@ -1,0 +1,31 @@
+schema: 1
+id: mlx-lm
+name: MLX-LM
+summary: Apple-silicon text generation using MLX and local Hugging Face snapshots.
+homepage: https://github.com/ml-explore/mlx-lm
+serves: [text]
+backends: [metal]
+license: MIT
+
+install:
+  method: pip
+  package: mlx-lm
+  min_version: "0.31.3"
+  constraints:
+    - "transformers>=5.12.1,<5.13"
+  checked: "2026-08-27"
+python_requires: ">=3.9"
+
+verify:
+  import: mlx_lm
+
+runs:
+  - qwen3-8
+notes: >
+  The first SpacePilot route is intentionally one-shot and bounded. It consumes
+  only a pinned local snapshot, caps output and KV cache size, and does not
+  change macOS iogpu.wired_limit_mb.
+  Transformers is capped below 5.13 because mlx-lm 0.31.3 passes a string to
+  AutoTokenizer.register and fails during import on 5.13; upstream fixed it
+  after the 0.31.3 release. Remove the cap only after a fixed mlx-lm release is
+  checked here.

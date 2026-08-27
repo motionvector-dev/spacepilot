@@ -48,6 +48,7 @@ class Install:
     package: str
     min_version: Optional[str] = None
     checked: Optional[str] = None
+    constraints: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -115,6 +116,7 @@ def parse_runtime(raw: Dict[str, Any], where: str) -> Runtime:
             package=str(_req(inst, "package", f"{where}.install")),
             min_version=inst.get("min_version"),
             checked=inst.get("checked"),
+            constraints=list(inst.get("constraints") or []),
         ),
         verify_import=str(imp),
         python_requires=raw.get("python_requires"),
@@ -154,14 +156,19 @@ def runtimes() -> Dict[str, Runtime]:
 
 # ------------------------------------------------------------------- status
 
-def interpreter() -> str:
+def interpreter(cfg: Optional[Dict[str, Any]] = None) -> str:
     """The interpreter this project runs under.
 
     A runtime installed into some other Python is not installed as far as this
     project is concerned, so every check and every install names it explicitly.
     """
     from spacepilot.paths import env_value
-    return env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON") or sys.executable
+    configured = (cfg or {}).get("python_bin")
+    return (
+        env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON")
+        or (str(configured) if configured else None)
+        or sys.executable
+    )
 
 
 def python_ok(r: Runtime, py: Optional[str] = None) -> tuple[bool, str]:
@@ -287,7 +294,7 @@ def check(r: Runtime, py: Optional[str] = None,
     in its own environment (see `external_binary`) counts as installed when
     its CLI resolves, because that is the route the drivers actually run.
     """
-    py = py or interpreter()
+    py = py or interpreter(cfg)
     compatible, note = python_ok(r, py)
 
     probe = _version_probe(r)
@@ -343,20 +350,26 @@ class Impact:
                 "is_disruptive": self.is_disruptive}
 
 
+def _install_specs(r: Runtime) -> List[str]:
+    spec = r.install.package
+    if r.install.min_version:
+        spec = f"{spec}>={r.install.min_version}"
+    return [spec, *r.install.constraints]
+
+
 def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
     """Resolve the install without performing it, and diff against what is here."""
     import json
     import tempfile
 
     py = py or interpreter()
-    spec = r.install.package
-    if r.install.min_version:
-        spec = f"{spec}>={r.install.min_version}"
+    specs = _install_specs(r)
 
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
         report = fh.name
     proc = subprocess.run(
-        [py, "-m", "pip", "install", "--dry-run", "--quiet", "--report", report, spec],
+        [py, "-m", "pip", "install", "--dry-run", "--quiet", "--report", report,
+         *specs],
         capture_output=True, text=True, timeout=timeout,
     )
     if proc.returncode != 0:
@@ -402,10 +415,7 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
 def install_command(r: Runtime, py: Optional[str] = None) -> List[str]:
     """The exact argv that would run. Callers show this before running it."""
-    spec = r.install.package
-    if r.install.min_version:
-        spec = f"{spec}>={r.install.min_version}"
-    return [py or interpreter(), "-m", "pip", "install", spec]
+    return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
 
 
 def install(r: Runtime, py: Optional[str] = None, timeout: int = 900) -> Status:
