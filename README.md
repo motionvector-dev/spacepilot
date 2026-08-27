@@ -12,8 +12,12 @@
 
 ## First run
 
+The canonical install, upgrade, runtime, Qwen text, and MCP instructions live
+in [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). Keep one pipx control-plane
+installation; inference runtimes use separately configured interpreters.
+
 ```bash
-pip install -e .                                  # into an env with Python 3.10+
+pipx install --force .                            # install or replace one CLI
 spacepilot probe                                  # what this machine can run
 spacepilot models                                 # which models run here
 spacepilot run image --prompt "a red lighthouse" --yes
