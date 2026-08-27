@@ -217,6 +217,30 @@ def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
     assert all(result["gpu_online"] is False for result in results)
 
 
+def test_cockpit_status_uses_the_single_flight_aws_snapshot(monkeypatch):
+    """A cockpit poll burst must not bypass the shared AWS status cache."""
+    import spacepilot.web_api as web_api
+    from spacepilot.pluto.api.routes import gpu as gpu_routes
+
+    monkeypatch.setattr(web_api, "_status_cache", None)
+    calls = 0
+    calls_lock = threading.Lock()
+
+    def fake_instance_info(_cfg):
+        nonlocal calls
+        with calls_lock:
+            calls += 1
+        time.sleep(0.05)
+        return None
+
+    monkeypatch.setattr(web_api, "get_instance_info", fake_instance_info)
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        results = list(pool.map(lambda _n: gpu_routes.get_cockpit_status(), range(20)))
+
+    assert calls == 1
+    assert all(result["instance"] is None for result in results)
+
+
 def test_instance_info_passes_bounded_timeout(monkeypatch):
     """The AWS child receives a hard timeout and a timeout is safe to report."""
     import spacepilot.cli as cli
