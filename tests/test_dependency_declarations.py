@@ -44,6 +44,7 @@ DISTRIBUTION = {
 RUNTIME_MANAGED = {
     "llama_cpp",
     "mlx_audio",
+    "mlx_lm",
     "mlx_video",
     "mflux",
 }
