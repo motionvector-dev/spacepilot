@@ -1,14 +1,19 @@
 # MCP client configuration
 
-SpacePilot's canonical local MCP endpoint is:
+SpacePilot's canonical local MCP client endpoint is:
 
 ```text
-http://spacepilot.localhost:8088/mcp/v1/
+http://127.0.0.1:8088/mcp/v1/
 ```
 
 It is a loopback-only Streamable HTTP server hosted by the stable SpacePilot
 Studio process. Configure one global entry named `spacepilot` in each client.
 Do not configure a second stdio entry in the same client.
+
+Use `http://spacepilot.localhost:8088` for Studio and browser pages, including
+the human documentation at `/docs`. MCP clients use the numeric loopback URL
+above because some Node-based harnesses report `ENOTFOUND` for
+`spacepilot.localhost`, even though both addresses reach the same local server.
 
 ## Codex
 
@@ -17,7 +22,7 @@ share the same local configuration:
 
 ```bash
 codex mcp remove spacepilot
-codex mcp add spacepilot --url http://spacepilot.localhost:8088/mcp/v1/
+codex mcp add spacepilot --url http://127.0.0.1:8088/mcp/v1/
 codex mcp get spacepilot
 ```
 
@@ -26,7 +31,7 @@ codex mcp get spacepilot
 ```bash
 claude mcp remove --scope user spacepilot
 claude mcp add --transport http --scope user \
-  spacepilot http://spacepilot.localhost:8088/mcp/v1/
+  spacepilot http://127.0.0.1:8088/mcp/v1/
 claude mcp get spacepilot
 ```
 
@@ -42,7 +47,7 @@ Use the global `~/.cursor/mcp.json` file:
 {
   "mcpServers": {
     "spacepilot": {
-      "url": "http://spacepilot.localhost:8088/mcp/v1/"
+      "url": "http://127.0.0.1:8088/mcp/v1/"
     }
   }
 }
@@ -55,7 +60,7 @@ Preserve any unrelated servers already in the file.
 ```bash
 agy mcp remove spacepilot
 agy mcp add --type http \
-  spacepilot http://spacepilot.localhost:8088/mcp/v1/
+  spacepilot http://127.0.0.1:8088/mcp/v1/
 agy mcp list
 ```
 
@@ -75,7 +80,7 @@ Add this entry under the top-level `mcp` object in
   "mcp": {
     "spacepilot": {
       "type": "remote",
-      "url": "http://spacepilot.localhost:8088/mcp/v1/",
+      "url": "http://127.0.0.1:8088/mcp/v1/",
       "enabled": true
     }
   }
@@ -91,7 +96,7 @@ Pi's MCP adapter reads `~/.pi/agent/mcp.json`:
   "mcpServers": {
     "spacepilot": {
       "type": "http",
-      "url": "http://spacepilot.localhost:8088/mcp/v1/"
+      "url": "http://127.0.0.1:8088/mcp/v1/"
     }
   }
 }
@@ -102,7 +107,7 @@ Pi's MCP adapter reads `~/.pi/agent/mcp.json`:
 First verify the managed server itself:
 
 ```bash
-curl --fail http://spacepilot.localhost:8088/healthz
+curl --fail http://127.0.0.1:8088/healthz
 ```
 
 Then use each client's MCP list or inspect command. Existing sessions may cache

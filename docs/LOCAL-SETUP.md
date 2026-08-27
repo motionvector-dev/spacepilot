@@ -110,12 +110,14 @@ spacepilot run text \
 
 ## Host the stable Studio and MCP server
 
-The Studio process serves both the human documentation and the versioned,
-loopback-only Streamable HTTP MCP transport:
+The Studio process serves browser-facing Studio and human-documentation pages
+through `spacepilot.localhost`; coding harnesses should use the numeric
+loopback MCP endpoint. Some Node-based clients return `ENOTFOUND` for
+`spacepilot.localhost`, while `127.0.0.1` reaches the same local server:
 
 ```text
 http://spacepilot.localhost:8088/docs
-http://spacepilot.localhost:8088/mcp/v1/
+http://127.0.0.1:8088/mcp/v1/
 ```
 
 For a managed stable-main checkout, add one `spacepilot` service to the
@@ -160,7 +162,7 @@ Codex, the ChatGPT desktop app, and the Codex IDE extension share the same local
 Codex MCP configuration, so register SpacePilot only once for that group:
 
 ```bash
-codex mcp add spacepilot --url http://spacepilot.localhost:8088/mcp/v1/
+codex mcp add spacepilot --url http://127.0.0.1:8088/mcp/v1/
 codex mcp get spacepilot
 ```
 
@@ -168,7 +170,7 @@ Claude Code has separate configuration and therefore needs its own registration:
 
 ```bash
 claude mcp add --transport http --scope user \
-  spacepilot http://spacepilot.localhost:8088/mcp/v1/
+  spacepilot http://127.0.0.1:8088/mcp/v1/
 claude mcp get spacepilot
 ```
 
@@ -191,7 +193,7 @@ type -a spacepilot
 pipx list
 codex mcp list
 claude mcp list
-curl --fail http://spacepilot.localhost:8088/healthz
+curl --fail http://127.0.0.1:8088/healthz
 spacepilot runtimes list
 ```
 
