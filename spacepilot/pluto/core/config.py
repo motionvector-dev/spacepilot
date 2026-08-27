@@ -62,7 +62,13 @@ class Settings(BaseModel):
         default_factory=lambda: env_value("SPACEPILOT_STUDIO_HOST", "PLUTO_STUDIO_HOST", default="127.0.0.1")
     )
     port: int = Field(
-        default_factory=lambda: int(env_value("SPACEPILOT_STUDIO_PORT", "PLUTO_STUDIO_PORT", default="8088"))
+        default_factory=lambda: int(
+            env_value(
+                "SPACEPILOT_STUDIO_PORT",
+                "PLUTO_STUDIO_PORT",
+                default=os.environ.get("PORT", "8088"),
+            )
+        )
     )
 
     # Audio defaults

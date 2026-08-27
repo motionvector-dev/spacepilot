@@ -108,35 +108,78 @@ spacepilot run text \
   --yes
 ```
 
-## Register the MCP server
+## Host the stable Studio and MCP server
 
-The MCP server is an entry point inside the one pipx environment; do not make a
-second Python environment for it. The `spacepilot-mcp` command is installed
-beside `spacepilot`.
+The Studio process serves both the human documentation and the versioned,
+loopback-only Streamable HTTP MCP transport:
+
+```text
+http://spacepilot.localhost:8088/docs
+http://spacepilot.localhost:8088/mcp/v1/
+```
+
+For a managed stable-main checkout, add one `spacepilot` service to the
+machine-local `mvec-local.json`. The command must invoke the project interpreter
+as a module so Python imports the clean worktree selected by mvec-local, rather
+than a stale pipx copy:
+
+```json
+{
+  "repo": "motionvector/spacepilot",
+  "mainBranch": "main",
+  "host": "127.0.0.1",
+  "publicHost": "spacepilot.localhost",
+  "stablePort": 8088,
+  "command": ["/absolute/path/to/project/python", "-m", "spacepilot.web_api"],
+  "healthUrl": "http://127.0.0.1:{port}/healthz",
+  "healthTimeoutMs": 120000,
+  "env": {"SPACEPILOT_PYTHON": "/absolute/path/to/project/python"}
+}
+```
+
+Then prepare and activate the exact current main commit:
+
+```bash
+mvec-local main sync spacepilot
+mvec-local main sync spacepilot --apply
+mvec-local stable start spacepilot --apply
+mvec-local main status spacepilot
+```
+
+`mvec-local` passes the allocated loopback port through `PORT`; SpacePilot uses
+it only when `SPACEPILOT_STUDIO_PORT` is unset. The explicit SpacePilot setting
+always wins.
+
+## Register MCP clients
+
+Prefer the one managed HTTP server for clients that support Streamable HTTP.
+It keeps every harness on the same main checkout and avoids spawning duplicate
+stdio processes.
 
 Codex, the ChatGPT desktop app, and the Codex IDE extension share the same local
 Codex MCP configuration, so register SpacePilot only once for that group:
 
 ```bash
-codex mcp add spacepilot \
-  --env SPACEPILOT_PYTHON=/absolute/path/to/the/project/python \
-  -- spacepilot-mcp
+codex mcp add spacepilot --url http://spacepilot.localhost:8088/mcp/v1/
 codex mcp get spacepilot
 ```
 
 Claude Code has separate configuration and therefore needs its own registration:
 
 ```bash
-claude mcp add --scope user spacepilot \
-  -e SPACEPILOT_PYTHON=/absolute/path/to/the/project/python \
-  -- spacepilot-mcp
+claude mcp add --transport http --scope user \
+  spacepilot http://spacepilot.localhost:8088/mcp/v1/
 claude mcp get spacepilot
 ```
 
-Register Cursor only if it is actively used; its configuration is independent.
-One registration in each client is expected and does not create another
-SpacePilot installation. Each client starts the same pipx-hosted stdio server
-when needed.
+Cursor, Antigravity, OpenCode, and Pi keep independent user-level MCP files.
+Give each exactly one server named `spacepilot`, pointing at the same URL; do
+not add both HTTP and stdio entries to one client. See `docs/MCP-CLIENTS.md` for
+the exact config shapes.
+
+The `spacepilot-mcp` command remains available as a stdio fallback. It is an
+entry point inside the one pipx environment and must not be installed into a
+second environment.
 
 After changing an MCP registration, start a new client session if the current
 session does not refresh its tool inventory.
@@ -148,6 +191,7 @@ type -a spacepilot
 pipx list
 codex mcp list
 claude mcp list
+curl --fail http://spacepilot.localhost:8088/healthz
 spacepilot runtimes list
 ```
 
@@ -155,7 +199,7 @@ Expected shape:
 
 - one pipx environment named `spacepilot`;
 - one `spacepilot` PATH entry;
-- at most one MCP entry named `spacepilot` per client;
+- exactly one MCP entry named `spacepilot` in each actively used client;
 - ML runtime packages only in their configured runtime interpreters.
 
 If an old MCP entry points into a deleted worktree or a different Python

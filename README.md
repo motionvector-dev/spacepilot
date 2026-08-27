@@ -100,6 +100,8 @@ Serves the Web UI and API on:
 * **Cockpit & Model Registry**: `http://spacepilot.localhost:8088/cockpit`
 * **Oven Swarm Kanban**: `http://spacepilot.localhost:8088/oven.html`
 * **Director NLE**: `http://spacepilot.localhost:8088/studio`
+* **Human documentation**: `http://spacepilot.localhost:8088/docs`
+* **MCP Streamable HTTP v1**: `http://spacepilot.localhost:8088/mcp/v1/`
 
 ---
 
@@ -131,6 +133,10 @@ Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 * `spacepilot_probe_hardware`: Probes host GPU VRAM and compute headroom.
 * `spacepilot_recommend_models`: Returns task-matched model catalog for current device.
 * `spacepilot_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
+
+The Studio process hosts the canonical loopback-only Streamable HTTP transport
+at `/mcp/v1/`. The `spacepilot-mcp` command remains the stdio fallback for
+clients that cannot use HTTP.
 
 ---
 

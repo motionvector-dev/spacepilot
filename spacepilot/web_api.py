@@ -277,12 +277,32 @@ async def idle_watchdog_loop():
 # Build application
 app = create_app(_settings)
 
+
+def studio_host() -> str:
+    """Resolve the loopback bind host for direct and managed launches."""
+    return env_value(
+        "SPACEPILOT_STUDIO_HOST",
+        "PLUTO_STUDIO_HOST",
+        default="127.0.0.1",
+    )
+
+
+def studio_port() -> int:
+    """Resolve the Studio port, including mvec-local's managed PORT."""
+    return int(
+        env_value(
+            "SPACEPILOT_STUDIO_PORT",
+            "PLUTO_STUDIO_PORT",
+            default=os.environ.get("PORT", "8088"),
+        )
+    )
+
 if __name__ == "__main__":
     # Loopback by default. LocalOnlyMiddleware already rejects a non-loopback
     # Host header, but a default that binds every interface means one
     # middleware bug is the only thing between this and the network.
-    host = env_value("SPACEPILOT_STUDIO_HOST", "PLUTO_STUDIO_HOST", default="127.0.0.1")
-    port = int(env_value("SPACEPILOT_STUDIO_PORT", "PLUTO_STUDIO_PORT", default="8088"))
+    host = studio_host()
+    port = studio_port()
     print(f"\n✨ SpacePilot Studio API running on http://{host}:{port} (and http://spacepilot.localhost:{port})")
     # The token is never printed. Sixteen characters of it used to go to
     # stdout on every start, which means terminal scrollback, log files and
