@@ -143,19 +143,17 @@ def sync_outputs_api(_: None = Depends(require_token)):
 
 @router.get("/api/cockpit/status")
 def get_cockpit_status():
-    """Unified telemetry for the Cockpit infrastructure dashboard."""
+    """Unified telemetry for the Cockpit infrastructure dashboard.
+
+    The snapshot owns the AWS lookup.  Do not query the instance separately for
+    the SSH hint: cockpit polling would otherwise bypass the status cache.
+    """
     lc_fn = _get_api_attr("load_config", load_config)
-    gi_fn = _get_api_attr("get_instance_info", get_instance_info)
     gs_fn = _get_api_attr("get_status", get_cached_status)
-    
+
     cfg = lc_fn()
-    try:
-        inst = gi_fn(cfg)
-    except Exception:
-        # base_status already reports the query failure as UNKNOWN state;
-        # here it only gates the ssh hint, which an unknown instance can't have.
-        inst = None
     base_status = gs_fn()
+    inst = base_status.get("instance")
 
     ssh_cmd = None
     if inst and inst.get("ip") and inst.get("state") == "running":
