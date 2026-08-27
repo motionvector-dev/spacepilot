@@ -6,17 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SpacePilot · Design Paper</title>
     <meta name="description" content="SpacePilot: a provenance-first decision layer for single-owner AI compute fleets. Design paper — typed provenance, readiness-aware scheduling, sleep as a first-class state." />
-    <meta name="author" content="MotionVector" />
+    <meta name="author" content="Saurabh Nandwana" />
     <link rel="canonical" href="https://spacepilot.dev/paper" />
     <meta name="theme-color" content="#050506" />
     <meta name="citation_title" content="SpacePilot: A Provenance-First Decision Layer for Single-Owner AI Compute Fleets" />
     <meta name="citation_author" content="Nandwana, Saurabh" />
-    <meta name="citation_publication_date" content="2026" />
+    <meta name="citation_author_institution" content="Independent Researcher / Motion Vector" />
+    <meta name="citation_author_email" content="saurabh@motionvector.dev" />
+    <meta name="citation_publication_date" content="2026/08/27" />
+    <meta name="citation_doi" content="10.5281/zenodo.22128310" />
     <meta name="citation_pdf_url" content="https://spacepilot.dev/paper/spacepilot-paper.pdf" />
     <meta property="og:type" content="article" />
     <meta property="og:url" content="https://spacepilot.dev/paper" />
-    <meta property="og:title" content="SpacePilot · Design Paper" />
-    <meta property="og:description" content="A provenance-first decision layer for single-owner AI compute fleets." />
+    <meta property="og:title" content="SpacePilot: A Provenance-First Decision Layer for Single-Owner AI Compute Fleets" />
+    <meta property="og:description" content="A provenance-first decision layer for single-owner AI compute fleets. By Saurabh Nandwana (MotionVector)." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
     <style>
@@ -27,30 +30,37 @@
       .eyebrow{font:600 .7rem/1 "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 1.2rem}
       .eyebrow a{color:inherit;text-decoration:none}
       h1{font:800 clamp(1.9rem,5vw,2.7rem)/1.12 Archivo,system-ui,sans-serif;letter-spacing:-.02em;margin:0 0 .8rem;text-wrap:balance}
-      .meta{font:500 .78rem/1.6 "IBM Plex Mono",monospace;color:var(--ink3);margin:0 0 2.2rem}
+      .meta{font:500 .82rem/1.6 "IBM Plex Mono",monospace;color:var(--ink3);margin:0 0 2.2rem}
+      .meta a{color:var(--accent);text-decoration:none}
+      .meta a:hover{text-decoration:underline}
       h2{font:700 1.05rem/1.3 Archivo,system-ui,sans-serif;margin:2.4rem 0 .7rem}
       p{margin:0 0 1rem;color:var(--ink2)}
       strong{color:var(--ink)}
       .status{border:1px solid var(--line);background:var(--raise);border-radius:10px;padding:1rem 1.2rem;font-size:.92rem;color:var(--ink2);margin:0 0 2rem}
       .status b{color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
-      .cta{display:inline-flex;align-items:center;gap:.6em;background:var(--accent);color:#050506;font:700 .95rem/1 Archivo,system-ui,sans-serif;padding:.85em 1.4em;border-radius:8px;text-decoration:none;margin:.4rem 1rem .4rem 0}
+      .cta{display:inline-flex;align-items:center;gap:.6em;background:var(--accent);color:#050506;font:700 .95rem/1 Archivo,system-ui,sans-serif;padding:.85em 1.4em;border-radius:8px;text-decoration:none;margin:.4rem .6rem .4rem 0}
       .cta.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
       .cta:hover{filter:brightness(1.08)}
       ul{padding-left:1.2rem;margin:0 0 1rem}
       li{margin-bottom:.5rem;color:var(--ink2)}
+      pre.bibtex{background:var(--raise);border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;font:400 .82rem/1.6 "IBM Plex Mono",monospace;color:var(--ink2);overflow-x:auto}
       .foot{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:1.2rem;font:400 .75rem/1.7 "IBM Plex Mono",monospace;color:var(--ink3)}
       .foot a{color:var(--ink3)}
     </style>
   </head>
   <body>
     <main class="wrap">
-      <p class="eyebrow"><a href="/">SpacePilot</a> · Design Paper · August 2026</p>
+      <p class="eyebrow"><a href="/">SpacePilot</a> · Design Paper · August 27, 2026</p>
       <h1>SpacePilot: A Provenance-First Decision Layer for Single-Owner AI Compute Fleets</h1>
-      <p class="meta">MotionVector · draft v0 · PDF, 7 pages</p>
+      <p class="meta">By <strong>Saurabh Nandwana</strong> · MotionVector · DOI: <a href="https://doi.org/10.5281/zenodo.22128310" target="_blank" rel="noopener">10.5281/zenodo.22128310</a> · <a href="https://zenodo.org/records/22128310" target="_blank" rel="noopener">Zenodo Record</a></p>
 
-      <div class="status"><b>Status — design paper.</b> A single-machine core is implemented and running; the multi-machine design is presented as design, not as evaluated results. Numbers marked ⟨TBD⟩ are placeholders pending measurement.</div>
+      <div class="status"><b>Status — design paper.</b> A single-machine core is implemented and running; the multi-machine design is presented as design, not as evaluated results. Published under Creative Commons Attribution 4.0 International (CC BY 4.0).</div>
 
-      <p><a class="cta" href="/paper/spacepilot-paper.pdf">Read the PDF</a><a class="cta ghost" href="/paper/spacepilot-paper.pdf" download>Download</a></p>
+      <p>
+        <a class="cta" href="/paper/spacepilot-paper.pdf">Read the PDF</a>
+        <a class="cta ghost" href="https://doi.org/10.5281/zenodo.22128310" target="_blank" rel="noopener">Zenodo Archive</a>
+        <a class="cta ghost" href="/paper/spacepilot-paper.pdf" download>Download PDF</a>
+      </p>
 
       <h2>Abstract</h2>
       <p>Model and runtime optimizations are well served by open source; the layer that decides <em>where a workload should run</em> is not. Production schedulers assume datacenter physics — nodes that are up or failed, specifications that predict performance, durable cluster state. None of the eleven systems we survey models a suspended consumer machine as a schedulable state. Yet the fastest-growing deployment target for open models is the single-owner fleet: a laptop, a workstation, occasionally rented cloud machines, and managed inference APIs, all owned or paid for by one person or small team.</p>
@@ -65,7 +75,18 @@
         <li>Honest comparison to datacenter schedulers, sky brokers, and consumer-device inference</li>
       </ul>
 
-      <p class="foot">© 2026 MotionVector · <a href="/">spacepilot.dev</a> · You decide what to run. SpacePilot decides how and where.</p>
+      <h2>Cite this work</h2>
+      <pre class="bibtex"><code>@article{nandwana2026spacepilot,
+  title   = {SpacePilot: A Provenance-First Decision Layer for Single-Owner AI Compute Fleets},
+  author  = {Nandwana, Saurabh},
+  journal = {Zenodo},
+  year    = {2026},
+  month   = {August},
+  doi     = {10.5281/zenodo.22128310},
+  url     = {https://doi.org/10.5281/zenodo.22128310}
+}</code></pre>
+
+      <p class="foot">© 2026 Saurabh Nandwana · MotionVector · <a href="/">spacepilot.dev</a> · CC BY 4.0</p>
     </main>
   </body>
 </html>
