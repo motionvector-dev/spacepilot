@@ -1,0 +1,32 @@
+schema: 1
+id: supir
+name: SUPIR
+family: supir-project
+kind: image
+summary: >
+  Scaling up photorealistic image restoration using massive generative priors
+  from SDXL and dual-control adapters for extreme detail recovery.
+homepage: https://github.com/Fanghua-Yu/SUPIR
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: supir-v0-q
+    name: SUPIR v0Q (Quality)
+    params: 2.6B
+    precision: fp16
+    repo: camenduru/SUPIR
+    revision: 97b24ec4d42bbdf6b3c5a8d701f78ac67aacba04
+    backends: [cuda]
+    download:
+      value: 64189190395
+      source: estimated
+      note: "SUPIR-v0Q model checkpoint and SDXL restoration prior"
+    working_set:
+      value: 15569256448
+      source: estimated
+      note: "SDXL UNet, text encoders, and ControlNet restoration layers"

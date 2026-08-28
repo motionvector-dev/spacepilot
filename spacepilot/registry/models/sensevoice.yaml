@@ -1,0 +1,35 @@
+schema: 1
+id: sensevoice
+name: SenseVoice
+family: funaudiollm
+kind: transcription
+summary: >
+  Non-autoregressive streaming foundation speech understanding model from Alibaba Tongyi Lab.
+  15x faster than Whisper with multi-task audio event detection, rich emotion tagging,
+  and multilingual transcription.
+homepage: https://github.com/FunAudioLLM/SenseVoice
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://opensource.org/licenses/Apache-2.0
+
+variants:
+  - id: sensevoice-small
+    name: SenseVoice Small
+    params: 234M
+    precision: f16
+    repo: FunAudioLLM/SenseVoiceSmall
+    revision: 3847d57b6bdf2dd8875cb1508d2af43d80a16bf7
+    files: ["model.safetensors", "configuration.json"]
+    backends: [metal, cuda, cpu]
+    download:
+      value: 469762048
+      source: huggingface-api
+      checked: "2026-08-28"
+    working_set:
+      value: 629145600
+      source: estimated
+      checked: "2026-08-28"
+      note: ~600 MiB working set on Apple Silicon Metal

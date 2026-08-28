@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-27",
+ "generated": "2026-08-28",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -31,6 +31,68 @@
   ]
  },
  "models": [
+  {
+   "id": "aurasr",
+   "name": "AuraSR",
+   "family": "fal-ai",
+   "kind": "image",
+   "summary": "GigaGAN-based 4x super-resolution model designed for rapid, high-fidelity upscaling of diffusion-generated imagery without hallucinatory artifacts.\n",
+   "homepage": "https://github.com/fal-ai/aura-sr",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "aurasr-v2",
+     "model_id": "aurasr",
+     "name": "AuraSR v2",
+     "kind": "image",
+     "family": "fal-ai",
+     "params": "600M",
+     "precision": "fp16",
+     "repo": "fal/AuraSR-v2",
+     "files": null,
+     "revision": "ff452185a7c8b51206dd62c21c292e7baad5c3a3",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 4940603742.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "AuraSR-v2 GigaGAN generator checkpoint",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 2952790016.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "GigaGAN generator weights resident plus high-res output tensors",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
   {
    "id": "boogu",
    "name": "Boogu Image",
@@ -334,6 +396,68 @@
    ]
   },
   {
+   "id": "f5-tts",
+   "name": "F5-TTS",
+   "family": "shanghai-ai",
+   "kind": "speech",
+   "summary": "Zero-shot voice cloning and text-to-speech built with Flow Matching Diffusion Transformers.",
+   "homepage": "https://huggingface.co/SWivid/F5-TTS",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "f5-tts-base",
+     "model_id": "f5-tts",
+     "name": "F5-TTS Base",
+     "kind": "speech",
+     "family": "shanghai-ai",
+     "params": "380M",
+     "precision": "fp16",
+     "repo": "SWivid/F5-TTS",
+     "files": null,
+     "revision": "84e5a410d9cead4de2f847e7c9369a6440bdfaca",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 6742869756.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "F5-TTS base checkpoint and vocoder weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 2147483648.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Flow matching DiT weights resident plus Mel spectrogram generation buffers",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "fibo",
    "name": "FIBO",
    "family": "bria",
@@ -531,6 +655,67 @@
      "caveats": [],
      "compromised": [],
      "notes": "FIBO Edit with built-in background removal. mflux aliases \"fibo-edit-rmbg\", \"fiboedit-rmbg\".\n"
+    }
+   ]
+  },
+  {
+   "id": "flashvsr",
+   "name": "FlashVSR",
+   "family": "openimaginglab",
+   "kind": "video",
+   "summary": "Real-time streaming diffusion video super-resolution using block-sparse attention and a tiny conditional decoder for high-fidelity 4x upscaling.\n",
+   "homepage": "https://github.com/OpenImagingLab/FlashVSR",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "flashvsr-v1-1",
+     "model_id": "flashvsr",
+     "name": "FlashVSR v1.1",
+     "kind": "video",
+     "family": "openimaginglab",
+     "params": "1.5B",
+     "precision": "fp16",
+     "repo": "JunhaoZhuang/FlashVSR-v1.1",
+     "files": null,
+     "revision": "27561b186ded3402d7c975f4fd722e2885b6135f",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 6948404950.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "FlashVSR v1.1 diffusion and tiny conditional decoder weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 6979321856.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "DiT weights resident plus temporal recurrent frame state buffers",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
@@ -1524,6 +1709,176 @@
    ]
   },
   {
+   "id": "minimax-music",
+   "name": "MiniMax Music 3.0",
+   "family": "minimax",
+   "kind": "audio",
+   "summary": "End-to-end music and vocal generation model with local MLX inference support on Apple Silicon.",
+   "homepage": "https://huggingface.co/MiniMaxAI/MiniMax-Music3",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "minimax-music3-mlx-8bit",
+     "model_id": "minimax-music",
+     "name": "MiniMax Music 3.0 (MLX 8-bit)",
+     "kind": "audio",
+     "family": "minimax",
+     "params": "11B",
+     "precision": "int8",
+     "repo": "ddalcu/MiniMax-Music3-MLX-Serve-8bit",
+     "files": null,
+     "revision": "8ca48eb3c83150225279bbee8de0a059636af499",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 13552903625.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "8-bit quantized weights and vocoder for local MLX serving",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 11811160064.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Quantized weights plus audio generation buffer for local mlx-serve resident runner (~11 GB VRAM)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "moonshine",
+   "name": "Moonshine",
+   "family": "usefulsensors",
+   "kind": "transcription",
+   "summary": "On-device causal streaming speech-to-text with sliding-window KV caching. Designed specifically for edge hardware and low-latency interactive voice loops without fixed 30-second windowing overhead.\n",
+   "homepage": "https://github.com/usefulsensors/moonshine",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "moonshine-tiny",
+     "model_id": "moonshine",
+     "name": "Moonshine Tiny",
+     "kind": "transcription",
+     "family": "usefulsensors",
+     "params": "27M",
+     "precision": "f16",
+     "repo": "UsefulSensors/moonshine",
+     "files": [
+      "ctranslate2/tiny/model.bin",
+      "ctranslate2/tiny/vocabulary.json"
+     ],
+     "revision": "48b4e427b587bcf67797a5be706d6ddc4a298149",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 62453760.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 268435456.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~256 MiB resident footprint in memory",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "moonshine-base",
+     "model_id": "moonshine",
+     "name": "Moonshine Base",
+     "kind": "transcription",
+     "family": "usefulsensors",
+     "params": "61M",
+     "precision": "f16",
+     "repo": "UsefulSensors/moonshine",
+     "files": [
+      "ctranslate2/base/model.bin",
+      "ctranslate2/base/vocabulary.json"
+     ],
+     "revision": "48b4e427b587bcf67797a5be706d6ddc4a298149",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 142606336.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 419430400.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~400 MiB resident footprint in memory",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "qwen-image",
    "name": "Qwen-Image",
    "family": "alibaba",
@@ -1758,6 +2113,129 @@
    ]
   },
   {
+   "id": "real-esrgan",
+   "name": "Real-ESRGAN",
+   "family": "xinntao",
+   "kind": "image",
+   "summary": "Universal 4x deep residual-in-residual dense network (RRDBNet) for practical image and video frame restoration and sharpening.\n",
+   "homepage": "https://github.com/xinntao/Real-ESRGAN",
+   "license": {
+    "id": "bsd-3-clause",
+    "open_source": true,
+    "spdx": "BSD-3-Clause",
+    "url": "https://opensource.org/licenses/BSD-3-Clause",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "real-esrgan-x4plus",
+     "model_id": "real-esrgan",
+     "name": "Real-ESRGAN x4 Plus",
+     "kind": "image",
+     "family": "xinntao",
+     "params": "16.7M",
+     "precision": "fp32",
+     "repo": "ai-forever/Real-ESRGAN",
+     "files": null,
+     "revision": "8110204ebf8d25c031b66c26c2d1098aa831157e",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 201294448.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "RRDBNet x4plus generator weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 1073741824.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Model weights resident with full-resolution patch tiled inference buffer",
+      "is_measured": false
+     },
+     "license": {
+      "id": "bsd-3-clause",
+      "open_source": true,
+      "spdx": "BSD-3-Clause",
+      "url": "https://opensource.org/licenses/BSD-3-Clause",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "sana",
+   "name": "Sana",
+   "family": "nvidia",
+   "kind": "image",
+   "summary": "Deep-compression linear diffusion transformer capable of generating 4K resolution images with low latency.",
+   "homepage": "https://huggingface.co/Efficient-Large-Model/Sana_1600M_1024px",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "sana-1-6b-1024",
+     "model_id": "sana",
+     "name": "Sana 1.6B (1024px)",
+     "kind": "image",
+     "family": "nvidia",
+     "params": "1.6B",
+     "precision": "fp16",
+     "repo": "Efficient-Large-Model/Sana_1600M_1024px",
+     "files": null,
+     "revision": "d71cbc8e562b01cd77902952fcf8cbb90aa78e3f",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 6429922892.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Linear DiT weights and 32x autoencoder checkpoints",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 5905580032.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Deep compression linear DiT working set during 1024px generation (~5.5 GB VRAM)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "seedvr2",
    "name": "SeedVR2",
    "family": "bytedance",
@@ -1866,6 +2344,297 @@
      "caveats": [],
      "compromised": [],
      "notes": "Higher-quality, higher-VRAM variant, plus a \"sharp\" checkpoint. mflux alias \"seedvr2-7b\" (and \"seedvr2-7B\").\n"
+    }
+   ]
+  },
+  {
+   "id": "sensevoice",
+   "name": "SenseVoice",
+   "family": "funaudiollm",
+   "kind": "transcription",
+   "summary": "Non-autoregressive streaming foundation speech understanding model from Alibaba Tongyi Lab. 15x faster than Whisper with multi-task audio event detection, rich emotion tagging, and multilingual transcription.\n",
+   "homepage": "https://github.com/FunAudioLLM/SenseVoice",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "sensevoice-small",
+     "model_id": "sensevoice",
+     "name": "SenseVoice Small",
+     "kind": "transcription",
+     "family": "funaudiollm",
+     "params": "234M",
+     "precision": "f16",
+     "repo": "FunAudioLLM/SenseVoiceSmall",
+     "files": [
+      "model.safetensors",
+      "configuration.json"
+     ],
+     "revision": "3847d57b6bdf2dd8875cb1508d2af43d80a16bf7",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 469762048.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 629145600.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~600 MiB working set on Apple Silicon Metal",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "stable-audio",
+   "name": "Stable Audio Open",
+   "family": "stability-ai",
+   "kind": "audio",
+   "summary": "Fast text-to-audio and sound effect synthesis model generating variable-length audio stems.",
+   "homepage": "https://huggingface.co/stabilityai/stable-audio-open-1.0",
+   "license": {
+    "id": "stability-community",
+    "open_source": true,
+    "spdx": "LicenseRef-Stability-Community",
+    "url": "https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/LICENSE.md",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "stable-audio-open-1-0",
+     "model_id": "stable-audio",
+     "name": "Stable Audio Open 1.0",
+     "kind": "audio",
+     "family": "stability-ai",
+     "params": "1B",
+     "precision": "fp16",
+     "repo": "stabilityai/stable-audio-open-1.0",
+     "files": null,
+     "revision": "f21265c1e2710b3bd2386596943f0007f55f802e",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 15680736700.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Full 1B parameter checkpoint and autoencoder weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 3758096384.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Continuous-time diffusion transformer working set resident during audio synthesis",
+      "is_measured": false
+     },
+     "license": {
+      "id": "stability-community",
+      "open_source": true,
+      "spdx": "LicenseRef-Stability-Community",
+      "url": "https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/LICENSE.md",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "stable-diffusion-3-5",
+   "name": "Stable Diffusion 3.5",
+   "family": "stability-ai",
+   "kind": "image",
+   "summary": "Multimodal Diffusion Transformer (MMDiT) with improved prompt adherence, typography, and aesthetic fidelity.",
+   "homepage": "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium",
+   "license": {
+    "id": "stability-community",
+    "open_source": true,
+    "spdx": "LicenseRef-Stability-Community",
+    "url": "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "sd-3-5-medium",
+     "model_id": "stable-diffusion-3-5",
+     "name": "Stable Diffusion 3.5 Medium (2.5B)",
+     "kind": "image",
+     "family": "stability-ai",
+     "params": "2.5B",
+     "precision": "fp16",
+     "repo": "stabilityai/stable-diffusion-3.5-medium",
+     "files": null,
+     "revision": "b940f670f0eda2d07fbb75229e779da1ad11eb80",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 48861581303.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "MMDiT 2.5B parameter base weights and text encoders",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 6442450944.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "MMDiT transformer working set resident during image synthesis (~6.0 GB VRAM)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "stability-community",
+      "open_source": true,
+      "spdx": "LicenseRef-Stability-Community",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "sd-3-5-large-fp8",
+     "model_id": "stable-diffusion-3-5",
+     "name": "Stable Diffusion 3.5 Large (8B FP8)",
+     "kind": "image",
+     "family": "stability-ai",
+     "params": "8B",
+     "precision": "fp8",
+     "repo": "stabilityai/stable-diffusion-3.5-large-turbo",
+     "files": null,
+     "revision": "ec07796fc06b096cc56de9762974a28f4c632eda",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 71582971259.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "8B MMDiT transformer quantized in FP8 format",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 13421772800.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "FP8 quantized MMDiT working set resident during generation (~12.5 GB VRAM)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "stability-community",
+      "open_source": true,
+      "spdx": "LicenseRef-Stability-Community",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "supir",
+   "name": "SUPIR",
+   "family": "supir-project",
+   "kind": "image",
+   "summary": "Scaling up photorealistic image restoration using massive generative priors from SDXL and dual-control adapters for extreme detail recovery.\n",
+   "homepage": "https://github.com/Fanghua-Yu/SUPIR",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "supir-v0-q",
+     "model_id": "supir",
+     "name": "SUPIR v0Q (Quality)",
+     "kind": "image",
+     "family": "supir-project",
+     "params": "2.6B",
+     "precision": "fp16",
+     "repo": "camenduru/SUPIR",
+     "files": null,
+     "revision": "97b24ec4d42bbdf6b3c5a8d701f78ac67aacba04",
+     "is_pinned": true,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 64189190395.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "SUPIR-v0Q model checkpoint and SDXL restoration prior",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 15569256448.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "SDXL UNet, text encoders, and ControlNet restoration layers",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
@@ -2513,9 +3282,9 @@
       "metal"
      ],
      "download": {
-      "value": 86045989869.0,
+      "value": 53146322472.0,
       "source": "huggingface-api",
-      "checked": "2026-08-23",
+      "checked": "2026-08-28",
       "note": null,
       "is_measured": true
      },

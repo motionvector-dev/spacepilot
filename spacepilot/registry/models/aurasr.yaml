@@ -1,0 +1,32 @@
+schema: 1
+id: aurasr
+name: AuraSR
+family: fal-ai
+kind: image
+summary: >
+  GigaGAN-based 4x super-resolution model designed for rapid, high-fidelity
+  upscaling of diffusion-generated imagery without hallucinatory artifacts.
+homepage: https://github.com/fal-ai/aura-sr
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: aurasr-v2
+    name: AuraSR v2
+    params: 600M
+    precision: fp16
+    repo: fal/AuraSR-v2
+    revision: ff452185a7c8b51206dd62c21c292e7baad5c3a3
+    backends: [metal, cuda, cpu]
+    download:
+      value: 4940603742
+      source: estimated
+      note: "AuraSR-v2 GigaGAN generator checkpoint"
+    working_set:
+      value: 2952790016
+      source: estimated
+      note: "GigaGAN generator weights resident plus high-res output tensors"
