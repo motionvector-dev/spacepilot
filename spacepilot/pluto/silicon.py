@@ -62,8 +62,11 @@ SOURCES = {
 }
 
 # Whether you can buy it. `prototype` and `roadmap` are not the same: one has
-# been shown working, the other is a date on a slide.
-AVAILABILITY = {"shipping", "sampling", "announced", "prototype", "roadmap"}
+# been shown working, the other is a date on a slide. `discontinued` matters
+# because people still OWN the part — a scheduler routes to machines that exist,
+# not to machines currently for sale.
+AVAILABILITY = {"shipping", "sampling", "announced", "prototype", "roadmap",
+                "discontinued"}
 
 
 class SiliconError(ValueError):

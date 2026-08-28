@@ -1,0 +1,32 @@
+schema: 1
+id: real-esrgan
+name: Real-ESRGAN
+family: xinntao
+kind: image
+summary: >
+  Universal 4x deep residual-in-residual dense network (RRDBNet) for practical
+  image and video frame restoration and sharpening.
+homepage: https://github.com/xinntao/Real-ESRGAN
+
+license:
+  id: bsd-3-clause
+  spdx: BSD-3-Clause
+  open_source: true
+  url: https://opensource.org/licenses/BSD-3-Clause
+
+variants:
+  - id: real-esrgan-x4plus
+    name: Real-ESRGAN x4 Plus
+    params: 16.7M
+    precision: fp32
+    repo: ai-forever/Real-ESRGAN
+    revision: 8110204ebf8d25c031b66c26c2d1098aa831157e
+    backends: [metal, cuda, cpu]
+    download:
+      value: 201294448
+      source: estimated
+      note: "RRDBNet x4plus generator weights"
+    working_set:
+      value: 1073741824
+      source: estimated
+      note: "Model weights resident with full-resolution patch tiled inference buffer"

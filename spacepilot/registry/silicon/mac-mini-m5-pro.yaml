@@ -1,0 +1,31 @@
+schema: 1
+id: mac-mini-m5-pro
+name: Mac mini (M5 Pro)
+vendor: Apple
+kind: box
+availability: shipping
+summary: >-
+  The cheapest 307 GB/s machine, and a counter-signal to the memory squeeze: its
+  ceiling rose from 48 GB to 64 GB while the Mac Studio line stayed pinned at 96.
+compute_paths: [metal, npu, cpu]
+memory_model: unified
+
+memory_bytes:
+  value: 68719476736
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: 64 GB maximum, 24 GB standard — up from the 48 GB ceiling on the M4 Pro it replaces
+
+bandwidth_bytes_per_sec:
+  value: 307000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: 307 GB/s, up from 273 GB/s on the M4 Pro
+
+note: >-
+  15-core CPU described as 5 super cores plus 10 performance cores, and a 16-core
+  GPU; configurable to 18-core CPU and 20-core GPU. 16-core Neural Engine.
+  Apple's "super core" is a new class name and its relationship to the previous
+  performance/efficiency split is not documented on the spec page.

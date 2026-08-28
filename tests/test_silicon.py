@@ -166,7 +166,8 @@ def test_compute_paths_cover_what_the_probe_cannot_yet_name():
 
 def test_kinds_and_availability_are_small_and_closed():
     assert KINDS == {"accelerator", "cpu", "rack", "box", "memory", "client-soc"}
-    assert AVAILABILITY == {"shipping", "sampling", "announced", "prototype", "roadmap"}
+    assert AVAILABILITY == {"shipping", "sampling", "announced", "prototype",
+                            "roadmap", "discontinued"}
     assert MEMORY_MODELS >= {"unified", "partitionable", "discrete"}
 
 
