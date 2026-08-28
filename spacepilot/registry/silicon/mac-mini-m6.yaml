@@ -1,0 +1,34 @@
+schema: 1
+id: mac-mini-m6
+name: Mac mini (M6)
+vendor: Apple
+kind: box
+availability: shipping
+summary: >-
+  The first shipping part in this registry with TWO neural engines. A base
+  machine carrying dual NPUs is the clearest sign that the accelerator no
+  scheduler here can name is the one vendors are adding, not retiring.
+compute_paths: [metal, npu, cpu]
+memory_model: unified
+
+memory_bytes:
+  value: 34359738368
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: 32 GB maximum, 16 or 24 GB standard
+
+bandwidth_bytes_per_sec:
+  value: 170000000000
+  source: declared
+  checked: "2026-08-25"
+  url: https://www.apple.com/mac-mini/specs/
+  note: >-
+    153 GB/s on the two lower configurations, 170 GB/s on the third; the higher
+    figure is recorded here and the spread is real
+
+note: >-
+  12-core CPU described as 2 super cores, 4 performance cores and 6 efficiency
+  cores, with a 12-core GPU. Apple lists a "Dual 16-core Neural Engine" — two
+  NPUs on a base part, which no backend vocabulary in this project can express.
+  Shipped alongside the M5 Pro, so this line carries two chip generations at once.
