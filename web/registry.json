@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-27",
+ "generated": "2026-08-28",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1524,6 +1524,116 @@
    ]
   },
   {
+   "id": "moonshine",
+   "name": "Moonshine",
+   "family": "usefulsensors",
+   "kind": "transcription",
+   "summary": "On-device causal streaming speech-to-text with sliding-window KV caching. Designed specifically for edge hardware and low-latency interactive voice loops without fixed 30-second windowing overhead.\n",
+   "homepage": "https://github.com/usefulsensors/moonshine",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "moonshine-tiny",
+     "model_id": "moonshine",
+     "name": "Moonshine Tiny",
+     "kind": "transcription",
+     "family": "usefulsensors",
+     "params": "27M",
+     "precision": "f16",
+     "repo": "UsefulSensors/moonshine",
+     "files": [
+      "ctranslate2/tiny/model.bin",
+      "ctranslate2/tiny/vocabulary.json"
+     ],
+     "revision": "48b4e427b587bcf67797a5be706d6ddc4a298149",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 62453760.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 268435456.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~256 MiB resident footprint in memory",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "moonshine-base",
+     "model_id": "moonshine",
+     "name": "Moonshine Base",
+     "kind": "transcription",
+     "family": "usefulsensors",
+     "params": "61M",
+     "precision": "f16",
+     "repo": "UsefulSensors/moonshine",
+     "files": [
+      "ctranslate2/base/model.bin",
+      "ctranslate2/base/vocabulary.json"
+     ],
+     "revision": "48b4e427b587bcf67797a5be706d6ddc4a298149",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 142606336.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 419430400.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~400 MiB resident footprint in memory",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "qwen-image",
    "name": "Qwen-Image",
    "family": "alibaba",
@@ -1866,6 +1976,71 @@
      "caveats": [],
      "compromised": [],
      "notes": "Higher-quality, higher-VRAM variant, plus a \"sharp\" checkpoint. mflux alias \"seedvr2-7b\" (and \"seedvr2-7B\").\n"
+    }
+   ]
+  },
+  {
+   "id": "sensevoice",
+   "name": "SenseVoice",
+   "family": "funaudiollm",
+   "kind": "transcription",
+   "summary": "Non-autoregressive streaming foundation speech understanding model from Alibaba Tongyi Lab. 15x faster than Whisper with multi-task audio event detection, rich emotion tagging, and multilingual transcription.\n",
+   "homepage": "https://github.com/FunAudioLLM/SenseVoice",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "sensevoice-small",
+     "model_id": "sensevoice",
+     "name": "SenseVoice Small",
+     "kind": "transcription",
+     "family": "funaudiollm",
+     "params": "234M",
+     "precision": "f16",
+     "repo": "FunAudioLLM/SenseVoiceSmall",
+     "files": [
+      "model.safetensors",
+      "configuration.json"
+     ],
+     "revision": "3847d57b6bdf2dd8875cb1508d2af43d80a16bf7",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 469762048.0,
+      "source": "huggingface-api",
+      "checked": "2026-08-28",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 629145600.0,
+      "source": "estimated",
+      "checked": "2026-08-28",
+      "note": "~600 MiB working set on Apple Silicon Metal",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
