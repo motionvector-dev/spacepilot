@@ -1,0 +1,256 @@
+{
+  "irVersion": "2.0",
+  "output": {
+    "width": 1080,
+    "height": 1080,
+    "fps": 60
+  },
+  "theme": {
+    "palette": {
+      "colors": {
+        "bg": "#fdfdfb",
+        "ink": "#1a1a1a",
+        "inkMuted": "#6b6b6b",
+        "surface": "#fdfdfb",
+        "cardBg": "#fdfdfb",
+        "bubbleBg": "#fdfdfb",
+        "primary": "#1a1a1a",
+        "secondary": "#1a1a1a",
+        "accent": "#1a1a1a"
+      }
+    },
+    "motion": {
+      "personality": "calm",
+      "baseDurationMs": 260,
+      "staggerMs": 40
+    }
+  },
+  "timeline": {
+    "beats": [
+      {
+        "id": "b1",
+        "durationMs": 2056
+      },
+      {
+        "id": "b2",
+        "durationMs": 2328
+      },
+      {
+        "id": "b3",
+        "durationMs": 1500
+      },
+      {
+        "id": "b4",
+        "durationMs": 4394
+      }
+    ]
+  },
+  "beatContent": {
+    "b1": {
+      "stack": {
+        "slot": "b1_root",
+        "children": [
+          {
+            "column": {
+              "slot": "b1_col",
+              "pad": "s8",
+              "gap": "s7",
+              "align": "center",
+              "children": [
+                {
+                  "text": {
+                    "text": "ME: \"validate says zero warnings.\"",
+                    "role": "mono",
+                    "colorRole": "ink",
+                    "step": 4,
+                    "wrap": true,
+                    "balance": true,
+                    "maxWidth": 880,
+                    "align": "center"
+                  }
+                },
+                {
+                  "stack": {
+                    "slot": "b1_f",
+                    "width": 260,
+                    "height": 340,
+                    "children": [
+                      {
+                        "shape": {
+                          "slot": "b1_f_l",
+                          "width": 260,
+                          "height": 340,
+                          "pathSvg": "M130 44 m-38 0 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0 M130 82 L130 210 M130 112 L58 158 M130 112 L202 158 M130 210 L80 318 M130 210 L180 318",
+                          "stroke": {
+                            "colorRole": "ink",
+                            "width": 5
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "b2": {
+      "stack": {
+        "slot": "b2_root",
+        "children": [
+          {
+            "column": {
+              "slot": "b2_col",
+              "pad": "s8",
+              "gap": "s7",
+              "align": "center",
+              "children": [
+                {
+                  "text": {
+                    "text": "IT: \"I compared the box to its own width.\"",
+                    "role": "mono",
+                    "colorRole": "ink",
+                    "step": 4,
+                    "wrap": true,
+                    "balance": true,
+                    "maxWidth": 880,
+                    "align": "center"
+                  }
+                },
+                {
+                  "stack": {
+                    "slot": "b2_f",
+                    "width": 260,
+                    "height": 340,
+                    "children": [
+                      {
+                        "shape": {
+                          "slot": "b2_f_l",
+                          "width": 260,
+                          "height": 340,
+                          "pathSvg": "M130 44 m-38 0 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0 M130 82 L130 210 M130 112 L58 158 M130 112 L202 158 M130 210 L80 318 M130 210 L180 318",
+                          "stroke": {
+                            "colorRole": "ink",
+                            "width": 5
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "b3": {
+      "stack": {
+        "slot": "b3_root",
+        "children": [
+          {
+            "column": {
+              "slot": "b3_col",
+              "pad": "s8",
+              "gap": "s7",
+              "align": "center",
+              "children": [
+                {
+                  "text": {
+                    "text": "w > w",
+                    "role": "mono",
+                    "colorRole": "ink",
+                    "step": 7,
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "b4": {
+      "stack": {
+        "slot": "b4_root",
+        "children": [
+          {
+            "column": {
+              "slot": "b4_col",
+              "pad": "s8",
+              "gap": "s7",
+              "align": "center",
+              "children": [
+                {
+                  "text": {
+                    "text": "ME: \"so you can never be wrong.\"\n\"eleven strips shipped unreadable.\"",
+                    "role": "mono",
+                    "colorRole": "ink",
+                    "step": 3,
+                    "wrap": true,
+                    "balance": true,
+                    "maxWidth": 880,
+                    "align": "center"
+                  }
+                },
+                {
+                  "row": {
+                    "slot": "b4_pair",
+                    "gap": "s8",
+                    "align": "center",
+                    "children": [
+                      {
+                        "stack": {
+                          "slot": "b4_f",
+                          "width": 260,
+                          "height": 340,
+                          "children": [
+                            {
+                              "shape": {
+                                "slot": "b4_f_l",
+                                "width": 260,
+                                "height": 340,
+                                "pathSvg": "M130 44 m-38 0 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0 M130 82 L130 210 M130 112 L58 158 M130 112 L202 158 M130 210 L80 318 M130 210 L180 318",
+                                "stroke": {
+                                  "colorRole": "ink",
+                                  "width": 5
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "stack": {
+                          "slot": "b4_f2",
+                          "width": 260,
+                          "height": 340,
+                          "children": [
+                            {
+                              "shape": {
+                                "slot": "b4_f2_l",
+                                "width": 260,
+                                "height": 340,
+                                "pathSvg": "M130 44 m-38 0 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0 M130 82 L130 210 M130 112 L58 158 M130 112 L202 158 M130 210 L80 318 M130 210 L180 318",
+                                "stroke": {
+                                  "colorRole": "ink",
+                                  "width": 5
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
