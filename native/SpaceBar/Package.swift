@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "SpaceBar",
     platforms: [
-        .macOS(.v15)
+        .macOS("26.0")
     ],
     products: [
         .executable(name: "SpaceBar", targets: ["SpaceBar"])

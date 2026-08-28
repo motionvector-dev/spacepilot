@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 @preconcurrency import AVFoundation
+import FoundationModels
 import Speech
 import Darwin
 
@@ -82,6 +83,9 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     private var recognitionTask: SFSpeechRecognitionTask?
     private var webSocketTask: URLSessionWebSocketTask?
     private var telemetryTimer: Timer?
+    
+    private var debounceTask: Task<Void, Never>?
+    private let afmManager = AppleFoundationModelManager()
 
     override init() {
         super.init()
@@ -152,6 +156,13 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
 
     private func setupAudioGraph() {
         let inputNode = audioEngine.inputNode
+        
+        do {
+            try inputNode.setVoiceProcessingEnabled(true)
+        } catch {
+            print("Failed to enable VPIO/AEC: \(error)")
+        }
+        
         let hwFormat = inputNode.inputFormat(forBus: 0)
         guard hwFormat.sampleRate > 0 else { return }
 
@@ -170,7 +181,19 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
                 if let result = result {
                     let userSpeech = result.bestTranscription.formattedString
                     self.transcript = "USER: \(userSpeech)"
-                    self.handleSpokenIntent(userSpeech)
+                    
+                    // Barge-in: immediately stop talking if user starts speaking
+                    if self.isSpeaking && !userSpeech.isEmpty {
+                        self.speechSynthesizer.stopSpeaking(at: .immediate)
+                        self.isSpeaking = false
+                    }
+                    
+                    self.debounceTask?.cancel()
+                    self.debounceTask = Task {
+                        try? await Task.sleep(nanoseconds: 1_200_000_000)
+                        guard !Task.isCancelled, !userSpeech.isEmpty else { return }
+                        await self.handleSpokenIntent(userSpeech)
+                    }
                 }
                 if let error = error {
                     print("Speech recognition note: \(error.localizedDescription)")
@@ -237,14 +260,23 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         ws.resume()
     }
 
-    private func handleSpokenIntent(_ text: String) {
-        let lower = text.lowercased()
-        if lower.contains("status") || lower.contains("fan") || lower.contains("memory") || lower.contains("headroom") {
+    private func handleSpokenIntent(_ text: String) async {
+        guard SystemLanguageModel.default.isAvailable else {
+            self.transcript = "SPACE: AFM unavailable (model missing)"
+            speakResponse("System Foundation Model is not available.")
+            return
+        }
+        
+        do {
             let snap = NativeTelemetry.capture()
             self.telemetry = snap
-            let reply = "System nominal at \(snap.thermalDescription). Allocatable working set headroom is \(String(format: "%.1f", snap.allocatableVramGB - snap.residentMemoryGB)) GB of 25.0 GB limit."
-            self.transcript = "SPACE: \(reply)"
-            speakResponse(reply)
+            self.transcript = "SPACE: [Thinking...]"
+            
+            let response = try await afmManager.processInput(userText: text, telemetry: snap)
+            self.transcript = "SPACE: \(response)"
+            speakResponse(response)
+        } catch {
+            self.transcript = "SPACE: Inference failed - \(error.localizedDescription)"
         }
     }
 
@@ -608,5 +640,29 @@ struct SpaceBarPopoverView: View {
             }
             .padding(16)
         }
+    }
+}
+
+// MARK: - Apple Foundation Model Manager
+@available(macOS 15.0, *)
+actor AppleFoundationModelManager {
+    private var session: LanguageModelSession
+    
+    init() {
+        self.session = LanguageModelSession(instructions: SpacePilotInstructions.system)
+    }
+    
+    func processInput(userText: String, telemetry: HardwareSnapshot) async throws -> String {
+        let telemetryContext = SpacePilotInstructions.telemetryBlock(
+            shipName: "m1max",
+            thermalState: telemetry.thermalDescription,
+            residentGB: telemetry.residentMemoryGB,
+            headroomGB: telemetry.allocatableVramGB - telemetry.residentMemoryGB,
+            activeJobs: 0,
+            dockState: "none"
+        )
+        let fullPrompt = "\(telemetryContext)\n\n\(userText)"
+        let response = try await session.respond(to: fullPrompt)
+        return response.content
     }
 }
