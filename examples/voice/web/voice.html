@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpacePilot Voice Studio · Real-Time Duplex Voice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.cdnfonts.com/css/geist-sans" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/geist-mono" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', -apple-system, sans-serif; }
+    pre, code, .font-mono { font-family: 'Geist Mono', monospace; }
+    @property --aur {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    @keyframes aurora-spin {
+      0% { --aur: 0deg; }
+      100% { --aur: 360deg; }
+    }
+    .aurora-glow {
+      background: conic-gradient(from var(--aur), #3b82f6, #8b5cf6, #ec4899, #06b6d4, #3b82f6);
+      animation: aurora-spin 4s linear infinite;
+    }
+    .pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- Header Navigation -->
+  <header class="border-b border-zinc-800/80 bg-zinc-900/40 backdrop-blur-xl px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-md">
+        <svg class="w-5 h-5 text-zinc-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 02-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-tight flex items-center gap-2">
+          SpacePilot Voice Studio <span class="text-xs font-mono px-2 py-0.5 bg-zinc-800 text-cyan-400 rounded-full border border-zinc-700">LIVE 2.5 AUDIO</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Telemetry Badges -->
+    <div class="flex items-center space-x-4 text-xs font-mono text-zinc-400">
+      <div class="flex items-center gap-1.5 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="connStatus">DISCONNECTED</span>
+      </div>
+      <div class="hidden md:flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
+        <span>RTT:</span> <strong id="rttDisplay" class="text-zinc-200">-- ms</strong>
+      </div>
+      <div class="hidden md:flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
+        <span>AEC:</span> <strong class="text-emerald-400">ENABLED</strong>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Voice Orb Stage -->
+  <main class="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full relative">
+    
+    <!-- Active Voice Orb Stage (Direct 1-Click Zero Auth) -->
+    <div id="orbStage" class="flex flex-col items-center justify-center my-auto py-8">
+      
+      <!-- The Pulsing Glowing Orb -->
+      <div class="relative w-56 h-56 flex items-center justify-center cursor-pointer select-none" id="orbClickTarget">
+        <div id="orbRing" class="absolute inset-0 rounded-full aurora-glow opacity-60 blur-xl transition-all duration-300"></div>
+        <div id="orbCore" class="relative z-10 w-44 h-44 rounded-full bg-zinc-900 border-2 border-zinc-700/80 shadow-2xl flex flex-col items-center justify-center transition-all duration-300">
+          <svg id="micIcon" class="w-12 h-12 text-zinc-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 02-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+          <span id="orbStateLabel" class="text-xs font-mono font-bold tracking-widest text-zinc-400 mt-2 uppercase">Connecting...</span>
+        </div>
+      </div>
+
+      <!-- Real-Time Decibel Volume Meter -->
+      <div class="w-64 h-1.5 bg-zinc-800 rounded-full mt-8 overflow-hidden">
+        <div id="vuMeter" class="h-full bg-cyan-400 w-0 transition-all duration-75"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-4 mt-6">
+        <button id="muteBtn" class="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-300 transition">
+          🎤 Mic: ON
+        </button>
+        <button id="interruptBtn" class="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-300 transition">
+          ⚡ Interrupt (Spacebar)
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Transcript & Model Thought Stream -->
+    <div id="transcriptBox" class="w-full bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 font-mono text-xs max-h-48 overflow-y-auto space-y-2 shadow-inner mt-4">
+      <div class="text-zinc-500 italic">Conversations and live assistant responses stream here automatically...</div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 px-6 py-4 text-center text-xs font-mono text-zinc-600">
+    SpacePilot Native WebAudio Bridge · Key Injected via Doppler · 0% Telemetry
+  </footer>
+
+  <script>
+    let ws = null;
+    let audioContext = null;
+    let mediaStream = null;
+    let micProcessor = null;
+    let isMuted = false;
+    let isConnected = false;
+
+    const connStatus = document.getElementById('connStatus');
+    const orbStateLabel = document.getElementById('orbStateLabel');
+    const orbCore = document.getElementById('orbCore');
+    const orbRing = document.getElementById('orbRing');
+    const micIcon = document.getElementById('micIcon');
+    const vuMeter = document.getElementById('vuMeter');
+    const transcriptBox = document.getElementById('transcriptBox');
+    const muteBtn = document.getElementById('muteBtn');
+    const interruptBtn = document.getElementById('interruptBtn');
+
+    // Auto-connect on page load to local bridge
+    window.addEventListener('DOMContentLoaded', () => {
+      startVoiceSession();
+    });
+
+    async function startVoiceSession() {
+      connStatus.textContent = 'CONNECTING TO BRIDGE...';
+      connStatus.className = 'text-amber-400 font-mono';
+
+      const uri = `ws://localhost:8092`;
+      
+      try {
+        ws = new WebSocket(uri);
+
+        ws.onopen = async () => {
+          console.log("WebSocket open to local bridge");
+        };
+
+        ws.onmessage = async (event) => {
+          let data;
+          if (event.data instanceof Blob) {
+            data = JSON.parse(await event.data.text());
+          } else {
+            data = JSON.parse(event.data);
+          }
+
+          if (data.setupComplete) {
+            isConnected = true;
+            connStatus.textContent = 'LIVE 2.5 DUPLEX';
+            connStatus.className = 'text-emerald-400 font-bold';
+            orbStateLabel.textContent = 'LISTENING';
+            await initWebAudio();
+          }
+
+          if (data.serverContent) {
+            const sc = data.serverContent;
+            if (sc.interrupted) {
+              appendLog('⚡ [Interrupted]', 'text-rose-400 font-bold');
+            }
+            if (sc.modelTurn && sc.modelTurn.parts) {
+              for (const part of sc.modelTurn.parts) {
+                if (part.inlineData && part.inlineData.data) {
+                  orbStateLabel.textContent = 'SPEAKING';
+                  orbCore.classList.add('border-cyan-400', 'scale-105');
+                  micIcon.classList.add('text-cyan-400');
+                  playAudioChunk(part.inlineData.data);
+                } else if (part.text) {
+                  appendLog(`AI: ${part.text}`, 'text-zinc-200');
+                }
+              }
+            }
+            if (sc.turnComplete) {
+              orbStateLabel.textContent = 'LISTENING';
+              orbCore.classList.remove('border-cyan-400', 'scale-105');
+              micIcon.classList.remove('text-cyan-400');
+            }
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error(err);
+          connStatus.textContent = 'ERROR';
+          connStatus.className = 'text-rose-400';
+        };
+
+        ws.onclose = () => {
+          connStatus.textContent = 'DISCONNECTED';
+          connStatus.className = 'text-zinc-500';
+        };
+
+      } catch (err) {
+        alert('Failed to connect: ' + err.message);
+      }
+    }
+
+    async function initWebAudio() {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      micProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+
+      source.connect(micProcessor);
+      micProcessor.connect(audioContext.destination);
+
+      micProcessor.onaudioprocess = (e) => {
+        if (isMuted || !isConnected || ws.readyState !== WebSocket.OPEN) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        
+        // VU Meter calculation
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) sum += inputData[i] * inputData[i];
+        const rms = Math.sqrt(sum / inputData.length);
+        vuMeter.style.width = Math.min(100, rms * 400) + '%';
+
+        // Convert Float32 to 16-bit PCM
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
+        const base64Audio = btoa(String.fromCharCode.apply(null, new Uint8Array(pcm16.buffer)));
+        ws.send(JSON.stringify({
+          realtimeInput: {
+            mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: base64Audio }]
+          }
+        }));
+      };
+    }
+
+    let nextPlayTime = 0;
+    function playAudioChunk(base64Data) {
+      if (!audioContext) return;
+      const binaryString = atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+      
+      const int16Array = new Int16Array(bytes.buffer);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+
+      // 💎 CRITICAL FIX: Gemini 2.5 Live outputs crystal-clear 24,000 Hz (24kHz) PCM!
+      // (Playing 24kHz audio at 16kHz caused the slow, robotic, distorted sound)
+      const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
+      audioBuffer.getChannelData(0).set(float32Array);
+
+      const sourceNode = audioContext.createBufferSource();
+      sourceNode.buffer = audioBuffer;
+      sourceNode.connect(audioContext.destination);
+
+      const currentTime = audioContext.currentTime;
+      // Add a tiny 20ms jitter cushion for seamless buffer stitching
+      if (nextPlayTime < currentTime) nextPlayTime = currentTime + 0.02;
+      sourceNode.start(nextPlayTime);
+      nextPlayTime += audioBuffer.duration;
+    }
+
+    function appendLog(msg, colorClass = 'text-zinc-400') {
+      const div = document.createElement('div');
+      div.className = colorClass;
+      div.textContent = msg;
+      transcriptBox.appendChild(div);
+      transcriptBox.scrollTop = transcriptBox.scrollHeight;
+    }
+
+    muteBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? '🎤 Mic: MUTED' : '🎤 Mic: ON';
+      muteBtn.className = isMuted 
+        ? 'px-4 py-2 rounded-lg bg-rose-950 border border-rose-800 text-xs font-mono text-rose-300 transition'
+        : 'px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-300 transition';
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        appendLog('⚡ [Manual Interruption triggered]', 'text-cyan-400');
+        if (audioContext) nextPlayTime = audioContext.currentTime; // Drop speaker queue
+      }
+    });
+  </script>
+</body>
+</html>
