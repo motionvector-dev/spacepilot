@@ -32,6 +32,68 @@
  },
  "models": [
   {
+   "id": "aurasr",
+   "name": "AuraSR",
+   "family": "fal-ai",
+   "kind": "image",
+   "summary": "GigaGAN-based 4x super-resolution model designed for rapid, high-fidelity upscaling of diffusion-generated imagery without hallucinatory artifacts.\n",
+   "homepage": "https://github.com/fal-ai/aura-sr",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "aurasr-v2",
+     "model_id": "aurasr",
+     "name": "AuraSR v2",
+     "kind": "image",
+     "family": "fal-ai",
+     "params": "600M",
+     "precision": "fp16",
+     "repo": "fal/AuraSR-v2",
+     "files": null,
+     "revision": "ff452185a7c8b51206dd62c21c292e7baad5c3a3",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 4940603742.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "AuraSR-v2 GigaGAN generator checkpoint",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 2952790016.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "GigaGAN generator weights resident plus high-res output tensors",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "boogu",
    "name": "Boogu Image",
    "family": "boogu",
@@ -593,6 +655,67 @@
      "caveats": [],
      "compromised": [],
      "notes": "FIBO Edit with built-in background removal. mflux aliases \"fibo-edit-rmbg\", \"fiboedit-rmbg\".\n"
+    }
+   ]
+  },
+  {
+   "id": "flashvsr",
+   "name": "FlashVSR",
+   "family": "openimaginglab",
+   "kind": "video",
+   "summary": "Real-time streaming diffusion video super-resolution using block-sparse attention and a tiny conditional decoder for high-fidelity 4x upscaling.\n",
+   "homepage": "https://github.com/OpenImagingLab/FlashVSR",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "flashvsr-v1-1",
+     "model_id": "flashvsr",
+     "name": "FlashVSR v1.1",
+     "kind": "video",
+     "family": "openimaginglab",
+     "params": "1.5B",
+     "precision": "fp16",
+     "repo": "JunhaoZhuang/FlashVSR-v1.1",
+     "files": null,
+     "revision": "27561b186ded3402d7c975f4fd722e2885b6135f",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 6948404950.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "FlashVSR v1.1 diffusion and tiny conditional decoder weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 6979321856.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "DiT weights resident plus temporal recurrent frame state buffers",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
@@ -1880,6 +2003,68 @@
    ]
   },
   {
+   "id": "real-esrgan",
+   "name": "Real-ESRGAN",
+   "family": "xinntao",
+   "kind": "image",
+   "summary": "Universal 4x deep residual-in-residual dense network (RRDBNet) for practical image and video frame restoration and sharpening.\n",
+   "homepage": "https://github.com/xinntao/Real-ESRGAN",
+   "license": {
+    "id": "bsd-3-clause",
+    "open_source": true,
+    "spdx": "BSD-3-Clause",
+    "url": "https://opensource.org/licenses/BSD-3-Clause",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "real-esrgan-x4plus",
+     "model_id": "real-esrgan",
+     "name": "Real-ESRGAN x4 Plus",
+     "kind": "image",
+     "family": "xinntao",
+     "params": "16.7M",
+     "precision": "fp32",
+     "repo": "ai-forever/Real-ESRGAN",
+     "files": null,
+     "revision": "8110204ebf8d25c031b66c26c2d1098aa831157e",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 201294448.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "RRDBNet x4plus generator weights",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 1073741824.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Model weights resident with full-resolution patch tiled inference buffer",
+      "is_measured": false
+     },
+     "license": {
+      "id": "bsd-3-clause",
+      "open_source": true,
+      "spdx": "BSD-3-Clause",
+      "url": "https://opensource.org/licenses/BSD-3-Clause",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
    "id": "sana",
    "name": "Sana",
    "family": "nvidia",
@@ -2208,6 +2393,66 @@
       "open_source": true,
       "spdx": "LicenseRef-Stability-Community",
       "url": "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
+  {
+   "id": "supir",
+   "name": "SUPIR",
+   "family": "supir-project",
+   "kind": "image",
+   "summary": "Scaling up photorealistic image restoration using massive generative priors from SDXL and dual-control adapters for extreme detail recovery.\n",
+   "homepage": "https://github.com/Fanghua-Yu/SUPIR",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "supir-v0-q",
+     "model_id": "supir",
+     "name": "SUPIR v0Q (Quality)",
+     "kind": "image",
+     "family": "supir-project",
+     "params": "2.6B",
+     "precision": "fp16",
+     "repo": "camenduru/SUPIR",
+     "files": null,
+     "revision": "97b24ec4d42bbdf6b3c5a8d701f78ac67aacba04",
+     "is_pinned": true,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 64189190395.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "SUPIR-v0Q model checkpoint and SDXL restoration prior",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 15569256448.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "SDXL UNet, text encoders, and ControlNet restoration layers",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
       "restrictions": [],
       "is_permissive": true
      },
