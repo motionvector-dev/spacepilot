@@ -1,12 +1,13 @@
 <!-- ==========================================================================
-     TELEMETRY GRID: Silicon Health, Thermals, and Active Stream Meters
+     TELEMETRY GRID: silicon health, thermals, throughput. Facts in mono,
+     ink — state color is earned (true = measured warm), never decorative.
      ========================================================================== -->
 <div class="telemetry-grid-card mono">
   <div class="telem-item">
     <span class="telem-label">SOC THERMAL</span>
     <div class="telem-val-group">
       <span class="telem-val">42°C</span>
-      <span class="telem-sub">Nominal</span>
+      <span class="telem-sub">nominal</span>
     </div>
   </div>
 
@@ -14,14 +15,14 @@
     <span class="telem-label">ACOUSTICS</span>
     <div class="telem-val-group">
       <span class="telem-val">0 RPM</span>
-      <span class="telem-sub">Passive Quiet</span>
+      <span class="telem-sub">passive</span>
     </div>
   </div>
 
   <div class="telem-item">
-    <span class="telem-label">ANE / GPU LOAD</span>
+    <span class="telem-label">GPU LOAD</span>
     <div class="telem-val-group">
-      <span class="telem-val text-blue">84%</span>
+      <span class="telem-val">84%</span>
       <span class="telem-sub">42 tok/s</span>
     </div>
   </div>
@@ -37,6 +38,8 @@
   border-radius: var(--r2);
   padding: 10px;
   margin-bottom: 10px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 .telem-item {
   display: flex;
@@ -44,25 +47,23 @@
   gap: 3px;
 }
 .telem-label {
-  font-size: 8px;
-  font-weight: 600;
+  font-size: var(--fs-label);
+  font-weight: 500;
   color: var(--ink4);
-  letter-spacing: 0.05em;
+  letter-spacing: .13em;
+  text-transform: uppercase;
 }
 .telem-val-group {
   display: flex;
   flex-direction: column;
 }
 .telem-val {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--fs-chrome);
+  font-weight: 600;
   color: var(--ink);
 }
-.telem-val.text-blue {
-  color: var(--accent-blue);
-}
 .telem-sub {
-  font-size: 9px;
+  font-size: var(--fs-label);
   color: var(--ink3);
 }
 </style>

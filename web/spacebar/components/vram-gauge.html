@@ -1,10 +1,11 @@
 <!-- ==========================================================================
-     VRAM GAUGE: Rebased on 25.0 GB Allocatable Working-Set (M1 Max Truth)
+     VRAM GAUGE: 25.0 GB allocatable working set on the 32 GB UMA axis.
+     Fill animates transform scaleX (never width). Numbers are facts: mono.
      ========================================================================== -->
 <div class="vram-gauge-card">
   <div class="gauge-header">
     <div class="gauge-title-group">
-      <span class="mono-label">RESIDENT WEIGHTS</span>
+      <span class="gauge-label">RESIDENT WEIGHTS</span>
       <span class="hardware-chip">M1 Max · 400 GB/s</span>
     </div>
     <div class="gauge-readout mono">
@@ -14,24 +15,17 @@
     </div>
   </div>
 
-  <!-- Dual Rail: 25.0 GB Allocatable Limit + 7.0 GB OS Caution Zone -->
   <div class="dual-memory-rail">
-    <!-- Active Resident Fill -->
-    <div class="rail-fill active-fill" style="width: 56.8%;"></div>
-    <!-- Allocatable Safe Boundary Marker (78.1% of 32GB) -->
+    <div class="rail-fill" style="--w: 0.568;"></div>
     <div class="safe-limit-tick" style="left: 78.1%;" title="25.0 GB Metal recommendedMaxWorkingSetSize"></div>
-    <!-- Hatched Warning Buffer (25GB to 32GB: OS Compressor / Swap Danger Zone) -->
-    <div class="hatched-caution-zone" style="left: 78.1%; width: 21.9%;" title="OS Memory Compressor Danger Zone"></div>
+    <div class="hatched-caution-zone" style="left: 78.1%; width: 21.9%;" title="OS memory compressor zone"></div>
   </div>
 
   <div class="gauge-footer">
     <span class="headroom-text mono">
       <span class="dot-headroom"></span> <strong>6.8 GB</strong> allocatable headroom
     </span>
-    <button class="evict-btn mono" onclick="evictWeights()" title="Unload inactive resident model buffers">
-      <svg class="icn-sm" viewBox="0 0 24 24"><path d="M19 6L5 20M5 6l14 14"/></svg>
-      EVICT WEIGHTS
-    </button>
+    <button class="evict-btn" title="Unload inactive resident model buffers">EVICT WEIGHTS</button>
   </div>
 </div>
 
@@ -54,56 +48,59 @@
   flex-direction: column;
   gap: 2px;
 }
-.mono-label {
+.gauge-label {
   font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--ink3);
+  font-size: var(--fs-label);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--ink4);
 }
 .hardware-chip {
-  font-size: 11px;
-  color: var(--ink2);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  color: var(--ink3);
 }
 .gauge-readout {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .used-val {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--fs-chrome);
+  font-weight: 600;
   color: var(--ink);
 }
 .allocatable-max {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--online);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  color: var(--ink2);
 }
 .physical-total {
   display: block;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink4);
 }
 .dual-memory-rail {
+  position: relative;
   height: 8px;
   background: var(--raised);
   border-radius: 4px;
-  position: relative;
   overflow: hidden;
   margin-bottom: 8px;
 }
 .rail-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--online), var(--accent-blue));
-  border-radius: 4px;
-  transition: transform var(--t-dock);
+  position: absolute;
+  inset: 0;
+  background: var(--fill-machine);
+  transform: scaleX(var(--w, 0));
   transform-origin: left;
+  transition: transform var(--t-cargo);
 }
 .safe-limit-tick {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--ink3);
+  background: var(--ink2);
   z-index: 2;
 }
 .hatched-caution-zone {
@@ -112,12 +109,12 @@
   bottom: 0;
   background: repeating-linear-gradient(
     -45deg,
-    rgba(245, 158, 11, 0.15),
-    rgba(245, 158, 11, 0.15) 4px,
-    rgba(245, 158, 11, 0.05) 4px,
-    rgba(245, 158, 11, 0.05) 8px
+    color-mix(in srgb, var(--gold) 18%, transparent),
+    color-mix(in srgb, var(--gold) 18%, transparent) 4px,
+    color-mix(in srgb, var(--gold) 5%, transparent) 4px,
+    color-mix(in srgb, var(--gold) 5%, transparent) 8px
   );
-  border-left: 1px solid var(--warning);
+  border-left: 1px solid var(--gold);
 }
 .gauge-footer {
   display: flex;
@@ -125,17 +122,18 @@
   align-items: center;
 }
 .headroom-text {
-  font-size: 11px;
+  font-size: var(--fs-label);
   color: var(--ink2);
   display: flex;
   align-items: center;
   gap: 6px;
+  font-variant-numeric: tabular-nums;
 }
 .dot-headroom {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--online);
+  background: var(--true);
 }
 .evict-btn {
   background: transparent;
@@ -143,17 +141,17 @@
   border-radius: var(--r1);
   color: var(--ink3);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   padding: 3px 8px;
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  transition: all var(--t-enter);
+  transition: color var(--t-enter), border-color var(--t-enter), background-color var(--t-enter);
 }
 .evict-btn:hover {
   background: var(--raised);
-  border-color: var(--warning);
-  color: var(--warning);
+  border-color: var(--gold-line);
+  color: var(--gold);
 }
 </style>

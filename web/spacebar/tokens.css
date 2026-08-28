@@ -1,68 +1,95 @@
 /* ==========================================================================
-   SPACEBAR MASTER DESIGN TOKENS (Obsidian Zinc + Apple Intelligence)
+   SPACEBAR TOKENS — an extension of the SpacePilot brand system.
+   Source of truth: design-system/foundations/tokens-palette.html
+   (palette, theming, radii, type) and motion-rules.html (durations).
+
+   The palette block below is verbatim brand law — do not edit values here,
+   edit the foundation. Everything after the "SpaceBar extension" header adds
+   only what the hardware-truth popover needs that the brand did not define:
+   the gold ramp as the attention color, the agent color for remote/agent
+   attribution, the chrome ramp as the machine fill, and the Aurora.
+
+   No color outside the brand kit is introduced anywhere in this file.
    ========================================================================== */
 
-@property --aur {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
+/* --- Brand palette (verbatim: design-system/foundations/tokens-palette.html) --- */
+:root {
+  --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
+  --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
+  --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
+  --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
+  --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
+  --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
+  --invbg: #fafafa; --invink: #09090b;
+  --mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+  --sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --r1: 6px; --r2: 10px; --r3: 14px;
 }
+:root[data-theme="light"] {
+  --root: #fdfdfc; --ground: #f7f7f5; --panel: #f2f2ef; --card: #ffffff; --raised: #e6e6e1;
+  --line: rgba(0, 0, 0, .08); --line2: rgba(0, 0, 0, .14); --line3: rgba(0, 0, 0, .22);
+  --ink: #09090b; --ink2: #52525b; --ink3: #71717a; --ink4: #a1a1aa;
+  --true: #059669; --wrong: #e11d48; --agent: #5b528f;
+  --silver: #5c6672; --silver-line: rgba(92, 102, 114, .32);
+  --gold: #8a6a22; --gold-line: rgba(138, 106, 34, .34);
+  --invbg: #09090b; --invink: #fafafa;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
+    --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
+    --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
+    --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
+    --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
+    --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
+    --invbg: #fafafa; --invink: #09090b;
+  }
+}
+:root[data-theme="dark"] {
+  --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
+  --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
+  --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
+  --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
+  --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
+  --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
+  --invbg: #fafafa; --invink: #09090b;
+}
+
+/* --- Chrome alloy ramp (verbatim: design-system/foundations/metal-chrome.html) --- */
+:root, :root[data-theme="dark"] {
+  --chrome-1: #545c67; --chrome-2: #a7b0bc; --chrome-3: #e8edf4; --chrome-4: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --chrome-1: #21272f; --chrome-2: #434c58; --chrome-3: #717d8c; --chrome-4: #a4b1bf;
+  }
+}
+:root[data-theme="light"] {
+  --chrome-1: #21272f; --chrome-2: #434c58; --chrome-3: #717d8c; --chrome-4: #a4b1bf;
+}
+
+/* ==========================================================================
+   SPACEBAR EXTENSION — popover chrome, motion, Aurora. No new colors.
+   ========================================================================== */
 
 :root {
-  /* Surface Stack */
-  --root: #000000;
-  --ground: #09090b;
-  --panel: #111114;
-  --card: #18181b;
-  --raised: #222226;
-  --line: rgba(255, 255, 255, 0.08);
-  --line2: rgba(255, 255, 255, 0.14);
-  --line3: rgba(255, 255, 255, 0.22);
-  
-  /* Ink & Typography */
-  --ink: #fafafa;
-  --ink2: #a1a1aa;
-  --ink3: #71717a;
-  --ink4: #52525b;
-  --mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', monospace;
-  --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Type scale: two sizes only (design-system/foundations/fonts.html) */
+  --fs-chrome: 13px;   /* body of every panel, row, control */
+  --fs-label: 10px;    /* uppercase · letterspaced · the eyebrow voice */
 
-  /* Semantic Hardware Truth */
-  --online: #10b981;       /* Warm / Nominal / Flown */
-  --warning: #f59e0b;      /* Caveat / Degraded / Hatched Memory */
-  --error: #f43535;        /* Offline / Metal OOM / Refusal */
-  --accent-blue: #3b82f6;  /* Active Inference / Streaming */
-  --accent-purple: #8b5cf6;/* Aurora Transition */
+  /* Motion (verbatim durations from design-system/motion/motion-rules.html) */
+  --t-enter: 180ms ease-out;          /* opacity + 4px rise */
+  --t-exit: 120ms ease-out;           /* opacity only — travels nowhere */
+  --t-stagger: 40ms;                  /* caps at the fifth sibling */
+  --t-crossfade: 240ms ease-in-out;   /* state replaces state, in place */
+  --t-cargo: 220ms ease-out;          /* dashed → solid, layered: the docking motion */
+  --t-route: 200ms ease-out;          /* the whole viewport, once */
 
-  /* Radii */
-  --r1: 6px;
-  --r2: 10px;
-  --r3: 14px;
   --r-popover: 16px;
-
-  /* 120Hz Fluid Motion Curves */
-  --t-enter: 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  --t-exit: 140ms cubic-bezier(0.55, 0, 1, 0.45);
-  --t-crossfade: 200ms ease-in-out;
-  --t-dock: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  --fill-machine: linear-gradient(90deg, var(--chrome-1), var(--chrome-2), var(--chrome-3));
 }
 
-[data-theme="light"] {
-  --root: #fdfdfc;
-  --ground: #f7f7f5;
-  --panel: #f2f2ef;
-  --card: #ffffff;
-  --raised: #eaeae6;
-  --line: rgba(0, 0, 0, 0.08);
-  --line2: rgba(0, 0, 0, 0.14);
-  --line3: rgba(0, 0, 0, 0.22);
-  --ink: #09090b;
-  --ink2: #52525b;
-  --ink3: #71717a;
-  --ink4: #a1a1aa;
-}
-
-/* Base Popover Layout */
+/* Base popover layout — opaque instrument panel, no blur pretense */
 .spacebar-popover {
   width: 360px;
   background: var(--panel);
@@ -73,32 +100,30 @@
   position: relative;
   overflow: hidden;
   font-family: var(--sans);
+  font-size: var(--fs-chrome);
   color: var(--ink);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
 }
 
-/* Apple Intelligence Aurora Glow Border (Active Inference Pass) */
+/* Apple Intelligence Aurora Glow Border — active inference pass.
+   Gradient is brand-native: agent → silver → true. Instrument-slow: 4s/rev. */
+@property --aur {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
 .spacebar-popover.aurora-active::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(
-    from var(--aur),
-    var(--accent-blue),
-    var(--accent-purple),
-    var(--online),
-    var(--accent-blue)
-  );
+  background: conic-gradient(from var(--aur), var(--agent), var(--silver), var(--true), var(--agent));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: aur-spin 4s linear infinite;
   pointer-events: none;
 }
-
 @keyframes aur-spin {
   to { --aur: 360deg; }
 }
@@ -107,6 +132,6 @@
   * { animation-duration: 0.01ms !important; transition-duration: 80ms !important; }
   .spacebar-popover.aurora-active::before {
     animation: none;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--online));
+    background: linear-gradient(135deg, var(--agent), var(--silver), var(--true));
   }
 }
