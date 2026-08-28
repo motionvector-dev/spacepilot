@@ -1,0 +1,142 @@
+<!-- ==========================================================================
+     STATE 1: ACTIVE LOCAL INFERENCE (Aurora Glow, Qwen/Kokoro Streaming)
+     ========================================================================== -->
+<div class="spacebar-popover aurora-active">
+  <!-- Header -->
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="active-badge mono">
+        <span class="pulse-ring"></span>
+        STREAMING
+      </span>
+      <span class="model-title">Qwen 2.5 7B MLX</span>
+    </div>
+    <div class="header-right mono">
+      <span class="throughput-rate">42.4 tok/s</span>
+    </div>
+  </div>
+
+  <!-- Job Progress Bar -->
+  <div class="job-progress-container">
+    <div class="job-progress-bar" style="transform: scaleX(0.68);"></div>
+  </div>
+  <div class="job-meta mono">
+    <span>Token 348 / 512</span>
+    <span>Layer 28/28 Metal</span>
+  </div>
+
+  <!-- Rebased VRAM Gauge (25.0 GB Allocatable Working-Set) -->
+  <div class="vram-gauge-slot"></div>
+
+  <!-- Telemetry Grid -->
+  <div class="telemetry-grid-slot"></div>
+
+  <!-- Quick Action Footer -->
+  <div class="popover-footer">
+    <button class="footer-btn secondary mono" onclick="pauseJob()">
+      <svg class="icn-sm" viewBox="0 0 24 24"><path d="M10 4H6v16h4V4zm8 0h-4v16h4V4z"/></svg>
+      SPACE PAUSE
+    </button>
+    <button class="footer-btn primary mono" onclick="openStudio()">
+      ⌘K PALETTE
+    </button>
+  </div>
+</div>
+
+<style>
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.active-badge {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--r1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pulse-ring {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  box-shadow: 0 0 6px var(--accent-blue);
+}
+.model-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.throughput-rate {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+.job-progress-container {
+  height: 4px;
+  background: var(--raised);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.job-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  transform-origin: left;
+  transition: transform 150ms linear;
+}
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--ink4);
+  margin-bottom: 10px;
+}
+.popover-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.footer-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--r1);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--t-enter);
+}
+.footer-btn.secondary {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  color: var(--ink2);
+}
+.footer-btn.secondary:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+.footer-btn.primary {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: var(--root);
+}
+.footer-btn.primary:hover {
+  opacity: 0.9;
+}
+</style>

@@ -1,0 +1,76 @@
+<!-- ==========================================================================
+     CAVEAT CHIP: Negative Provenance Warning Surface with 1-Click Copy
+     ========================================================================== -->
+<div class="caveat-banner">
+  <div class="caveat-header">
+    <div class="caveat-tag mono">
+      <svg class="icn-sm caveat-icn" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      CAVEAT: TYPOGRAPHY.DEGRADED
+    </div>
+    <span class="provenance-origin mono">measured · M1 Max</span>
+  </div>
+  <p class="caveat-desc">
+    Q4_K quantization causes severe character distortion on render passes &lt;32px.
+  </p>
+  <div class="caveat-action-row">
+    <button class="caveat-copy-btn mono" onclick="navigator.clipboard.writeText('spacepilot caveat flux.1-schnell-q4'); showToast('Copied CLI invocation')">
+      ⌘C spacepilot caveat flux.1-schnell-q4
+    </button>
+  </div>
+</div>
+
+<style>
+.caveat-banner {
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--r2);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.caveat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.caveat-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.caveat-icn {
+  stroke: var(--warning);
+}
+.provenance-origin {
+  font-size: 9px;
+  color: var(--ink4);
+}
+.caveat-desc {
+  font-size: 11px;
+  color: var(--ink2);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.caveat-action-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.caveat-copy-btn {
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  border-radius: var(--r1);
+  color: var(--ink3);
+  font-size: 9px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all var(--t-enter);
+}
+.caveat-copy-btn:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line3);
+}
+</style>

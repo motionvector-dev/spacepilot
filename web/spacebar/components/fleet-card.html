@@ -1,0 +1,110 @@
+<!-- ==========================================================================
+     FLEET CARD: Remote Cluster Node Telemetry (WireGuard RTT + Headroom)
+     ========================================================================== -->
+<div class="fleet-node-card">
+  <div class="node-header">
+    <div class="node-identity">
+      <span class="node-status-dot online"></span>
+      <span class="node-name">rtx-5090-rack.tailnet</span>
+    </div>
+    <div class="node-rtt mono">
+      <svg class="icn-sm" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      24 ms WireGuard
+    </div>
+  </div>
+
+  <div class="node-specs-row mono">
+    <span class="node-chip">RTX 5090 (32GB VRAM)</span>
+    <span class="node-warm-badge">Warm: FLUX.1 + FlashVSR</span>
+  </div>
+
+  <div class="node-telemetry-grid mono">
+    <div class="node-metric">
+      <span class="metric-lbl">VRAM HEADROOM</span>
+      <span class="metric-val">14.2 / 32 GB</span>
+    </div>
+    <div class="node-metric">
+      <span class="metric-lbl">QUEUE DEPTH</span>
+      <span class="metric-val">0 active (idle)</span>
+    </div>
+    <div class="node-metric">
+      <span class="metric-lbl">POWER / THERMAL</span>
+      <span class="metric-val">68W · 44°C</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.fleet-node-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.node-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.node-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.node-status-dot.online {
+  background: var(--online);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+.node-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.node-rtt {
+  font-size: 10px;
+  color: var(--online);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.node-specs-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--ink3);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.node-warm-badge {
+  color: var(--accent-blue);
+}
+.node-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.node-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.metric-lbl {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 0.05em;
+}
+.metric-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink2);
+}
+</style>

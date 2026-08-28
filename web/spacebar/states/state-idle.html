@@ -1,0 +1,80 @@
+<!-- ==========================================================================
+     STATE 4: IDLE / PASSIVE PROBE STATE (42°C, 0 RPM, 1-Click Prewarm)
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <!-- Header -->
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="idle-badge mono">IDLE · PASSIVE</span>
+      <span class="model-title">M1 Max (32GB)</span>
+    </div>
+    <div class="header-right mono">
+      <span class="passive-status">0 RPM Quiet</span>
+    </div>
+  </div>
+
+  <!-- Rebased VRAM Gauge (All 25.0 GB Allocatable Free) -->
+  <div class="vram-gauge-slot"></div>
+
+  <!-- Telemetry Grid -->
+  <div class="telemetry-grid-slot"></div>
+
+  <!-- 1-Click Model Prewarm Grid -->
+  <div class="prewarm-grid">
+    <button class="prewarm-card mono" onclick="prewarm('kokoro')">
+      <span class="prewarm-name">Kokoro 82M</span>
+      <span class="prewarm-cost">+320 MB · 0.2s</span>
+    </button>
+    <button class="prewarm-card mono" onclick="prewarm('qwen-7b')">
+      <span class="prewarm-name">Qwen 2.5 7B</span>
+      <span class="prewarm-cost">+4.8 GB · 1.2s</span>
+    </button>
+  </div>
+</div>
+
+<style>
+.idle-badge {
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  color: var(--ink3);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--r1);
+}
+.passive-status {
+  font-size: 10px;
+  color: var(--ink3);
+}
+.prewarm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.prewarm-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  transition: all var(--t-enter);
+}
+.prewarm-card:hover {
+  background: var(--raised);
+  border-color: var(--online);
+}
+.prewarm-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.prewarm-cost {
+  font-size: 9px;
+  color: var(--online);
+}
+</style>

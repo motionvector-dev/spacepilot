@@ -1,0 +1,53 @@
+<!-- ==========================================================================
+     STATE 2: REMOTE TAILSCALE FLEET NODE (5090 Cluster, 24ms WireGuard)
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <!-- Header -->
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="fleet-badge mono">
+        <svg class="icn-sm" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        FLEET ROUTED
+      </span>
+      <span class="model-title">FLUX.1 Dev BF16</span>
+    </div>
+    <div class="header-right mono">
+      <span class="fleet-rtt">24 ms WireGuard</span>
+    </div>
+  </div>
+
+  <!-- Remote Fleet Node Telemetry Card -->
+  <div class="fleet-node-slot"></div>
+
+  <!-- Telemetry Grid -->
+  <div class="telemetry-grid-slot"></div>
+
+  <!-- Remote Action Footer -->
+  <div class="popover-footer">
+    <button class="footer-btn secondary mono" onclick="switchNode()">
+      SWITCH NODE (⌘2)
+    </button>
+    <button class="footer-btn primary mono" onclick="openStudioFleet()">
+      VIEW FLEET
+    </button>
+  </div>
+</div>
+
+<style>
+.fleet-badge {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--online);
+  color: var(--online);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--r1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fleet-rtt {
+  font-size: 10px;
+  color: var(--online);
+}
+</style>

@@ -1,0 +1,93 @@
+<!-- ==========================================================================
+     STATE 3: CAVEATED / DEGRADED STATE (Negative Provenance Warning)
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <!-- Header -->
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="caveat-badge mono">
+        <svg class="icn-sm" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        CAVEAT ACTIVE
+      </span>
+      <span class="model-title">FLUX.1 Schnell Q4_K</span>
+    </div>
+    <div class="header-right mono">
+      <span class="status-origin">inferred</span>
+    </div>
+  </div>
+
+  <!-- Negative Provenance Banner Component -->
+  <div class="caveat-slot"></div>
+
+  <!-- VRAM Working Set Gauge -->
+  <div class="vram-gauge-slot"></div>
+
+  <!-- Pre-Mount Interstitial Warning Action -->
+  <div class="pre-mount-confirm-box">
+    <span class="confirm-warning-text mono">
+      ⚠️ High error risk on small typography passes.
+    </span>
+    <div class="confirm-btn-row">
+      <button class="confirm-cancel-btn mono" onclick="evictWeights()">CANCEL</button>
+      <button class="confirm-mount-btn mono" onclick="mountAnyway()">MOUNT ANYWAY</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.caveat-badge {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--r1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-origin {
+  font-size: 10px;
+  color: var(--ink4);
+}
+.pre-mount-confirm-box {
+  background: var(--card);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--r2);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.confirm-warning-text {
+  font-size: 10px;
+  color: var(--warning);
+}
+.confirm-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.confirm-cancel-btn {
+  flex: 1;
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  color: var(--ink2);
+  border-radius: var(--r1);
+  padding: 5px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.confirm-mount-btn {
+  flex: 1;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  border-radius: var(--r1);
+  padding: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+</style>

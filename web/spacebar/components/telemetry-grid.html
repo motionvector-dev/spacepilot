@@ -1,0 +1,68 @@
+<!-- ==========================================================================
+     TELEMETRY GRID: Silicon Health, Thermals, and Active Stream Meters
+     ========================================================================== -->
+<div class="telemetry-grid-card mono">
+  <div class="telem-item">
+    <span class="telem-label">SOC THERMAL</span>
+    <div class="telem-val-group">
+      <span class="telem-val">42°C</span>
+      <span class="telem-sub">Nominal</span>
+    </div>
+  </div>
+
+  <div class="telem-item">
+    <span class="telem-label">ACOUSTICS</span>
+    <div class="telem-val-group">
+      <span class="telem-val">0 RPM</span>
+      <span class="telem-sub">Passive Quiet</span>
+    </div>
+  </div>
+
+  <div class="telem-item">
+    <span class="telem-label">ANE / GPU LOAD</span>
+    <div class="telem-val-group">
+      <span class="telem-val text-blue">84%</span>
+      <span class="telem-sub">42 tok/s</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.telemetry-grid-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.telem-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.telem-label {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 0.05em;
+}
+.telem-val-group {
+  display: flex;
+  flex-direction: column;
+}
+.telem-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.telem-val.text-blue {
+  color: var(--accent-blue);
+}
+.telem-sub {
+  font-size: 9px;
+  color: var(--ink3);
+}
+</style>
