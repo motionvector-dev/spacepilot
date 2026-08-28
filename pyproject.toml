@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mvec-voice"
+name = "space-voice"
 version = "0.1.0"
-description = "Native macOS real-time voice pair-programming assistant"
+description = "SpacePilot Native macOS real-time voice pair-programming assistant"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,10 +18,10 @@ dependencies = [
 ]
 
 [project.scripts]
-mvec-voice = "mvec_voice.cli:main"
+space-voice = "space_voice.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mvec_voice"]
+packages = ["src/space_voice"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -1,8 +1,8 @@
-# 🎙️ space-voice (mvec-voice)
+# 🎙️ space-voice
 
-> **VoicePilot**: Native macOS real-time, full-duplex voice pair-programming assistant powered by the Google Gemini Multimodal Live API.
+> **SpacePilot Voice**: Native macOS real-time, full-duplex voice pair-programming assistant powered by the Google Gemini Multimodal Live API.
 
-`space-voice` is part of the MotionVector modular modality ecosystem:
+`space-voice` is part of the **SpacePilot** sovereign AI inference ecosystem:
 * `space-voice` (Real-Time Voice Assistant)
 * `space-video` (LTX / Wan Video Generation)
 * `space-audio` / `space-music` (Kokoro / MiniMax Music)
@@ -36,20 +36,20 @@ brew install portaudio
 
 ### 2. Installation
 ```bash
-cd /Users/saurabh/code/motionvector/mvec-voice
+cd /Users/saurabh/code/motionvector/space-voice
 doppler run --project unfoundbox --config dev_personal -- pip install -e .
 ```
 
 ### 3. Launch Voice Assistant
 ```bash
-doppler run --project unfoundbox --config dev_personal -- mvec-voice
+doppler run --project unfoundbox --config dev_personal -- space-voice
 ```
 
 ---
 
-## 🔮 Coming Soon: Native SpacePilot Integration
+## 🔮 Native SpacePilot Integration
 
-Soon `space-voice` will be deployable directly via the **SpacePilot CLI / MCP tool**:
+`space-voice` is also deployable directly via the **SpacePilot CLI / MCP tool**:
 
 ```bash
 # 1. Probe & check audio hardware

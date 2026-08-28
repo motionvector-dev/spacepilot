@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from mvec_voice.audio import AudioIO
+from space_voice.audio import AudioIO
 
 @pytest.mark.asyncio
 async def test_audio_io_queues():
