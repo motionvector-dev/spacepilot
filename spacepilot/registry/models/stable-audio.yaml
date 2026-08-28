@@ -18,9 +18,10 @@ variants:
     params: 1B
     precision: fp16
     repo: stabilityai/stable-audio-open-1.0
+    revision: f21265c1e2710b3bd2386596943f0007f55f802e
     backends: [metal, cuda, cpu]
     download:
-      value: 3221225472
+      value: 15680736700
       source: estimated
       note: "Full 1B parameter checkpoint and autoencoder weights"
     working_set:

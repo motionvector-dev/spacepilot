@@ -18,9 +18,10 @@ variants:
     params: 2.5B
     precision: fp16
     repo: stabilityai/stable-diffusion-3.5-medium
+    revision: b940f670f0eda2d07fbb75229e779da1ad11eb80
     backends: [metal, cuda]
     download:
-      value: 5905580032
+      value: 48861581303
       source: estimated
       note: "MMDiT 2.5B parameter base weights and text encoders"
     working_set:
@@ -33,9 +34,10 @@ variants:
     params: 8B
     precision: fp8
     repo: stabilityai/stable-diffusion-3.5-large-turbo
+    revision: ec07796fc06b096cc56de9762974a28f4c632eda
     backends: [metal, cuda]
     download:
-      value: 9663676416
+      value: 71582971259
       source: estimated
       note: "8B MMDiT transformer quantized in FP8 format"
     working_set:

@@ -18,9 +18,10 @@ variants:
     params: 1.6B
     precision: fp16
     repo: Efficient-Large-Model/Sana_1600M_1024px
+    revision: d71cbc8e562b01cd77902952fcf8cbb90aa78e3f
     backends: [metal, cuda]
     download:
-      value: 4294967296
+      value: 6429922892
       source: estimated
       note: "Linear DiT weights and 32x autoencoder checkpoints"
     working_set:

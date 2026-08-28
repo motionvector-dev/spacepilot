@@ -18,9 +18,10 @@ variants:
     params: 11B
     precision: int8
     repo: ddalcu/MiniMax-Music3-MLX-Serve-8bit
+    revision: 8ca48eb3c83150225279bbee8de0a059636af499
     backends: [metal]
     download:
-      value: 12000000000
+      value: 13552903625
       source: estimated
       note: "8-bit quantized weights and vocoder for local MLX serving"
     working_set:

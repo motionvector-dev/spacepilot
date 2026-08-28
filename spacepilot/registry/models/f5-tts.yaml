@@ -18,9 +18,10 @@ variants:
     params: 380M
     precision: fp16
     repo: SWivid/F5-TTS
+    revision: 84e5a410d9cead4de2f847e7c9369a6440bdfaca
     backends: [metal, cuda, cpu]
     download:
-      value: 1610612736
+      value: 6742869756
       source: estimated
       note: "F5-TTS base checkpoint and vocoder weights"
     working_set:
