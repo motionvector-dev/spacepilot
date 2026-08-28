@@ -33,6 +33,12 @@ scratch/
 # Tool caches
 .playwright-mcp/
 
+# Swift / macOS build artifacts
+.build/
+*.app/
+*.app.dSYM/
+.swiftpm/
+
 # Sweep resume state, written by `pluto sweep run`. It lives inside the package
 # directory now, which is one `git add -A` away from being committed. The
 # measurement and system records beside it are the opposite: a corpus people
