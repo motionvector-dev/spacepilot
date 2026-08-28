@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mvec-voice"
+version = "0.1.0"
+description = "Native macOS real-time voice pair-programming assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "websockets",
+    "sounddevice",
+    "numpy",
+    "google-genai",
+    "rich",
+    "pydantic"
+]
+
+[project.scripts]
+mvec-voice = "mvec_voice.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mvec_voice"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
