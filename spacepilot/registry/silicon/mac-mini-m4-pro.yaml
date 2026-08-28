@@ -3,7 +3,7 @@ id: mac-mini-m4-pro
 name: Mac mini (M4 Pro)
 vendor: Apple
 kind: box
-availability: shipping
+availability: discontinued
 summary: >-
   The cheapest way to reach 273 GB/s. Demand for it as a local inference machine
   outran supply during 2026, which is the clearest signal that owning a small
@@ -26,5 +26,6 @@ bandwidth_bytes_per_sec:
   note: identical to DGX Spark's figure, at a fraction of the price
 
 note: >-
-  16-core Neural Engine. A successor is reported to be days away, tested on both
-  M5 and M6 generations; the chip is not established.
+  16-core Neural Engine. Superseded on 2026-08-25 by mac-mini-m6 and
+  mac-mini-m5-pro, which shipped together. Kept because people own these: a
+  scheduler routes to machines that exist, not to machines currently for sale.

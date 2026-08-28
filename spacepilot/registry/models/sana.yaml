@@ -1,0 +1,30 @@
+schema: 1
+id: sana
+name: Sana
+family: nvidia
+kind: image
+summary: Deep-compression linear diffusion transformer capable of generating 4K resolution images with low latency.
+homepage: https://huggingface.co/Efficient-Large-Model/Sana_1600M_1024px
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: sana-1-6b-1024
+    name: Sana 1.6B (1024px)
+    params: 1.6B
+    precision: fp16
+    repo: Efficient-Large-Model/Sana_1600M_1024px
+    revision: d71cbc8e562b01cd77902952fcf8cbb90aa78e3f
+    backends: [metal, cuda]
+    download:
+      value: 6429922892
+      source: estimated
+      note: "Linear DiT weights and 32x autoencoder checkpoints"
+    working_set:
+      value: 5905580032
+      source: estimated
+      note: "Deep compression linear DiT working set during 1024px generation (~5.5 GB VRAM)"
