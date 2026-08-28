@@ -1,0 +1,95 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Button variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --wrong:#f43535;
+  --invbg:#fafafa; --invink:#09090b;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r1:6px; --r2:10px;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --card:#ffffff; --raised:#e6e6e1;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14); --line3:rgba(0,0,0,.22);
+  --ink:#09090b; --ink2:#52525b; --ink3:#71717a; --wrong:#e11d48;
+  --invbg:#09090b; --invink:#fafafa;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --wrong:#f43535;
+  --invbg:#fafafa; --invink:#09090b;
+}}
+:root[data-theme="dark"]{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --wrong:#f43535;
+  --invbg:#fafafa; --invink:#09090b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);font-size:13px;padding:20px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+button{font-family:inherit;cursor:pointer}
+.btn,.btn2,.btn3,.btn-danger{font-family:var(--mono);font-size:12px;padding:9px 18px;border-radius:var(--r1);
+  border:1px solid transparent;white-space:nowrap}
+.btn{background:var(--invbg);color:var(--invink)}
+.btn:hover{background:var(--ink)}
+.btn:active{background:var(--ink2)}
+.btn2{background:var(--card);color:var(--ink);border-color:var(--line2)}
+.btn2:hover{background:var(--raised);border-color:var(--line3)}
+.btn3{background:transparent;color:var(--ink3);padding-left:6px;padding-right:6px}
+.btn3:hover{color:var(--ink)}
+.btn-danger{background:transparent;color:var(--wrong);border-color:var(--wrong)}
+.btn-danger:hover{background:var(--wrong);color:var(--root)}
+.btn[disabled],.btn2[disabled],.btn3[disabled]{opacity:.34;pointer-events:none}
+.btn:focus-visible,.btn2:focus-visible,.btn3:focus-visible,.btn-danger:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2);padding:18px 20px;
+  display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.statecell{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.statecell .lbl{font-size:9px}
+</style>
+</head>
+<body>
+  <div class="lbl">Buttons &middot; 4 variants &times; 5 states</div>
+  <div class="card">
+    <div class="row"><span class="lbl" style="width:80px;flex:none">primary</span>
+      <div class="statecell"><button class="btn">Rent a dock</button><span class="lbl">rest</span></div>
+      <div class="statecell"><button class="btn" style="background:var(--ink)">Rent a dock</button><span class="lbl">hover</span></div>
+      <div class="statecell"><button class="btn" style="background:#a1a1aa">Rent a dock</button><span class="lbl">active</span></div>
+      <div class="statecell"><button class="btn" style="outline:2px solid var(--ink);outline-offset:2px">Rent a dock</button><span class="lbl">focus</span></div>
+      <div class="statecell"><button class="btn" disabled>Rent a dock</button><span class="lbl">disabled</span></div>
+    </div>
+    <div class="row"><span class="lbl" style="width:80px;flex:none">secondary</span>
+      <div class="statecell"><button class="btn2">Rent a dock</button><span class="lbl">rest</span></div>
+      <div class="statecell"><button class="btn2" style="background:var(--raised)">Rent a dock</button><span class="lbl">hover</span></div>
+      <div class="statecell"><button class="btn2" style="background:var(--panel)">Rent a dock</button><span class="lbl">active</span></div>
+      <div class="statecell"><button class="btn2" style="outline:2px solid var(--ink);outline-offset:2px">Rent a dock</button><span class="lbl">focus</span></div>
+      <div class="statecell"><button class="btn2" disabled>Rent a dock</button><span class="lbl">disabled</span></div>
+    </div>
+    <div class="row"><span class="lbl" style="width:80px;flex:none">ghost</span>
+      <div class="statecell"><button class="btn3">Rent a dock</button><span class="lbl">rest</span></div>
+      <div class="statecell"><button class="btn3" style="color:var(--ink)">Rent a dock</button><span class="lbl">hover</span></div>
+      <div class="statecell"><button class="btn3" style="color:var(--ink)">Rent a dock</button><span class="lbl">active</span></div>
+      <div class="statecell"><button class="btn3" style="outline:2px solid var(--ink);outline-offset:2px">Rent a dock</button><span class="lbl">focus</span></div>
+      <div class="statecell"><button class="btn3" disabled>Rent a dock</button><span class="lbl">disabled</span></div>
+    </div>
+    <div class="row"><span class="lbl" style="width:80px;flex:none">destructive</span>
+      <div class="statecell"><button class="btn-danger">Rent a dock</button><span class="lbl">rest</span></div>
+      <div class="statecell"><button class="btn-danger" style="background:var(--wrong);color:var(--root)">Rent a dock</button><span class="lbl">hover</span></div>
+      <div class="statecell"><button class="btn-danger" style="background:var(--wrong);color:var(--root)">Rent a dock</button><span class="lbl">active</span></div>
+      <div class="statecell"><button class="btn-danger" style="outline:2px solid var(--ink);outline-offset:2px">Rent a dock</button><span class="lbl">focus</span></div>
+      <div class="statecell"><button class="btn-danger" disabled>Rent a dock</button><span class="lbl">disabled</span></div>
+    </div>
+  </div>
+</body>
+</html>

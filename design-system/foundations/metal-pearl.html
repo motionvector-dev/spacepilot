@@ -1,0 +1,51 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Metal &middot; Pearl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#fafafa; --ink3:#71717a;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --card:#ffffff;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14);
+  --ink:#09090b; --ink3:#71717a;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#fafafa; --ink3:#71717a;
+}}
+:root[data-theme="dark"]{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#fafafa; --ink3:#71717a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);padding:28px}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.note{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:22px;max-width:60ch;line-height:1.6}
+.swatchrow{display:flex;gap:6px}
+.swatchrow i{flex:1;height:36px;border-radius:6px;border:1px solid var(--line)}
+.hex{font-family:var(--mono);font-size:10px;color:var(--ink3);display:flex;gap:6px;margin-top:6px}
+.hex span{flex:1;text-align:center}
+</style>
+</head>
+<body>
+  <div class="lbl">Metal &middot; pearl (nacre) &middot; 5-stop alloy ramp</div>
+  <div class="note">No CSS text-fill class exists for this alloy in the sources &mdash; nacre is only defined as a shader ramp (playground-fonts.html ALLOYS.nacre), rendered live on a WebGL canvas bezel. Swatch bar below is the literal ramp; no static metal-text sample was available to extract.</div>
+  <div class="swatchrow">
+    <i style="background:#fbf6ec"></i><i style="background:#f4e3ee"></i><i style="background:#ece7f2"></i><i style="background:#e4f0ea"></i><i style="background:#e6edf4"></i>
+  </div>
+  <div class="hex"><span>#fbf6ec</span><span>#f4e3ee</span><span>#ece7f2</span><span>#e4f0ea</span><span>#e6edf4</span></div>
+</body>
+</html>

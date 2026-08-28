@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dock card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000; --card:#141417; --line2:rgba(255,255,255,.13);
+  --ink:#fafafa; --ink4:#4a4a52;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+:root[data-theme="light"]{--root:#fbfaf8; --card:#fff; --line2:rgba(0,0,0,.13); --ink:#0b0b0d; --ink4:#a1a1aa;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--root:#000; --card:#141417; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink4:#4a4a52;}}
+:root[data-theme="dark"]{--root:#000; --card:#141417; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink4:#4a4a52;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);padding:28px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px}
+.peer{border:1px solid var(--line2);border-radius:12px;padding:17px 16px;display:flex;flex-direction:column;gap:9px;background:var(--card);max-width:220px}
+.peer .dot{width:6px;height:6px;border-radius:50%;flex:none}
+.peer .hd{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px}
+.peer .sub{font-family:var(--mono);font-size:10.5px;color:var(--ink4);line-height:1.55}
+.peer .warm{font-family:var(--mono);font-size:10.5px;color:var(--ink4)}
+</style>
+</head>
+<body>
+  <div class="lbl">Fleet lane &middot; dock (rented machine)</div>
+  <div class="peer"><div class="hd"><span class="dot" style="background:var(--ink4)"></span>rented-gpu</div>
+    <div class="sub">L40S &middot; 48 GB &middot; rented</div><div class="warm">not running &middot; $0.00/hr</div></div>
+</body>
+</html>

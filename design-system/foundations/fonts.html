@@ -1,0 +1,69 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fonts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r2:10px;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --card:#ffffff; --raised:#e6e6e1;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14); --line3:rgba(0,0,0,.22);
+  --ink:#09090b; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+}}
+:root[data-theme="dark"]{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);font-size:13px;
+  -webkit-font-smoothing:antialiased;padding:22px}
+.m{font-family:var(--mono)}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink4)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2);padding:18px 20px;
+  display:flex;flex-direction:column;gap:16px;margin-bottom:14px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="lbl" style="margin-bottom:8px">Geist &middot; the voice</div>
+      <div style="font-size:22px;font-weight:600;letter-spacing:-.02em">You decide what to run.</div>
+      <div style="font-size:12.5px;color:var(--ink2);margin-top:6px">400 body &middot; 500 emphasis &middot; 600 headings. Nothing heavier lives in the product.</div>
+    </div>
+    <div style="height:1px;background:var(--line)"></div>
+    <div>
+      <div class="lbl" style="margin-bottom:8px">Geist Mono &middot; the facts</div>
+      <div class="m" style="font-size:14px">kokoro-82m&nbsp;&nbsp;flown&nbsp;&nbsp;4.6&times; realtime &middot; 2026-08-23</div>
+      <div style="font-size:12.5px;color:var(--ink2);margin-top:6px">Every number, id, state, label, and terminal line is set in mono.</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">The chrome scale &middot; two sizes only</div>
+    <div style="display:flex;align-items:baseline;gap:16px"><span class="lbl" style="width:110px;flex:none;margin:0">chrome &middot; 13px</span><span style="font-size:13px">The body size every panel, row, and control uses.</span></div>
+    <div style="display:flex;align-items:baseline;gap:16px"><span class="lbl" style="width:110px;flex:none;margin:0">label &middot; 10px</span><span class="lbl" style="margin:0">uppercase &middot; letterspaced &middot; the eyebrow voice</span></div>
+  </div>
+  <div class="card m" style="font-variant-numeric:tabular-nums;line-height:1.9">
+    <div class="lbl" style="margin-bottom:0">Tabular numerals</div>
+    <div>$0.75/hr &middot; 00:41:12</div>
+    <div>$0.75/hr &middot; 00:41:13</div>
+    <div>$0.75/hr &middot; 00:41:14</div>
+  </div>
+</body>
+</html>

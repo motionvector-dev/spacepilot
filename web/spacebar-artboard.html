@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaceBar — Master Design System & UI Kit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       SPACEPILOT OFFICIAL OBSIDIAN ZINC TOKENS (DESIGN.MD)
+       ============================================================ */
+    :root {
+      --root: #000000;
+      --ground: #09090b;
+      --panel: #111114;
+      --card: #18181b;
+      --raised: #222226;
+      --line: rgba(255, 255, 255, 0.08);
+      --line2: rgba(255, 255, 255, 0.14);
+      --line3: rgba(255, 255, 255, 0.22);
+      
+      --ink: #fafafa;
+      --ink2: #a1a1aa;
+      --ink3: #71717a;
+      --ink4: #52525b;
+
+      /* Semantic Truth Colors */
+      --online: #10b981;
+      --warning: #f59e0b;
+      --error: #f43535;
+      --accent-blue: #3b82f6;
+
+      --mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', monospace;
+      --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --r1: 6px;
+      --r2: 10px;
+      --r3: 14px;
+
+      /* Motion Rules */
+      --t-enter: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      --t-exit: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+      --t-crossfade: 240ms ease-in-out;
+    }
+
+    [data-theme="light"] {
+      --root: #fdfdfc;
+      --ground: #f7f7f5;
+      --panel: #f2f2ef;
+      --card: #ffffff;
+      --raised: #eaeae6;
+      --line: rgba(0, 0, 0, 0.08);
+      --line2: rgba(0, 0, 0, 0.14);
+      --line3: rgba(0, 0, 0, 0.22);
+      --ink: #09090b;
+      --ink2: #52525b;
+      --ink3: #71717a;
+      --ink4: #a1a1aa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--root);
+      color: var(--ink);
+      font-family: var(--sans);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* SVG Icon Primitives */
+    .icn {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+      vector-effect: non-scaling-stroke;
+    }
+    .icn-sm { width: 14px; height: 14px; }
+    .icn-lg { width: 22px; height: 22px; }
+
+    /* Header */
+    .artboard-header {
+      width: 100%;
+      max-width: 1280px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+    }
+    .brand-pill {
+      font-size: 10px;
+      font-family: var(--mono);
+      background: var(--raised);
+      color: var(--ink2);
+      padding: 3px 8px;
+      border-radius: var(--r1);
+      border: 1px solid var(--line2);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .controls { display: flex; gap: 8px; }
+    .btn-sys {
+      background: var(--panel);
+      border: 1px solid var(--line2);
+      color: var(--ink);
+      padding: 7px 12px;
+      border-radius: var(--r1);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-sys:hover { border-color: var(--ink); }
+
+    /* Layout Grid */
+    .artboard-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+      width: 100%;
+      max-width: 1280px;
+    }
+
+    .frame-label {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--ink4);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ============================================================
+       FRAME 1: MACBAR TRAY & POPOVER HUD
+       ============================================================ */
+    .mock-macos-bar {
+      width: 100%;
+      height: 32px;
+      background: rgba(17, 17, 20, 0.85);
+      backdrop-filter: blur(20px);
+      border-radius: var(--r1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .bar-item-active {
+      background: var(--raised);
+      border: 1px solid var(--line2);
+      padding: 3px 8px;
+      border-radius: var(--r1);
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .popover-hud {
+      background: var(--panel);
+      backdrop-filter: blur(30px);
+      border: 1px solid var(--line2);
+      border-radius: var(--r3);
+      padding: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hud-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .hud-node-status { font-size: 11px; font-family: var(--mono); color: var(--online); display: flex; align-items: center; gap: 6px; }
+    .pulse-dot { width: 6px; height: 6px; background: var(--online); border-radius: 50%; box-shadow: 0 0 8px var(--online); }
+
+    .active-job-card {
+      background: var(--ground);
+      border: 1px solid var(--line);
+      border-radius: var(--r2);
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .job-title-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+    .progress-bar-bg { width: 100%; height: 5px; background: var(--card); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+    .progress-fill { width: 64%; height: 100%; background: var(--ink); border-radius: 4px; transition: width 0.3s; }
+    .job-meta-row { display: flex; justify-content: space-between; font-size: 11px; font-family: var(--mono); color: var(--ink3); }
+
+    .dials-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .dial-chip { background: var(--ground); border: 1px solid var(--line); border-radius: var(--r1); padding: 8px; }
+    .dial-label { font-size: 9px; color: var(--ink4); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+    .dial-val { font-size: 12px; font-weight: 600; font-family: var(--mono); }
+
+    .btn-hud-action {
+      width: 100%;
+      padding: 9px;
+      border-radius: var(--r1);
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      color: var(--root);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-hud-action:hover { opacity: 0.9; }
+
+    /* ============================================================
+       FRAME 2: STUDIO DASHBOARD WINDOW
+       ============================================================ */
+    .studio-window {
+      background: var(--panel);
+      backdrop-filter: blur(40px);
+      border: 1px solid var(--line2);
+      border-radius: var(--r3);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      min-height: 580px;
+      overflow: hidden;
+    }
+
+    .studio-sidebar {
+      background: var(--ground);
+      border-right: 1px solid var(--line);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .window-traffic-lights { display: flex; gap: 6px; margin-bottom: 18px; padding-left: 4px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; cursor: pointer; }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--r1);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink2);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .nav-item:hover { color: var(--ink); background: var(--raised); }
+    .nav-item.active {
+      background: var(--ink);
+      color: var(--root);
+      font-weight: 600;
+    }
+    .nav-item.active .icn { stroke: var(--root); }
+
+    .sidebar-footer {
+      display: flex;
+      justify-content: space-around;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--ink4);
+      font-size: 14px;
+    }
+    .sidebar-footer .icn { cursor: pointer; transition: color 0.15s; }
+    .sidebar-footer .icn:hover { stroke: var(--ink); }
+
+    .studio-main {
+      padding: 24px 28px;
+      overflow-y: auto;
+      max-height: 580px;
+      background: var(--panel);
+    }
+    .main-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .main-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: enter 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .spec-table tr { border-bottom: 1px solid var(--line); }
+    .spec-table td { padding: 10px 0; font-size: 12px; }
+    .spec-key { color: var(--ink3); font-weight: 500; width: 35%; display: flex; align-items: center; gap: 6px; }
+    .spec-val { font-weight: 600; font-family: var(--mono); text-align: right; }
+
+    .card-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+    .card-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+
+    .capsule-box {
+      background: var(--ground);
+      border: 1px solid var(--line);
+      border-radius: var(--r2);
+      padding: 14px;
+      position: relative;
+      transition: all 0.15s;
+    }
+    .capsule-box.active {
+      border-color: var(--line3);
+      background: var(--card);
+    }
+
+    .badge {
+      font-size: 9px;
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: var(--r1);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .badge-verified { background: rgba(16, 185, 129, 0.15); color: var(--online); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-standby { background: var(--raised); color: var(--ink4); border: 1px solid var(--line); }
+
+    .btn-action-sm {
+      background: var(--card);
+      border: 1px solid var(--line2);
+      color: var(--ink);
+      padding: 6px 12px;
+      border-radius: var(--r1);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-action-sm:hover { background: var(--raised); border-color: var(--line3); }
+
+    /* SVG Sparklines */
+    .sparkline-svg { width: 100%; height: 48px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       SPACEPILOT 27-ICON SVG SPRITE DEF
+       ============================================================ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-ship" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 19h20"/></symbol>
+      <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+      <symbol id="i-memory" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M8 6v12M12 6v12M16 6v12"/></symbol>
+      <symbol id="i-disk" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="12" cy="12" r="3.5"/></symbol>
+      <symbol id="i-cargo" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></symbol>
+      <symbol id="i-slot" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5" stroke-dasharray="3 2.6"/></symbol>
+      <symbol id="i-runtime" viewBox="0 0 24 24"><path d="M12 3 21 7.5v9L12 21 3 16.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10.5 12 15.5l5-5M4 20h16"/></symbol>
+      <symbol id="i-install" viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M12 3v9M8.5 8.5 12 12l3.5-3.5"/></symbol>
+      <symbol id="i-measure" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4.5M15 8v3M19 8v4.5"/></symbol>
+      <symbol id="i-flight" viewBox="0 0 24 24"><path d="M3 12h3l2.5-6L12 19l2.5-7 1.5 3H21"/></symbol>
+      <symbol id="i-dock" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".85" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r=".85" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-meter" viewBox="0 0 24 24"><path d="M3.5 18a8.5 8.5 0 0 1 17 0"/><path d="M12 18 16.5 10.5"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9.5 10 12.5 7 15.5M13 15.5h4"/></symbol>
+      <symbol id="i-warning" viewBox="0 0 24 24"><path d="M12 4 21.5 20.5h-19z"/><path d="M12 10.5v4.5"/><circle cx="12" cy="17.8" r=".85" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-verified" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.2 10.8 15 16 9.8"/></symbol>
+      <symbol id="i-unflown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="2.4 3"/></symbol>
+      <symbol id="i-agent" viewBox="0 0 24 24"><path d="M12 3 14.4 9.6 21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></symbol>
+      <symbol id="i-quota" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1"/><path d="M15.5 6v12"/></symbol>
+      <symbol id="i-shell" viewBox="0 0 24 24"><circle cx="7.5" cy="12" r="3.5"/><path d="M11 12h10M18 12v3M15 12v2.2"/></symbol>
+      <symbol id="i-probe" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8 20.5 20.5"/></symbol>
+      <symbol id="i-licence" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+      <symbol id="i-threshold" viewBox="0 0 24 24"><path d="M4 21V7a8 8 0 0 1 16 0v14"/><path d="M9.5 21v-7h5v7"/></symbol>
+      <symbol id="i-refusal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6.4 6.4 17.6 17.6"/></symbol>
+      <symbol id="i-system" viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="1.5"/><rect x="10" y="10" width="11" height="11" rx="1.5"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></symbol>
+      <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="8.5" r="4"/><path d="M10.4 11.4 20 21M17 18l2-2M14 15l2-2"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- Top Header -->
+  <header class="artboard-header">
+    <div class="brand-title">
+      <svg class="icn icn-lg"><use href="#i-ship"></use></svg>
+      <span>SpaceBar Studio</span>
+      <span class="brand-pill">Obsidian Zinc · 27-Icon Suite</span>
+    </div>
+    <div class="controls">
+      <button class="btn-sys" onclick="toggleTheme()">
+        <svg class="icn icn-sm"><use href="#i-system"></use></svg>
+        <span>Theme</span>
+      </button>
+      <button class="btn-sys" onclick="window.open('https://spacepilot.dev', '_blank')">
+        <svg class="icn icn-sm"><use href="#i-shell"></use></svg>
+        <span>spacepilot.dev</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Grid -->
+  <main class="artboard-grid">
+
+    <!-- FRAME 1: Menubar & HUD -->
+    <section>
+      <div class="frame-label">
+        <span>Layer 1: macOS Status Bar & Popover HUD</span>
+        <span>340px</span>
+      </div>
+
+      <!-- Menu Bar Pill -->
+      <div class="mock-macos-bar">
+        <span style="font-weight:600;"></span>
+        <div class="bar-item-active" onclick="switchTab('dashboard')">
+          <svg class="icn icn-sm"><use href="#i-flight"></use></svg>
+          <span id="bar-model-name">Wan 2.1</span>
+          <span style="color:var(--ink);" id="bar-progress-txt">64%</span>
+          <span>&middot;</span>
+          <span id="bar-vram-txt">18.2 GB</span>
+          <span>&middot;</span>
+          <span id="bar-temp-txt">48°C</span>
+        </div>
+      </div>
+
+      <!-- Popover HUD -->
+      <div class="popover-hud">
+        <div class="hud-header">
+          <div class="hud-title">
+            <svg class="icn"><use href="#i-ship"></use></svg>
+            <span>SpaceBar HUD</span>
+          </div>
+          <div class="hud-node-status">
+            <span class="pulse-dot"></span>
+            <span>Port 8088</span>
+          </div>
+        </div>
+
+        <div class="active-job-card">
+          <div class="job-title-row">
+            <span style="display:flex; align-items:center; gap:6px;">
+              <svg class="icn icn-sm"><use href="#i-flight"></use></svg>
+              <span id="hud-job-name">Wan 2.1 Video 1.3B</span>
+            </span>
+            <span id="hud-job-pct">64%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-fill" id="hud-progress-fill"></div>
+          </div>
+          <div class="job-meta-row">
+            <span id="hud-step-meta">Step 26 / 40 (81 frames)</span>
+            <span id="hud-eta-meta">ETA: 4.8s</span>
+          </div>
+        </div>
+
+        <div class="dials-grid">
+          <div class="dial-chip">
+            <div class="dial-label">GPU LOAD</div>
+            <div class="dial-val" id="hud-dial-gpu">74% &middot; 24.2W</div>
+          </div>
+          <div class="dial-chip">
+            <div class="dial-label">VRAM USED</div>
+            <div class="dial-val" id="hud-dial-vram">18.2 / 32 GB</div>
+          </div>
+          <div class="dial-chip">
+            <div class="dial-label">SOC TEMP</div>
+            <div class="dial-val" id="hud-dial-temp">48°C (Normal)</div>
+          </div>
+          <div class="dial-chip">
+            <div class="dial-label">FANS (L/R)</div>
+            <div class="dial-val" id="hud-dial-fans">1400 / 1420 RPM</div>
+          </div>
+        </div>
+
+        <button class="btn-hud-action" onclick="switchTab('models')">
+          <svg class="icn icn-sm" style="stroke:var(--root);"><use href="#i-cargo"></use></svg>
+          <span>Switch Model Roster</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- FRAME 2: Studio Window -->
+    <section>
+      <div class="frame-label">
+        <span>Layer 2: Studio Dashboard Window</span>
+        <span>940px</span>
+      </div>
+
+      <div class="studio-window">
+        
+        <!-- Sidebar Navigation with Official 24px Icons -->
+        <aside class="studio-sidebar">
+          <div>
+            <div class="window-traffic-lights">
+              <span class="dot dot-red" onclick="alert('Close window')"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+
+            <ul class="nav-list">
+              <li class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                <svg class="icn"><use href="#i-ship"></use></svg>
+                <span>Dashboard</span>
+              </li>
+              <li class="nav-item" id="nav-models" onclick="switchTab('models')">
+                <svg class="icn"><use href="#i-cargo"></use></svg>
+                <span>AI Models</span>
+              </li>
+              <li class="nav-item" id="nav-telemetry" onclick="switchTab('telemetry')">
+                <svg class="icn"><use href="#i-measure"></use></svg>
+                <span>Telemetry</span>
+              </li>
+              <li class="nav-item" id="nav-sensors" onclick="switchTab('sensors')">
+                <svg class="icn"><use href="#i-meter"></use></svg>
+                <span>Sensors & Fans</span>
+              </li>
+              <li class="nav-item" id="nav-fleet" onclick="switchTab('fleet')">
+                <svg class="icn"><use href="#i-agent"></use></svg>
+                <span>Fleet Nodes</span>
+              </li>
+              <li class="nav-item" id="nav-power" onclick="switchTab('power')">
+                <svg class="icn"><use href="#i-threshold"></use></svg>
+                <span>Power & Watts</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sidebar-footer">
+            <svg class="icn" title="Settings"><use href="#i-settings"></use></svg>
+            <svg class="icn" title="Provenance Truth"><use href="#i-verified"></use></svg>
+            <svg class="icn" title="Honesty Terminal" onclick="switchTab('telemetry')"><use href="#i-terminal"></use></svg>
+            <svg class="icn" title="Pause Inference" onclick="togglePause()"><use href="#i-unflown"></use></svg>
+            <svg class="icn" title="Peer Auth Key"><use href="#i-key"></use></svg>
+          </div>
+        </aside>
+
+        <!-- Main Studio Content -->
+        <div class="studio-main">
+
+          <!-- TAB 1: DASHBOARD -->
+          <div id="pane-dashboard" class="tab-pane active">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-chip"></use></svg>
+                <span>Apple Silicon Inference Node</span>
+              </h1>
+              <span class="brand-pill">M1 MAX &middot; 32 CORES</span>
+            </div>
+
+            <table class="spec-table">
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-memory"></use></svg>
+                  <span>Unified Memory</span>
+                </td>
+                <td class="spec-val" id="dash-vram-text">32 GB (18.2 GB AI Resident &middot; 13.8 GB Free)</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-chip"></use></svg>
+                  <span>Graphics Engine</span>
+                </td>
+                <td class="spec-val">Apple M1 Max (32 GPU Cores + 16 Neural Engine)</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-disk"></use></svg>
+                  <span>Storage Residency</span>
+                </td>
+                <td class="spec-val">Macintosh HD (994.66 GB &middot; 412 GB Free)</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-dock"></use></svg>
+                  <span>Display Topology</span>
+                </td>
+                <td class="spec-val">
+                  Built-in Retina (14" 120Hz ProMotion)<br>
+                  LEN P27q-10 (27" 1440p) &middot; L24i-10 (24" 1080p)
+                </td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-terminal"></use></svg>
+                  <span>Node Uptime</span>
+                </td>
+                <td class="spec-val">5 days, 18 hours &middot; Daemon Port 8088</td>
+              </tr>
+            </table>
+
+            <div class="frame-label" style="margin-top: 16px;">
+              <span>Active Model in Memory</span>
+              <span class="badge badge-verified" id="dash-active-badge">MOUNTED</span>
+            </div>
+
+            <div class="capsule-box active" id="dash-active-capsule" style="margin-top: 8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px;">
+                  <svg class="icn icn-sm"><use href="#i-runtime"></use></svg>
+                  <span id="dash-active-name">Wan 2.1 Video Diffusion (1.3B)</span>
+                </span>
+                <span class="badge badge-standby" id="dash-active-format">FP16 Metal Video</span>
+              </div>
+              <p style="font-size:12px; color:var(--ink3); margin-bottom:10px;" id="dash-active-desc">
+                Resident footprint: 18.2 GB &middot; Zero-copy Unified Memory swap &middot; Denoising step throughput: 45.2 FPS.
+              </p>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-action-sm" onclick="switchTab('models')">Manage Roster &rarr;</button>
+                <button class="btn-action-sm" onclick="purgeVram()">Purge VRAM</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: AI MODELS -->
+          <div id="pane-models" class="tab-pane">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-cargo"></use></svg>
+                <span>Resident AI Model Roster</span>
+              </h1>
+              <button class="btn-action-sm" onclick="purgeVram()">Free All VRAM</button>
+            </div>
+
+            <div class="frame-label"><span>Resident Capsules (Click to Mount / Swap)</span></div>
+
+            <div class="card-grid-3">
+              <!-- Wan 2.1 -->
+              <div class="capsule-box active" id="capsule-wan">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-weight:600; font-size:13px;">Wan 2.1 (1.3B)</span>
+                  <span class="badge badge-verified" id="badge-wan">MOUNTED</span>
+                </div>
+                <div style="font-size:11px; font-family:var(--mono); color:var(--ink3); margin-bottom:8px;">
+                  VRAM: 18.2 GB<br>FP16 Metal Video
+                </div>
+                <button class="btn-action-sm" style="width:100%;" id="btn-model-wan" onclick="selectActiveModel('wan')">Active</button>
+              </div>
+
+              <!-- FLUX.1 -->
+              <div class="capsule-box" id="capsule-flux">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-weight:600; font-size:13px;">FLUX.1 Schnell</span>
+                  <span class="badge badge-standby" id="badge-flux">STANDBY</span>
+                </div>
+                <div style="font-size:11px; font-family:var(--mono); color:var(--ink3); margin-bottom:8px;">
+                  VRAM: 11.4 GB<br>Q4_K Image Gen
+                </div>
+                <button class="btn-action-sm" style="width:100%;" id="btn-model-flux" onclick="selectActiveModel('flux')">Mount</button>
+              </div>
+
+              <!-- MiniMax Music -->
+              <div class="capsule-box" id="capsule-minimax">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-weight:600; font-size:13px;">MiniMax Music</span>
+                  <span class="badge badge-standby" id="badge-minimax">STANDBY</span>
+                </div>
+                <div style="font-size:11px; font-family:var(--mono); color:var(--ink3); margin-bottom:8px;">
+                  VRAM: 4.8 GB<br>Audio Diffusion
+                </div>
+                <button class="btn-action-sm" style="width:100%;" id="btn-model-minimax" onclick="selectActiveModel('minimax')">Mount</button>
+              </div>
+            </div>
+
+            <!-- Standby Registry -->
+            <div class="frame-label" style="margin-top:24px;"><span>Available Recipes (spacepilot/registry)</span></div>
+            <table class="spec-table">
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-download"></use></svg>
+                  <span>Stable Diffusion 3.5 Medium</span>
+                </td>
+                <td class="spec-val">8.2 GB &middot; Recipe: sd35.yaml &middot; <button class="btn-action-sm" onclick="alert('Pulling weights...')">Pull Recipe</button></td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-download"></use></svg>
+                  <span>F5-TTS Voice Synthesis</span>
+                </td>
+                <td class="spec-val">1.2 GB &middot; Recipe: f5tts.yaml &middot; <button class="btn-action-sm" onclick="alert('Pulling weights...')">Pull Recipe</button></td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-download"></use></svg>
+                  <span>Sana 1.6B Diffusion</span>
+                </td>
+                <td class="spec-val">3.4 GB &middot; Recipe: sana.yaml &middot; <button class="btn-action-sm" onclick="alert('Pulling weights...')">Pull Recipe</button></td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- TAB 3: TELEMETRY -->
+          <div id="pane-telemetry" class="tab-pane">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-measure"></use></svg>
+                <span>Metal & Silicon Telemetry</span>
+              </h1>
+              <span class="brand-pill">100Hz HARDWARE SAMPLING</span>
+            </div>
+
+            <div class="card-grid-2">
+              <div class="capsule-box">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600;">
+                  <span>32-Core Apple GPU Load</span>
+                  <span>74.2%</span>
+                </div>
+                <svg class="sparkline-svg" viewBox="0 0 200 40">
+                  <path d="M0,35 Q20,15 40,25 T80,10 T120,20 T160,5 T200,12" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+                </svg>
+              </div>
+
+              <div class="capsule-box">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600;">
+                  <span>Unified Memory Bandwidth</span>
+                  <span style="color:var(--online);">284 GB/s</span>
+                </div>
+                <svg class="sparkline-svg" viewBox="0 0 200 40">
+                  <path d="M0,28 Q30,30 60,15 T120,18 T170,8 T200,14" fill="none" stroke="var(--online)" stroke-width="1.5"/>
+                </svg>
+              </div>
+
+              <div class="capsule-box">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600;">
+                  <span>16-Core Neural Engine (ANE)</span>
+                  <span>41.0%</span>
+                </div>
+                <svg class="sparkline-svg" viewBox="0 0 200 40">
+                  <path d="M0,30 Q40,35 80,20 T140,22 T180,15 T200,20" fill="none" stroke="var(--ink2)" stroke-width="1.5"/>
+                </svg>
+              </div>
+
+              <div class="capsule-box">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600;">
+                  <span>Metal Clock Frequency</span>
+                  <span>1.296 GHz</span>
+                </div>
+                <svg class="sparkline-svg" viewBox="0 0 200 40">
+                  <path d="M0,20 L50,20 L80,10 L140,10 L170,10 L200,10" fill="none" stroke="var(--ink3)" stroke-width="1.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: SENSORS & FANS -->
+          <div id="pane-sensors" class="tab-pane">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-meter"></use></svg>
+                <span>Thermals & Fan SMC Controller</span>
+              </h1>
+              <button class="btn-action-sm" id="btn-fan-boost" onclick="toggleFanBoost()">⚡ Max Fan Boost</button>
+            </div>
+
+            <div class="card-grid-2">
+              <div class="capsule-box">
+                <div style="font-size:10px; font-family:var(--mono); color:var(--ink4); margin-bottom:4px;">LEFT FAN SPEED</div>
+                <div style="font-size:20px; font-weight:700; font-family:var(--mono);" id="fan-left-val">1,400 RPM</div>
+                <div style="font-size:11px; color:var(--online); margin-top:4px;" id="fan-left-status">Status: Whisper Quiet</div>
+              </div>
+
+              <div class="capsule-box">
+                <div style="font-size:10px; font-family:var(--mono); color:var(--ink4); margin-bottom:4px;">RIGHT FAN SPEED</div>
+                <div style="font-size:20px; font-weight:700; font-family:var(--mono);" id="fan-right-val">1,420 RPM</div>
+                <div style="font-size:11px; color:var(--online); margin-top:4px;" id="fan-right-status">Status: Whisper Quiet</div>
+              </div>
+            </div>
+
+            <div class="frame-label" style="margin-top:20px;"><span>Thermal Sensor Matrix</span></div>
+            <table class="spec-table">
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-chip"></use></svg>
+                  <span>SoC Die Average</span>
+                </td>
+                <td class="spec-val" style="color:var(--online);" id="sensor-soc">48.2 °C</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-chip"></use></svg>
+                  <span>GPU Cluster Sensors</span>
+                </td>
+                <td class="spec-val" style="color:var(--online);">49.5 °C / 50.1 °C</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-threshold"></use></svg>
+                  <span>Thermal Throttle Headroom</span>
+                </td>
+                <td class="spec-val">+46.8 °C to ceiling (100% capacity)</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- TAB 5: FLEET NODES -->
+          <div id="pane-fleet" class="tab-pane">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-agent"></use></svg>
+                <span>Hybrid Fleet Orchestration</span>
+              </h1>
+              <span class="brand-pill">82% LOCAL / 18% CLOUD</span>
+            </div>
+
+            <table class="spec-table">
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-ship"></use></svg>
+                  <span>Local M1 Max (This Machine)</span>
+                </td>
+                <td class="spec-val" style="color:var(--online);">ACTIVE &middot; 662 jobs / 24h &middot; $0.00</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-chip"></use></svg>
+                  <span>Local RTX 5090 Node</span>
+                </td>
+                <td class="spec-val" style="color:var(--online);">STANDBY &middot; 184 jobs / 24h &middot; $0.00</td>
+              </tr>
+              <tr>
+                <td class="spec-key">
+                  <svg class="icn icn-sm"><use href="#i-shell"></use></svg>
+                  <span>Modal Serverless Burst</span>
+                </td>
+                <td class="spec-val">READY &middot; 165 jobs / 24h &middot; $14.20</td>
+              </tr>
+            </table>
+
+            <div class="capsule-box" style="margin-top:14px;">
+              <div style="font-weight:600; font-size:13px; margin-bottom:6px;">Cluster Dispatch Policy</div>
+              <p style="font-size:12px; color:var(--ink3); margin-bottom:10px;">
+                Jobs route to free local unified memory first (662 jobs completed locally). Queue overflows automatically burst to Modal serverless containers.
+              </p>
+              <button class="btn-action-sm" onclick="alert('Pinging all cluster nodes on Port 8088... All nodes healthy!')">⚡ Run Fleet Ping Test</button>
+            </div>
+          </div>
+
+          <!-- TAB 6: POWER & WATTS -->
+          <div id="pane-power" class="tab-pane">
+            <div class="main-header-row">
+              <h1 class="main-title">
+                <svg class="icn"><use href="#i-threshold"></use></svg>
+                <span>Power & Sleep Management</span>
+              </h1>
+              <span class="brand-pill">24.2W INFERENCE</span>
+            </div>
+
+            <div class="card-grid-2">
+              <div class="capsule-box">
+                <div style="font-size:10px; font-family:var(--mono); color:var(--ink4); margin-bottom:4px;">TOTAL PACKAGE POWER</div>
+                <div style="font-size:20px; font-weight:700; font-family:var(--mono);">24.2 Watts</div>
+                <div style="font-size:11px; color:var(--ink3); margin-top:4px;">GPU: 18.4W &middot; CPU: 5.8W</div>
+              </div>
+
+              <div class="capsule-box">
+                <div style="font-size:10px; font-family:var(--mono); color:var(--ink4); margin-bottom:4px;">POWER SOURCE</div>
+                <div style="font-size:20px; font-weight:700; font-family:var(--mono); color:var(--online);">AC 96W Adapter</div>
+                <div style="font-size:11px; color:var(--ink3); margin-top:4px;">Battery at 100% &middot; Optimized</div>
+              </div>
+            </div>
+
+            <div class="capsule-box" style="margin-top:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:13px;">☕ Caffeinate (Prevent Sleep)</span>
+                <span class="badge badge-verified" id="badge-caffeinate">ACTIVE</span>
+              </div>
+              <p style="font-size:12px; color:var(--ink3); margin-bottom:12px;">
+                Prevents macOS from sleeping or throttling video diffusion jobs when the display turns off overnight.
+              </p>
+              <button class="btn-action-sm" onclick="toggleCaffeinate()">Toggle Caffeinate</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('pane-' + tabId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      const navItem = document.getElementById('nav-' + tabId);
+      if (navItem) navItem.classList.add('active');
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+
+    let fanBoosted = false;
+    function toggleFanBoost() {
+      fanBoosted = !fanBoosted;
+      const left = document.getElementById('fan-left-val');
+      const right = document.getElementById('fan-right-val');
+      const leftStat = document.getElementById('fan-left-status');
+      const rightStat = document.getElementById('fan-right-status');
+      const hudFans = document.getElementById('hud-dial-fans');
+      const btn = document.getElementById('btn-fan-boost');
+
+      if (fanBoosted) {
+        left.innerText = '4,250 RPM';
+        right.innerText = '4,280 RPM';
+        leftStat.innerText = 'Status: High Cooling Boost';
+        rightStat.innerText = 'Status: High Cooling Boost';
+        hudFans.innerText = '4250 / 4280 RPM';
+        btn.innerText = '❄️ Normal Fan Curve';
+      } else {
+        left.innerText = '1,400 RPM';
+        right.innerText = '1,420 RPM';
+        leftStat.innerText = 'Status: Whisper Quiet';
+        rightStat.innerText = 'Status: Whisper Quiet';
+        hudFans.innerText = '1400 / 1420 RPM';
+        btn.innerText = '⚡ Max Fan Boost';
+      }
+    }
+
+    const models = {
+      wan: {
+        name: 'Wan 2.1 Video Diffusion (1.3B)',
+        shortName: 'Wan 2.1',
+        vram: '18.2 GB',
+        vramDial: '18.2 / 32 GB',
+        format: 'FP16 Metal Video',
+        desc: 'Resident footprint: 18.2 GB · Zero-copy Unified Memory swap · Denoising step throughput: 45.2 FPS.',
+        progress: '64%',
+        stepMeta: 'Step 26 / 40 (81 frames)',
+        eta: 'ETA: 4.8s'
+      },
+      flux: {
+        name: 'FLUX.1 Schnell (Q4_K)',
+        shortName: 'FLUX.1',
+        vram: '11.4 GB',
+        vramDial: '11.4 / 32 GB',
+        format: 'Q4_K Quantized',
+        desc: 'Resident footprint: 11.4 GB · 4-step distilled image generation · Latency: 0.8s/image.',
+        progress: '100%',
+        stepMeta: 'Step 4 / 4 (Ready)',
+        eta: 'ETA: Complete'
+      },
+      minimax: {
+        name: 'MiniMax Music Audio Diffusion',
+        shortName: 'MiniMax',
+        vram: '4.8 GB',
+        vramDial: '4.8 / 32 GB',
+        format: 'Audio Diffusion',
+        desc: 'Resident footprint: 4.8 GB · Multi-track stereo audio generation · 44.1kHz Hi-Fi.',
+        progress: '80%',
+        stepMeta: 'Step 32 / 40 (Audio Stem)',
+        eta: 'ETA: 1.2s'
+      }
+    };
+
+    function selectActiveModel(key) {
+      const m = models[key];
+      if (!m) return;
+
+      ['wan', 'flux', 'minimax'].forEach(k => {
+        const box = document.getElementById('capsule-' + k);
+        const badge = document.getElementById('badge-' + k);
+        const btn = document.getElementById('btn-model-' + k);
+        if (k === key) {
+          box.classList.add('active');
+          badge.innerText = 'MOUNTED';
+          badge.className = 'badge badge-verified';
+          btn.innerText = 'Active';
+        } else {
+          box.classList.remove('active');
+          badge.innerText = 'STANDBY';
+          badge.className = 'badge badge-standby';
+          btn.innerText = 'Mount';
+        }
+      });
+
+      document.getElementById('bar-model-name').innerText = m.shortName;
+      document.getElementById('bar-vram-txt').innerText = m.vram;
+      document.getElementById('bar-progress-txt').innerText = m.progress;
+
+      document.getElementById('hud-job-name').innerText = m.name;
+      document.getElementById('hud-job-pct').innerText = m.progress;
+      document.getElementById('hud-progress-fill').style.width = m.progress;
+      document.getElementById('hud-step-meta').innerText = m.stepMeta;
+      document.getElementById('hud-eta-meta').innerText = m.eta;
+      document.getElementById('hud-dial-vram').innerText = m.vramDial;
+
+      document.getElementById('dash-active-name').innerText = m.name;
+      document.getElementById('dash-active-format').innerText = m.format;
+      document.getElementById('dash-active-desc').innerText = m.desc;
+      document.getElementById('dash-vram-text').innerText = `32 GB (${m.vram} AI Resident · Free Unified RAM)`;
+    }
+
+    function purgeVram() {
+      ['wan', 'flux', 'minimax'].forEach(k => {
+        const box = document.getElementById('capsule-' + k);
+        const badge = document.getElementById('badge-' + k);
+        const btn = document.getElementById('btn-model-' + k);
+        box.classList.remove('active');
+        badge.innerText = 'STANDBY';
+        badge.className = 'badge badge-standby';
+        btn.innerText = 'Mount';
+      });
+
+      document.getElementById('bar-model-name').innerText = 'Idle';
+      document.getElementById('bar-vram-txt').innerText = '0.0 GB';
+      document.getElementById('bar-progress-txt').innerText = '0%';
+      document.getElementById('hud-job-name').innerText = 'Idle (No Model Loaded)';
+      document.getElementById('hud-job-pct').innerText = '0%';
+      document.getElementById('hud-progress-fill').style.width = '0%';
+      document.getElementById('hud-step-meta').innerText = 'Weights purged';
+      document.getElementById('hud-eta-meta').innerText = 'Ready';
+      document.getElementById('hud-dial-vram').innerText = '0.0 / 32 GB';
+      document.getElementById('dash-vram-text').innerText = '32 GB (0.0 GB AI Resident · 32.0 GB Free)';
+      document.getElementById('dash-active-name').innerText = 'No Active Model';
+      document.getElementById('dash-active-badge').innerText = 'IDLE';
+      document.getElementById('dash-active-badge').className = 'badge badge-standby';
+      document.getElementById('dash-active-desc').innerText = 'All model weights purged from Unified Memory. 32 GB RAM available for system apps.';
+    }
+
+    let caffeinateActive = true;
+    function toggleCaffeinate() {
+      caffeinateActive = !caffeinateActive;
+      const b = document.getElementById('badge-caffeinate');
+      if (caffeinateActive) {
+        b.innerText = 'ACTIVE';
+        b.className = 'badge badge-verified';
+      } else {
+        b.innerText = 'OFF';
+        b.className = 'badge badge-standby';
+      }
+    }
+
+    let isPaused = false;
+    function togglePause() {
+      isPaused = !isPaused;
+      alert(isPaused ? 'Inference Paused on Local Node' : 'Inference Resumed on Local Node');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Provenance chips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --line:rgba(255,255,255,.08);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --true:#10b981;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r2:10px;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --line:rgba(0,0,0,.08);
+  --ink:#09090b; --ink2:#52525b; --ink3:#71717a; --true:#059669;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --root:#000000; --ground:#09090b; --panel:#111114; --line:rgba(255,255,255,.08);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --true:#10b981;
+}}
+:root[data-theme="dark"]{
+  --root:#000000; --ground:#09090b; --panel:#111114; --line:rgba(255,255,255,.08);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --true:#10b981;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);font-size:13px;padding:20px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.k{font-family:var(--mono);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2);padding:18px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.prov{font-family:var(--mono);font-size:11px;letter-spacing:.02em}
+.prov.measured{color:var(--true)} .prov.declared{color:var(--ink2)} .prov.estimated{color:var(--ink3)}
+</style>
+</head>
+<body>
+  <div class="lbl">Provenance &middot; flown / on paper / unflown</div>
+  <div class="card">
+    <span class="prov measured">flown</span>
+    <span class="prov declared">on paper</span>
+    <span class="prov estimated">unflown</span>
+    <span class="prov measured">measured</span>
+    <span class="prov estimated">estimated</span>
+  </div>
+</body>
+</html>

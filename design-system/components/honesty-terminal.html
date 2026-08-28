@@ -1,0 +1,42 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Honesty terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000;--ground:#050506;--ink:#e4e4e7;--ink3:#71717a;--true:#4ade80;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,sans-serif;
+}
+:root[data-theme="light"]{--root:#fbfaf8;--ground:#f5f4f1;--ink:#1c1c1f;--ink3:#71717a;--true:#059669;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--root:#000;--ground:#050506;--ink:#e4e4e7;--ink3:#71717a;--true:#4ade80;}}
+:root[data-theme="dark"]{--root:#000;--ground:#050506;--ink:#e4e4e7;--ink3:#71717a;--true:#4ade80;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);padding:24px}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.term{
+  background:#0a0a0c;border:1px solid rgba(255,255,255,.1);border-radius:10px;
+  font-family:var(--mono);color:#d4d4d8;font-size:14px;line-height:1.75;padding:20px 22px;
+  max-width:640px;
+}
+.term .ok{color:var(--true)}
+.term .dim{color:#71717a}
+.term .hd{color:#e4e4e7;font-weight:500}
+</style>
+</head>
+<body>
+  <div class="lbl">Honesty terminal &middot; board 08</div>
+  <div class="term">
+    <div><span class="ok">kokoro-82m</span>&nbsp;&nbsp;&nbsp;<span class="ok">flown</span>&nbsp;&nbsp;&nbsp;&nbsp;4.6&times; realtime &middot; 2026-08-23</div>
+    <div style="margin-top:8px"><span class="hd">wan-2.2</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;on paper&nbsp;&nbsp;48 s/s of video (model card &middot; 2026-08-22) &middot; unflown</div>
+    <div style="margin-top:8px"><span class="ok">studio</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ok">ready</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;checked 8s ago</div>
+    <div style="margin-top:8px"><span class="dim">air</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asleep&nbsp;&nbsp;&nbsp;not gone &mdash; 2 jobs waiting</div>
+    <div style="margin-top:8px"><span class="hd">g6e.2xlarge</span>&nbsp;&nbsp;renting&nbsp;&nbsp;$0.75/hr &middot; est $1.20 &middot; actual so far $0.51</div>
+  </div>
+</body>
+</html>

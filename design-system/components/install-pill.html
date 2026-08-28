@@ -1,0 +1,34 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Install pill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000; --panel:#0d0d10; --line2:rgba(255,255,255,.13);
+  --ink:#fafafa; --ink4:#4a4a52;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+:root[data-theme="light"]{--root:#fbfaf8; --panel:#fff; --line2:rgba(0,0,0,.13); --ink:#0b0b0d; --ink4:#a1a1aa;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--root:#000; --panel:#0d0d10; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink4:#4a4a52;}}
+:root[data-theme="dark"]{--root:#000; --panel:#0d0d10; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink4:#4a4a52;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);padding:32px}
+button{font-family:inherit;background:transparent;border:0;color:inherit;cursor:pointer}
+.install{display:inline-flex;align-items:center;gap:16px;background:var(--panel);
+  border:1px solid var(--line2);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:14.5px;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.install button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)}
+.install button:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+  <div class="install"><span style="color:var(--ink4)">$</span><span>pip install spacepilot</span>
+    <button data-copy="pip install spacepilot">copy</button></div>
+</body>
+</html>

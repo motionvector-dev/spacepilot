@@ -1,0 +1,82 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tokens · Palette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+  --true:#10b981; --wrong:#f43535; --agent:#a49bd0;
+  --silver:#cfd4dc; --silver-line:rgba(207,212,220,.30);
+  --gold:#c9a227; --gold-line:rgba(201,162,39,.40);
+  --invbg:#fafafa; --invink:#09090b;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r1:6px; --r2:10px; --r3:14px;
+}
+:root[data-theme="light"]{
+  --root:#fdfdfc; --ground:#f7f7f5; --panel:#f2f2ef; --card:#ffffff; --raised:#e6e6e1;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14); --line3:rgba(0,0,0,.22);
+  --ink:#09090b; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;
+  --true:#059669; --wrong:#e11d48; --agent:#5b528f;
+  --silver:#5c6672; --silver-line:rgba(92,102,114,.32);
+  --gold:#8a6a22; --gold-line:rgba(138,106,34,.34);
+  --invbg:#09090b; --invink:#fafafa;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+  --true:#10b981; --wrong:#f43535; --agent:#a49bd0;
+  --silver:#cfd4dc; --silver-line:rgba(207,212,220,.30);
+  --gold:#c9a227; --gold-line:rgba(201,162,39,.40);
+  --invbg:#fafafa; --invink:#09090b;
+}}
+:root[data-theme="dark"]{
+  --root:#000000; --ground:#09090b; --panel:#111114; --card:#18181b; --raised:#222226;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#52525b;
+  --true:#10b981; --wrong:#f43535; --agent:#a49bd0;
+  --silver:#cfd4dc; --silver-line:rgba(207,212,220,.30);
+  --gold:#c9a227; --gold-line:rgba(201,162,39,.40);
+  --invbg:#fafafa; --invink:#09090b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);font-size:13px;
+  -webkit-font-smoothing:antialiased;padding:22px}
+.m{font-family:var(--mono)}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.sw{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.sw i{display:block;height:44px;border-bottom:1px solid var(--line)}
+.sw .meta{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sw .name{font-family:var(--mono);font-size:11px;color:var(--ink)}
+.sw .hex{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+</style>
+</head>
+<body>
+  <div class="lbl">Tokens &middot; palette &middot; :root, incl. three-state theming</div>
+  <div class="grid">
+    <div class="sw"><i style="background:#000000"></i><div class="meta"><span class="name">--root</span><span class="hex">#000000</span></div></div>
+    <div class="sw"><i style="background:#09090b"></i><div class="meta"><span class="name">--ground</span><span class="hex">#09090b</span></div></div>
+    <div class="sw"><i style="background:#111114"></i><div class="meta"><span class="name">--panel</span><span class="hex">#111114</span></div></div>
+    <div class="sw"><i style="background:#18181b"></i><div class="meta"><span class="name">--card</span><span class="hex">#18181b</span></div></div>
+    <div class="sw"><i style="background:#222226"></i><div class="meta"><span class="name">--raised</span><span class="hex">#222226</span></div></div>
+    <div class="sw"><i style="background:#fafafa"></i><div class="meta"><span class="name">--ink</span><span class="hex">#fafafa</span></div></div>
+    <div class="sw"><i style="background:#a1a1aa"></i><div class="meta"><span class="name">--ink2</span><span class="hex">#a1a1aa</span></div></div>
+    <div class="sw"><i style="background:#71717a"></i><div class="meta"><span class="name">--ink3</span><span class="hex">#71717a</span></div></div>
+    <div class="sw"><i style="background:#52525b"></i><div class="meta"><span class="name">--ink4</span><span class="hex">#52525b</span></div></div>
+    <div class="sw"><i style="background:#10b981"></i><div class="meta"><span class="name">--true</span><span class="hex">#10b981</span></div></div>
+    <div class="sw"><i style="background:#f43535"></i><div class="meta"><span class="name">--wrong</span><span class="hex">#f43535</span></div></div>
+    <div class="sw"><i style="background:#a49bd0"></i><div class="meta"><span class="name">--agent</span><span class="hex">#a49bd0</span></div></div>
+    <div class="sw"><i style="background:#cfd4dc"></i><div class="meta"><span class="name">--silver</span><span class="hex">#cfd4dc</span></div></div>
+    <div class="sw"><i style="background:#c9a227"></i><div class="meta"><span class="name">--gold</span><span class="hex">#c9a227</span></div></div>
+  </div>
+</body>
+</html>

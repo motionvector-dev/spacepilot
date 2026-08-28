@@ -1,0 +1,805 @@
+<!-- @dsCard group="Pages" name="Flight Check — v3, Aug 22 22:27" -->
+<!doctype html>
+<html lang="en">
+<body>
+<title>SpacePilot Flight Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#FAFAFA; --surface:#FFFFFF; --surface-2:#F4F4F5; --surface-3:#E9E9EC;
+  --line:#E4E4E7; --line-strong:#D4D4D8;
+  --ink:#18181B; --ink-2:#3F3F46; --ink-3:#71717A; --ink-4:#A1A1AA;
+  --accent:#1D4ED8;
+  --l1:#047857; --l1-bg:#D1FAE5; --l1-line:#6EE7B7;
+  --l2:#1D4ED8; --l2-bg:#DBEAFE; --l2-line:#93C5FD;
+  --l3:#7C3AED; --l3-bg:#EDE9FE; --l3-line:#C4B5FD;
+  --l4:#B45309; --l4-bg:#FEF3C7; --l4-line:#FCD34D;
+  --l5:#52525B; --l5-bg:#F4F4F5; --l5-line:#D4D4D8;
+  --warn:#BE123C; --warn-bg:#FFE4E6; --warn-line:#FDA4AF;
+  --shadow:0 1px 2px rgba(9,9,11,.05),0 8px 24px -14px rgba(9,9,11,.14);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#050506; --surface:#0B0B0D; --surface-2:#131316; --surface-3:#1C1C20;
+  --line:#232327; --line-strong:#34343A;
+  --ink:#FAFAFA; --ink-2:#D4D4D8; --ink-3:#A1A1AA; --ink-4:#71717A;
+  --accent:#7EA6FF;
+  --l1:#34D399; --l1-bg:#052E23; --l1-line:#106E52;
+  --l2:#7EA6FF; --l2-bg:#0C1830; --l2-line:#2C4A8A;
+  --l3:#C4B5FD; --l3-bg:#1B1233; --l3-line:#4C3A85;
+  --l4:#FBBF24; --l4-bg:#3A2606; --l4-line:#8A5E0C;
+  --l5:#A1A1AA; --l5-bg:#131316; --l5-line:#34343A;
+  --warn:#FB7185; --warn-bg:#3B0A16; --warn-line:#8C2740;
+  --shadow:0 1px 2px rgba(0,0,0,.6),0 12px 32px -18px rgba(0,0,0,.85);
+}}
+:root[data-theme="dark"]{
+  --ground:#050506; --surface:#0B0B0D; --surface-2:#131316; --surface-3:#1C1C20;
+  --line:#232327; --line-strong:#34343A;
+  --ink:#FAFAFA; --ink-2:#D4D4D8; --ink-3:#A1A1AA; --ink-4:#71717A;
+  --accent:#7EA6FF;
+  --l1:#34D399; --l1-bg:#052E23; --l1-line:#106E52;
+  --l2:#7EA6FF; --l2-bg:#0C1830; --l2-line:#2C4A8A;
+  --l3:#C4B5FD; --l3-bg:#1B1233; --l3-line:#4C3A85;
+  --l4:#FBBF24; --l4-bg:#3A2606; --l4-line:#8A5E0C;
+  --l5:#A1A1AA; --l5-bg:#131316; --l5-line:#34343A;
+  --warn:#FB7185; --warn-bg:#3B0A16; --warn-line:#8C2740;
+  --shadow:0 1px 2px rgba(0,0,0,.6),0 12px 32px -18px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:Archivo,ui-sans-serif,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 26px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+
+header.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.top-in{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;padding:40px 0 32px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4)}
+h1{font-size:clamp(28px,4vw,42px);font-weight:700;letter-spacing:-.028em;line-height:1.05;margin:13px 0 0;text-wrap:balance}
+.dek{margin:14px 0 0;max-width:64ch;color:var(--ink-2);font-size:16px}
+.dek b{color:var(--ink);font-weight:600}
+.theme{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);flex:none}
+.theme button{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border:0;border-radius:5px;background:transparent;color:var(--ink-3);cursor:pointer}
+.theme button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.rail{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.rail-in{display:flex;gap:22px;padding:12px 0;flex-wrap:wrap;align-items:center}
+.rc{display:flex;align-items:baseline;gap:7px}
+.rc b{font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.rc span{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+
+section.lane{padding:44px 0 0}
+.lane-h{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;padding-bottom:10px;border-bottom:2px solid var(--line-strong)}
+.lane-tag{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;padding:4px 9px;border-radius:5px;border:1px solid transparent}
+.lane-h h2{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0}
+.lane-n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-4);font-variant-numeric:tabular-nums}
+.lane-why{margin:11px 0 0;color:var(--ink-3);font-size:14px;max-width:78ch}
+.lane-why b{color:var(--ink-2);font-weight:600}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:13px;margin-top:18px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:15px 16px;display:flex;flex-direction:column;gap:9px}
+.card h3{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:0}
+.card p{margin:0;font-size:13.2px;color:var(--ink-3);line-height:1.52}
+.card p b{color:var(--ink-2);font-weight:600}
+.card code{font-family:"IBM Plex Mono",monospace;font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--ink-2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:4px;border:1px solid var(--line);color:var(--ink-3);background:var(--surface-2)}
+.chip.fake{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+.chip.blocked{color:var(--l4);background:var(--l4-bg);border-color:var(--l4-line)}
+.move{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.move label{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-4)}
+.move select{flex:1;font-family:"IBM Plex Mono",monospace;font-size:11px;padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--ink-2);cursor:pointer}
+
+.tag-l1{color:var(--l1);background:var(--l1-bg);border-color:var(--l1-line)}
+.tag-l2{color:var(--l2);background:var(--l2-bg);border-color:var(--l2-line)}
+.tag-l3{color:var(--l3);background:var(--l3-bg);border-color:var(--l3-line)}
+.tag-l4{color:var(--l4);background:var(--l4-bg);border-color:var(--l4-line)}
+.tag-l5{color:var(--l5);background:var(--l5-bg);border-color:var(--l5-line)}
+
+/* diagrams */
+.figwrap{margin:22px 0 0;overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:22px 20px}
+.figwrap svg{display:block;width:100%;min-width:720px;height:auto}
+figcaption{margin:14px 0 0;font-size:13px;color:var(--ink-3);max-width:76ch}
+figcaption b{color:var(--ink-2);font-weight:600}
+.key{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 0;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.key i{display:inline-flex;align-items:center;gap:6px;font-style:normal}
+.key i::before{content:"";width:11px;height:11px;border-radius:3px;border:1px solid var(--line-strong)}
+.key .k-own::before{background:var(--l1-bg);border-color:var(--l1-line)}
+.key .k-us::before{background:var(--l2-bg);border-color:var(--l2-line)}
+.key .k-dep::before{background:var(--l3-bg);border-color:var(--l3-line)}
+.key .k-mod::before{background:var(--l4-bg);border-color:var(--l4-line)}
+
+.note{margin:38px 0 0;padding:16px 18px;border-left:2px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:14px;color:var(--ink-2)}
+.note strong{color:var(--ink)}
+.export{margin:34px 0 0;display:flex;gap:10px;flex-wrap:wrap}
+.btn{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:11px 16px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+pre.out{display:none;margin:15px 0 0;padding:18px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.62;color:var(--ink-2);white-space:pre}
+pre.out.on{display:block}
+footer{margin:56px 0 0;padding:24px 0 56px;border-top:1px solid var(--line);color:var(--ink-4);font-size:12.5px}
+footer p{margin:0 0 5px;max-width:80ch}
+@media (max-width:760px){.top-in{flex-direction:column;gap:20px}.wrap{padding:0 18px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div>
+      <div class="eyebrow">Internal build board · 2026-08-22</div>
+      <h1>SpacePilot Flight Check</h1>
+      <p class="dek">Every feature, filed by <b>how much work is left</b> — not by whether it exists. Lanes are effort, so the board tells you what to pick up next rather than what to be embarrassed about.</p>
+    </div>
+    <div class="theme" role="group" aria-label="Colour theme">
+      <button data-t="system" aria-pressed="true">System</button>
+      <button data-t="light" aria-pressed="false">Light</button>
+      <button data-t="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</header>
+
+<div class="rail">
+  <div class="wrap rail-in">
+    <div class="rc"><b id="n1" style="color:var(--l1)">0</b><span>Shipped</span></div>
+    <div class="rc"><b id="n2" style="color:var(--l2)">0</b><span>In flight</span></div>
+    <div class="rc"><b id="n3" style="color:var(--l3)">0</b><span>One wire away</span></div>
+    <div class="rc"><b id="n4" style="color:var(--l4)">0</b><span>Half built</span></div>
+    <div class="rc"><b id="n5" style="color:var(--l5)">0</b><span>Roadmap</span></div>
+    <div class="rc"><b id="nf" style="color:var(--warn)">0</b><span>Renders fake data</span></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<div class="note"><strong>This is an internal board, not a public claim.</strong> The project is stealth, so an unbuilt roadmap item is not a problem — it is a roadmap item. The one thing that stays flagged regardless of lane is a surface that <b>renders fabricated data</b>, because an agent reading that code cannot tell what is finished and will build on it or waste tokens re-deriving it. Those chips mark a coordination hazard, not a broken promise.</div>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l2">System</span><h2>How it fits together</h2></div>
+  <p class="lane-why">An hourglass, like a protocol stack. <b>Any model above, any silicon below, one narrow waist in the middle.</b> Every wide band already has open-source players — the waist is what nobody has built.</p>
+
+  <figure class="figwrap" style="margin-top:20px">
+    <svg viewBox="0 0 900 890" role="img" aria-label="Hourglass architecture: interfaces, model sources, model classes and formats fan into a narrow control-plane waist, which fans back out to runtimes, silicon, and where the compute lives.">
+      <style>
+        .bx{rx:8;stroke-width:1}
+        .t{font-family:Archivo,system-ui,sans-serif;font-size:12.5px;font-weight:600;fill:var(--ink)}
+        .s{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--ink-3)}
+        .band{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;fill:var(--ink-4)}
+        .bandn{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--ink-4)}
+        .own{fill:var(--l1-bg);stroke:var(--l1-line)}
+        .us{fill:var(--l2-bg);stroke:var(--l2-line)}
+        .dep{fill:var(--l3-bg);stroke:var(--l3-line)}
+        .mod{fill:var(--l4-bg);stroke:var(--l4-line)}
+        .funnel{fill:var(--surface-2);stroke:none;opacity:.55}
+        .rule{stroke:var(--line);stroke-width:1}
+        .waist-t{font-family:Archivo,system-ui,sans-serif;font-size:15px;font-weight:700;fill:var(--ink)}
+        .soon{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--l2)}
+      </style>
+
+      <path class="funnel" d="M8,328 L892,328 L620,392 L280,392 Z"/>
+      <path class="funnel" d="M280,506 L620,506 L892,570 L8,570 Z"/>
+
+      <text class="band" x="8" y="20">INTERFACES — how a human or an agent drives it</text>
+      <line class="rule" x1="8" y1="30" x2="892" y2="30"/>
+      <rect class="bx us" x="8"   y="42" width="170" height="40"/><text class="t" x="22" y="67">CLI</text>
+      <rect class="bx us" x="186" y="42" width="170" height="40"/><text class="t" x="200" y="67">MCP server</text>
+      <rect class="bx us" x="364" y="42" width="170" height="40"/><text class="t" x="378" y="67">Agent Skills</text>
+      <rect class="bx us" x="542" y="42" width="170" height="40"/><text class="t" x="556" y="67">SDK · REST API</text>
+      <rect class="bx us" x="720" y="42" width="172" height="40"/><text class="t" x="734" y="67">web UI</text>
+
+      <text class="band" x="8" y="112">MODEL SOURCES</text>
+      <text class="bandn" x="892" y="112" text-anchor="end">huggingface_hub · hf-transfer · ollama registry</text>
+      <line class="rule" x1="8" y1="122" x2="892" y2="122"/>
+      <rect class="bx mod" x="8"   y="134" width="170" height="40"/><text class="t" x="22" y="159">Hugging Face</text>
+      <rect class="bx mod" x="186" y="134" width="170" height="40"/><text class="t" x="200" y="159">Civitai</text>
+      <rect class="bx mod" x="364" y="134" width="170" height="40"/><text class="t" x="378" y="159">ModelScope</text>
+      <rect class="bx mod" x="542" y="134" width="170" height="40"/><text class="t" x="556" y="159">your own weights</text>
+      <rect class="bx mod" x="720" y="134" width="172" height="40"/><text class="t" x="734" y="159">local files</text>
+
+      <text class="band" x="8" y="204">MODEL CLASSES — not one modality</text>
+      <text class="bandn" x="892" y="204" text-anchor="end">transformers · diffusers · sentence-transformers</text>
+      <line class="rule" x1="8" y1="214" x2="892" y2="214"/>
+      <rect class="bx mod" x="8"   y="226" width="138" height="40"/><text class="t" x="22" y="251">LLM</text>
+      <rect class="bx mod" x="154" y="226" width="138" height="40"/><text class="t" x="168" y="251">VLM</text>
+      <rect class="bx mod" x="300" y="226" width="138" height="40"/><text class="t" x="314" y="251">image</text>
+      <rect class="bx mod" x="446" y="226" width="138" height="40"/><text class="t" x="460" y="251">video</text>
+      <rect class="bx mod" x="592" y="226" width="138" height="40"/><text class="t" x="606" y="251">speech</text>
+      <rect class="bx mod" x="738" y="226" width="154" height="40"/><text class="t" x="752" y="251">embedding · next</text>
+
+      <rect class="bx dep" x="8" y="278" width="884" height="42"/>
+      <text class="t" x="22" y="296">formats &amp; quantization</text>
+      <text class="s" x="22" y="312">safetensors · GGUF · MLX · ONNX · AWQ · GPTQ · bitsandbytes · TorchAO — all open source, none of it ours</text>
+
+      <rect class="bx us" x="280" y="396" width="340" height="110"/>
+      <text class="waist-t" x="300" y="422">spacepilot</text>
+      <text class="s" x="300" y="444">probe the machine — what silicon, how much memory</text>
+      <text class="s" x="300" y="460">pick the model — what actually fits, at what quality</text>
+      <text class="s" x="300" y="476">pick the runtime — and where it runs</text>
+      <text class="soon" x="300" y="496">inference today · training, fine-tune and LoRA are this layer extended</text>
+      <text class="bandn" x="450" y="382" text-anchor="middle">THE WAIST — the only part nobody has built</text>
+
+      <text class="band" x="8" y="586">RUNTIMES</text>
+      <text class="bandn" x="892" y="586" text-anchor="end">every one of these is open source</text>
+      <line class="rule" x1="8" y1="596" x2="892" y2="596"/>
+      <rect class="bx dep" x="8"   y="608" width="170" height="52"/>
+      <text class="t" x="22" y="630">vLLM · SGLang</text><text class="s" x="22" y="648">TensorRT-LLM</text>
+      <rect class="bx dep" x="186" y="608" width="170" height="52"/>
+      <text class="t" x="200" y="630">llama.cpp</text><text class="s" x="200" y="648">GGUF, runs anywhere</text>
+      <rect class="bx dep" x="364" y="608" width="170" height="52"/>
+      <text class="t" x="378" y="630">MLX · Metal</text><text class="s" x="378" y="648">mlx-video, mlx-vlm</text>
+      <rect class="bx dep" x="542" y="608" width="170" height="52"/>
+      <text class="t" x="556" y="630">ROCm</text><text class="s" x="556" y="648">AMD</text>
+      <rect class="bx dep" x="720" y="608" width="172" height="52"/>
+      <text class="t" x="734" y="630">ONNX Runtime</text><text class="s" x="734" y="648">CPU, Intel, NPU</text>
+
+      <text class="band" x="8" y="692">SILICON — whatever they already own</text>
+      <line class="rule" x1="8" y1="702" x2="892" y2="702"/>
+      <rect class="bx own" x="8"   y="714" width="170" height="52"/>
+      <text class="t" x="22" y="736">NVIDIA consumer</text><text class="s" x="22" y="754">3090, 4090, 5090</text>
+      <rect class="bx own" x="186" y="714" width="170" height="52"/>
+      <text class="t" x="200" y="736">NVIDIA datacenter</text><text class="s" x="200" y="754">L40S, A100, H100</text>
+      <rect class="bx own" x="364" y="714" width="170" height="52"/>
+      <text class="t" x="378" y="736">Apple Silicon</text><text class="s" x="378" y="754">unified memory</text>
+      <rect class="bx own" x="542" y="714" width="170" height="52"/>
+      <text class="t" x="556" y="736">AMD Radeon</text><text class="s" x="556" y="754">7900, Instinct</text>
+      <rect class="bx own" x="720" y="714" width="172" height="52"/>
+      <text class="t" x="734" y="736">Intel · CPU</text><text class="s" x="734" y="754">the slow but free tier</text>
+
+      <text class="band" x="8" y="798">WHERE IT RUNS — their choice, their keys, their invoice</text>
+      <line class="rule" x1="8" y1="808" x2="892" y2="808"/>
+      <rect class="bx own" x="8"   y="820" width="215" height="44"/>
+      <text class="t" x="22" y="840">this machine</text><text class="s" x="22" y="856">zero credentials</text>
+      <rect class="bx own" x="231" y="820" width="215" height="44"/>
+      <text class="t" x="245" y="840">their homelab</text><text class="s" x="245" y="856">the box under the desk</text>
+      <rect class="bx own" x="454" y="820" width="215" height="44"/>
+      <text class="t" x="468" y="840">their cloud, direct</text><text class="s" x="468" y="856">boto3 · RunPod · Modal</text>
+      <rect class="bx dep" x="677" y="820" width="215" height="44"/>
+      <text class="t" x="691" y="840">via a broker</text><text class="s" x="691" y="856">SkyPilot · dstack · GPUStack</text>
+    </svg>
+    <div class="key">
+      <i class="k-own">user already owns it</i><i class="k-us">the waist — we build this</i>
+      <i class="k-dep">open source we compose</i><i class="k-mod">models &amp; weights</i>
+    </div>
+    <figcaption><b>One blue box on the whole diagram.</b> Every other layer already has strong open-source players, and combining them is the work — the waist is the only place new code has to exist, plus whatever unique IP the seams demand. Video is the entry point rather than the scope: it is the hardest case on every axis — largest weights, worst runtime fragmentation, thinnest tooling — so a router that survives video handles LLMs trivially. Note what is absent: no auth, no billing, no user data, no orchestrator of our own.</figcaption>
+  </figure>
+</section>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l4">Defaults</span><h2>What we pick, and what you can swap</h2></div>
+  <p class="lane-why">Every layer already has several good open-source answers. <b>What we ship is an opinion plus the setup that makes it work</b> — the left column is the default, the right is what you change without leaving the tool.</p>
+
+  <figure class="figwrap" style="margin-top:20px">
+    <svg viewBox="0 0 900 510" role="img" aria-label="Per-layer table: the default SpacePilot ships on the left, and the alternatives a user can swap in on the right.">
+      <style>
+        .lay{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;fill:var(--ink-4)}
+        .colh{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;fill:var(--ink-3)}
+        .def{font-family:Archivo,system-ui,sans-serif;font-size:12.5px;font-weight:600;fill:var(--ink)}
+        .defs{font-family:"IBM Plex Mono",monospace;font-size:9px;fill:var(--ink-3)}
+        .alt{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-2)}
+        .dbx{rx:7;stroke-width:1;fill:var(--l2-bg);stroke:var(--l2-line)}
+        .abx{rx:7;stroke-width:1;fill:var(--surface-2);stroke:var(--line)}
+        .swap{stroke:var(--line-strong);stroke-width:1.2;fill:none}
+        .rl{stroke:var(--line);stroke-width:1}
+      </style>
+      <defs>
+        <marker id="sw" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+          <path d="M0,0 L6.5,3 L0,6 z" fill="var(--line-strong)"/>
+        </marker>
+      </defs>
+
+      <text class="colh" x="156" y="24">WHAT WE SHIP BY DEFAULT</text>
+      <text class="colh" x="446" y="24">SWAP IN INSTEAD — same tool, your call</text>
+      <line class="rl" x1="8" y1="34" x2="892" y2="34"/>
+
+      <text class="lay" x="8" y="76">INTERFACE</text>
+      <rect class="dbx" x="156" y="48" width="256" height="42"/>
+      <text class="def" x="170" y="66">a recipe you hand an agent</text><text class="defs" x="170" y="82">skill + MCP — setup is the product</text>
+      <path class="swap" d="M420,69 L438,69" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="48" width="446" height="42"/>
+      <text class="alt" x="460" y="74">CLI by hand · SDK · REST API · web UI</text>
+
+      <text class="lay" x="8" y="130">PIPELINE</text>
+      <rect class="dbx" x="156" y="102" width="256" height="42"/>
+      <text class="def" x="170" y="120">our runner</text><text class="defs" x="170" y="136">job queue, status, assets</text>
+      <path class="swap" d="M420,123 L438,123" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="102" width="446" height="42"/>
+      <text class="alt" x="460" y="128">diffusers direct · ComfyUI graph · your own script</text>
+
+      <text class="lay" x="8" y="184">MODEL</text>
+      <rect class="dbx" x="156" y="156" width="256" height="42"/>
+      <text class="def" x="170" y="174">Wan 2.2</text><text class="defs" x="170" y="190">Apache-2.0, no downstream clause</text>
+      <path class="swap" d="M420,177 L438,177" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="156" width="446" height="42"/>
+      <text class="alt" x="460" y="182">LTX-2.5 · HunyuanVideo · any LLM or VLM · your own weights</text>
+
+      <text class="lay" x="8" y="238">MODEL SOURCE</text>
+      <rect class="dbx" x="156" y="210" width="256" height="42"/>
+      <text class="def" x="170" y="228">Hugging Face</text><text class="defs" x="170" y="244">hf-transfer, resumable</text>
+      <path class="swap" d="M420,231 L438,231" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="210" width="446" height="42"/>
+      <text class="alt" x="460" y="236">Civitai · ModelScope · a local path · your own registry</text>
+
+      <text class="lay" x="8" y="292">FORMAT</text>
+      <rect class="dbx" x="156" y="264" width="256" height="42"/>
+      <text class="def" x="170" y="282">safetensors or GGUF</text><text class="defs" x="170" y="298">whichever the runtime wants</text>
+      <path class="swap" d="M420,285 L438,285" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="264" width="446" height="42"/>
+      <text class="alt" x="460" y="290">MLX · ONNX · AWQ · GPTQ · bitsandbytes · TorchAO</text>
+
+      <text class="lay" x="8" y="346">RUNTIME</text>
+      <rect class="dbx" x="156" y="318" width="256" height="42"/>
+      <text class="def" x="170" y="336">auto-picked</text><text class="defs" x="170" y="352">from what your silicon is</text>
+      <path class="swap" d="M420,339 L438,339" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="318" width="446" height="42"/>
+      <text class="alt" x="460" y="344">force vLLM · SGLang · llama.cpp · MLX · ROCm · ONNX · TensorRT</text>
+
+      <text class="lay" x="8" y="400">COMPUTE BROKER</text>
+      <rect class="dbx" x="156" y="372" width="256" height="42"/>
+      <text class="def" x="170" y="390">none</text><text class="defs" x="170" y="406">talk to your cloud directly</text>
+      <path class="swap" d="M420,393 L438,393" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="372" width="446" height="42"/>
+      <text class="alt" x="460" y="398">SkyPilot · dstack · GPUStack — only if you want multi-cloud</text>
+
+      <text class="lay" x="8" y="454">WHERE</text>
+      <rect class="dbx" x="156" y="426" width="256" height="42"/>
+      <text class="def" x="170" y="444">this machine</text><text class="defs" x="170" y="460">no credentials on first run</text>
+      <path class="swap" d="M420,447 L438,447" marker-end="url(#sw)"/>
+      <rect class="abx" x="446" y="426" width="446" height="42"/>
+      <text class="alt" x="460" y="452">homelab over SSH · AWS · RunPod · Modal · Lambda · any neocloud</text>
+
+      <text class="defs" x="8" y="496">Every row is a real choice with a real open-source answer. None of them is ours to own.</text>
+    </svg>
+    <figcaption><b>The product today is the left column plus the setup that fills it in.</b> A broker defaults to <i>none</i> deliberately — if you already hold AWS, RunPod or Modal credentials, SkyPilot or dstack is a layer you are paying for in complexity and getting nothing back, unless you actually want multi-cloud. The honest claim right now is not a moat; it is that picking sensible defaults for eight layers and wiring them together is tedious, and nobody has done it for you.</figcaption>
+  </figure>
+</section>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l5">Ownership</span><h2>What is actually ours</h2></div>
+  <p class="lane-why">The same stack, cut a different way: not what a user can change, but <b>what code we have to write</b>. The asymmetry is the point — and it is the strength, not the embarrassment.</p>
+
+  <figure class="figwrap" style="margin-top:20px">
+    <svg viewBox="0 0 900 430" role="img" aria-label="Two columns showing how little of the stack is built in-house against how much is integrated third-party open source.">
+      <style>
+        .oh{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;fill:var(--ink-3)}
+        .ot{font-family:Archivo,system-ui,sans-serif;font-size:12.5px;font-weight:600;fill:var(--ink)}
+        .os{font-family:"IBM Plex Mono",monospace;font-size:9px;fill:var(--ink-3)}
+        .og{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.08em;fill:var(--ink-4)}
+        .oa{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-2)}
+        .obx{rx:7;stroke-width:1;fill:var(--l2-bg);stroke:var(--l2-line)}
+        .tbx{rx:7;stroke-width:1;fill:var(--surface-2);stroke:var(--line)}
+        .orl{stroke:var(--line);stroke-width:1}
+        .big{font-family:Archivo,system-ui,sans-serif;font-size:28px;font-weight:700}
+      </style>
+
+      <text class="oh" x="8" y="24">BUILT BY US — all the new code there is</text>
+      <line class="orl" x1="8" y1="34" x2="352" y2="34"/>
+      <text class="big" x="8" y="72" fill="var(--l2)">5</text>
+      <text class="os" x="44" y="66">things</text><text class="os" x="44" y="78">to write</text>
+
+      <rect class="obx" x="8" y="92" width="344" height="44"/>
+      <text class="ot" x="22" y="112">the selector</text><text class="os" x="22" y="127">probe silicon → pick model → pick runtime → place</text>
+      <rect class="obx" x="8" y="144" width="344" height="44"/>
+      <text class="ot" x="22" y="164">setup</text><text class="os" x="22" y="179">detect, configure, write it down — the actual UX</text>
+      <rect class="obx" x="8" y="196" width="344" height="44"/>
+      <text class="ot" x="22" y="216">the job runner</text><text class="os" x="22" y="231">queue, real status, assets on your disk</text>
+      <rect class="obx" x="8" y="248" width="344" height="44"/>
+      <text class="ot" x="22" y="268">the agent surface</text><text class="os" x="22" y="283">MCP tools, skills, recipes — how it gets driven</text>
+      <rect class="obx" x="8" y="300" width="344" height="44"/>
+      <text class="ot" x="22" y="320">the seams</text><text class="os" x="22" y="335">shims where two upstreams disagree — the IP, if any</text>
+
+      <line class="orl" x1="386" y1="20" x2="386" y2="410"/>
+
+      <text class="oh" x="420" y="24">INTEGRATED — someone else already built it</text>
+      <line class="orl" x1="420" y1="34" x2="892" y2="34"/>
+      <text class="big" x="420" y="72" fill="var(--ink-4)">40+</text>
+      <text class="os" x="478" y="66">projects</text><text class="os" x="478" y="78">we compose</text>
+
+      <text class="og" x="420" y="106">MODELS &amp; WEIGHTS</text>
+      <rect class="tbx" x="420" y="114" width="472" height="30"/>
+      <text class="oa" x="432" y="134">Hugging Face · Civitai · ModelScope · Wan · LTX · Hunyuan</text>
+
+      <text class="og" x="420" y="164">FORMATS &amp; QUANTIZATION</text>
+      <rect class="tbx" x="420" y="172" width="472" height="30"/>
+      <text class="oa" x="432" y="192">safetensors · GGUF · MLX · ONNX · AWQ · GPTQ · TorchAO</text>
+
+      <text class="og" x="420" y="222">RUNTIMES</text>
+      <rect class="tbx" x="420" y="230" width="472" height="30"/>
+      <text class="oa" x="432" y="250">vLLM · SGLang · llama.cpp · MLX · ROCm · TensorRT · ONNX</text>
+
+      <text class="og" x="420" y="280">PIPELINES &amp; MEDIA</text>
+      <rect class="tbx" x="420" y="288" width="472" height="30"/>
+      <text class="oa" x="432" y="308">diffusers · transformers · PyTorch · ffmpeg · Kokoro</text>
+
+      <text class="og" x="420" y="338">COMPUTE</text>
+      <rect class="tbx" x="420" y="346" width="472" height="30"/>
+      <text class="oa" x="432" y="366">SkyPilot · dstack · GPUStack · AWS · RunPod · Modal · Lambda</text>
+
+      <text class="os" x="420" y="400">Every one of these is maintained by someone else, for free, better than we could.</text>
+    </svg>
+    <figcaption><b>Five things to write against forty to integrate.</b> That ratio is the bet: the upstream projects are excellent and improve without us, so the leverage is entirely in choosing well and wiring cleanly. It also names where unique IP could accrue — <i>the seams</i>, where two upstreams disagree about memory, precision or format and somebody has to decide. Everything else is composition, and composition is not a moat. It is, however, a real product, because right now the composing is left to whoever wants to use any of it.</figcaption>
+  </figure>
+</section>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l3">Journeys</span><h2>Three ways in</h2></div>
+  <p class="lane-why">A developer, an agent and a creator want different things from the same engine. <b>The first minute decides whether any of them stay.</b></p>
+
+  <figure class="figwrap" style="margin-top:20px">
+    <svg viewBox="0 0 900 470" role="img" aria-label="Three journeys: a developer installing and rendering locally, an agent discovering and calling the MCP server, and a creator using the Create surface.">
+      <style>
+        .jt{font-family:Archivo,system-ui,sans-serif;font-size:14px;font-weight:700;fill:var(--ink)}
+        .jl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;fill:var(--ink-4)}
+        .st{font-family:Archivo,system-ui,sans-serif;font-size:12px;font-weight:600;fill:var(--ink)}
+        .sd{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--ink-3)}
+        .node{rx:8;stroke-width:1;fill:var(--surface-2);stroke:var(--line-strong)}
+        .goal{rx:8;stroke-width:1;fill:var(--l1-bg);stroke:var(--l1-line)}
+        .flow{stroke:var(--line-strong);stroke-width:1.5;fill:none}
+        .lane-rule{stroke:var(--line);stroke-width:1}
+      </style>
+      <defs>
+        <marker id="ar2" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+          <path d="M0,0 L6.5,3 L0,6 z" fill="var(--line-strong)"/>
+        </marker>
+      </defs>
+
+      <text class="jl" x="8" y="20">DEVELOPER</text>
+      <text class="jt" x="8" y="44">wants it working before they decide</text>
+      <line class="lane-rule" x1="8" y1="56" x2="892" y2="56"/>
+      <rect class="node" x="8"   y="70" width="196" height="56"/>
+      <text class="st" x="22" y="92">curl · install</text><text class="sd" x="22" y="110">no account, no key</text>
+      <path class="flow" d="M204,98 L228,98" marker-end="url(#ar2)"/>
+      <rect class="node" x="236" y="70" width="196" height="56"/>
+      <text class="st" x="250" y="92">doctor</text><text class="sd" x="250" y="110">any silicon — reads it, picks</text>
+      <path class="flow" d="M432,98 L456,98" marker-end="url(#ar2)"/>
+      <rect class="goal" x="464" y="70" width="196" height="56"/>
+      <text class="st" x="478" y="92">first output</text><text class="sd" x="478" y="110">local, zero config</text>
+      <path class="flow" d="M660,98 L684,98" marker-end="url(#ar2)"/>
+      <rect class="node" x="692" y="70" width="200" height="56"/>
+      <text class="st" x="706" y="92">add their cloud</text><text class="sd" x="706" y="110">only now, only if needed</text>
+
+      <text class="jl" x="8" y="176">AGENT</text>
+      <text class="jt" x="8" y="200">never sees a screen</text>
+      <line class="lane-rule" x1="8" y1="212" x2="892" y2="212"/>
+      <rect class="node" x="8"   y="226" width="196" height="56"/>
+      <text class="st" x="22" y="248">discover MCP</text><text class="sd" x="22" y="266">tools + skills</text>
+      <path class="flow" d="M204,254 L228,254" marker-end="url(#ar2)"/>
+      <rect class="node" x="236" y="226" width="196" height="56"/>
+      <text class="st" x="250" y="248">generate</text><text class="sd" x="250" y="266">prompt, seconds, engine_id</text>
+      <path class="flow" d="M432,254 L456,254" marker-end="url(#ar2)"/>
+      <rect class="node" x="464" y="226" width="196" height="56"/>
+      <text class="st" x="478" y="248">poll job</text><text class="sd" x="478" y="266">real status or a real error</text>
+      <path class="flow" d="M660,254 L684,254" marker-end="url(#ar2)"/>
+      <rect class="goal" x="692" y="226" width="200" height="56"/>
+      <text class="st" x="706" y="248">fetch asset</text><text class="sd" x="706" y="266">path on the user's disk</text>
+
+      <text class="jl" x="8" y="332">CREATOR</text>
+      <text class="jt" x="8" y="356">wants a clip, not a runtime</text>
+      <line class="lane-rule" x1="8" y1="368" x2="892" y2="368"/>
+      <rect class="node" x="8"   y="382" width="196" height="56"/>
+      <text class="st" x="22" y="404">open Create</text><text class="sd" x="22" y="422">served by the same core</text>
+      <path class="flow" d="M204,410 L228,410" marker-end="url(#ar2)"/>
+      <rect class="node" x="236" y="382" width="196" height="56"/>
+      <text class="st" x="250" y="404">prompt + camera</text><text class="sd" x="250" y="422">pan, tilt, zoom, takes</text>
+      <path class="flow" d="M432,410 L456,410" marker-end="url(#ar2)"/>
+      <rect class="node" x="464" y="382" width="196" height="56"/>
+      <text class="st" x="478" y="404">pick a take</text><text class="sd" x="478" y="422">real renders, real seeds</text>
+      <path class="flow" d="M660,410 L684,410" marker-end="url(#ar2)"/>
+      <rect class="goal" x="692" y="382" width="200" height="56"/>
+      <text class="st" x="706" y="404">export</text><text class="sd" x="706" y="422">4K upscale, their disk</text>
+    </svg>
+    <figcaption>Every lane ends somewhere the user owns — a file on their disk, not a link to ours. The developer path is the one that decides adoption: <b>install to first video with no account, no API key and no config file</b>. Cloud is a later step because credentials are the friction that kills the first minute.</figcaption>
+  </figure>
+</section>
+
+<!-- LANE 1 -->
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l1">Day 2</span><h2>Setup, and knowing what the machine can run</h2></div>
+  <p class="lane-why">The onboarding work landed as <b>two probes and one registry</b>. A browser can name the chip; only a process on the machine can ask the driver what a model may actually use. Both read the same model registry, so the public page and the installed app can never quote different numbers.</p>
+
+  <figure class="figwrap">
+    <svg viewBox="0 0 900 620" role="img" aria-label="Two probes read one registry: a browser probe names the chip and estimates the ceiling, a local probe reads the driver, free memory and disk. Both feed the same compatibility rule.">
+      <style>
+        .d2-bx{rx:8;stroke-width:1}
+        .d2-t{font-family:Archivo,system-ui,sans-serif;font-size:12.5px;font-weight:600;fill:var(--ink)}
+        .d2-s{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--ink-3)}
+        .d2-band{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;fill:var(--ink-4)}
+        .d2-own{fill:var(--l1-bg);stroke:var(--l1-line)}
+        .d2-us{fill:var(--l2-bg);stroke:var(--l2-line)}
+        .d2-dep{fill:var(--l3-bg);stroke:var(--l3-line)}
+        .d2-mod{fill:var(--l4-bg);stroke:var(--l4-line)}
+        .d2-rule{stroke:var(--line);stroke-width:1}
+        .d2-arrow{stroke:var(--line-strong);stroke-width:1.4;fill:none}
+        .d2-big{font-family:Archivo,system-ui,sans-serif;font-size:15px;font-weight:700;fill:var(--ink)}
+        .d2-no{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--warn)}
+        .d2-yes{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--l1)}
+      </style>
+      <defs>
+        <marker id="d2ar" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 z" fill="var(--line-strong)"/>
+        </marker>
+      </defs>
+
+      <text class="d2-band" x="8" y="18">WHERE THE ANSWER COMES FROM</text>
+      <line class="d2-rule" x1="8" y1="28" x2="892" y2="28"/>
+
+      <rect class="d2-bx d2-us" x="8" y="44" width="420" height="30"/>
+      <text class="d2-t" x="24" y="64">Browser · models.html + browser-probe.js</text>
+      <rect class="d2-bx d2-own" x="472" y="44" width="420" height="30"/>
+      <text class="d2-t" x="488" y="64">This machine · device_probe.py + onboard-v2.html</text>
+
+      <rect class="d2-bx d2-us" x="8" y="88" width="200" height="38"/>
+      <text class="d2-t" x="22" y="105">WebGL renderer</text><text class="d2-s" x="22" y="119">names the chip outright</text>
+      <rect class="d2-bx d2-us" x="228" y="88" width="200" height="38"/>
+      <text class="d2-t" x="242" y="105">deviceMemory</text><text class="d2-s" x="242" y="119">rounded, Chromium only</text>
+
+      <rect class="d2-bx d2-own" x="472" y="88" width="200" height="38"/>
+      <text class="d2-t" x="486" y="105">sysctl · system_profiler</text><text class="d2-s" x="486" y="119">chip, cores, memory, GPU</text>
+      <rect class="d2-bx d2-own" x="692" y="88" width="200" height="38"/>
+      <text class="d2-t" x="706" y="105">Metal · vm_stat · df</text><text class="d2-s" x="706" y="119">real ceiling, free, disk</text>
+
+      <text class="d2-yes" x="8" y="152">chip ✓ high  ·  cores ✓ high  ·  memory ~ medium</text>
+      <text class="d2-no" x="8" y="168">ceiling estimated at 78% — a ratio fitted to one machine</text>
+      <text class="d2-yes" x="472" y="152">every field measured, or reported as unknown with a reason</text>
+      <text class="d2-yes" x="472" y="168">ceiling 24.96 GB — what Metal itself reports on a 32 GB Mac</text>
+
+      <path class="d2-arrow" marker-end="url(#d2ar)" d="M218,186 L218,232 L410,232 L410,258"/>
+      <path class="d2-arrow" marker-end="url(#d2ar)" d="M682,186 L682,232 L490,232 L490,258"/>
+
+      <text class="d2-band" x="8" y="288">ONE REGISTRY · registry/models/*.yaml</text>
+      <line class="d2-rule" x1="8" y1="298" x2="892" y2="298"/>
+      <rect class="d2-bx d2-own" x="8" y="258" width="884" height="0" opacity="0"/>
+      <rect class="d2-bx d2-own" x="8" y="310" width="884" height="52"/>
+      <text class="d2-big" x="26" y="333">7 models · 9 variants · every number carries its source</text>
+      <text class="d2-s" x="26" y="351">measured — huggingface-api — declared — estimated · an estimate without its derivation will not load</text>
+
+      <path class="d2-arrow" marker-end="url(#d2ar)" d="M450,362 L450,398"/>
+
+      <rect class="d2-bx d2-us" x="228" y="398" width="444" height="44"/>
+      <text class="d2-big" x="246" y="418">compatibility.py — one rule, both surfaces</text>
+      <text class="d2-s" x="246" y="434">fits · tight · won&apos;t fit · not supported — thresholds shipped in registry.json, never retyped</text>
+
+      <text class="d2-band" x="8" y="478">WHAT EACH SIDE PRODUCES</text>
+      <line class="d2-rule" x1="8" y1="488" x2="892" y2="488"/>
+
+      <rect class="d2-bx d2-us" x="8" y="500" width="420" height="44"/>
+      <text class="d2-t" x="24" y="519">Public page · answers for any hardware</text>
+      <text class="d2-s" x="24" y="534">M1 Max, 5090, 3060 — a 3060 12GB runs exactly one model in the catalog</text>
+
+      <rect class="d2-bx d2-own" x="472" y="500" width="420" height="44"/>
+      <text class="d2-t" x="488" y="519">Local app · consent, then the real answer</text>
+      <text class="d2-s" x="488" y="534">asks before probing, again before a download, with size and licence</text>
+
+      <rect class="d2-bx d2-dep" x="8" y="558" width="884" height="42"/>
+      <text class="d2-t" x="26" y="576">WebMCP · 5 tools on the setup page, 19 on the MCP server</text>
+      <text class="d2-s" x="26" y="591">probe_hardware · model_compatibility · recommended_model · install_model · download_progress</text>
+    </svg>
+    <figcaption><b>The browser gets you most of the way and stops.</b> It can read the chip and usually the memory — the tools that get this wrong are ignoring a renderer string that names the part. What it cannot reach is the number that decides the answer: Metal reports 24.96&nbsp;GB usable on a 32&nbsp;GB Mac, and no web API exposes it. That gap is the reason to install, and it is stated on the page rather than hidden behind a prompt.</figcaption>
+    <div class="key">
+      <i class="k-own">this machine</i><i class="k-us">browser</i><i class="k-dep">agent surface</i>
+    </div>
+  </figure>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Hardware probe, rewritten</h3>
+      <p>Reads chip, P/E core split, GPU core count, Metal family, free memory and free disk. <b>No fallback constants</b> — an unreadable field stays unknown and carries its reason.</p>
+      <p>The previous version queried <code>machdep.cpu.brand_str</code>, which does not exist, so every Mac reported as the literal string &ldquo;Apple Silicon&rdquo;.</p>
+      <div class="chips"><span class="chip">shipped</span><span class="chip">182 tests</span></div>
+    </div>
+    <div class="card">
+      <h3>Model registry</h3>
+      <p>One YAML per model, one entry per download. <b>The catalog is a view over it</b> — a test fails if a second copy of the model list appears anywhere.</p>
+      <p>Variants name their files: <code>Lightricks/LTX-Video</code> is 236&nbsp;GB whole and 5.9&nbsp;GB for the checkpoint you want.</p>
+      <div class="chips"><span class="chip">shipped</span><span class="chip">9 variants</span></div>
+    </div>
+    <div class="card">
+      <h3>Compatibility engine</h3>
+      <p>Separates <b>can this machine ever run it</b> from <b>can it right now</b>. Conflating them tells someone with 32&nbsp;GB that a 4&nbsp;GB model will not run because a browser is open.</p>
+      <p>Ceiling comes from Metal where Metal will answer, not from a fraction we picked.</p>
+      <div class="chips"><span class="chip">shipped</span></div>
+    </div>
+    <div class="card">
+      <h3>Consent-first onboarding</h3>
+      <p>Lists every fact it will read and names the commands, before reading any of them. A second gate precedes each download with size, source and <b>licence restrictions written out</b>.</p>
+      <div class="chips"><span class="chip">shipped</span><span class="chip">onboard-v2</span></div>
+    </div>
+    <div class="card">
+      <h3>Public model page</h3>
+      <p>Answers on arrival, and for hardware you do not own. Every fact shows <b>its confidence at the same size as the value</b>.</p>
+      <p>No server behind it — the registry ships as static JSON with the rule constants inside.</p>
+      <div class="chips"><span class="chip">shipped</span><span class="chip">models.html</span></div>
+    </div>
+    <div class="card">
+      <h3>Speed corpus</h3>
+      <p>The number nobody publishes for Apple Silicon. <b>One measured, three cited, five honestly empty.</b></p>
+      <p>Published benchmarks rarely state checkpoint or precision, and usually test quantised community builds — so most of what exists cannot be attributed to a specific variant.</p>
+      <div class="chips"><span class="chip blocked">thin on purpose</span></div>
+    </div>
+    <div class="card">
+      <h3>WebMCP origin trial</h3>
+      <p>Tokens placed for <code>spacepilot.dev</code> and <code>motionvector.dev</code>, expiring 2026-11-17. Five tools registered on the setup page.</p>
+      <p><b>Not yet exercised</b> — the shell used for testing runs Chrome 148, which predates the API.</p>
+      <div class="chips"><span class="chip blocked">unverified</span></div>
+    </div>
+    <div class="card">
+      <h3>Local generation</h3>
+      <p>Speech runs on this machine today — Kokoro 82M, <b>4.6&times; realtime</b>, measured. Video does not: <code>pluto generate</code> still goes to the cloud box.</p>
+      <p>Image and music are one integration each — mflux and mlx-audio both have working Apple Silicon ports.</p>
+      <div class="chips"><span class="chip">speech only</span><span class="chip blocked">video pending</span></div>
+    </div>
+  </div>
+
+  <div class="note"><strong>What is still not true.</strong> The local-first claim holds for speech and nothing else. Eight of nine variants have no measured footprint or speed on any machine, so most verdicts rest on estimates that say so. The public page is one document with anchors, not one page per model, so it will not rank as written.</div>
+</section>
+
+<section class="lane" data-lane="1">
+  <div class="lane-h"><span class="lane-tag tag-l1">Lane 01</span><h2>Shipped</h2><span class="lane-n" id="c1">0 items</span></div>
+  <p class="lane-why">Works end to end today, on real hardware, with real data. <b>Nothing to do but keep it working.</b></p>
+  <div class="cards">
+    <div class="card" data-f="Text-to-video (LTX-2.5)"><h3>Text-to-video · LTX-2.5</h3><p><b>$0.013 per 5.04s clip</b>, 21–23s wall clock, 42.0 GiB peak VRAM, measured across 65 clips.</p><div class="chips"><span class="chip">measured</span></div></div>
+    <div class="card" data-f="Multi-take generation"><h3>Multi-take generation</h3><p>Backend takes <code>1..16</code>, returns a <code>take_group_id</code> with stepped seeds per take.</p><div class="chips"><span class="chip">backend + ui</span></div></div>
+    <div class="card" data-f="Camera controls"><h3>Camera controls</h3><p>Pan, tilt, zoom, roll, intensity. All real request fields; client correctly nulls <code>static</code>.</p><div class="chips"><span class="chip">backend + ui</span></div></div>
+    <div class="card" data-f="Asset library"><h3>Asset library</h3><p>List, delete, serve. Path-contained through <code>resolve_output</code>.</p><div class="chips"><span class="chip">backend + ui</span></div></div>
+    <div class="card" data-f="Kokoro TTS"><h3>Kokoro TTS voiceover</h3><p>368 lines, 4 routes, no mock markers. In-process ONNX, normalised to −16 LUFS.</p><div class="chips"><span class="chip">local</span></div></div>
+    <div class="card" data-f="Music / BGM generation"><h3>Music &amp; BGM</h3><p>Genre-routed with a caption-reference library. Costly: ~25× realtime, so 10s ≈ 4 min of GPU.</p><div class="chips"><span class="chip">expensive</span></div></div>
+    <div class="card" data-f="Spot GPU lifecycle"><h3>Spot GPU lifecycle</h3><p>Launch, terminate, deploy, sync. Token-gated. ~$0.75/hr until terminated.</p><div class="chips"><span class="chip">spends money</span></div></div>
+    <div class="card" data-f="Web SSH console"><h3>Web SSH console</h3><p>Real PTY bridge with a 3s auth handshake.</p><div class="chips"><span class="chip">backend + ui</span></div></div>
+    <div class="card" data-f="MCP server + Agent Skills"><h3>MCP server &amp; Agent Skills</h3><p>Agents drive the engine directly. Cost figures in the skills are undated — worth re-checking.</p><div class="chips"><span class="chip">agent surface</span></div></div>
+  </div>
+</section>
+
+<!-- LANE 2 -->
+<section class="lane" data-lane="2">
+  <div class="lane-h"><span class="lane-tag tag-l2">Lane 02</span><h2>In flight</h2><span class="lane-n" id="c2">0 items</span></div>
+  <p class="lane-why">Actively being worked right now, on a branch or in an open PR. <b>Don't start these twice.</b></p>
+  <div class="cards">
+    <div class="card" data-f="React surface wiring (8 files)"><h3>React surface wiring</h3><p>Eight files connected to the hooks beside them. Build green. <code>b9d0275</code>, pushed, no PR yet.</p><div class="chips"><span class="chip">branch open</span></div></div>
+    <div class="card" data-f="Image-to-video"><h3>Image-to-video</h3><p>Backend always worked; UI was sending the client filename instead of the server path. Fixed, unmerged.</p><div class="chips"><span class="chip">fixed, unmerged</span></div></div>
+    <div class="card" data-f="First-last-frame morph"><h3>First-last-frame morph</h3><p>Real <code>last_image_path</code> field. Rides on the I2V fix above.</p><div class="chips"><span class="chip">fixed, unmerged</span></div></div>
+    <div class="card" data-f="GPU status honesty (lib/api.ts)"><h3>GPU status honesty</h3><p>Caught errors returned a fake running box with <b>hourly_cost 0.75</b>. A background task is on it.</p><div class="chips"><span class="chip fake">renders fake data</span><span class="chip">agent working</span></div></div>
+    <div class="card" data-f="Docs reconciliation"><h3>Docs reconciliation</h3><p>Twelve stale docs corrected, lifecycle headers added. PR #17, open.</p><div class="chips"><span class="chip">PR open</span></div></div>
+  </div>
+</section>
+
+<!-- LANE 3 -->
+<section class="lane" data-lane="3">
+  <div class="lane-h"><span class="lane-tag tag-l3">Lane 03</span><h2>One wire away</h2><span class="lane-n" id="c3">0 items</span></div>
+  <p class="lane-why">The backend is <b>real and finished</b>. Only the UI connection is missing. These are the cheapest wins on the board — some are a single field name.</p>
+  <div class="cards">
+    <div class="card" data-f="Multi-engine picker"><h3>Multi-engine picker</h3><p>Wan2.1 and HunyuanVideo adapters are real — 160 lines, no mocks. UI sends <code>engine</code>; backend reads <code>engine_id</code>. <b>Built, shipped, never once exercised.</b></p><div class="chips"><span class="chip">one field name</span></div></div>
+    <div class="card" data-f="LoRA adapters"><h3>LoRA adapters</h3><p>Backend is real: 4 routes, no mock markers. The UI card ignores it entirely and renders hardcoded adapters, one frozen at "training 68%".</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="4K upscale / master export"><h3>4K upscale &amp; export</h3><p>Real routes exist server-side. Both UI entry points are <code>setTimeout</code> then <code>alert()</code>.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="Ducked audio mix"><h3>Ducked audio mix</h3><p>Real mixing route, working. Simply not exposed anywhere in the React UI.</p><div class="chips"><span class="chip">unexposed</span></div></div>
+    <div class="card" data-f="Prompt enhancement"><h3>Prompt enhancement</h3><p>Real endpoint. On failure the UI appended a canned cinematic suffix, silently.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="Storyboard decomposition"><h3>Storyboard decomposition</h3><p>Real route. On failure returned four fabricated scenes with a fake locked seed.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="Disk / storage gauges"><h3>Disk &amp; storage gauges</h3><p>Real <code>df -h</code> is already fetched and printed as raw text directly below a styled gauge showing hardcoded defaults. <b>The two disagree on the same screen.</b></p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+  </div>
+</section>
+
+<!-- LANE 4 -->
+<section class="lane" data-lane="4">
+  <div class="lane-h"><span class="lane-tag tag-l4">Lane 04</span><h2>Half built</h2><span class="lane-n" id="c4">0 items</span></div>
+  <p class="lane-why">Routes exist and merged, but the layer underneath is a stub. <b>These read as done on a roadmap and do nothing in the product</b> — the most misleading state for an agent to inherit.</p>
+  <div class="cards">
+    <div class="card" data-f="Model recipes / weight import"><h3>Model recipes &amp; weight import</h3><p>Routes real, download is <code>_mock_download_task</code> with two <code>TODO(real-download)</code> markers. Nothing is fetched.</p><div class="chips"><span class="chip">stub beneath</span></div></div>
+    <div class="card" data-f="Checkpoint sync (R2/S3)"><h3>Checkpoint sync to R2/S3</h3><p>Merged as a PR, but <code>TODO(real-sync)</code> on <b>both</b> upload and download. Nothing reaches object storage.</p><div class="chips"><span class="chip">stub beneath</span></div></div>
+    <div class="card" data-f="Billing (Polar / x402)"><h3>Billing · Polar &amp; x402</h3><p>Three real mounted routes. No metering, credits or entitlements exist yet, so there is nothing to bill against.</p><div class="chips"><span class="chip">needs metering</span></div></div>
+    <div class="card" data-f="Public docs portal"><h3>Public docs portal</h3><p>Route and page exist. The editorial plan behind it is a proposal.</p><div class="chips"><span class="chip">shell only</span></div></div>
+  </div>
+</section>
+
+<!-- LANE 5 -->
+<section class="lane" data-lane="5">
+  <div class="lane-h"><span class="lane-tag tag-l5">Lane 05</span><h2>Roadmap</h2><span class="lane-n" id="c5">0 items</span></div>
+  <p class="lane-why">Not started, and <b>that is the correct state</b> — this is a one-day-old tree against a five-horizon vision. Listed so nobody re-derives them, and so the fake surfaces standing in for them can be told apart from the real plan.</p>
+  <div class="cards">
+    <div class="card" data-f="Universal Neural Fabric"><h3>Universal Neural Fabric</h3><p>Any HF/Civitai model, auto-quantised, routed across runtimes. The memo's stated moat. Current worker is one hardened LTX pipeline — this is a rewrite, not an extension.</p><div class="chips"><span class="chip">large</span></div></div>
+    <div class="card" data-f="Fine-tuning / spot training"><h3>Fine-tuning &amp; spot training</h3><p>No training loop exists. The UI renders it as a running job at 68%.</p><div class="chips"><span class="chip fake">renders fake data</span><span class="chip">large</span></div></div>
+    <div class="card" data-f="Multi-cloud broker (SKY)"><h3>Multi-cloud broker · SKY</h3><p>Blocked, not merely unbuilt: the G-family spot quota is <b>8 vCPU and g6e.2xlarge is 8 vCPU</b>. One box, one provider. No arbitrage is possible until quota moves.</p><div class="chips"><span class="chip blocked">quota blocked</span></div></div>
+    <div class="card" data-f="AI Director (real model calls)"><h3>AI Director</h3><p>Currently keyword matching behind a 600ms delay with a fabricated reasoning trace. No model is called.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="NLE timeline (real clips)"><h3>NLE timeline</h3><p>Lanes are hardcoded JSX, not derived from any store. Cannot show a real render.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="Vibe Canvas (real data)"><h3>Vibe Canvas</h3><p>Static "Daemon VRAM 18.4 / 48 GB" with a fixed bar, read from nothing.</p><div class="chips"><span class="chip fake">renders fake data</span></div></div>
+    <div class="card" data-f="OpenAI-compatible API"><h3>OpenAI-compatible API</h3><p>Named in the strategy memo as part of the distribution surface. Not in the repo.</p><div class="chips"><span class="chip">large</span></div></div>
+  </div>
+</section>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l4">Brand</span><h2>Logos, and why to use names instead</h2></div>
+  <p class="lane-why">24 projects checked against their own brand pages, every URL fetched. <b>Every restriction bites on the logo, never the name</b> — so a page that names its stack in type carries no trademark exposure at all.</p>
+  <div class="cards">
+    <div class="card"><h3>Tier 1 · permission published</h3><p>Hugging Face · transformers · llama.cpp · vLLM · ONNX Runtime · RunPod · FFmpeg</p><p><b>llama.cpp is the strongest position</b> — CC BY-NC 4.0 with an explicit written carve-out permitting commercial use to identify the project.</p><div class="chips"><span class="chip">7 projects</span></div></div>
+    <div class="card"><h3>Tier 2 · nothing published</h3><p>MLX · SGLang · SkyPilot · dstack · GPUStack · Ollama · Civitai · Wan · LTX-Video · diffusers</p><p>Normal for OSS. All have usable dark assets; none state terms either way, so there is no permission to point at.</p><div class="chips"><span class="chip">10 projects</span></div></div>
+    <div class="card"><h3>Tier 3 · ask first</h3><p>NVIDIA/TensorRT · PyTorch · AMD ROCm · AWS · Lambda Labs · Modal · HunyuanVideo · ModelScope</p><p><b>AMD is strictest</b> — its grant covers marks on products containing AMD hardware, which software does not.</p><div class="chips"><span class="chip">8 projects</span></div></div>
+    <div class="card"><h3>Dead ends</h3><p><b>AWS</b> — no public logo without account sign-in; the one open asset is dark-navy text with no white variant.<br><b>TensorRT</b> — has no mark of its own, only NVIDIA's corporate one.</p><div class="chips"><span class="chip">2 unobtainable</span></div></div>
+  </div>
+</section>
+
+<section class="lane">
+  <div class="lane-h"><span class="lane-tag tag-l2">Handoff</span><h2>Where things stand</h2></div>
+  <p class="lane-why">State as of 2026-08-22, for whoever picks this up next.</p>
+  <div class="cards">
+    <div class="card"><h3>Merged</h3><p><b>PR #18</b> — CI scoped to <code>main</code>/<code>dev</code> and PRs targeting them, docs-only changes skipped. Measured 183 runner-minutes over 120 runs, 60% of it on branches nobody gated on.</p><div class="chips"><span class="chip">5649e8c</span></div></div>
+    <div class="card"><h3>Open, ready</h3><p><b>PR #17</b> — twelve stale docs corrected against verified state, lifecycle headers added, <code>BACKEND-HANDOFF-V2.md</code> rescued from untracked-only.</p><div class="chips"><span class="chip">needs merge</span></div></div>
+    <div class="card"><h3>Pushed, no PR</h3><p><b>fix/wire-react-surfaces-to-hooks</b> @ <code>b9d0275</code> — eight React surfaces connected to their hooks, fake-success paths deleted. <code>tsc -b --force</code> and <code>vite build</code> both green.</p><div class="chips"><span class="chip">branch only</span></div></div>
+    <div class="card"><h3>Blocked on review</h3><p><b>PR #14</b> React tree — five confirmed blockers. <b>PR #16</b> is stacked on it, so neither lands alone. A sweep found 14 more surfaces rendering fabricated data.</p><div class="chips fake"><span class="chip fake">do not merge as-is</span></div></div>
+    <div class="card"><h3>Tooling</h3><p><code>~/.local/bin/wt</code> — worktree management. Fixed a bug that silently truncated <code>gc</code>, added a live-session guard and a pre-removal recheck. Standard written into <code>~/code/AGENTS.md</code>.</p><div class="chips"><span class="chip">another session owns the rewrite</span></div></div>
+    <div class="card"><h3>Unresolved</h3><p>The pnpm claim in <code>~/code/AGENTS.md</code> is wrong — pnpm is already in use and <code>du</code> over-reports its store on APFS. Correction never authorised.</p><div class="chips"><span class="chip blocked">awaiting decision</span></div></div>
+  </div>
+</section>
+
+<div class="export">
+  <button class="btn" id="show">Show board as Markdown</button>
+  <button class="btn" id="fakes">List fake-data surfaces</button>
+</div>
+<pre class="out" id="out"></pre>
+
+<div class="note" style="border-left-color:var(--warn)"><strong>How to work this board with me.</strong> Comment on a card and mention <code>@claude</code> on the thread — I read the comment, reply in place, and re-file the card. Selections made with the dropdowns are for reading only and reset on reload; the Markdown export is what survives.</div>
+
+<footer>
+  <p>Evidence read from <code class="mono">main</code> @ c6b99c4 and <code class="mono">feat/frontend-react-ui</code> @ a3ac291 on 2026-08-22. Cost and VRAM are measured from a 65-clip render log; quota values from the live AWS account.</p>
+  <p>Lanes are effort, not judgement. A card in Roadmap is not behind — it is unstarted against a vision that is days old.</p>
+</footer>
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement, tb=[].slice.call(document.querySelectorAll('.theme button'));
+  function theme(t){ t==='system'?root.removeAttribute('data-theme'):root.setAttribute('data-theme',t);
+    tb.forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===t));}); }
+  tb.forEach(function(b){b.addEventListener('click',function(){theme(b.dataset.t);});});
+
+  var LANES={1:'Shipped',2:'In flight',3:'One wire away',4:'Half built',5:'Roadmap'};
+  var cards=[].slice.call(document.querySelectorAll('.card'));
+
+  cards.forEach(function(c){
+    var lane=c.closest('.lane').dataset.lane;
+    c.dataset.lane=lane;
+    var mv=document.createElement('div'); mv.className='move';
+    var lb=document.createElement('label'); lb.textContent='Lane'; lb.setAttribute('for','s-'+cards.indexOf(c));
+    var sel=document.createElement('select'); sel.id='s-'+cards.indexOf(c);
+    Object.keys(LANES).forEach(function(k){
+      var o=document.createElement('option'); o.value=k; o.textContent=k+' · '+LANES[k];
+      if(k===lane) o.selected=true; sel.appendChild(o);
+    });
+    sel.addEventListener('change',function(){ c.dataset.lane=sel.value; count(); });
+    mv.appendChild(lb); mv.appendChild(sel); c.appendChild(mv);
+  });
+
+  function count(){
+    var n={1:0,2:0,3:0,4:0,5:0};
+    cards.forEach(function(c){ n[c.dataset.lane]++; });
+    for(var k=1;k<=5;k++){
+      document.getElementById('n'+k).textContent=n[k];
+      document.getElementById('c'+k).textContent=n[k]+(n[k]===1?' item':' items');
+    }
+    document.getElementById('nf').textContent=document.querySelectorAll('.chip.fake').length;
+  }
+
+  document.getElementById('show').addEventListener('click',function(){
+    var out=document.getElementById('out'), md='# SpacePilot build board — 2026-08-22\n';
+    for(var k=1;k<=5;k++){
+      var inLane=cards.filter(function(c){return c.dataset.lane===String(k);});
+      md+='\n## '+k+'. '+LANES[k]+' ('+inLane.length+')\n';
+      md+= inLane.length ? inLane.map(function(c){
+        var fake=c.querySelector('.chip.fake')?'  [renders fake data]':'';
+        return '- '+c.dataset.f+fake; }).join('\n')+'\n' : '_none_\n';
+    }
+    out.textContent=md; out.classList.add('on'); out.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+
+  document.getElementById('fakes').addEventListener('click',function(){
+    var out=document.getElementById('out');
+    var f=cards.filter(function(c){return c.querySelector('.chip.fake');});
+    var md='# Surfaces rendering fabricated data ('+f.length+')\n\n';
+    md+='An agent reading these cannot tell what is finished.\n\n';
+    md+=f.map(function(c){ return '- '+c.dataset.f+'  ('+LANES[c.dataset.lane]+')'; }).join('\n')+'\n';
+    out.textContent=md; out.classList.add('on'); out.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+
+  count();
+})();
+</script>
+
+</body>
+</html>

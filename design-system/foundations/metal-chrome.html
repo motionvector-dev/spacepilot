@@ -1,0 +1,52 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Metal &middot; Chrome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000;--ground:#050506;--panel:#0a0a0c;--card:#141417;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.13);
+  --ink:#e4e4e7;--ink3:#71717a;
+  --chrome-1:#545c67;--chrome-2:#a7b0bc;--chrome-3:#e8edf4;--chrome-4:#ffffff;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;--sans:'Geist','Inter',-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --root:#fbfaf8;--ground:#f5f4f1;--panel:#fff;--card:#fff;--line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.13);
+  --ink:#1c1c1f;--ink3:#71717a;
+  --chrome-1:#21272f;--chrome-2:#434c58;--chrome-3:#717d8c;--chrome-4:#a4b1bf;
+}}
+:root[data-theme="light"]{
+  --root:#fbfaf8;--ground:#f5f4f1;--panel:#fff;--card:#fff;--line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.13);
+  --ink:#1c1c1f;--ink3:#71717a;
+  --chrome-1:#21272f;--chrome-2:#434c58;--chrome-3:#717d8c;--chrome-4:#a4b1bf;
+}
+:root[data-theme="dark"]{
+  --root:#000;--ground:#050506;--panel:#0a0a0c;--card:#141417;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.13);
+  --ink:#e4e4e7;--ink3:#71717a;
+  --chrome-1:#545c67;--chrome-2:#a7b0bc;--chrome-3:#e8edf4;--chrome-4:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);padding:28px}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.metal-chrome{background:linear-gradient(100deg,var(--chrome-2),var(--chrome-3),var(--chrome-4),var(--chrome-3),var(--chrome-1));
+  background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.sample{font-weight:800;font-size:44px;letter-spacing:-.01em}
+.swatchrow{display:flex;gap:6px;margin-top:22px}
+.swatchrow i{flex:1;height:36px;border-radius:6px;border:1px solid var(--line)}
+.hex{font-family:var(--mono);font-size:10px;color:var(--ink3);display:flex;gap:6px;margin-top:6px}
+.hex span{flex:1;text-align:center}
+</style>
+</head>
+<body>
+  <div class="lbl">Metal &middot; chrome &middot; 5-stop alloy ramp</div>
+  <div class="sample metal-chrome">SpacePilot</div>
+  <div class="swatchrow">
+    <i style="background:#171b21"></i><i style="background:#545c67"></i><i style="background:#a7b0bc"></i><i style="background:#e8edf4"></i><i style="background:#ffffff"></i>
+  </div>
+  <div class="hex"><span>#171b21</span><span>#545c67</span><span>#a7b0bc</span><span>#e8edf4</span><span>#ffffff</span></div>
+</body>
+</html>

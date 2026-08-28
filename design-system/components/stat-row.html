@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stat row</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap">
+<style>
+:root{
+  --root:#000; --line2:rgba(255,255,255,.13);
+  --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#4a4a52;
+  --mono:'Geist Mono','JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+:root[data-theme="light"]{--root:#fbfaf8; --line2:rgba(0,0,0,.13); --ink:#0b0b0d; --ink2:#52525b; --ink3:#71717a; --ink4:#a1a1aa;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--root:#000; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#4a4a52;}}
+:root[data-theme="dark"]{--root:#000; --line2:rgba(255,255,255,.13); --ink:#fafafa; --ink2:#a1a1aa; --ink3:#71717a; --ink4:#4a4a52;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--root);color:var(--ink);font-family:var(--sans);padding:20px}
+.note{font-size:11px;line-height:1.5;color:var(--ink3);max-width:72ch;margin-top:12px}
+.m{font-family:var(--mono);font-size:10.5px}
+</style>
+</head>
+<body>
+  <svg viewBox="0 0 950 240" role="img" aria-label="Open models: 79 percent adoption falls to 53 percent reaching production. Closed: 71 to 63. The gap is tooling and trust." style="width:100%;max-width:700px;height:auto;display:block">
+    <style>.gx{font-family:var(--mono);font-size:12px;fill:var(--ink3)}.gy{font-family:var(--mono);font-size:15px;fill:var(--ink)}.gy2{font-family:var(--mono);font-size:13px;fill:var(--ink3)}.gb{font-family:var(--mono);font-size:12px;fill:var(--ink2)}</style>
+    <line x1="140" y1="40" x2="140" y2="200" stroke="var(--line2)"/>
+    <line x1="700" y1="40" x2="700" y2="200" stroke="var(--line2)"/>
+    <text class="gx" x="140" y="226" text-anchor="middle">ADOPT</text>
+    <text class="gx" x="700" y="226" text-anchor="middle">REACH PRODUCTION</text>
+    <path d="M140,78 L700,150" stroke="var(--ink)" stroke-width="2.2" fill="none"/>
+    <circle cx="140" cy="78" r="4" fill="var(--ink)"/><circle cx="700" cy="150" r="4" fill="var(--ink)"/>
+    <text class="gy" x="128" y="72" text-anchor="end">79%</text>
+    <text class="gy" x="714" y="154">53%</text>
+    <text class="gb" x="128" y="94" text-anchor="end">open</text>
+    <path d="M140,104 L700,131" stroke="var(--ink4)" stroke-width="1.4" fill="none" stroke-dasharray="4 4"/>
+    <circle cx="140" cy="104" r="3" fill="var(--ink4)"/><circle cx="700" cy="131" r="3" fill="var(--ink4)"/>
+    <text class="gy2" x="128" y="108" text-anchor="end">71%</text>
+    <text class="gy2" x="714" y="135">63%</text>
+    <text class="gb" x="128" y="122" text-anchor="end" fill="var(--ink4)">closed</text>
+  </svg>
+  <div class="note">Mozilla, State of Open Source AI (stateofopensource.ai) &middot; Jul 2026 &middot; n=1,410. <span class="m">source: landing-refresh.html #whynow chart (has all four figures); concept-wall board 01 shows only the 79%/53% open pair.</span></div>
+</body>
+</html>
