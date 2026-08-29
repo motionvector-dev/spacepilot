@@ -29,6 +29,12 @@ scratch/
 *.onnx
 *.safetensors
 *.bin
+*.gguf
+
+# Raw benchmark run telemetry data
+/*_results.json
+/*_results.csv
+/moe_stability_results.json
 
 # Tool caches
 .playwright-mcp/

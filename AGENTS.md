@@ -117,6 +117,11 @@ broken renders for weeks.
 `outputs/music/` belongs to the BGM template batch. API jobs write to
 `outputs/<job_id>.wav` at the root.
 
+## Model Citations
+
+Whenever naming or discussing AI models, always explicitly include their verified release date (e.g. `Model Name (Released: Month YYYY)`).
+
+
 ## Publishing
 
 Nothing goes to a public or third-party destination — GitHub issues, PRs, PR
