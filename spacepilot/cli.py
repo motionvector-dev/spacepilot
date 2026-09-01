@@ -1100,12 +1100,15 @@ def _confirm_run(args) -> bool:
 
 
 def _cmd_run_speech(args, cfg=None) -> int:
+    from spacepilot.drivers.kokoro_driver import KokoroDriver
+    from spacepilot.pluto import runtimes as rt
     from spacepilot.pluto.services.audio_execution import (
         SpeechExecutionService, SpeechRequest, default_speech_output,
     )
     from spacepilot.pluto.services.execution import LocalExecutionError
 
-    service = SpeechExecutionService()
+    driver = KokoroDriver(python_bin=rt.interpreter(cfg))
+    service = SpeechExecutionService(driver=driver)
     try:
         plan = service.plan("speech")
     except (ValueError, LocalExecutionError) as exc:
@@ -1144,12 +1147,14 @@ def _cmd_run_speech(args, cfg=None) -> int:
 
 
 def _cmd_run_transcribe(args, cfg=None) -> int:
+    from spacepilot.drivers.whisper_cpp_driver import WhisperCppDriver, whisper_bin
     from spacepilot.pluto.services.audio_execution import (
         TranscribeExecutionService, TranscribeRequest, default_transcript_output,
     )
     from spacepilot.pluto.services.execution import LocalExecutionError
 
-    service = TranscribeExecutionService()
+    driver = WhisperCppDriver(bin_path=whisper_bin(cfg))
+    service = TranscribeExecutionService(driver=driver)
     try:
         plan = service.plan("transcribe")
     except (ValueError, LocalExecutionError) as exc:

@@ -219,6 +219,13 @@ class SpeechExecutionService(_AudioExecutionService):
         self.driver = driver
 
     def _route_readiness(self, route: AudioRoute) -> tuple[bool, str]:
+        if hasattr(self.driver, "runtime_ready"):
+            ready, detail = self.driver.runtime_ready()
+            if not ready:
+                py_bin = getattr(self.driver, "python_bin", "the configured interpreter")
+                return False, (
+                    f"no route — kokoro-onnx is unavailable in {py_bin}: {detail}; "
+                    f"set SPACEPILOT_PYTHON or run 'spacepilot runtimes install kokoro-onnx'")
         try:
             model, voices = self.driver.asset_paths()
         except (FileNotFoundError, ValueError) as exc:
