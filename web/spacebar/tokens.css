@@ -1,0 +1,183 @@
+/* ==========================================================================
+   SPACEBAR TOKENS — the single source of colour for SpaceBar.
+
+   This file is the ONLY place SpaceBar colours are written down. The Swift
+   app does not repeat them: native/SpaceBar/tools/gen_tokens.py reads this
+   file and writes native/SpaceBar/Sources/Tokens.swift. Edit here, rerun the
+   generator, and the popover and the web mockups cannot drift.
+
+   AUTHORITY, in order:
+     1. DESIGN.md at the repo root (spacepilot-design-system, verified
+        2026-08-22) — the obsidian ramp, the semantic three, the text ramp,
+        the borders, and the two fonts below are its values verbatim.
+     2. PR 94's design-system/foundations for what DESIGN.md does not define:
+        the gold ramp as the attention colour, the agent colour for agent
+        attribution, and the chrome ramp as the machine fill.
+   Where the two disagree, DESIGN.md wins. It did on two points, both applied
+   here: the fonts are Plus Jakarta Sans / JetBrains Mono, not Geist; and the
+   failure colour is rose #f43f5e, not #f43535.
+
+   This is SpacePilot's design language, not MotionVector's. The two products
+   must not read as the same product. ~/code/design.md is MotionVector's and
+   does not apply here.
+
+   THEMING. Dark is the product: DESIGN.md's first principle is Obsidian Dark
+   Precision, and the app forces it. The light variant below is a real,
+   designed second state — not an inversion — kept because the web mockups can
+   be read on a light page. Bare :root is dark; :root[data-theme="light"] is
+   the opt-in. Every token is declared on bare :root first, so nothing has its
+   only definition inside an override.
+   ========================================================================== */
+
+/* --- Dark: the default, and the product --------------------------------- */
+:root {
+  --root: #000000;
+  --ground: #09090b;
+  --panel: #111114;
+  --card: #18181b;
+  --raised: #222226;
+
+  --line: rgba(255, 255, 255, .08);
+  --line2: rgba(255, 255, 255, .14);
+  --line3: rgba(255, 255, 255, .22);
+  --line-focus: rgba(255, 255, 255, .35);
+
+  --ink: #fafafa;
+  --ink2: #a1a1aa;
+  --ink3: #71717a;
+  --ink4: #52525b;
+
+  /* The semantic three, from DESIGN.md. Emerald means measured and healthy.
+     Amber means known but stale, or asleep. Rose means a real failure.
+     Nothing quiet gets a colour — offline is --ink4, because a dormant
+     machine is not an error. */
+  --true: #10b981;
+  --amber: #f59e0b;
+  --wrong: #f43f5e;
+
+  --agent: #a49bd0;
+  --silver: #cfd4dc;
+  --silver-line: rgba(207, 212, 220, .30);
+  --gold: #c9a227;
+  --gold-line: rgba(201, 162, 39, .40);
+
+  --chrome-1: #545c67;
+  --chrome-2: #a7b0bc;
+  --chrome-3: #e8edf4;
+  --chrome-4: #ffffff;
+
+  --invbg: #fafafa;
+  --invink: #09090b;
+
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, ui-monospace, Menlo, monospace;
+  --sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --r1: 6px;
+  --r2: 10px;
+  --r3: 14px;
+}
+
+/* --- Light: designed, opt-in, never an inversion -------------------------- */
+:root[data-theme="light"] {
+  --root: #fdfdfc;
+  --ground: #f7f7f5;
+  --panel: #f2f2ef;
+  --card: #ffffff;
+  --raised: #e6e6e1;
+
+  --line: rgba(0, 0, 0, .08);
+  --line2: rgba(0, 0, 0, .14);
+  --line3: rgba(0, 0, 0, .22);
+  --line-focus: rgba(0, 0, 0, .35);
+
+  --ink: #09090b;
+  --ink2: #52525b;
+  --ink3: #71717a;
+  --ink4: #a1a1aa;
+
+  --true: #059669;
+  --amber: #b45309;
+  --wrong: #e11d48;
+
+  --agent: #5b528f;
+  --silver: #5c6672;
+  --silver-line: rgba(92, 102, 114, .32);
+  --gold: #8a6a22;
+  --gold-line: rgba(138, 106, 34, .34);
+
+  --chrome-1: #21272f;
+  --chrome-2: #434c58;
+  --chrome-3: #717d8c;
+  --chrome-4: #a4b1bf;
+
+  --invbg: #09090b;
+  --invink: #fafafa;
+}
+
+/* ==========================================================================
+   SPACEBAR EXTENSION — popover chrome, motion, the thinking ring.
+   No colour outside the ramps above is introduced anywhere below.
+   ========================================================================== */
+
+:root {
+  /* Type scale: two sizes only. */
+  --fs-chrome: 13px;   /* body of every panel, row, control */
+  --fs-label: 10px;    /* uppercase · letterspaced · the eyebrow voice */
+
+  --t-enter: 180ms ease-out;          /* opacity + 4px rise */
+  --t-exit: 120ms ease-out;           /* opacity only — travels nowhere */
+  --t-stagger: 40ms;                  /* caps at the fifth sibling */
+  --t-crossfade: 240ms ease-in-out;   /* state replaces state, in place */
+  --t-cargo: 220ms ease-out;          /* dashed → solid: the docking motion */
+  --t-route: 200ms ease-out;          /* the whole viewport, once */
+
+  --r-popover: 16px;
+  --fill-machine: linear-gradient(90deg, var(--chrome-1), var(--chrome-2), var(--chrome-3));
+}
+
+/* Base popover layout — opaque instrument panel, no blur pretense */
+.spacebar-popover {
+  width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-popover);
+  padding: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  font-family: var(--sans);
+  font-size: var(--fs-chrome);
+  color: var(--ink);
+}
+
+/* Aurora glow border — drawn only while an inference pass is running.
+   Gradient is brand-native: agent → silver → true. Instrument-slow: 4s/rev. */
+@property --aur {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.spacebar-popover.aurora-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--aur), var(--agent), var(--silver), var(--true), var(--agent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: aur-spin 4s linear infinite;
+  pointer-events: none;
+}
+@keyframes aur-spin {
+  to { --aur: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 80ms !important; }
+  .spacebar-popover.aurora-active::before {
+    animation: none;
+    background: linear-gradient(135deg, var(--agent), var(--silver), var(--true));
+  }
+}

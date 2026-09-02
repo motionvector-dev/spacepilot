@@ -1,0 +1,84 @@
+<!-- ==========================================================================
+     CAVEAT CHIP: negative provenance surface. Content must come from the
+     registry's caveat data — this one is illustrative and labeled "on paper".
+     ========================================================================== -->
+<div class="caveat-banner" role="note">
+  <div class="caveat-header">
+    <div class="caveat-tag mono">
+      <svg class="icn-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      CAVEAT · TYPOGRAPHY.DEGRADED
+    </div>
+    <span class="provenance-origin mono">on paper · illustrative</span>
+  </div>
+  <p class="caveat-desc">
+    Q4_K quantization degrades character fidelity on render passes &lt;32px.
+  </p>
+  <div class="caveat-action-row">
+    <button class="caveat-copy-btn mono" onclick="copyCaveat(this)">⌘C spacepilot caveat flux.1-schnell-q4</button>
+  </div>
+</div>
+<script>
+function copyCaveat(btn) {
+  navigator.clipboard.writeText('spacepilot caveat flux.1-schnell-q4');
+  const prev = btn.textContent;
+  btn.textContent = 'copied';
+  setTimeout(() => { btn.textContent = prev; }, 1200);
+}
+</script>
+
+<style>
+.caveat-banner {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r2);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.caveat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.caveat-tag {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.icn-sm {
+  width: 12px;
+  height: 12px;
+}
+.provenance-origin {
+  font-size: var(--fs-label);
+  color: var(--ink3);
+}
+.caveat-desc {
+  font-size: 12.5px;
+  color: var(--ink2);
+  line-height: 1.45;
+  margin: 0 0 8px;
+}
+.caveat-action-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.caveat-copy-btn {
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  border-radius: var(--r1);
+  color: var(--ink3);
+  font-size: var(--fs-label);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color var(--t-enter), border-color var(--t-enter), background-color var(--t-enter);
+}
+.caveat-copy-btn:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line3);
+}
+</style>

@@ -1,0 +1,127 @@
+<!-- ==========================================================================
+     STATE 3: CAVEATED / DEGRADED. Attention is the gold ramp — the brand has
+     no amber. Provenance label "inferred" is brand-true: keep it.
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="caveat-badge mono">
+        <svg class="icn-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        CAVEAT ACTIVE
+      </span>
+      <span class="model-title">FLUX.1 Schnell Q4_K</span>
+    </div>
+    <div class="header-right mono">
+      <span class="status-origin">inferred</span>
+    </div>
+  </div>
+
+  <!-- slot: components/caveat-chip.html -->
+  <div class="caveat-slot"></div>
+
+  <!-- slot: components/vram-gauge.html -->
+  <div class="vram-gauge-slot"></div>
+
+  <div class="pre-mount-confirm-box">
+    <span class="confirm-warning-text mono">
+      <svg class="icn-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      High error risk on small typography passes
+    </span>
+    <div class="confirm-btn-row">
+      <button class="confirm-cancel-btn mono">CANCEL</button>
+      <button class="confirm-mount-btn mono">MOUNT ANYWAY</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.caveat-badge {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid var(--gold-line);
+  color: var(--gold);
+  font-size: var(--fs-label);
+  letter-spacing: .02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.icn-sm {
+  width: 11px;
+  height: 11px;
+}
+.model-title {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.status-origin {
+  font-size: var(--fs-label);
+  color: var(--ink3);
+}
+.pre-mount-confirm-box {
+  background: var(--card);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r2);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.confirm-warning-text {
+  font-size: var(--fs-label);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.confirm-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.confirm-cancel-btn,
+.confirm-mount-btn {
+  flex: 1;
+  border-radius: var(--r1);
+  padding: 6px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-enter), border-color var(--t-enter), color var(--t-enter);
+}
+.confirm-cancel-btn {
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  color: var(--ink2);
+}
+.confirm-cancel-btn:hover {
+  color: var(--ink);
+  border-color: var(--line3);
+}
+.confirm-mount-btn {
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border: 1px solid var(--gold-line);
+  color: var(--gold);
+}
+.confirm-mount-btn:hover {
+  background: color-mix(in srgb, var(--gold) 24%, transparent);
+}
+.confirm-cancel-btn:focus-visible,
+.confirm-mount-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+</style>

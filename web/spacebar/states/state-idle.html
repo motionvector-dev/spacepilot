@@ -1,0 +1,100 @@
+<!-- ==========================================================================
+     STATE 4: IDLE / PASSIVE. The machine's resting truth: 42°C, 0 RPM,
+     passive. Prewarm costs are declared estimates — dim ink, not true-green.
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="idle-badge mono">IDLE · PASSIVE</span>
+      <span class="model-title">M1 Max (32 GB)</span>
+    </div>
+    <div class="header-right mono">
+      <span class="passive-status">0 RPM quiet</span>
+    </div>
+  </div>
+
+  <!-- slot: components/vram-gauge.html -->
+  <div class="vram-gauge-slot"></div>
+
+  <!-- slot: components/telemetry-grid.html -->
+  <div class="telemetry-grid-slot"></div>
+
+  <div class="prewarm-grid">
+    <button class="prewarm-card mono">
+      <span class="prewarm-name">Kokoro 82M</span>
+      <span class="prewarm-cost">+320 MB · 0.2s</span>
+    </button>
+    <button class="prewarm-card mono">
+      <span class="prewarm-name">Qwen 2.5 7B</span>
+      <span class="prewarm-cost">+4.8 GB · 1.2s</span>
+    </button>
+  </div>
+</div>
+
+<style>
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.idle-badge {
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  color: var(--ink3);
+  font-size: var(--fs-label);
+  letter-spacing: .02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+.model-title {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.passive-status {
+  font-size: var(--fs-label);
+  color: var(--ink3);
+}
+.prewarm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.prewarm-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  transition: background-color var(--t-enter), border-color var(--t-enter);
+}
+.prewarm-card:hover {
+  background: var(--raised);
+  border-color: var(--line3);
+}
+.prewarm-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.prewarm-name {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--ink);
+}
+.prewarm-cost {
+  font-size: var(--fs-label);
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+</style>

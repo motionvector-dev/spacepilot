@@ -1,0 +1,153 @@
+<!-- ==========================================================================
+     STATE 1: ACTIVE LOCAL INFERENCE. The Aurora border is the active signal;
+     the badge is the brand's platinum "tight" chip. Numbers stay ink.
+     ========================================================================== -->
+<div class="spacebar-popover aurora-active">
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="active-badge mono">
+        <span class="pulse-ring"></span>
+        STREAMING
+      </span>
+      <span class="model-title">Qwen 2.5 7B MLX</span>
+    </div>
+    <div class="header-right mono">
+      <span class="throughput-rate">42.4 tok/s</span>
+    </div>
+  </div>
+
+  <div class="job-progress-container">
+    <div class="job-progress-bar" style="transform: scaleX(0.68);"></div>
+  </div>
+  <div class="job-meta mono">
+    <span>Token 348 / 512</span>
+    <span>Layer 28/28 Metal</span>
+  </div>
+
+  <!-- slot: components/vram-gauge.html -->
+  <div class="vram-gauge-slot"></div>
+
+  <!-- slot: components/telemetry-grid.html -->
+  <div class="telemetry-grid-slot"></div>
+
+  <div class="popover-footer">
+    <button class="footer-btn secondary mono">
+      <svg class="icn-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H6v16h4V4zm8 0h-4v16h4V4z"/></svg>
+      SPACE PAUSE
+    </button>
+    <button class="footer-btn primary mono">⌘K PALETTE</button>
+  </div>
+</div>
+
+<style>
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.active-badge {
+  background: var(--raised);
+  border: 1px solid var(--silver-line);
+  color: var(--silver);
+  font-size: var(--fs-label);
+  letter-spacing: .02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pulse-ring {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--agent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--agent) 60%, transparent);
+}
+.model-title {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.header-right {
+  font-variant-numeric: tabular-nums;
+}
+.throughput-rate {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.job-progress-container {
+  height: 4px;
+  background: var(--raised);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.job-progress-bar {
+  height: 100%;
+  background: var(--fill-machine);
+  transform-origin: left;
+  transition: transform 150ms linear;
+}
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-label);
+  color: var(--ink4);
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.popover-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.footer-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: var(--r1);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color var(--t-enter), border-color var(--t-enter), color var(--t-enter);
+}
+.footer-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.icn-sm {
+  width: 11px;
+  height: 11px;
+}
+.footer-btn.secondary {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  color: var(--ink);
+}
+.footer-btn.secondary:hover {
+  background: var(--raised);
+  border-color: var(--line3);
+}
+.footer-btn.primary {
+  background: var(--invbg);
+  border: 1px solid transparent;
+  color: var(--invink);
+}
+.footer-btn.primary:hover {
+  background: var(--ink);
+}
+.footer-btn.primary:active {
+  background: var(--ink2);
+}
+</style>

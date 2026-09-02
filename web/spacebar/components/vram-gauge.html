@@ -1,0 +1,157 @@
+<!-- ==========================================================================
+     VRAM GAUGE: 25.0 GB allocatable working set on the 32 GB UMA axis.
+     Fill animates transform scaleX (never width). Numbers are facts: mono.
+     ========================================================================== -->
+<div class="vram-gauge-card">
+  <div class="gauge-header">
+    <div class="gauge-title-group">
+      <span class="gauge-label">RESIDENT WEIGHTS</span>
+      <span class="hardware-chip">M1 Max · 400 GB/s</span>
+    </div>
+    <div class="gauge-readout mono">
+      <span class="used-val" id="vram-used">18.2</span>
+      <span class="allocatable-max">/ 25.0 GB allocatable</span>
+      <span class="physical-total">(32 GB UMA)</span>
+    </div>
+  </div>
+
+  <div class="dual-memory-rail">
+    <div class="rail-fill" style="--w: 0.568;"></div>
+    <div class="safe-limit-tick" style="left: 78.1%;" title="25.0 GB Metal recommendedMaxWorkingSetSize"></div>
+    <div class="hatched-caution-zone" style="left: 78.1%; width: 21.9%;" title="OS memory compressor zone"></div>
+  </div>
+
+  <div class="gauge-footer">
+    <span class="headroom-text mono">
+      <span class="dot-headroom"></span> <strong>6.8 GB</strong> allocatable headroom
+    </span>
+    <button class="evict-btn" title="Unload inactive resident model buffers">EVICT WEIGHTS</button>
+  </div>
+</div>
+
+<style>
+.vram-gauge-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.gauge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.gauge-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gauge-label {
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--ink4);
+}
+.hardware-chip {
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  color: var(--ink3);
+}
+.gauge-readout {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.used-val {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.allocatable-max {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  color: var(--ink2);
+}
+.physical-total {
+  display: block;
+  font-size: var(--fs-label);
+  color: var(--ink4);
+}
+.dual-memory-rail {
+  position: relative;
+  height: 8px;
+  background: var(--raised);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.rail-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--fill-machine);
+  transform: scaleX(var(--w, 0));
+  transform-origin: left;
+  transition: transform var(--t-cargo);
+}
+.safe-limit-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink2);
+  z-index: 2;
+}
+.hatched-caution-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--gold) 18%, transparent),
+    color-mix(in srgb, var(--gold) 18%, transparent) 4px,
+    color-mix(in srgb, var(--gold) 5%, transparent) 4px,
+    color-mix(in srgb, var(--gold) 5%, transparent) 8px
+  );
+  border-left: 1px solid var(--gold);
+}
+.gauge-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.headroom-text {
+  font-size: var(--fs-label);
+  color: var(--ink2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.dot-headroom {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--true);
+}
+.evict-btn {
+  background: transparent;
+  border: 1px solid var(--line2);
+  border-radius: var(--r1);
+  color: var(--ink3);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: color var(--t-enter), border-color var(--t-enter), background-color var(--t-enter);
+}
+.evict-btn:hover {
+  background: var(--raised);
+  border-color: var(--gold-line);
+  color: var(--gold);
+}
+</style>

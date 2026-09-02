@@ -1,0 +1,113 @@
+<!-- ==========================================================================
+     STATE 2: REMOTE TAILSCALE FLEET NODE. Remote = agent color, never
+     emerald. Node telemetry itself stays neutral (dock-card pattern).
+     ========================================================================== -->
+<div class="spacebar-popover">
+  <div class="popover-header">
+    <div class="header-left">
+      <span class="fleet-badge mono">
+        <svg class="icn-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        FLEET ROUTED
+      </span>
+      <span class="model-title">FLUX.1 Dev BF16</span>
+    </div>
+    <div class="header-right mono">
+      <span class="fleet-rtt">24 ms WireGuard</span>
+    </div>
+  </div>
+
+  <!-- slot: components/fleet-card.html -->
+  <div class="fleet-node-slot"></div>
+
+  <!-- slot: components/telemetry-grid.html -->
+  <div class="telemetry-grid-slot"></div>
+
+  <div class="popover-footer">
+    <button class="footer-btn secondary mono">SWITCH NODE (⌘2)</button>
+    <button class="footer-btn primary mono">VIEW FLEET</button>
+  </div>
+</div>
+
+<style>
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fleet-badge {
+  background: color-mix(in srgb, var(--agent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--agent) 40%, transparent);
+  color: var(--agent);
+  font-size: var(--fs-label);
+  letter-spacing: .02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.icn-sm {
+  width: 11px;
+  height: 11px;
+}
+.model-title {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.header-right {
+  font-variant-numeric: tabular-nums;
+}
+.fleet-rtt {
+  font-size: var(--fs-label);
+  color: var(--agent);
+}
+.popover-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.footer-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: var(--r1);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color var(--t-enter), border-color var(--t-enter), color var(--t-enter);
+}
+.footer-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.footer-btn.secondary {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  color: var(--ink);
+}
+.footer-btn.secondary:hover {
+  background: var(--raised);
+  border-color: var(--line3);
+}
+.footer-btn.primary {
+  background: var(--invbg);
+  border: 1px solid transparent;
+  color: var(--invink);
+}
+.footer-btn.primary:hover {
+  background: var(--ink);
+}
+.footer-btn.primary:active {
+  background: var(--ink2);
+}
+</style>

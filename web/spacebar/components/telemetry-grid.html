@@ -1,0 +1,69 @@
+<!-- ==========================================================================
+     TELEMETRY GRID: silicon health, thermals, throughput. Facts in mono,
+     ink — state color is earned (true = measured warm), never decorative.
+     ========================================================================== -->
+<div class="telemetry-grid-card mono">
+  <div class="telem-item">
+    <span class="telem-label">SOC THERMAL</span>
+    <div class="telem-val-group">
+      <span class="telem-val">42°C</span>
+      <span class="telem-sub">nominal</span>
+    </div>
+  </div>
+
+  <div class="telem-item">
+    <span class="telem-label">ACOUSTICS</span>
+    <div class="telem-val-group">
+      <span class="telem-val">0 RPM</span>
+      <span class="telem-sub">passive</span>
+    </div>
+  </div>
+
+  <div class="telem-item">
+    <span class="telem-label">GPU LOAD</span>
+    <div class="telem-val-group">
+      <span class="telem-val">84%</span>
+      <span class="telem-sub">42 tok/s</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.telemetry-grid-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 10px;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.telem-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.telem-label {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  color: var(--ink4);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.telem-val-group {
+  display: flex;
+  flex-direction: column;
+}
+.telem-val {
+  font-size: var(--fs-chrome);
+  font-weight: 600;
+  color: var(--ink);
+}
+.telem-sub {
+  font-size: var(--fs-label);
+  color: var(--ink3);
+}
+</style>
