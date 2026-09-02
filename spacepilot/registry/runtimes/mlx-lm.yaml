@@ -21,6 +21,7 @@ verify:
 
 runs:
   - qwen3-8
+  - qwen1-5-moe
   - qwen3-embedding
 notes: >
   The first SpacePilot route is intentionally one-shot and bounded. It consumes
