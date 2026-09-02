@@ -23,19 +23,19 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Paths
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # `python spacepilot/cli.py` puts spacepilot/ on sys.path, not the repo root, so
 # every `from spacepilot.<module> import ...` below raises ModuleNotFoundError
 # named 'spacepilot'. `python -m spacepilot.cli` does not have the problem. Support both,
 # because the first form is what a path in a doc or a launch config looks like.
-if str(PLUTO_ROOT) not in sys.path:
-    sys.path.insert(0, str(PLUTO_ROOT))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 from spacepilot.paths import env_value, fleet_orders_path
 
-OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(PLUTO_ROOT / "outputs")))
-CONFIG_FILE = PLUTO_ROOT / ".spacepilot_config.json"
-LEGACY_CONFIG_FILE = PLUTO_ROOT / ".pluto_config.json"
+OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(REPO_ROOT / "outputs")))
+CONFIG_FILE = REPO_ROOT / ".spacepilot_config.json"
+LEGACY_CONFIG_FILE = REPO_ROOT / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path(
     env_value(
         "SPACEPILOT_SSH_KEY",
@@ -437,7 +437,7 @@ def studio_python(cfg):
 
     # Scan local project virtualenvs
     for venv_name in (".venv", "venv", "env"):
-        py_bin = PLUTO_ROOT / venv_name / "bin" / "python"
+        py_bin = REPO_ROOT / venv_name / "bin" / "python"
         if py_bin.exists():
             candidates.append(str(py_bin))
 
@@ -469,7 +469,7 @@ def studio_python(cfg):
 
 def cmd_studio(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     port = args.port or 8088
-    studio_script = PLUTO_ROOT / "spacepilot" / "web_api.py"
+    studio_script = REPO_ROOT / "spacepilot" / "web_api.py"
 
     python_bin = studio_python(cfg)
     if not python_bin:
@@ -507,7 +507,7 @@ def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print("  Cancelled.")
             return 1
 
-    infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
+    infra_script = REPO_ROOT / "infra" / "gpu-box.sh"
     try:
         run_cmd(["bash", str(infra_script), "terminate"])
     except Exception as e:
@@ -519,7 +519,7 @@ def cmd_terminate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
-    sys.path.insert(0, str(PLUTO_ROOT))
+    sys.path.insert(0, str(REPO_ROOT))
     from spacepilot.device_probe import probe_local_device
     print("┌─────────────────────────────────────────────────────────────────┐")
     print("│                        SPACEPILOT DOCTOR                        │")
@@ -610,7 +610,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print(f"             {line}")
 
     # 5. Studio Token check
-    token_path = PLUTO_ROOT / ".studio_token"
+    token_path = REPO_ROOT / ".studio_token"
     if token_path.exists():
         print(f"  Session  : ✅ Token found (.studio_token)")
     else:
@@ -623,8 +623,8 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 def cmd_serve(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     import uvicorn
     print(f"Starting SpacePilot server on {args.host}:{args.port}")
-    sys.path.insert(0, str(PLUTO_ROOT))
-    uvicorn.run("spacepilot.pluto.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
+    sys.path.insert(0, str(REPO_ROOT))
+    uvicorn.run("spacepilot.app:create_app", host=args.host, port=args.port, reload=args.reload, factory=True)
     return 0
 
 
@@ -635,7 +635,7 @@ def cmd_lora(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     surfaces keep it: gating the whole command would have taken an honest
     read down with the dishonest write.
     """
-    from spacepilot.pluto.services.lora import lora_manager
+    from spacepilot.services.lora import lora_manager
 
     action = getattr(args, "lora_action", None)
 
@@ -674,7 +674,7 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     real weights via huggingface_hub, narrowed by the variant's allow_patterns
     and pinned to its revision when the registry records one.
     """
-    from spacepilot.pluto.services.model_catalog import catalog_manager
+    from spacepilot.services.model_catalog import catalog_manager
 
     action = getattr(args, "recipes_action", None)
 
@@ -842,11 +842,11 @@ def _print_provider_rates(providers, failure=None) -> None:
 def cmd_models(args, cfg=None) -> int:
     """List the registry, or one variant, judged against this machine."""
     from spacepilot.device_probe import probe_local_device, usable_memory_bytes
-    from spacepilot.pluto import measurements as ms
-    from spacepilot.pluto.registry import registry
-    from spacepilot.pluto.services.compatibility import assess
-    from spacepilot.pluto.services.model_catalog import catalog_manager
-    from spacepilot.pluto.services.provenance import (
+    from spacepilot import measurements as ms
+    from spacepilot.model_registry import registry
+    from spacepilot.services.compatibility import assess
+    from spacepilot.services.model_catalog import catalog_manager
+    from spacepilot.services.provenance import (
         format_fact, format_local_speed, format_metric, local_speeds, primary_speed,
         speed_provenance,
     )
@@ -963,7 +963,7 @@ def _verdict_fit_text(verdict) -> str:
 
 def _run_candidate_facts(candidate) -> tuple[str, str, str]:
     """One source of truth for both live and plain confirmation rows."""
-    from spacepilot.pluto.services.provenance import format_local_speed
+    from spacepilot.services.provenance import format_local_speed
 
     fit = _verdict_fit_text(candidate.verdict)
     provenance = format_local_speed(candidate.speed)
@@ -1015,7 +1015,7 @@ def run_confirmation_lines(plan, output: Path) -> list[str]:
 
 def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = None) -> list[str]:
     """Stable facts shared by both output modes for speech and transcribe."""
-    from spacepilot.pluto.services.provenance import format_local_speed
+    from spacepilot.services.provenance import format_local_speed
 
     lines = [
         f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE",
@@ -1058,7 +1058,7 @@ def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = N
 def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
                                 max_kv_size: int, temperature: float) -> list[str]:
     """All material facts shown before a large local text-model allocation."""
-    from spacepilot.pluto.services.provenance import format_local_speed
+    from spacepilot.services.provenance import format_local_speed
 
     lines = [f"  {'MODEL':27s} {'FIT':16s} {'PROVENANCE':24s} ROUTE"]
     for candidate in plan.candidates:
@@ -1100,12 +1100,12 @@ def _confirm_run(args) -> bool:
 
 
 def _cmd_run_speech(args, cfg=None) -> int:
+    from spacepilot import runtimes as rt
     from spacepilot.drivers.kokoro_driver import KokoroDriver
-    from spacepilot.pluto import runtimes as rt
-    from spacepilot.pluto.services.audio_execution import (
+    from spacepilot.services.audio_execution import (
         SpeechExecutionService, SpeechRequest, default_speech_output,
     )
-    from spacepilot.pluto.services.execution import LocalExecutionError
+    from spacepilot.services.execution import LocalExecutionError
 
     driver = KokoroDriver(python_bin=rt.interpreter(cfg))
     service = SpeechExecutionService(driver=driver)
@@ -1148,10 +1148,10 @@ def _cmd_run_speech(args, cfg=None) -> int:
 
 def _cmd_run_transcribe(args, cfg=None) -> int:
     from spacepilot.drivers.whisper_cpp_driver import WhisperCppDriver, whisper_bin
-    from spacepilot.pluto.services.audio_execution import (
+    from spacepilot.services.audio_execution import (
         TranscribeExecutionService, TranscribeRequest, default_transcript_output,
     )
-    from spacepilot.pluto.services.execution import LocalExecutionError
+    from spacepilot.services.execution import LocalExecutionError
 
     driver = WhisperCppDriver(bin_path=whisper_bin(cfg))
     service = TranscribeExecutionService(driver=driver)
@@ -1199,9 +1199,9 @@ def _cmd_run_transcribe(args, cfg=None) -> int:
 
 def _cmd_run_text(args, cfg=None) -> int:
     from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
-    from spacepilot.pluto import runtimes as rt
-    from spacepilot.pluto.services.execution import LocalExecutionError
-    from spacepilot.pluto.services.text_execution import (
+    from spacepilot import runtimes as rt
+    from spacepilot.services.execution import LocalExecutionError
+    from spacepilot.services.text_execution import (
         TextExecutionService, TextRequest, default_text_output,
     )
 
@@ -1245,7 +1245,7 @@ def _cmd_run_text(args, cfg=None) -> int:
 def cmd_run(args, cfg=None) -> int:
     """Plan, confirm and execute one real local workload."""
     from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
-    from spacepilot.pluto.services.execution import (
+    from spacepilot.services.execution import (
         LocalExecutionError, LocalExecutionService, RunRequest, default_image_output,
     )
 
@@ -1500,7 +1500,7 @@ def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> in
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
 
     reg = rt.runtimes()
     runtime_python = rt.interpreter(cfg)
@@ -1716,7 +1716,7 @@ def cmd_silicon(args, cfg=None) -> int:
 
     Nothing here is measured, so nothing here is printed without its source.
     """
-    from spacepilot.pluto import silicon as si
+    from spacepilot import silicon as si
 
     parts = si.silicon()
     ordered = sorted(parts.values(), key=lambda p: (p.kind, p.id))
@@ -1800,7 +1800,7 @@ def cmd_measure(args, cfg=None) -> int:
     import time
 
     from spacepilot.device_probe import probe_local_device
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     command = list(getattr(args, "command_argv", []) or [])
     if command and command[0] == "--":   # REMAINDER keeps the separator
@@ -1869,7 +1869,7 @@ def cmd_measure(args, cfg=None) -> int:
     # Records land outside the repo on an installed copy (spacepilot.paths),
     # where relative_to raises rather than shortening anything.
     try:
-        shown = path.relative_to(PLUTO_ROOT)
+        shown = path.relative_to(REPO_ROOT)
     except ValueError:
         shown = path
     print(f"  recorded          {shown}")
@@ -1878,7 +1878,7 @@ def cmd_measure(args, cfg=None) -> int:
 
 def cmd_sweep(args, cfg=None) -> int:
     """Run (or dry-run) a declarative measurement sweep spec, unattended."""
-    from spacepilot.pluto.sweep import load_spec, expand_jobs, run_sweep, SweepSpecError
+    from spacepilot.sweep import load_spec, expand_jobs, run_sweep, SweepSpecError
 
     action = getattr(args, "sweep_action", None) or "run"
     if action != "run":
@@ -1936,7 +1936,7 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     default: it writes nothing unless you ask.
     """
     from spacepilot.device_probe import probe_local_device
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     profile = probe_local_device()
     system = ms.system_from_profile(profile)

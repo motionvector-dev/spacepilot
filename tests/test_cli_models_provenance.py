@@ -3,7 +3,7 @@
 import argparse
 
 from spacepilot.device_probe import GIB, DeviceProfile
-from spacepilot.pluto.measurements import Measurement
+from spacepilot.measurements import Measurement
 
 
 def _profile():
@@ -25,7 +25,7 @@ def _measurement():
 
 def test_models_detail_keeps_local_stream_and_hides_estimated_working_set(monkeypatch, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
     monkeypatch.setattr(ms, "load_measurements", lambda: [_measurement()])
@@ -42,7 +42,7 @@ def test_models_detail_keeps_local_stream_and_hides_estimated_working_set(monkey
 
 def test_models_list_labels_rows_without_local_measurements_unflown(monkeypatch, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
     monkeypatch.setattr(ms, "load_measurements", lambda: [])
@@ -58,7 +58,7 @@ def test_models_list_labels_rows_without_local_measurements_unflown(monkeypatch,
 
 def test_models_detail_prints_full_caveat_evidence(monkeypatch, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
     monkeypatch.setattr(ms, "load_measurements", lambda: [])
@@ -75,7 +75,7 @@ def test_models_detail_prints_full_caveat_evidence(monkeypatch, capsys):
 
 def test_models_list_has_a_distinct_caveat_column_and_keeps_empty_rows_blank(monkeypatch, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)
     monkeypatch.setattr(ms, "load_measurements", lambda: [])

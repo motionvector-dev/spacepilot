@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hardware probe for Pluto / SpacePilot.
+"""Hardware probe for SpacePilot.
 
 Every field is optional. A value that could not be measured is None and is
 reported as unknown — never replaced with a plausible default. A fabricated
@@ -602,7 +602,7 @@ def _linux_vulkan_compute(src: LinuxSources, profile: DeviceProfile) -> bool:
 
     Promoting `profile.backend` to "vulkan" is the dishonest half and is not
     done here: no shipped runtime or model recipe declares a vulkan backend
-    (see pluto/registry.py BACKENDS), so the promotion would flip every
+    (see spacepilot/model_registry.py BACKENDS), so the promotion would flip every
     CPU-capable runtime to "n/a here" and admit accelerator-only drivers that
     have no Vulkan path behind them. Absence of a report becomes a wrong one.
     """

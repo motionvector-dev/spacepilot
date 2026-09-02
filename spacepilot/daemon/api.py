@@ -10,8 +10,8 @@ from pydantic import BaseModel, ConfigDict
 
 from spacepilot.daemon.log import MAX_RECORDS_PER_PAGE, LogError
 from spacepilot.daemon.peer_auth import PEER_AUTH_HEADER, PeerAuthError, PeerAuthenticator
-from spacepilot.pluto.core.utils import allocate_output
-from spacepilot.pluto.services.execution import LocalExecutionError, RunRequest
+from spacepilot.core.utils import allocate_output
+from spacepilot.services.execution import LocalExecutionError, RunRequest
 from spacepilot.substrate import Substrate
 
 

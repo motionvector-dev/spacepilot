@@ -16,13 +16,13 @@ import datetime as dt
 import math
 from pathlib import Path
 
-from spacepilot.pluto.measurements import (
+from spacepilot.measurements import (
     _slug,
     load_measurements,
     load_systems,
     subject_id,
 )
-from spacepilot.pluto.registry import load_registry
+from spacepilot.model_registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "spacepilot" / "registry"

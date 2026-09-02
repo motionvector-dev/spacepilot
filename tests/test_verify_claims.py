@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PLUTO_ROOT))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
 from tools import verify_claims as vc  # noqa: E402
 
@@ -287,7 +287,7 @@ def test_load_claims_rejects_missing_fields(tmp_path):
 
 
 def test_seed_claims_file_loads_and_has_five_entries():
-    claims = vc.load_claims(PLUTO_ROOT / "tools" / "claims" / "disputed_claims.yaml")
+    claims = vc.load_claims(REPO_ROOT / "tools" / "claims" / "disputed_claims.yaml")
     assert len(claims) == 5
     ids = {c["id"] for c in claims}
     assert "darkbloom-provider-earnings" in ids

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multimodal model recommender engine for Pluto / SpacePilot."""
+"""Multimodal model recommender engine for SpacePilot."""
 
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
@@ -8,7 +8,7 @@ from spacepilot.paths import model_recommender_cache_dir, model_recommender_cach
 
 # Direct-import compatibility. The value is now canonical and all fallback
 # reads go through paths.py rather than embedding a second directory policy.
-PLUTO_MODELS_CACHE = model_recommender_cache_dir()
+MODELS_CACHE = model_recommender_cache_dir()
 
 
 @dataclass
@@ -176,7 +176,7 @@ def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict
         "device": profile.to_dict(),
         "recommendations": recommendations,
         "total_models": len(recommendations),
-        "cache_dir": str(PLUTO_MODELS_CACHE),
+        "cache_dir": str(MODELS_CACHE),
     }
 
 
@@ -194,8 +194,8 @@ def download_model_mock(model_id: str) -> Dict[str, Any]:
     if not target_entry:
         return {"success": False, "error": f"Model {model_id} not found in catalogue."}
 
-    PLUTO_MODELS_CACHE.mkdir(parents=True, exist_ok=True)
-    target_file = PLUTO_MODELS_CACHE / model_id
+    MODELS_CACHE.mkdir(parents=True, exist_ok=True)
+    target_file = MODELS_CACHE / model_id
     
     with open(target_file, "w") as f:
         f.write(f"model_id: {model_id}\nsize_gb: {target_entry.size_gb}\nsha256: {target_entry.sha256}\n")

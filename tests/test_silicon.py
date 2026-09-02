@@ -9,7 +9,7 @@ import pytest
 import yaml
 
 from spacepilot.paths import shipped_dir
-from spacepilot.pluto.silicon import (
+from spacepilot.silicon import (
     AVAILABILITY,
     COMPUTE_PATHS,
     KINDS,

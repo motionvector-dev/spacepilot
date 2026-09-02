@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Comprehensive Unit and Integration Tests for Pluto DiT Video Engines.
+"""Comprehensive Unit and Integration Tests for SpacePilot DiT Video Engines.
 
 Tests:
 - EngineSpec dataclass and serialization
@@ -17,9 +17,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "spacepilot"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "spacepilot"))
 
 from spacepilot.engines import (
     EngineSpec,
@@ -33,7 +33,7 @@ from spacepilot.engines import (
     normalize_engine_id,
     DEFAULT_ENGINE_ID,
 )
-import spacepilot.pluto_mcp_server as pluto_mcp_server
+import spacepilot.mcp_server as pluto_mcp_server
 from spacepilot.web_api import app, STUDIO_TOKEN
 
 

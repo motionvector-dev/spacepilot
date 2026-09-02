@@ -8,9 +8,9 @@ variable — refuses anything else before it builds a request.
 
 import pytest
 
-from spacepilot.pluto.core import config
-from spacepilot.pluto.core.http import UnsupportedURLScheme, require_http_url
-from spacepilot.pluto.services.audio import mlx_generate_audio
+from spacepilot.core import config
+from spacepilot.core.http import UnsupportedURLScheme, require_http_url
+from spacepilot.services.audio import mlx_generate_audio
 
 
 @pytest.mark.parametrize(

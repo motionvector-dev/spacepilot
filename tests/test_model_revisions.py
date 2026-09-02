@@ -13,7 +13,7 @@ uses the pin, and the measurement writes down which pin it ran against.
 
 import pytest
 
-from spacepilot.pluto.registry import (
+from spacepilot.model_registry import (
     RegistryError, load_registry, parse_model, registry,
 )
 
@@ -89,7 +89,7 @@ def test_every_shipped_variant_is_pinned():
 # ------------------------------------------------- the download uses the pin
 
 def test_the_recipe_carries_the_registry_revision():
-    from spacepilot.pluto.services.model_catalog import catalog_manager
+    from spacepilot.services.model_catalog import catalog_manager
     for v in registry().variants:
         assert catalog_manager.recipes[v.id].revision == v.revision
 
@@ -97,7 +97,7 @@ def test_the_recipe_carries_the_registry_revision():
 def test_snapshot_download_is_given_the_revision(monkeypatch, tmp_path):
     """The B615 finding, but the reason is reproducibility rather than the
     lint id: a download with no revision cannot be repeated."""
-    from spacepilot.pluto.services import model_catalog as mc
+    from spacepilot.services import model_catalog as mc
 
     seen = {}
     sha = "a" * 40
@@ -128,7 +128,7 @@ def test_snapshot_download_is_given_the_revision(monkeypatch, tmp_path):
 def test_the_job_records_which_commit_it_actually_got(monkeypatch, tmp_path):
     """When nothing was requested, the resolved SHA is the only record of what
     these bytes are — and it exists only after the download has run."""
-    from spacepilot.pluto.services import model_catalog as mc
+    from spacepilot.services import model_catalog as mc
 
     sha = "b" * 40
 
@@ -161,7 +161,7 @@ def test_a_measurement_records_the_revision_it_ran_against(system, tmp_path):
     """Without this the record names a repo, and a repo is not a thing you can
     fetch twice. `runtime_version` already pins the software side; this is the
     same closure on the model side."""
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     pinned = registry().variants[0]
     path = ms.record(
@@ -176,7 +176,7 @@ def test_a_measurement_records_the_revision_it_ran_against(system, tmp_path):
 def test_an_explicit_revision_is_not_overwritten_by_the_registry(system, tmp_path):
     """A run against weights already on disk knows better than the registry
     does — the registry says what should be fetched, not what was."""
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     other = "c" * 40
     path = ms.record(
@@ -190,7 +190,7 @@ def test_an_explicit_revision_is_not_overwritten_by_the_registry(system, tmp_pat
 def test_an_unknown_model_records_without_a_revision(system, tmp_path):
     """A missing pin is a fact about the model, never a reason to lose a real
     sample — the run already happened."""
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     path = ms.record(
         system=system, model_id="not-in-the-registry",
@@ -201,7 +201,7 @@ def test_an_unknown_model_records_without_a_revision(system, tmp_path):
 
 
 def test_records_written_before_this_field_existed_still_parse():
-    from spacepilot.pluto.measurements import parse_measurement
+    from spacepilot.measurements import parse_measurement
 
     old = {
         "schema": 1, "system_id": "s", "model_id": "m",
@@ -213,7 +213,7 @@ def test_records_written_before_this_field_existed_still_parse():
 
 @pytest.fixture
 def system():
-    from spacepilot.pluto.measurements import system_from_profile
+    from spacepilot.measurements import system_from_profile
 
     class _Profile:
         os_name = "macOS"

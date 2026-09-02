@@ -17,9 +17,9 @@ from pathlib import Path
 
 import httpx
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-CAPTIONS = PLUTO_ROOT / "assets" / "music_caption_refs" / "studio_bgm_captions.json"
-MUSIC_DIR = PLUTO_ROOT / "outputs" / "music"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CAPTIONS = REPO_ROOT / "assets" / "music_caption_refs" / "studio_bgm_captions.json"
+MUSIC_DIR = REPO_ROOT / "outputs" / "music"
 SERVER = "http://127.0.0.1:11234/v1/audio/music-generations"
 MODEL = "ddalcu/MiniMax-Music3-MLX-Serve-8bit"
 # Matches the studio loudness gate (-14 to -18 dBFS program loudness).

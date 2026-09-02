@@ -15,7 +15,7 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
-logger = logging.getLogger("pluto.drivers.gguf")
+logger = logging.getLogger("spacepilot.drivers.gguf")
 
 CAMERA_TRAJECTORIES: List[Tuple[str, Dict[str, float]]] = [
     ("Dynamic Dolly In", {"pan": 0.0, "tilt": 0.0, "zoom": 1.4, "roll": 0.0, "orbit": 0.0}),
@@ -100,7 +100,7 @@ class GGUFDriver(InferenceDriver):
             self.resolved_revision = None
             return configured
 
-        from spacepilot.pluto.registry import registry
+        from spacepilot.model_registry import registry
 
         variant = registry().variant(self.driver_id)
         if variant is None or not variant.files:

@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from spacepilot.cli import cmd_silicon
-from spacepilot.pluto.silicon import silicon
+from spacepilot.silicon import silicon
 
 ROOT = Path(__file__).resolve().parents[1]
 

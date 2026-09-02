@@ -1,9 +1,9 @@
 import pytest
 import time
 from fastapi.testclient import TestClient
-from spacepilot.pluto.app import create_app
-from spacepilot.pluto.core.config import get_settings
-from spacepilot.pluto.services.lora import lora_manager
+from spacepilot.app import create_app
+from spacepilot.core.config import get_settings
+from spacepilot.services.lora import lora_manager
 
 @pytest.fixture
 def test_app():
@@ -77,7 +77,7 @@ def test_lora_validation(client, auth_headers):
     assert resp.status_code == 422
 
 def test_mcp_tools():
-    from spacepilot.pluto_mcp_server import (
+    from spacepilot.mcp_server import (
         spacepilot_list_lora_adapters,
         spacepilot_train_lora,
     )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LTX-Video 2.5 Engine Adapter for Pluto.
+"""LTX-Video 2.5 Engine Adapter for SpacePilot.
 
 Implements the BaseVideoEngine interface for Lightricks LTX-Video 2.5 (13B DiT).
 Handles spatial constraints (multiples of 32) and temporal constraints (8k + 1 frames),

@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 #!/usr/bin/env python3
-"""Integration tests for Pluto Studio Backend API."""
+"""Integration tests for SpacePilot Backend API."""
 
 
 import json
@@ -15,9 +15,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Add project root to sys.path
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "spacepilot"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "spacepilot"))
 
 import pytest
 from fastapi.testclient import TestClient
@@ -220,7 +220,7 @@ def test_status_refresh_is_single_flight_under_concurrency(monkeypatch):
 def test_cockpit_status_uses_the_single_flight_aws_snapshot(monkeypatch):
     """A cockpit poll burst must not bypass the shared AWS status cache."""
     import spacepilot.web_api as web_api
-    from spacepilot.pluto.api.routes import gpu as gpu_routes
+    from spacepilot.api.routes import gpu as gpu_routes
 
     monkeypatch.setattr(web_api, "_status_cache", None)
     calls = 0
@@ -427,7 +427,7 @@ def test_studio_full_pipeline():
     print(f"  ✓ MotionVector Composite initiated: {comp_data['master_id']} ({comp_data['resolution']})")
 
     print("\n========================================================")
-    print("✨ ALL PLUTO STUDIO + MOTIONVECTOR TESTS PASSED (100%)")
+    print("✨ ALL SPACEPILOT + MOTIONVECTOR TESTS PASSED (100%)")
     print("========================================================\n")
 
 
@@ -444,7 +444,7 @@ def test_resolve_output_blocks_escapes_from_outputs_dir():
 
     from spacepilot.web_api import OUTPUTS_DIR, resolve_output
 
-    outside = PLUTO_ROOT / "pytest_outside_marker.txt"
+    outside = REPO_ROOT / "pytest_outside_marker.txt"
     outside.write_text("should never be served")
     try:
         escapes = [
@@ -1004,7 +1004,7 @@ def test_generate_dual_keyframe_validation():
 
 
 if __name__ == "__main__":
-    print("Running Pluto Studio API integration tests...")
+    print("Running SpacePilot API integration tests...")
     test_multi_view_routes()
     print("✓ Multi-view routes test passed")
     test_cockpit_view_routes()
@@ -1038,7 +1038,7 @@ if __name__ == "__main__":
     test_studio_4k_upscale_chain()
     print("✓ 4K Super-Resolution chain test passed")
     test_studio_full_pipeline()
-    print("🎉 ALL PLUTO STUDIO + MOTIONVECTOR TESTS PASSED (100% SUCCESS)!")
+    print("🎉 ALL SPACEPILOT + MOTIONVECTOR TESTS PASSED (100% SUCCESS)!")
 
 def test_cockpit_status_includes_launch_time(monkeypatch):
     """Verify that instance.launch_time propagates up through the status endpoint."""

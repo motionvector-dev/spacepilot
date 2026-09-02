@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
-logger = logging.getLogger("pluto.drivers.mflux")
+logger = logging.getLogger("spacepilot.drivers.mflux")
 
 # Which mflux CLI entry point serves a given --model alias. Verified against
 # `mflux-capabilities` and each command's --help in mflux 0.19.0; a
