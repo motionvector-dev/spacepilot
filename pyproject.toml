@@ -64,6 +64,14 @@ dev = [
     # tests do not fail — they error out and read as infrastructure noise.
     "flask>=3.0",
 ]
+# spacepilot/services/anthropic_provider.py, the remote rung behind
+# /v1/chat/completions for claude-* models. Not installed in CI: the import
+# lives inside AnthropicProvider._get_client, never at module level, and
+# tests inject a fake client rather than exercising the real SDK — same
+# pattern as mlx-lm, which also never appears in requirements.txt.
+cloud = [
+    "anthropic>=0.40.0",
+]
 
 [project.urls]
 Homepage = "https://spacepilot.dev"
