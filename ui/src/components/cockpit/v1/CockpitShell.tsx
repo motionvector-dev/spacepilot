@@ -156,7 +156,16 @@ export function CockpitShell({
                    border-r border-line-200 bg-surface md:flex"
       >
         <div className="flex h-[52px] items-center gap-2 border-b border-line-200 px-4">
-          <Dot tone={profile.isError && dock.isError ? 'wrong' : 'live'} />
+          {/* Green has to be earned. Nothing has answered yet is not "live". */}
+          <Dot
+            tone={
+              profile.isError && dock.isError
+                ? 'wrong'
+                : profile.data || dock.data
+                  ? 'live'
+                  : 'idle'
+            }
+          />
           <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-ink">
             SpacePilot
           </span>
@@ -218,11 +227,18 @@ export function CockpitShell({
 
         <div className="border-t border-line-200 p-3">
           <div className="pb-2 font-mono text-[10px] text-ink-500">
+            {/* `|| now` here would print "checked 0s ago" when nothing was
+                ever fetched — the exact stale-green lie CONCEPT.md forbids,
+                shown at its loudest the moment the daemon is down. */}
             {age(
-              Math.min(
-                profile.dataUpdatedAt || now,
-                dock.dataUpdatedAt || now,
-              ),
+              [profile.dataUpdatedAt, dock.dataUpdatedAt].filter(Boolean)
+                .length > 0
+                ? Math.min(
+                    ...[profile.dataUpdatedAt, dock.dataUpdatedAt].filter(
+                      Boolean,
+                    ),
+                  )
+                : undefined,
               now,
             )}
           </div>
