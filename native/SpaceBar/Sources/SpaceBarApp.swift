@@ -109,6 +109,7 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             Task { @MainActor in await self?.refreshDaemon() }
         })
         Task { await refreshDaemon() }
+        refreshPermission()
     }
 
     func refreshDaemon() async {
@@ -138,16 +139,25 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
 
     /// What is missing, if anything. Checked without prompting, so the popover
     /// can show the gap before the user ever presses the talk key.
+    ///
+    /// This is polled and folded into `state`, never called from a view body —
+    /// the authorization-status calls cross into TCC, and a SwiftUI body is
+    /// evaluated far too often to be a sensible place to ask.
     func permissionGap() -> PopoverState.PermissionGap? {
-        if SFSpeechRecognizer.authorizationStatus() == .denied
-            || SFSpeechRecognizer.authorizationStatus() == .restricted {
-            return .speechRecognition
-        }
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .denied
-            || AVCaptureDevice.authorizationStatus(for: .audio) == .restricted {
-            return .microphone
-        }
+        let speech = SFSpeechRecognizer.authorizationStatus()
+        if speech == .denied || speech == .restricted { return .speechRecognition }
+        let mic = AVCaptureDevice.authorizationStatus(for: .audio)
+        if mic == .denied || mic == .restricted { return .microphone }
         return nil
+    }
+
+    /// Fold a permission gap into the state, if one outranks what we are doing.
+    func refreshPermission() {
+        if let gap = permissionGap() {
+            state = .needsPermission(gap)
+        } else if case .needsPermission = state {
+            state = daemonError == nil ? .idle : .daemonOffline(reason: daemonError ?? "")
+        }
     }
 
     func toggleConnection() {
@@ -336,49 +346,16 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     }
 }
 
-// MARK: - Theme
+// MARK: - Appearance
 //
-// design.md requires three states and a visible control. In an AppKit app the
-// three states are: follow the system (nil appearance), force light, force dark.
-// Tokens.swift resolves against whatever is effective, so setting this one
-// property re-themes every colour in the popover.
-enum ThemeChoice: String, CaseIterable {
-    case system, light, dark
-
-    var label: String {
-        switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
-        }
-    }
-
-    var appearance: NSAppearance? {
-        switch self {
-        case .system: return nil
-        case .light: return NSAppearance(named: .aqua)
-        case .dark: return NSAppearance(named: .darkAqua)
-        }
-    }
-}
-
-@MainActor
-final class ThemeController: ObservableObject {
-    private static let key = "spacebar.theme"
-
-    @Published var choice: ThemeChoice {
-        didSet {
-            UserDefaults.standard.set(choice.rawValue, forKey: Self.key)
-            NSApp.appearance = choice.appearance
-        }
-    }
-
-    init() {
-        let stored = UserDefaults.standard.string(forKey: Self.key) ?? ThemeChoice.system.rawValue
-        choice = ThemeChoice(rawValue: stored) ?? .system
-    }
-
-    func apply() { NSApp.appearance = choice.appearance }
+// DESIGN.md's first principle is Obsidian Dark Precision, so the app forces
+// dark rather than following the system. Tokens.swift still carries the
+// designed light values, so unforcing this later needs no new colour work —
+// it is one line here, not a repaint.
+enum Appearance {
+    /// A function, not a stored constant: NSAppearance is not Sendable, so a
+    /// static let would be a shared-mutable-state error under Swift 6.
+    static func product() -> NSAppearance? { NSAppearance(named: .darkAqua) }
 }
 
 // MARK: - Status bar
@@ -387,10 +364,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
     let voiceManager = VoiceDuplexManager()
-    let theme = ThemeController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        theme.apply()
+        if let directory = Snapshot.requestedDirectory() {
+            Task {
+                await Snapshot.run(into: directory)
+                NSApplication.shared.terminate(nil)
+            }
+            return
+        }
+
+        NSApp.appearance = Appearance.product()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
@@ -405,7 +389,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pop.contentSize = NSSize(width: 360, height: 420)
         pop.behavior = .transient
         pop.contentViewController = NSHostingController(
-            rootView: SpaceBarPopoverView(voice: voiceManager, theme: theme)
+            rootView: SpaceBarPopoverView(voice: voiceManager)
         )
         popover = pop
     }
@@ -442,12 +426,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - Popover
 struct SpaceBarPopoverView: View {
     @ObservedObject var voice: VoiceDuplexManager
-    @ObservedObject var theme: ThemeController
 
-    private var state: PopoverState {
-        if let gap = voice.permissionGap() { return .needsPermission(gap) }
-        return voice.state
-    }
+    private var state: PopoverState { voice.state }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -459,7 +439,7 @@ struct SpaceBarPopoverView: View {
         }
         .padding(16)
         .frame(width: 360)
-        .background(Tokens.UI.ground)
+        .background(Tokens.UI.panel)
     }
 
     // MARK: Header — what the app is doing, and nothing else
@@ -473,42 +453,16 @@ struct SpaceBarPopoverView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Tokens.UI.ink)
             Spacer()
-            themeToggle
         }
     }
 
     private var statusColor: Color {
         switch state {
         case .listening, .speaking: return Tokens.UI.true_
-        case .thinking: return Tokens.UI.accent
+        case .thinking: return Tokens.UI.gold
         case .needsPermission: return Tokens.UI.wrong
-        case .daemonOffline, .idle, .interrupted: return Tokens.UI.faint
+        case .daemonOffline, .idle, .interrupted: return Tokens.UI.ink4
         }
-    }
-
-    private var themeToggle: some View {
-        HStack(spacing: 2) {
-            ForEach(ThemeChoice.allCases, id: \.self) { choice in
-                Button(choice.label) { theme.choice = choice }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(theme.choice == choice ? Tokens.UI.ink : Tokens.UI.muted)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(theme.choice == choice ? Tokens.UI.surface3 : Color.clear)
-                    )
-                    .accessibilityAddTraits(theme.choice == choice ? [.isSelected] : [])
-            }
-        }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 7).fill(Tokens.UI.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 7).stroke(Tokens.UI.border, lineWidth: 0.5)
-        )
     }
 
     // MARK: The machine
@@ -522,7 +476,7 @@ struct SpaceBarPopoverView: View {
                 Spacer()
                 Text(voice.telemetry.thermal)
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(voice.telemetry.isNominal ? Tokens.UI.muted : Tokens.UI.wrong)
+                    .foregroundStyle(voice.telemetry.isNominal ? Tokens.UI.ink3 : Tokens.UI.wrong)
             }
 
             if case .daemonOffline(let reason) = state {
@@ -532,14 +486,14 @@ struct SpaceBarPopoverView: View {
             } else {
                 Text("No reading yet")
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Tokens.UI.faint)
+                    .foregroundStyle(Tokens.UI.ink4)
             }
 
             memoryRail
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.surface))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tokens.UI.border, lineWidth: 0.5))
+        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.card))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tokens.UI.line2, lineWidth: 0.5))
     }
 
     /// The offline state says what is missing and how to fix it. It does not
@@ -548,16 +502,16 @@ struct SpaceBarPopoverView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(reason)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(Tokens.UI.muted)
+                .foregroundStyle(Tokens.UI.ink3)
             Text("Voice still works. Fleet data does not.")
                 .font(.system(size: 11))
-                .foregroundStyle(Tokens.UI.faint)
+                .foregroundStyle(Tokens.UI.ink4)
             Text("spacepilot serve")
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(Tokens.UI.text)
+                .foregroundStyle(Tokens.UI.ink2)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(RoundedRectangle(cornerRadius: 4).fill(Tokens.UI.surface2))
+                .background(RoundedRectangle(cornerRadius: 4).fill(Tokens.UI.card))
         }
     }
 
@@ -576,11 +530,11 @@ struct SpaceBarPopoverView: View {
             Text(key.uppercased())
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .kerning(0.5)
-                .foregroundStyle(Tokens.UI.faint)
+                .foregroundStyle(Tokens.UI.ink4)
                 .frame(width: 66, alignment: .leading)
             Text(value)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(Tokens.UI.text)
+                .foregroundStyle(Tokens.UI.ink2)
             Spacer(minLength: 0)
         }
     }
@@ -594,21 +548,21 @@ struct SpaceBarPopoverView: View {
                 Text("SPACEBAR MEMORY")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .kerning(0.5)
-                    .foregroundStyle(Tokens.UI.faint)
+                    .foregroundStyle(Tokens.UI.ink4)
                 Spacer()
                 Text(String(format: "%.2f of %.0f GB",
                             voice.telemetry.residentMemoryGB,
                             voice.telemetry.physicalMemoryGB))
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(Tokens.UI.muted)
+                    .foregroundStyle(Tokens.UI.ink3)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Tokens.UI.surface3)
+                        .fill(Tokens.UI.raised)
                         .frame(height: 4)
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Tokens.UI.accent)
+                        .fill(Tokens.UI.gold)
                         .frame(
                             width: max(2, geo.size.width * fraction),
                             height: 4
@@ -629,7 +583,7 @@ struct SpaceBarPopoverView: View {
     private var transcript: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !voice.lastHeard.isEmpty {
-                line("You", voice.lastHeard, Tokens.UI.text)
+                line("You", voice.lastHeard, Tokens.UI.ink2)
             }
             if !voice.lastSaid.isEmpty {
                 line("SpacePilot", voice.lastSaid, Tokens.UI.ink)
@@ -637,15 +591,15 @@ struct SpaceBarPopoverView: View {
             if voice.lastHeard.isEmpty && voice.lastSaid.isEmpty {
                 Text("Press Talk and ask about this machine.")
                     .font(.system(size: 11))
-                    .foregroundStyle(Tokens.UI.faint)
+                    .foregroundStyle(Tokens.UI.ink4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.surface2))
+        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.card))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(state.isWorking ? Tokens.UI.accentBorder : Tokens.UI.border,
+                .stroke(state.isWorking ? Tokens.UI.goldLine : Tokens.UI.line2,
                         lineWidth: state.isWorking ? 1 : 0.5)
         )
     }
@@ -655,7 +609,7 @@ struct SpaceBarPopoverView: View {
             Text(who.uppercased())
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .kerning(0.5)
-                .foregroundStyle(Tokens.UI.faint)
+                .foregroundStyle(Tokens.UI.ink4)
             Text(what)
                 .font(.system(size: 12))
                 .foregroundStyle(color)
@@ -670,10 +624,11 @@ struct SpaceBarPopoverView: View {
             Button(action: { voice.toggleConnection() }) {
                 Text(state.primaryAction ?? "Talk")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Tokens.UI.accentContrast)
+                    .foregroundStyle(Tokens.UI.gold)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.UI.accent))
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.UI.raised))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Tokens.UI.goldLine, lineWidth: 1))
             }
             .buttonStyle(.plain)
 
@@ -682,7 +637,7 @@ struct SpaceBarPopoverView: View {
                     Circle().fill(Tokens.UI.true_).frame(width: 5, height: 5)
                     Text("mic open")
                         .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(Tokens.UI.muted)
+                        .foregroundStyle(Tokens.UI.ink3)
                 }
             }
 
@@ -694,7 +649,7 @@ struct SpaceBarPopoverView: View {
             }
             .buttonStyle(.plain)
             .font(.system(size: 11))
-            .foregroundStyle(Tokens.UI.muted)
+            .foregroundStyle(Tokens.UI.ink3)
         }
     }
 }

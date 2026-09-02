@@ -25,29 +25,36 @@ REPO = Path(__file__).resolve().parents[3]
 CSS = REPO / "web" / "spacebar" / "tokens.css"
 SWIFT = REPO / "native" / "SpaceBar" / "Sources" / "Tokens.swift"
 
-LIGHT_SELECTOR = ":root"
-DARK_SELECTOR = ':root[data-theme="dark"]'
+# Dark is the product (DESIGN.md, "Obsidian Dark Precision"), so it lives on
+# bare :root. Light is the designed opt-in.
+DARK_SELECTOR = ":root"
+LIGHT_SELECTOR = ':root[data-theme="light"]'
 
-# Only these reach Swift. The aliases and the gold alternate stay in CSS:
-# the app names colours by role, and an alias would give one colour two names.
+# Only these reach Swift — the colours the popover actually draws with.
 EXPORT = [
-    ("mv-ground", "ground", "The popover's own background."),
-    ("mv-surface", "surface", "A panel sitting on the ground."),
-    ("mv-surface-2", "surface2", "A card inside a panel."),
-    ("mv-surface-3", "surface3", "The raised step: a pressed control, a filled track."),
-    ("mv-border", "border", "The default hairline."),
-    ("mv-border-soft", "borderSoft", "A divider that should barely register."),
-    ("mv-border-strong", "borderStrong", "The one hairline that has to be seen."),
-    ("mv-ink", "ink", "Headline and primary text."),
-    ("mv-text", "text", "Body text."),
-    ("mv-muted", "muted", "Secondary text and labels."),
-    ("mv-faint", "faint", "Quiet states: offline, asleep, stale, unread."),
-    ("mv-accent", "accent", "The one accent. Violet. Use it where it is earned."),
-    ("mv-accent-soft", "accentSoft", "An accent wash behind content."),
-    ("mv-accent-border", "accentBorder", "An accent hairline."),
-    ("mv-accent-contrast", "accentContrast", "Text sitting on a solid accent fill."),
-    ("mv-true", "true_", "Measured and healthy. Never a guess wearing green."),
-    ("mv-wrong", "wrong", "A real failure."),
+    ("root", "root", "True black. The deepest step, behind everything."),
+    ("ground", "ground", "The app's ground."),
+    ("panel", "panel", "The popover's own surface."),
+    ("card", "card", "A card inside the popover."),
+    ("raised", "raised", "The raised step: a pressed control, a filled track."),
+    ("line", "line", "A divider that should barely register."),
+    ("line2", "line2", "The default hairline."),
+    ("line3", "line3", "The one hairline that has to be seen."),
+    ("ink", "ink", "Headline and primary text."),
+    ("ink2", "ink2", "Body text."),
+    ("ink3", "ink3", "Secondary text and labels."),
+    ("ink4", "ink4", "Quiet states: offline, asleep, stale, nothing to report."),
+    ("gold", "gold", "The attention colour. Where the eye is meant to go."),
+    ("gold-line", "goldLine", "A gold hairline."),
+    ("silver", "silver", "The machine's own colour: hardware readouts."),
+    ("silver-line", "silverLine", "A silver hairline."),
+    ("agent", "agent", "Anything an agent or a remote model said or did."),
+    ("true", "true_", "Measured and healthy. Never a guess wearing green."),
+    ("amber", "amber", "Known, but stale or asleep."),
+    ("wrong", "wrong", "A real failure."),
+    ("chrome-1", "chrome1", "Machine fill, darkest stop."),
+    ("chrome-2", "chrome2", "Machine fill, middle stop."),
+    ("chrome-3", "chrome3", "Machine fill, lightest stop."),
 ]
 
 HEADER = """// Tokens.swift — GENERATED. Do not edit.
@@ -60,8 +67,9 @@ HEADER = """// Tokens.swift — GENERATED. Do not edit.
 // edit the CSS and rerun the generator.
 //
 // Each token is an NSColor with a dynamic provider, so it resolves against
-// the effective appearance at draw time. Light is the default; dark is the
-// override. Setting NSApp.appearance re-resolves every one of them.
+// the effective appearance at draw time. Dark is the product (DESIGN.md,
+// "Obsidian Dark Precision") and the app forces it; the light values are the
+// designed opt-in, kept so unforcing it later needs no new colour work.
 
 import AppKit
 import SwiftUI
