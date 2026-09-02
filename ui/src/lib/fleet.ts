@@ -7,9 +7,11 @@
  */
 
 export class DaemonDown extends Error {
-  constructor(readonly path: string, cause?: unknown) {
+  readonly path: string;
+  constructor(path: string, cause?: unknown) {
     super(`the daemon did not answer ${path}`);
     this.name = 'DaemonDown';
+    this.path = path;
     this.cause = cause;
   }
 }
