@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { 
-  useCockpitTelemetry, 
-  useGpuMetrics, 
-  useCockpitConfig, 
-  useUpdateCockpitConfig 
+import {
+  useCockpitTelemetry,
+  useGpuMetrics,
+  useCockpitConfig,
+  useUpdateCockpitConfig,
+  fetchToken,
 } from '../hooks/useGpuStatus';
 import { CockpitHeader } from '../components/cockpit/CockpitHeader';
 import { GpuTelemetryGrid } from '../components/cockpit/GpuTelemetryGrid';
@@ -79,13 +80,20 @@ export default function CockpitPage() {
     }
   };
 
-  // Launch Spot GPU with confirmation
+  // gpu.py's launch/terminate/deploy/sync are all gated by Depends(require_token) —
+  // every call here needs X-Pluto-Token or the backend 401s.
+  const authHeaders = async (): Promise<Record<string, string>> => {
+    const token = await fetchToken();
+    return token ? { 'X-Pluto-Token': token } : {};
+  };
+
+  // Launch Spot GPU with confirmation. gpu.py 400s without {confirm: true} in the body.
   const handleConfirmLaunch = async () => {
     setIsLaunchModalOpen(false);
     try {
       const res = await fetch('/api/gpu/launch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ confirm: true }),
       });
       const data = await res.json();
@@ -100,13 +108,13 @@ export default function CockpitPage() {
     }
   };
 
-  // Terminate Spot GPU with confirmation
+  // Terminate Spot GPU with confirmation. Same {confirm: true} requirement as launch.
   const handleConfirmTerminate = async () => {
     setIsTerminateModalOpen(false);
     try {
       const res = await fetch('/api/gpu/terminate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ confirm: true }),
       });
       const data = await res.json();
@@ -126,9 +134,13 @@ export default function CockpitPage() {
     setIsDeploying(true);
     showToast('Hot-deploying ltx_worker.py to remote GPU box...');
     try {
-      const res = await fetch('/api/gpu/deploy', { method: 'POST' });
+      const res = await fetch('/api/gpu/deploy', { method: 'POST', headers: await authHeaders() });
       const data = await res.json();
-      showToast(data.message || 'Worker deployment initiated in background');
+      if (res.ok) {
+        showToast(data.message || 'Worker deployment initiated in background');
+      } else {
+        showToast(`Deploy error: ${data.detail || data.message}`);
+      }
     } catch (err: any) {
       showToast(`Deploy error: ${err.message}`);
     } finally {
@@ -141,9 +153,13 @@ export default function CockpitPage() {
     setIsSyncing(true);
     showToast('Rsyncing /scratch/out/ to local outputs/...');
     try {
-      const res = await fetch('/api/gpu/sync', { method: 'POST' });
+      const res = await fetch('/api/gpu/sync', { method: 'POST', headers: await authHeaders() });
       const data = await res.json();
-      showToast(data.message || 'Sync complete. All videos downloaded.');
+      if (res.ok) {
+        showToast(data.message || 'Sync complete. All videos downloaded.');
+      } else {
+        showToast(`Sync error: ${data.detail || data.message}`);
+      }
     } catch (err: any) {
       showToast(`Sync error: ${err.message}`);
     } finally {
@@ -252,8 +268,10 @@ export default function CockpitPage() {
       </div>
 
       {/* 4. Remote Streaming Terminal (Fullscreen, Clear, Font Scaling) */}
-      <WebSshTerminalView 
-        wsUrl="ws://127.0.0.1:8088/api/gpu/inspect/shell" 
+      {/* Relative path: WebSshTerminalView derives ws:// vs wss:// and host from window.location.
+          A hardcoded ws://127.0.0.1:8088 only works on one specific dev port and breaks in prod. */}
+      <WebSshTerminalView
+        wsUrl="/api/gpu/inspect/shell"
         streamUrl="/api/gpu/logs/stream"
       />
 

@@ -1,35 +1,71 @@
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./ui.css";
+
+/* Dark is keyed to the data-theme attribute rather than a .dark class, so the
+   same three-state toggle drives Tailwind utilities and plain CSS alike. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Non-inline on purpose. `@theme inline` resolves each value at build time, so
+   bg-surface would be frozen at whatever light mode happened to be and the
+   toggle would silently stop working. Non-inline emits a real custom property
+   that points at ours, so switching a theme switches every utility with it. */
+@theme {
+  --color-ground: var(--app-ground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-raised: var(--surface-raised);
+  --color-raised-hover: var(--surface-raised-hover);
+  --color-inset: var(--surface-inset);
+  --color-strong: var(--surface-strong);
+  --color-canvas: var(--canvas-ground);
+
+  --color-line-100: var(--border-100);
+  --color-line-200: var(--border-200);
+  --color-line-300: var(--border-300);
+  --color-line-400: var(--border-400);
+  --color-line-500: var(--border-500);
+
+  --color-ink-300: var(--text-300);
+  --color-ink-500: var(--text-500);
+  --color-ink-700: var(--text-700);
+  --color-ink-900: var(--text-900);
+  --color-ink: var(--text-1000);
+
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border: var(--accent-border);
+
+  /* The only three colours in the system. Truth, error, and the agent. */
+  --color-verify: var(--verify);
+  --color-verify-soft: var(--verify-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-agent: var(--agent);
+  --color-agent-soft: var(--agent-soft);
+  --color-agent-border: var(--agent-border);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-1: var(--radius-1);
+  --radius-2: var(--radius-2);
+  --radius-3: var(--radius-3);
+  --radius-4: var(--radius-4);
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --ease-drawer: var(--ease-drawer);
+}
 
 @layer base {
-  :root {
-    --bg-root: #000000;
-    --bg-ground: #09090b;
-    --bg-panel: #111114;
-    --bg-card: #18181b;
-    --bg-raised: #222226;
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-medium: rgba(255, 255, 255, 0.14);
-    --border-highlight: rgba(255, 255, 255, 0.24);
-    --text-primary: #fafafa;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
-    --text-dim: #52525b;
-    --accent-emerald: #10b981;
-    --accent-cyan: #06b6d4;
-    --accent-purple: #a855f7;
-    --accent-amber: #f59e0b;
-    --accent-rose: #f43f5e;
-  }
-
   body {
-    background-color: #000000;
-    color: #fafafa;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--app-ground);
+    color: var(--text-900);
+    font-family: var(--font-sans);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
-
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
+  code, pre, .font-mono { font-family: var(--font-mono); }
 }

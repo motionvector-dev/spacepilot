@@ -21,22 +21,13 @@ import {
   useSkyFailover, 
   useSkySchedule 
 } from '../../hooks/useGpuStatus';
-import type { SkyCloudArbitrageItem } from '../../types/api';
-
-const DEFAULT_CLOUDS: SkyCloudArbitrageItem[] = [
-  { name: 'Lambda Cloud', provider: 'lambda', accelerator: 'NVIDIA L40S', vram_gb: 48, spot_price_usd: 0.72, ondemand_price_usd: 1.89, preemption_risk: 'very-low', preemption_rate_pct: 1.2, is_cheapest: true },
-  { name: 'AWS EC2 Spot', provider: 'aws', accelerator: 'NVIDIA L40S (g6e)', vram_gb: 48, spot_price_usd: 0.75, ondemand_price_usd: 2.15, preemption_risk: 'low', preemption_rate_pct: 3.4 },
-  { name: 'RunPod Community', provider: 'runpod', accelerator: 'RTX 4090 24GB', vram_gb: 24, spot_price_usd: 0.39, ondemand_price_usd: 0.79, preemption_risk: 'medium', preemption_rate_pct: 7.8 },
-  { name: 'Vast.ai Secure', provider: 'vastai', accelerator: 'NVIDIA A100-80GB', vram_gb: 80, spot_price_usd: 1.15, ondemand_price_usd: 3.40, preemption_risk: 'low', preemption_rate_pct: 2.9 },
-  { name: 'CoreWeave Cloud', provider: 'coreweave', accelerator: 'NVIDIA H100 SXM5', vram_gb: 80, spot_price_usd: 2.45, ondemand_price_usd: 4.85, preemption_risk: 'very-low', preemption_rate_pct: 0.8 },
-  { name: 'FluidStack Spot', provider: 'fluidstack', accelerator: 'NVIDIA A10G', vram_gb: 24, spot_price_usd: 0.45, ondemand_price_usd: 1.20, preemption_risk: 'low', preemption_rate_pct: 4.1 },
-];
+import type { SkyCloudArbitrageItem, SkyYamlResponse } from '../../types/api';
 
 export function MultiCloudProviderHub() {
   const { data: config } = useCockpitConfig();
   const updateConfigMutation = useUpdateCockpitConfig();
   const { data: skyStatus } = useSkyStatus();
-  const { data: skyClouds } = useSkyClouds();
+  const { data: skyClouds, isLoading: cloudsLoading, error: cloudsError } = useSkyClouds();
   const failoverMutation = useSkyFailover();
   const scheduleMutation = useSkySchedule();
 
@@ -51,14 +42,17 @@ export function MultiCloudProviderHub() {
   const [showKey, setShowKey] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [routingProvider, setRoutingProvider] = useState<string | null>(null);
-  
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [failoverError, setFailoverError] = useState<string | null>(null);
+
   // Modals
   const [showYamlModal, setShowYamlModal] = useState(false);
   const [yamlContent, setYamlContent] = useState('');
   const [yamlLoading, setYamlLoading] = useState(false);
+  const [yamlError, setYamlError] = useState<string | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-  const displayClouds = skyClouds && skyClouds.length > 0 ? skyClouds : DEFAULT_CLOUDS;
+  const clouds = skyClouds ?? [];
 
   const handleSaveConfig = async () => {
     try {
@@ -72,16 +66,22 @@ export function MultiCloudProviderHub() {
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 2500);
     } catch {
-      // ignore
+      // surfaced via updateConfigMutation.isError below
     }
   };
 
   const handleTriggerFailover = async () => {
-    await failoverMutation.mutateAsync('Manual preemption trigger / cloud arbitrage rebalance');
+    setFailoverError(null);
+    try {
+      await failoverMutation.mutateAsync('Manual preemption trigger / cloud arbitrage rebalance');
+    } catch (err) {
+      setFailoverError(err instanceof Error ? err.message : 'Failover failed');
+    }
   };
 
   const handleRouteSpot = async (cloud: SkyCloudArbitrageItem) => {
     setRoutingProvider(cloud.provider);
+    setRouteError(null);
     try {
       await scheduleMutation.mutateAsync({
         task_name: `spacepilot-${cloud.provider}-worker`,
@@ -89,6 +89,8 @@ export function MultiCloudProviderHub() {
         accelerator: cloud.accelerator,
         use_spot: true,
       });
+    } catch (err) {
+      setRouteError(err instanceof Error ? err.message : `Failed to route ${cloud.name}`);
     } finally {
       setTimeout(() => setRoutingProvider(null), 1500);
     }
@@ -97,38 +99,18 @@ export function MultiCloudProviderHub() {
   const handleOpenYaml = async () => {
     setShowYamlModal(true);
     setYamlLoading(true);
+    setYamlContent('');
+    setYamlError(null);
     try {
+      // GET /api/sky/yaml carries no require_token dependency (gpu.py) — a
+      // read-only spec render, so no X-Pluto-Token is sent here.
       const res = await fetch('/api/sky/yaml?cloud=lambda&accelerators=L40S:1');
-      if (res.ok) {
-        const data = await res.json();
-        setYamlContent(data.yaml || '');
-      } else {
-        setYamlContent(`# SkyPilot Task Definition (infra/skypilot.yaml)
-name: spacepilot-ltx-worker
-
-resources:
-  accelerators: L40S:1
-  use_spot: true
-  spot_recovery: FAILOVER
-  any_of:
-    - cloud: lambda
-    - cloud: aws
-    - cloud: runpod
-    - cloud: coreweave
-
-envs:
-  MODEL_ID: Lightricks/LTX-Video
-  PRECISION: float8
-
-setup: |
-  pip install -U torch torchvision --index-url https://download.pytorch.org/whl/cu124
-  pip install diffusers transformers accelerate sentencepiece
-
-run: |
-  python3 -u /scratch/worker/ltx_worker.py --port 8000`);
-      }
-    } catch {
-      setYamlContent('# SkyPilot YAML specification loaded from cache');
+      if (!res.ok) throw new Error(`Failed to fetch SkyPilot YAML (${res.status})`);
+      const data: SkyYamlResponse = await res.json();
+      if (!data.yaml) throw new Error('SkyPilot YAML response was empty');
+      setYamlContent(data.yaml);
+    } catch (err) {
+      setYamlError(err instanceof Error ? err.message : 'Failed to fetch SkyPilot YAML');
     } finally {
       setYamlLoading(false);
     }
@@ -290,14 +272,21 @@ run: |
           )}
         </div>
 
-        <button
-          onClick={handleSaveConfig}
-          disabled={updateConfigMutation.isPending}
-          className="font-sans text-xs font-semibold px-4 py-2 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
-        >
-          {updateConfigMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          <span>{savedToast ? 'Saved ✓' : 'Save Config'}</span>
-        </button>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <button
+            onClick={handleSaveConfig}
+            disabled={updateConfigMutation.isPending}
+            className="font-sans text-xs font-semibold px-4 py-2 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            {updateConfigMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            <span>{savedToast ? 'Saved ✓' : 'Save Config'}</span>
+          </button>
+          {updateConfigMutation.isError && (
+            <span className="font-mono text-[11px] text-[#f43535]">
+              {updateConfigMutation.error instanceof Error ? updateConfigMutation.error.message : 'Save failed'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 3. SkyPilot Cluster Status & Controls */}
@@ -324,6 +313,9 @@ run: |
             {failoverMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
             <span>⚡ Trigger Failover</span>
           </button>
+          {failoverError && (
+            <span className="font-mono text-[11px] text-[#f43535]">{failoverError}</span>
+          )}
 
           <button
             onClick={handleOpenYaml}
@@ -336,6 +328,9 @@ run: |
       </div>
 
       {/* 4. Live Spot Arbitrage Matrix Table */}
+      {routeError && (
+        <div className="font-mono text-[11px] text-[#f43535]">{routeError}</div>
+      )}
       <div className="overflow-x-auto border border-white/10 rounded-xl bg-[#09090b]">
         <table className="w-full border-collapse text-left font-mono text-[12px]">
           <thead>
@@ -350,43 +345,66 @@ run: |
             </tr>
           </thead>
           <tbody>
-            {displayClouds.map((cloud) => (
-              <tr 
-                key={`${cloud.provider}-${cloud.accelerator}`}
-                className="border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-colors"
-              >
-                <td className="p-3 font-semibold text-[#fafafa]">
-                  <div className="flex items-center gap-2">
-                    <span>{cloud.name}</span>
-                    {cloud.is_cheapest && (
-                      <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30">
-                        Cheapest
-                      </span>
-                    )}
+            {cloudsLoading ? (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-[#a1a1aa]">
+                  <div className="flex items-center justify-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Loading spot arbitrage matrix...</span>
                   </div>
                 </td>
-                <td className="p-3 text-[#a1a1aa]">{cloud.accelerator}</td>
-                <td className="p-3 text-[#71717a]">{cloud.vram_gb} GB</td>
-                <td className="p-3 font-bold text-[#10b981]">
-                  ${cloud.spot_price_usd.toFixed(2)}
-                </td>
-                <td className="p-3 text-[#71717a] line-through">
-                  ${cloud.ondemand_price_usd.toFixed(2)}
-                </td>
-                <td className="p-3">
-                  {getRiskBadge(cloud.preemption_risk, cloud.preemption_rate_pct)}
-                </td>
-                <td className="p-3 text-right">
-                  <button
-                    onClick={() => handleRouteSpot(cloud)}
-                    disabled={routingProvider === cloud.provider}
-                    className="font-sans text-xs font-semibold px-3 py-1 rounded bg-[#18181b] border border-white/14 text-[#fafafa] hover:bg-[#222226] hover:border-white/25 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {routingProvider === cloud.provider ? 'Routing...' : 'Route'}
-                  </button>
+              </tr>
+            ) : cloudsError ? (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-[#f43535]">
+                  {cloudsError instanceof Error ? cloudsError.message : 'Failed to load spot arbitrage matrix'}
                 </td>
               </tr>
-            ))}
+            ) : clouds.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-[#71717a]">
+                  No cloud providers reported by the arbitrage matrix.
+                </td>
+              </tr>
+            ) : (
+              clouds.map((cloud) => (
+                <tr
+                  key={`${cloud.provider}-${cloud.accelerator}`}
+                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-colors"
+                >
+                  <td className="p-3 font-semibold text-[#fafafa]">
+                    <div className="flex items-center gap-2">
+                      <span>{cloud.name}</span>
+                      {cloud.is_cheapest && (
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30">
+                          Cheapest
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3 text-[#a1a1aa]">{cloud.accelerator}</td>
+                  <td className="p-3 text-[#71717a]">{cloud.vram_gb} GB</td>
+                  <td className="p-3 font-bold text-[#10b981]">
+                    ${cloud.spot_price_usd.toFixed(2)}
+                  </td>
+                  <td className="p-3 text-[#71717a] line-through">
+                    ${cloud.ondemand_price_usd.toFixed(2)}
+                  </td>
+                  <td className="p-3">
+                    {getRiskBadge(cloud.preemption_risk, cloud.preemption_rate_pct)}
+                  </td>
+                  <td className="p-3 text-right">
+                    <button
+                      onClick={() => handleRouteSpot(cloud)}
+                      disabled={routingProvider === cloud.provider}
+                      className="font-sans text-xs font-semibold px-3 py-1 rounded bg-[#18181b] border border-white/14 text-[#fafafa] hover:bg-[#222226] hover:border-white/25 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {routingProvider === cloud.provider ? 'Routing...' : 'Route'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -416,6 +434,8 @@ run: |
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Generating SkyPilot YAML spec...</span>
                 </div>
+              ) : yamlError ? (
+                <div className="py-12 text-center text-[#f43535]">{yamlError}</div>
               ) : (
                 <pre className="whitespace-pre text-[#10b981]">{yamlContent}</pre>
               )}
@@ -430,7 +450,8 @@ run: |
                   navigator.clipboard.writeText(yamlContent);
                   setShowYamlModal(false);
                 }}
-                className="font-sans text-xs font-semibold px-4 py-1.5 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all cursor-pointer"
+                disabled={yamlLoading || !!yamlError || !yamlContent}
+                className="font-sans text-xs font-semibold px-4 py-1.5 rounded-md bg-[#fafafa] text-[#09090b] hover:bg-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Copy YAML
               </button>

@@ -30,12 +30,18 @@ interface PromptScriptStepProps {
   detectedAspect: string | null;
   onImageSelected: (file: File) => void;
   onImageRemoved: () => void;
+  // Called once the server has accepted the upload, with the resolved server-side
+  // path (assets.py's `image_path`) that /api/generate actually needs as image_path.
+  onImageUploaded?: (imagePath: string) => void;
+  onImageUploadError?: (message: string) => void;
   lastImagePath: string | null;
   lastImageUrl: string | null;
   lastImageDims: { width: number; height: number } | null;
   detectedAspectEnd: string | null;
   onLastImageSelected: (file: File) => void;
   onLastImageRemoved: () => void;
+  onLastImageUploaded?: (imagePath: string) => void;
+  onLastImageUploadError?: (message: string) => void;
   setSeed?: (s: number) => void;
 }
 
@@ -73,12 +79,16 @@ export function PromptScriptStep({
   detectedAspect,
   onImageSelected,
   onImageRemoved,
+  onImageUploaded,
+  onImageUploadError,
   lastImagePath,
   lastImageUrl,
   lastImageDims,
   detectedAspectEnd,
   onLastImageSelected,
   onLastImageRemoved,
+  onLastImageUploaded,
+  onLastImageUploadError,
   setSeed,
 }: PromptScriptStepProps) {
   const [isNegativeOpen, setIsNegativeOpen] = useState(false);
@@ -132,38 +142,60 @@ export function PromptScriptStep({
     }
   };
 
+  // useUploadImage falls back to { image_path: file.name } instead of throwing when
+  // /api/upload-image responds non-2xx, so a bare-filename echo is the only signal
+  // that the "success" is actually a swallowed failure — /api/generate can never
+  // resolve a bare filename as a real path (generation.py's Path(...).exists() check).
+  const isUnresolvedUploadFallback = (resolvedPath: string, file: File) => resolvedPath === file.name;
+
+  const uploadStartImage = (file: File) => {
+    onImageSelected(file);
+    uploadImageMutation.mutate(file, {
+      onSuccess: (data) => {
+        if (isUnresolvedUploadFallback(data.image_path, file)) {
+          onImageUploadError?.('Image upload failed — the server did not store the file.');
+          return;
+        }
+        onImageUploaded?.(data.image_path);
+      },
+      onError: (err) => onImageUploadError?.(err.message),
+    });
+  };
+
+  const uploadEndImage = (file: File) => {
+    onLastImageSelected(file);
+    uploadImageMutation.mutate(file, {
+      onSuccess: (data) => {
+        if (isUnresolvedUploadFallback(data.image_path, file)) {
+          onLastImageUploadError?.('Image upload failed — the server did not store the file.');
+          return;
+        }
+        onLastImageUploaded?.(data.image_path);
+      },
+      onError: (err) => onLastImageUploadError?.(err.message),
+    });
+  };
+
   const handleStartFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onImageSelected(file);
-      uploadImageMutation.mutate(file);
-    }
+    if (file) uploadStartImage(file);
   };
 
   const handleEndFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onLastImageSelected(file);
-      uploadImageMutation.mutate(file);
-    }
+    if (file) uploadEndImage(file);
   };
 
   const handleDropStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      onImageSelected(file);
-      uploadImageMutation.mutate(file);
-    }
+    if (file && file.type.startsWith('image/')) uploadStartImage(file);
   };
 
   const handleDropEnd = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      onLastImageSelected(file);
-      uploadImageMutation.mutate(file);
-    }
+    if (file && file.type.startsWith('image/')) uploadEndImage(file);
   };
 
   const handleRunStoryboard = async () => {

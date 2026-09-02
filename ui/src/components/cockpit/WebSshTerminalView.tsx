@@ -16,7 +16,7 @@ import {
   Radio,
   FileText
 } from 'lucide-react';
-import { useInspectAction } from '../../hooks/useGpuStatus';
+import { useInspectAction, fetchToken } from '../../hooks/useGpuStatus';
 
 interface WebSshTerminalViewProps {
   wsUrl?: string;
@@ -97,43 +97,80 @@ export function WebSshTerminalView({
       return;
     }
 
-    let ws: WebSocket;
-    try {
-      const targetUrl = wsUrl.startsWith('ws') 
-        ? wsUrl 
-        : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+    let cancelled = false;
 
-      ws = new WebSocket(targetUrl);
-      wsRef.current = ws;
+    (async () => {
+      const token = await fetchToken();
+      if (cancelled) return;
 
-      ws.onopen = () => {
-        setIsConnected(true);
-        setLines(prev => [...prev, '[CONNECTED] Remote PTY bridge established. Type commands below.']);
-      };
+      // No explicit ack for the auth frame — the first frame the backend
+      // sends back (real PTY output, or its own {"type":"error",...}) is
+      // the only proof it got past auth and didn't just 1008-close us.
+      let connected = false;
 
-      ws.onmessage = (event) => {
-        if (isPaused) return;
-        const text = typeof event.data === 'string' ? event.data : '';
-        if (text) {
+      try {
+        const targetUrl = wsUrl.startsWith('ws')
+          ? wsUrl
+          : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+
+        const ws = new WebSocket(targetUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          // gpu.py's inspect_shell_ws requires this as the first message,
+          // within 3s, or it closes with code 1008.
+          ws.send(JSON.stringify({ type: 'auth', token }));
+        };
+
+        ws.onmessage = (event) => {
+          if (isPaused) return;
+          const text = typeof event.data === 'string' ? event.data : '';
+          if (!text) return;
+
+          let errorMessage: string | null = null;
+          try {
+            const parsed = JSON.parse(text);
+            if (parsed && parsed.type === 'error') errorMessage = parsed.message || 'Remote error';
+          } catch {
+            // not JSON: raw PTY bytes
+          }
+
+          if (errorMessage) {
+            setLines(prev => [...prev.slice(-400), `[ERROR] ${errorMessage}`]);
+            return;
+          }
+
+          if (!connected) {
+            connected = true;
+            setIsConnected(true);
+            setLines(prev => [...prev.slice(-400), '[CONNECTED] Remote PTY bridge established. Type commands below.']);
+          }
+
           const splitLines = text.split('\n');
           setLines(prev => [...prev.slice(-400), ...splitLines]);
-        }
-      };
+        };
 
-      ws.onerror = () => {
-        setIsConnected(false);
-        setLines(prev => [...prev, '[ERROR] WebSocket connection error. Backend PTY unreachable.']);
-      };
+        ws.onerror = () => {
+          setIsConnected(false);
+          setLines(prev => [...prev, '[ERROR] WebSocket connection error. Backend PTY unreachable.']);
+        };
 
-      ws.onclose = () => {
+        ws.onclose = (event) => {
+          setIsConnected(false);
+          setLines(prev => [
+            ...prev,
+            event.code === 1008
+              ? '[ERROR] Authentication rejected by backend PTY bridge.'
+              : '[DISCONNECTED] PTY bridge closed.',
+          ]);
+        };
+      } catch {
         setIsConnected(false);
-        setLines(prev => [...prev, '[DISCONNECTED] PTY bridge closed.']);
-      };
-    } catch {
-      setIsConnected(false);
-    }
+      }
+    })();
 
     return () => {
+      cancelled = true;
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;

@@ -6,12 +6,13 @@ import { ModelEngineStep } from '../components/create/ModelEngineStep';
 import { AudioVoiceStep } from '../components/create/AudioVoiceStep';
 import { TakesExplorationGrid, type TakeItem } from '../components/create/TakesExplorationGrid';
 import { useGenerateVideo, useJobStatus } from '../hooks/useGenerate';
-import { 
-  Loader2, 
-  Play, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Grid2X2, 
+import type { GenerateRequest } from '../types/api';
+import {
+  Loader2,
+  Play,
+  AlertTriangle,
+  CheckCircle2,
+  Grid2X2,
   Info,
   Sparkles,
   ArrowRight
@@ -47,6 +48,31 @@ function getClosestAspect(w: number, h: number): { aspect: string; label: string
   return { aspect: '2.35:1', label: '2.35:1 Cinema' };
 }
 
+// GET /api/jobs/{id} returns the worker's raw meta JSON, not the JobResult shape
+// declared in types/api.ts (that type only reflects the takes>1 grouped response).
+// Read what the backend actually writes (generate.py / engines.py `meta` dicts).
+interface JobMeta {
+  status?: 'queued' | 'processing' | 'completed' | 'failed';
+  error?: string;
+  seed?: number;
+  width?: number;
+  height?: number;
+  seconds?: number;
+  duration_sec?: number;
+  prompt?: string;
+}
+
+// /api/generate returns {job_id, meta, patch} for a single take, or
+// {jobs: [{job_id, meta, patch}, ...], take_group_id} when takes > 1 — never both.
+interface DispatchResponse {
+  status: string;
+  job_id?: string;
+  jobs?: Array<{ job_id: string }>;
+}
+
+const MAX_TRACKED_TAKES = 4;
+const RENDER_TIMEOUT_MS = 60_000;
+
 export default function CreatePage() {
   const [searchParams] = useSearchParams();
   const extendId = searchParams.get('extend_id');
@@ -73,11 +99,15 @@ export default function CreatePage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [detectedAspect, setDetectedAspect] = useState<string | null>(null);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   const [lastImagePath, setLastImagePath] = useState<string | null>(null);
   const [lastImageUrl, setLastImageUrl] = useState<string | null>(null);
   const [lastImageDims, setLastImageDims] = useState<{ width: number; height: number } | null>(null);
   const [detectedAspectEnd, setDetectedAspectEnd] = useState<string | null>(null);
+  const [isLastImageUploading, setIsLastImageUploading] = useState(false);
+  const [lastImageUploadError, setLastImageUploadError] = useState<string | null>(null);
 
   // 5. Engine & Compute State
   const [selectedEngine, setSelectedEngine] = useState('ltx-2.5');
@@ -101,13 +131,46 @@ export default function CreatePage() {
   const [isDiffExpanded, setIsDiffExpanded] = useState(true);
 
   // 9. Job Status & Generation Pipeline State
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generationPhase, setGenerationPhase] = useState('Queued');
-  const [localTakes, setLocalTakes] = useState<TakeItem[] | undefined>(undefined);
+  const [activeJobIds, setActiveJobIds] = useState<string[]>([]);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [dispatchWarning, setDispatchWarning] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
 
   const generateMutation = useGenerateVideo();
-  const { data: jobData } = useJobStatus(activeJobId);
+
+  // Fixed number of hook calls (Rules of Hooks) covering the largest take batch
+  // the UI offers (4). Unused slots pass null, which useJobStatus treats as disabled.
+  const jobStatus0 = useJobStatus(activeJobIds[0] ?? null);
+  const jobStatus1 = useJobStatus(activeJobIds[1] ?? null);
+  const jobStatus2 = useJobStatus(activeJobIds[2] ?? null);
+  const jobStatus3 = useJobStatus(activeJobIds[3] ?? null);
+  const jobQueries = [jobStatus0, jobStatus1, jobStatus2, jobStatus3].slice(0, activeJobIds.length);
+
+  const hasActiveJobs = activeJobIds.length > 0;
+  const isSettled = (status?: string) => status === 'completed' || status === 'failed';
+  const allSettled = hasActiveJobs && jobQueries.every((q) => isSettled((q.data as JobMeta | undefined)?.status));
+  const failedQueryIndex = jobQueries.findIndex((q) => (q.data as JobMeta | undefined)?.status === 'failed');
+  const failedJobMeta = failedQueryIndex >= 0 ? (jobQueries[failedQueryIndex].data as JobMeta) : null;
+  const settledCount = jobQueries.filter((q) => isSettled((q.data as JobMeta | undefined)?.status)).length;
+
+  const isGenerating = generateMutation.isPending || (hasActiveJobs && !allSettled && !timedOut);
+
+  // Render timeout mirrors the vanilla studio.js pollJob contract: 60s of no
+  // settlement is reported as a timeout, never silently retried as success.
+  useEffect(() => {
+    if (!hasActiveJobs) return;
+    setTimedOut(false);
+    const timer = setTimeout(() => setTimedOut(true), RENDER_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeJobIds.join(',')]);
+
+  const combinedError =
+    renderError ||
+    (failedJobMeta ? failedJobMeta.error || 'Render failed' : null) ||
+    (hasActiveJobs && !allSettled && timedOut ? 'Timed out waiting for the render' : null) ||
+    imageUploadError ||
+    lastImageUploadError;
 
   // Handle extension mode when URL parameter `extend_id` is present
   useEffect(() => {
@@ -124,8 +187,11 @@ export default function CreatePage() {
     }
   }, [extendId]);
 
-  // Handle Keyframe 1 Image Selection
+  // Handle Keyframe 1 Image Selection — local preview only. The real, generate-ready
+  // image_path arrives via onImageUploaded once PromptScriptStep's upload completes.
   const handleImageSelected = (file: File) => {
+    setIsImageUploading(true);
+    setImageUploadError(null);
     setImagePath(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -145,15 +211,33 @@ export default function CreatePage() {
     reader.readAsDataURL(file);
   };
 
+  const handleImageUploaded = (serverPath: string) => {
+    setImagePath(serverPath);
+    setImageUploadError(null);
+    setIsImageUploading(false);
+  };
+
+  const handleImageUploadError = (message: string) => {
+    // Do not leave a bare filename behind as image_path — the backend can't
+    // resolve it, and generation would silently fall through to text-to-video.
+    setImagePath(null);
+    setImageUploadError(message);
+    setIsImageUploading(false);
+  };
+
   const handleImageRemoved = () => {
     setImagePath(null);
     setImageUrl(null);
     setImageDims(null);
     setDetectedAspect(null);
+    setIsImageUploading(false);
+    setImageUploadError(null);
   };
 
   // Handle Keyframe 2 (End Keyframe) Image Selection
   const handleLastImageSelected = (file: File) => {
+    setIsLastImageUploading(true);
+    setLastImageUploadError(null);
     setLastImagePath(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -173,11 +257,25 @@ export default function CreatePage() {
     reader.readAsDataURL(file);
   };
 
+  const handleLastImageUploaded = (serverPath: string) => {
+    setLastImagePath(serverPath);
+    setLastImageUploadError(null);
+    setIsLastImageUploading(false);
+  };
+
+  const handleLastImageUploadError = (message: string) => {
+    setLastImagePath(null);
+    setLastImageUploadError(message);
+    setIsLastImageUploading(false);
+  };
+
   const handleLastImageRemoved = () => {
     setLastImagePath(null);
     setLastImageUrl(null);
     setLastImageDims(null);
     setDetectedAspectEnd(null);
+    setIsLastImageUploading(false);
+    setLastImageUploadError(null);
   };
 
   // Compute resolution
@@ -190,8 +288,8 @@ export default function CreatePage() {
 
   // Compute spot quote badge
   const isLocal = computeTarget === 'local' || (computeTarget === 'auto' && engineQuality === 'draft');
-  const costBadge = isLocal 
-    ? '$0.00 · Local Compute' 
+  const costBadge = isLocal
+    ? '$0.00 · Local Compute'
     : engineQuality === 'draft' ? '~$0.01 · Spot Draft' : '~$0.04 · Spot Compute (L40S)';
   const computeQuote = isLocal
     ? 'Local GPU Execution ($0.00 / Zero Cloud Spend)'
@@ -201,110 +299,96 @@ export default function CreatePage() {
 
   // Handle Video Generation Trigger
   const handleGenerate = async (numTakes = 1) => {
-    setGenerationProgress(5);
-    setGenerationPhase('Phase 1: Queued (0%)');
-    setLocalTakes(undefined);
+    setRenderError(null);
+    setDispatchWarning(null);
+    setActiveJobIds([]);
 
     const isDual = keyframeMode === 'dual';
 
+    // engine_id is what /api/generate/multi-engine actually reads (engines.py:18);
+    // GenerateRequest in types/api.ts still calls this field `engine`, which the
+    // backend ignores, so it's cast here rather than sent under the wrong key.
+    const payload: GenerateRequest & { engine_id: string } = {
+      prompt,
+      negative_prompt: negativePrompt || undefined,
+      engine_id: selectedEngine,
+      width,
+      height,
+      seconds: duration,
+      fps,
+      stg_scale: stg,
+      steps: engineQuality === 'draft' ? 15 : 30,
+      seed: isSeedLocked ? seed : undefined,
+      num_takes: numTakes,
+      takes: numTakes,
+      draft_mode: engineQuality === 'draft',
+      camera_pan: cameraPan !== 'static' ? cameraPan : undefined,
+      camera_tilt: cameraTilt !== 'static' ? cameraTilt : undefined,
+      camera_zoom: cameraZoom !== 'static' ? cameraZoom : undefined,
+      camera_roll: cameraRoll !== 'none' ? cameraRoll : undefined,
+      camera_intensity: cameraIntensity,
+      image_path: imagePath ?? undefined,
+      last_image_path: isDual ? (lastImagePath ?? undefined) : undefined,
+      bgm_preset: bgmBed !== 'none' ? bgmBed : undefined,
+      voice: dialogue.trim() ? voice : undefined,
+      target_lufs: ducking ? -16.0 : undefined,
+      asset_id: extendId || undefined,
+    };
+
     try {
-      const res = await generateMutation.mutateAsync({
-        prompt,
-        negative_prompt: negativePrompt || undefined,
-        engine: selectedEngine,
-        width,
-        height,
-        seconds: duration,
-        fps,
-        stg_scale: stg,
-        steps: engineQuality === 'draft' ? 15 : 30,
-        seed: isSeedLocked ? seed : undefined,
-        num_takes: numTakes,
-        takes: numTakes,
-        draft_mode: engineQuality === 'draft',
-        camera_pan: cameraPan !== 'static' ? cameraPan : undefined,
-        camera_tilt: cameraTilt !== 'static' ? cameraTilt : undefined,
-        camera_zoom: cameraZoom !== 'static' ? cameraZoom : undefined,
-        camera_roll: cameraRoll !== 'none' ? cameraRoll : undefined,
-        camera_intensity: cameraIntensity,
-        image_path: imagePath,
-        last_image_path: isDual ? lastImagePath : undefined,
-        bgm_preset: bgmBed !== 'none' ? bgmBed : undefined,
-        voice: dialogue.trim() ? voice : undefined,
-        target_lufs: ducking ? -16.0 : undefined,
-        asset_id: extendId || undefined,
-      });
+      const res = (await generateMutation.mutateAsync(payload)) as unknown as DispatchResponse;
 
-      const jobId = res.job_id || `job_${Math.random().toString(36).slice(2, 9)}`;
-      setActiveJobId(jobId);
+      const jobIds = res.jobs && res.jobs.length > 0
+        ? res.jobs.map((j) => j.job_id).filter(Boolean).slice(0, MAX_TRACKED_TAKES)
+        : res.job_id
+        ? [res.job_id]
+        : [];
 
-      // Simulate multi-phase progress pipeline
-      simulatePipelineProgress(jobId, numTakes);
-
-    } catch (err) {
-      console.warn('Dispatch failed, falling back to simulated generation:', err);
-      const mockId = `mock_${Math.random().toString(36).slice(2, 8)}`;
-      setActiveJobId(mockId);
-      simulatePipelineProgress(mockId, numTakes);
-    }
-  };
-
-  const simulatePipelineProgress = (jobId: string, numTakes: number) => {
-    // Stage 1: Queued
-    setGenerationPhase('Phase 1: Queued in dispatch engine...');
-    setGenerationProgress(10);
-
-    // Stage 2: VRAM Weights
-    setTimeout(() => {
-      setGenerationPhase('Phase 2: Staging VRAM & Weights (48GB L40S)...');
-      setGenerationProgress(25);
-    }, 1200);
-
-    // Stage 3: DiT Sampling
-    const totalSteps = engineQuality === 'draft' ? 15 : 30;
-    const stepDuration = 150;
-    for (let step = 1; step <= totalSteps; step++) {
-      setTimeout(() => {
-        const pct = Math.round(25 + (step / totalSteps) * 60);
-        setGenerationPhase(`Phase 3: DiT Sampling (Step ${step}/${totalSteps})...`);
-        setGenerationProgress(pct);
-      }, 2000 + step * stepDuration);
-    }
-
-    // Stage 4: VAE Latent Decode
-    const vaeStart = 2000 + totalSteps * stepDuration + 300;
-    setTimeout(() => {
-      setGenerationPhase('Phase 4: Decoding 3D VAE Latents & Audio Vocoder...');
-      setGenerationProgress(92);
-    }, vaeStart);
-
-    // Stage 5: Plate Ready
-    setTimeout(() => {
-      setGenerationPhase('Phase 5: Plate Ready (100%)');
-      setGenerationProgress(100);
-
-      // Generate local take objects for director exploration grid
-      const generatedTakes: TakeItem[] = [];
-      for (let i = 1; i <= numTakes; i++) {
-        const currentSeed = isSeedLocked ? seed + i - 1 : Math.floor(Math.random() * 900000) + 100000;
-        generatedTakes.push({
-          id: i,
-          seed: currentSeed,
-          video_url: `/api/media/${jobId}_take_${i}.mp4`,
-          prompt,
-          duration_sec: duration,
-          fps,
-          width,
-          height,
-        });
+      if (jobIds.length === 0) {
+        setRenderError('Generation was dispatched but the server did not return a job id.');
+        return;
       }
-      setLocalTakes(generatedTakes);
-    }, vaeStart + 1500);
+
+      setActiveJobIds(jobIds);
+
+      // /api/generate/multi-engine (tried first by useGenerateVideo) has no concept
+      // of `takes` and always queues exactly one job — surface the shortfall instead
+      // of quietly showing a 1-take result where 4 were requested.
+      if (jobIds.length < numTakes) {
+        setDispatchWarning(
+          `Requested ${numTakes} takes but the server queued ${jobIds.length}. The active engine path does not support batched takes.`
+        );
+      }
+    } catch (err) {
+      setRenderError(err instanceof Error ? err.message : 'Failed to dispatch generation job');
+    }
   };
 
-  const isGenerating = generateMutation.isPending || (activeJobId && generationProgress < 100 && (!jobData || jobData.status === 'processing' || jobData.status === 'queued'));
+  const displayedTakes: TakeItem[] | undefined = hasActiveJobs
+    ? jobQueries.reduce<TakeItem[]>((acc, q, idx) => {
+        const data = q.data as JobMeta | undefined;
+        if (data?.status === 'completed') {
+          acc.push({
+            id: idx + 1,
+            seed: data.seed ?? seed,
+            video_url: `/api/media/${activeJobIds[idx]}.mp4`,
+            prompt: data.prompt ?? prompt,
+            duration_sec: data.duration_sec ?? data.seconds ?? duration,
+            fps,
+            width: data.width ?? width,
+            height: data.height ?? height,
+          });
+        }
+        return acc;
+      }, [])
+    : undefined;
 
-  const displayedTakes = jobData?.takes && jobData.takes.length > 0 ? jobData.takes : localTakes;
+  const generationProgress = generateMutation.isPending ? 5 : hasActiveJobs ? 50 : 0;
+  const generationPhase = generateMutation.isPending
+    ? 'Dispatching request to GPU worker...'
+    : hasActiveJobs
+    ? `Rendering on GPU worker (${settledCount}/${activeJobIds.length} takes ready)...`
+    : 'Queued';
 
   // Format camera descriptor for diff inspector
   const cameraMotions: string[] = [];
@@ -312,14 +396,16 @@ export default function CreatePage() {
   if (cameraTilt !== 'static') cameraMotions.push(`Tilt ${cameraTilt.toUpperCase()}`);
   if (cameraZoom !== 'static') cameraMotions.push(`Zoom ${cameraZoom.toUpperCase()}`);
   if (cameraRoll !== 'none') cameraMotions.push(cameraRoll === 'orbit' ? 'Orbit 360°' : `Roll ${cameraRoll.toUpperCase()}`);
-  const cameraSummary = cameraMotions.length > 0 
-    ? `${cameraMotions.join(', ')} (Intensity ${cameraIntensity})` 
+  const cameraSummary = cameraMotions.length > 0
+    ? `${cameraMotions.join(', ')} (Intensity ${cameraIntensity})`
     : 'Static 3D Camera';
+
+  const isDispatchBlocked = Boolean(isGenerating) || isImageUploading || isLastImageUploading;
 
   return (
     <div className="min-h-screen bg-black text-white font-['Plus_Jakarta_Sans'] antialiased">
       <CreateWizardHeader />
-      
+
       <main className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-8">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-[26px] font-bold tracking-tight text-white/90 flex items-center gap-2.5">
@@ -335,16 +421,25 @@ export default function CreatePage() {
           </p>
         </div>
 
-        {generateMutation.isError && (
+        {combinedError && (
           <div className="bg-[#f43535]/10 border border-[#f43535]/30 rounded-xl p-4 flex items-center gap-3 text-[#f43535] text-sm animate-in fade-in">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div>
-              <span className="font-bold">Generation Error:</span> {generateMutation.error?.message || 'Failed to dispatch generation job'}
+              <span className="font-bold">Generation Error:</span> {combinedError}
             </div>
           </div>
         )}
 
-        {generationProgress === 100 && (
+        {dispatchWarning && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 text-amber-400 text-sm animate-in fade-in">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            <div>
+              <span className="font-bold">Partial Dispatch:</span> {dispatchWarning}
+            </div>
+          </div>
+        )}
+
+        {allSettled && !failedJobMeta && (
           <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl p-4 flex items-center justify-between text-[#10b981] text-sm animate-in fade-in">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 shrink-0" />
@@ -352,8 +447,8 @@ export default function CreatePage() {
                 <span className="font-bold">Plate Ready · Applied:</span> Video takes generated successfully ({width}×{height} · {fps}fps · {duration.toFixed(1)}s).
               </div>
             </div>
-            <a 
-              href={`/studio?asset_id=${activeJobId}`}
+            <a
+              href={`/studio?asset_id=${activeJobIds[0]}`}
               className="px-3 py-1.5 rounded-lg bg-emerald-500 text-black font-bold text-xs hover:bg-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <span>Open in Pro Studio</span>
@@ -365,7 +460,7 @@ export default function CreatePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left Column: Prompting, Audio, Takes Grid */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <PromptScriptStep 
+            <PromptScriptStep
               prompt={prompt}
               setPrompt={setPrompt}
               negativePrompt={negativePrompt}
@@ -380,12 +475,16 @@ export default function CreatePage() {
               detectedAspect={detectedAspect}
               onImageSelected={handleImageSelected}
               onImageRemoved={handleImageRemoved}
+              onImageUploaded={handleImageUploaded}
+              onImageUploadError={handleImageUploadError}
               lastImagePath={lastImagePath}
               lastImageUrl={lastImageUrl}
               lastImageDims={lastImageDims}
               detectedAspectEnd={detectedAspectEnd}
               onLastImageSelected={handleLastImageSelected}
               onLastImageRemoved={handleLastImageRemoved}
+              onLastImageUploaded={handleLastImageUploaded}
+              onLastImageUploadError={handleLastImageUploadError}
               setSeed={setSeed}
             />
 
@@ -543,7 +642,7 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <AudioVoiceStep 
+            <AudioVoiceStep
               dialogue={dialogue}
               setDialogue={setDialogue}
               voice={voice}
@@ -554,9 +653,9 @@ export default function CreatePage() {
               setDucking={setDucking}
             />
 
-            <TakesExplorationGrid 
-              takes={displayedTakes} 
-              isGenerating={Boolean(isGenerating)} 
+            <TakesExplorationGrid
+              takes={displayedTakes}
+              isGenerating={Boolean(isGenerating)}
               activePrompt={prompt}
               generationProgress={generationProgress}
               generationPhase={generationPhase}
@@ -566,10 +665,10 @@ export default function CreatePage() {
               }}
             />
           </div>
-          
+
           {/* Right Column: Controls, Parameters, Primary Generate */}
           <div className="lg:col-span-1 flex flex-col gap-6 sticky top-20">
-            <ModelEngineStep 
+            <ModelEngineStep
               selectedEngine={selectedEngine}
               setSelectedEngine={setSelectedEngine}
               computeTarget={computeTarget}
@@ -599,12 +698,12 @@ export default function CreatePage() {
               cameraIntensity={cameraIntensity}
               setCameraIntensity={setCameraIntensity}
             />
-            
+
             {/* Primary Generation Buttons */}
             <div className="flex flex-col gap-3">
-              <button 
+              <button
                 onClick={() => handleGenerate(1)}
-                disabled={Boolean(isGenerating)}
+                disabled={isDispatchBlocked}
                 className="w-full h-[48px] bg-white hover:bg-[#e4e4e7] text-black text-[14px] font-bold rounded-xl shadow-[0_0_24px_rgba(255,255,255,0.18)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isGenerating ? (
@@ -619,16 +718,16 @@ export default function CreatePage() {
                   </>
                 )}
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => handleGenerate(4)}
-                disabled={Boolean(isGenerating)}
+                disabled={isDispatchBlocked}
                 className="w-full h-[44px] bg-[#09090b] text-white/90 hover:text-white text-[13px] font-semibold rounded-xl border border-white/[0.14] hover:bg-[#111114] hover:border-white/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 <Grid2X2 className="w-4 h-4 text-cyan-400" />
                 <span>4-Take Director Grid (Batch 4 Seeds)</span>
               </button>
-              
+
               <div className="text-center text-[11px] font-mono text-white/40 mt-0.5">
                 Estimated Spot Compute: ~$0.04 - $0.16 (No charge on failure)
               </div>
@@ -639,4 +738,3 @@ export default function CreatePage() {
     </div>
   );
 }
-
