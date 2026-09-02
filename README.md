@@ -8,10 +8,12 @@ run `33631068854`) and reading the tree directly.
 > **"You decide what to run. SpacePilot decides how and where."**
 
 **SpacePilot** runs AI models on the machine in front of you and says honestly
-what fits before you download it. Local coding models and embeddings lead: a
-pinned MLX route on Apple Silicon, an OpenAI-compatible `/v1` surface, a fit
-verdict from the model registry, and a measurement written for every run.
-Speech, transcription and image follow. Work the machine cannot hold goes to a
+what fits before you download it. One surface, every modality: text and chat,
+embeddings, speech and transcription, image, and video. Text and embeddings
+are the newest routes — a pinned MLX route on Apple Silicon, an
+OpenAI-compatible `/v1` surface — added 2026-09-02 because AgentWorth and
+SpaceBar need them; every route gets a fit verdict from the model registry and
+a measurement written for every run. Work the machine cannot hold goes to a
 rented box. A CLI, a FastMCP tool server and a zero-build web UI (`/create`,
 `/cockpit`, `/studio`, `/oven.html`) are three windows onto one state.
 

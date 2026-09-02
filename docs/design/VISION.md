@@ -22,24 +22,31 @@ This is a grand vision and we don't build it on day one. We start small.
 
 ## Where it is today
 
-Text leads. Coding models and embeddings are the workload we run on the machine
-in front of us; everything else sits behind them.
+One surface, every modality: text and chat, embeddings, speech and
+transcription, image, upscaling, music, and video (`docs/design/CONCEPT.md`
+already names ships/docks/providers as modality-agnostic — this is that
+thesis applied). Text and embeddings are the newest routes on it, added
+2026-09-02 because AgentWorth and SpaceBar need them. Nothing is demoted;
+each modality's state is stated honestly below.
 
-- Local text runs for real: `spacepilot run text` generates through MLX-LM from a pinned Qwen snapshot, bounded and one-shot (`spacepilot/services/text_execution.py`, `spacepilot/drivers/mlx_lm_driver.py`); a GGUF route sits beside it (`spacepilot/drivers/gguf_driver.py`).
-- Embeddings arrive in this PR, on the same MLX route, with the same fit verdict and the same measurement record (`docs/design/INFERENCE-SURFACE.md`).
+- **Text** — works. `spacepilot run text` generates through MLX-LM from a pinned Qwen snapshot, bounded and one-shot (`spacepilot/services/text_execution.py`, `spacepilot/drivers/mlx_lm_driver.py`); a GGUF route sits beside it (`spacepilot/drivers/gguf_driver.py`). Also `POST /v1/chat/completions`.
+- **Embeddings** — works, added in this PR: same MLX route, `POST /v1/embeddings`, same fit verdict and measurement record (`docs/design/INFERENCE-SURFACE.md`).
+- **Image** — works, on Apple Silicon through mflux, in its own conda env.
+- **Speech and transcription** — works, through the API. (`README.md`, "What works today")
+- **Video** — mock. Every render today is an ffmpeg test pattern, not a model (`README.md`, "What does not"). The engines and routes are plumbing for the day a real render lands, not a claim that anything generates video now.
 - The CLI does real work here: `spacepilot probe`, `spacepilot models`, `spacepilot run image/speech/transcribe/text` (`spacepilot/cli.py`).
-- Image runs on Apple Silicon through mflux, in its own conda env; speech and transcription run through the API. (`README.md`, "What works today")
 - A FastMCP tool server gives agents the same actions. (`spacepilot/mcp_server.py`)
 - The web UI has four zero-build surfaces: `/create`, `/cockpit`, `/studio`, `/oven.html`. (`README.md`, architecture diagram)
 - Every endpoint that spends compute or money needs a token — `require_token`, checked by `test_compute_endpoints_all_require_the_token`. Read-only routes stay open. (`AGENTS.md`, Conventions)
 
 ### Dock workloads
 
-Video is a dock workload: real when it runs on a rented GPU end to end, mock
-until then. Today every render is an ffmpeg test pattern, not a model
-(`README.md`, "What does not"). The engines and routes are plumbing for the day
-a dock runs them, not a claim that anything generates video now. The product
-does not lead with video, and no page should imply it does.
+A dock is a rented machine — RunPod, Modal, a GPU by the hour — one of the
+three places any modality's workload can run (`docs/design/CONCEPT.md`).
+Heavy work runs where it fits, local or rented; that's a placement decision
+per job, not a statement about which modality matters. Video today runs
+nowhere for real, so its engines and routes are plumbing for the day a dock
+runs them end to end.
 
 ## Where it goes next
 

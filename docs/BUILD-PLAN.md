@@ -10,11 +10,14 @@ landed this doc. Two things changed underneath it since it was written:
 
 1. **`spacepilot/pluto` was flattened to `spacepilot/`** (#101). Every `pluto/`
    path below is fixed in place to its current location.
-2. **The product pivoted**: local coding models and embeddings lead now; video
-   is a dock workload, not the near-term focus (`docs/design/VISION.md`,
-   `docs/design/CONCEPT.md`). That changes *priority*, not the honesty rule —
-   a route that fabricates success is still a bug regardless of whether video
-   is this quarter's focus. **PR #111 merged 2026-09-02**, landing an
+2. **Text and embeddings routes added**: `/v1/chat/completions` and
+   `/v1/embeddings` landed 2026-09-02, on the same surface as image, speech,
+   transcription, and (mock) video (`docs/design/VISION.md`,
+   `docs/design/CONCEPT.md`) — needed by AgentWorth and SpaceBar, not a
+   demotion of anything else. Video engines remain mock until a real render
+   lands; that's an honesty rule, not a priority call, and it doesn't change
+   regardless of which modality this quarter's work touches. **PR #111 merged
+   2026-09-02**, landing an
    OpenAI-compatible `/v1` surface with fit verdicts (`docs/design/INFERENCE-SURFACE.md`)
    ahead of this plan's Phase 2 — read that doc and the shipped surface
    before starting 2.1-2.3; some of Phase 2 may already be done or need

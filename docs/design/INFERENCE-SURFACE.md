@@ -4,9 +4,11 @@
 **Written**: 2026-09-02
 **Builds on**: `docs/design/CONCEPT.md` (honesty rules), `docs/design/VISION.md`
 
-Coding models and embeddings are the lead workload. This is the HTTP surface
-they run on, the one fit verdict every surface repeats, and the record each
-call leaves behind.
+Text and embeddings are the newest routes on SpacePilot's inference surface,
+added 2026-09-02 because AgentWorth and SpaceBar need them — image, speech,
+transcription, and (mock) video already sit on the same surface. This doc is
+the HTTP surface text and embeddings run on, the one fit verdict every
+surface repeats, and the record each call leaves behind.
 
 The surface is deliberately OpenAI-shaped. Every coding agent already speaks
 it, so an existing tool points at `http://localhost:8088/v1` and works. What
