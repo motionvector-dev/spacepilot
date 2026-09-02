@@ -16,8 +16,12 @@ function readPreference(): ThemePreference {
   return 'system';
 }
 
+/** DESIGN.md ships one palette and it is black, so dark is what "no answer"
+ *  resolves to. The query asks for LIGHT rather than dark on purpose: a browser
+ *  that reports no preference at all then lands on dark instead of light.
+ *  ui/index.html runs the same test before first paint — keep the two in step. */
 function systemIsDark(): boolean {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return !window.matchMedia('(prefers-color-scheme: light)').matches;
 }
 
 /** Store the preference; apply the resolved value.
@@ -52,7 +56,7 @@ export function useTheme() {
   // after the page loaded.
   useEffect(() => {
     if (preference !== 'system') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
     const onChange = () => apply('system');
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);

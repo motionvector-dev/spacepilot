@@ -1,31 +1,37 @@
-/* SpacePilot design tokens — the one palette, type ramp and motion grammar.
+/* SpacePilot design tokens.
  *
- * Canonical names come from the product design system in
- * motionvector/studio/src/tokens.css, and the motion grammar from
- * docs/design/motion-language.md (status: approved).
+ * The palette is DESIGN.md at the repo root — spacepilot-design-system 2.5.0,
+ * "Obsidian Dark Precision". Every colour below is a value copied out of that
+ * file's `tokens.color` block, not chosen here. SpacePilot is deliberately not
+ * MotionVector: ~/code/design.md is that product's system and does not apply
+ * to this one.
  *
- * Three vocabularies existed here before this file: --bg-*/--text-* in
- * studio.css, an identical --mv-* duplicate beside it, and a private block
- * inside each page. The LEGACY ALIASES section at the bottom maps every old
- * name onto a canonical value, so 3400 lines of studio.css keep working while
- * pages migrate one at a time. Nothing has to move in a single commit.
+ * Dark is the product, not a preference. DESIGN.md gives one palette and it is
+ * black — the stated reason is colour-perception bias while grading video, so
+ * a light default would break the thing the palette exists for. Bare :root is
+ * therefore dark. A light companion exists behind [data-theme="light"] for
+ * daylight and for printing; DESIGN.md does not specify it, so those values
+ * are derived here and are the one open design question in this file.
  *
- * Geometry is deliberately untouched. Spacing, control heights and the legacy
- * radius scale keep their existing values, because rounding a 20px step onto a
- * 24px scale would shift every layout for no visual gain. This file changes
- * colour, type and motion only.
+ * The motion grammar is motionvector/studio/docs/design/motion-language.md
+ * (approved) — timings, easings, and "reduced motion zeroes distance, not
+ * time". That doc is about behaviour, not colour, so it crosses products.
+ *
+ * Names: DESIGN.md's own vocabulary (--bg-*, --border-subtle, --text-main,
+ * --accent-amber, --space-*, --height-*) is first-class. The --surface-* /
+ * --text-N00 / --border-N00 ramp is what the React components and the
+ * Tailwind @theme block consume; both sets point at the same values.
  */
 
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-variable.woff2') format('woff2');
-  font-weight: 100 900; font-style: normal; font-display: swap;
-}
+/* DESIGN.md names Plus Jakarta Sans and JetBrains Mono; ui/index.html loads
+   both. The fallbacks are system faces on purpose — if the font request fails
+   the page renders in San Francisco, not in a different product's typeface. */
 
 :root {
   /* ---------------------------------------------------------------- type */
-  --font-sans: 'Geist Variable', 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'Geist Mono Variable', 'Geist Mono', 'SF Mono', ui-monospace, Consolas, monospace;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, ui-monospace, monospace;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
   --weight-regular: 400;
   --weight-medium: 500;
 
@@ -72,95 +78,155 @@
   --h-control-primary: 34px;
   --radius-1: 4px; --radius-2: 6px; --radius-3: 8px; --radius-4: 12px;
 
-  /* ------------------------------------------- palette — light (default) */
+  /* ------------------------------- palette — DESIGN.md 2.5.0, Obsidian Dark
+     Every value in this block is copied from DESIGN.md `tokens.color`. The
+     one extension is --text-300, noted where it appears. */
+  color-scheme: dark;
+
+  /* background.root / ground / panel / card / raised */
+  --app-ground: #000000;
+  --surface: #09090b;
+  --surface-hover: #111114;
+  --surface-raised: #111114;
+  --surface-raised-hover: #18181b;
+  --surface-inset: #18181b;
+  --surface-strong: #222226;
+  --surface-glass: rgba(17, 17, 20, 0.85);
+  --surface-glass-card: rgba(24, 24, 27, 0.9);
+
+  /* border.subtle / medium / highlight / focus. DESIGN.md declares four steps
+     and this ramp has five slots, so 100 and 200 deliberately share `subtle`
+     rather than inventing a fifth value. */
+  --border-100: rgba(255, 255, 255, 0.08);
+  --border-200: rgba(255, 255, 255, 0.08);
+  --border-300: rgba(255, 255, 255, 0.14);
+  --border-400: rgba(255, 255, 255, 0.22);
+  --border-500: rgba(255, 255, 255, 0.35);
+
+  /* text.primary / secondary / muted / dim. --text-300 continues the same
+     zinc ramp one step past DESIGN.md's dimmest declared value; it is the only
+     colour here that is not in that file. */
+  --text-1000: #fafafa;
+  --text-900: #a1a1aa;
+  --text-700: #71717a;
+  --text-500: #52525b;
+  --text-300: #3f3f46;
+  --text-inverse: #09090b;
+
+  /* semantic.emerald / amber / rose. Amber is the attention colour — the one
+     that means "a threshold, a cost, or a decision" — so it is what the single
+     primary action per view is filled with. There is no fourth hue. */
+  --accent: #f59e0b;
+  --accent-contrast: #09090b;
+  --accent-soft: rgba(245, 158, 11, 0.12);
+  --accent-border: rgba(245, 158, 11, 0.32);
+
+  --verify: #10b981;  --verify-soft: rgba(16, 185, 129, 0.12);
+  --danger: #f43f5e;  --danger-soft: rgba(244, 63, 94, 0.12);
+  /* DESIGN.md has no "agent" colour. Rather than invent one, agent points at
+     the attention accent, so nothing on screen references an undeclared hue. */
+  --agent: var(--accent);
+  --agent-soft: var(--accent-soft);
+  --agent-border: var(--accent-border);
+
+  /* track colours, DESIGN.md `tokens.color.track` */
+  --track-v2: #fafafa;
+  --track-v1: #a1a1aa;
+  --track-audio: #10b981;
+  --track-playhead: #f43f5e;
+
+  --canvas-ground: #000000;
+  --focus-ring: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent-border);
+  --mark-ink: #fafafa;
+  --mark-recessive: #52525b;
+}
+
+/* The light companion. DESIGN.md does not specify one, so these values are
+   derived here: the same zinc ramp read the other way, with amber, emerald and
+   rose darkened until each clears 4.5:1 on white — the DESIGN.md values are
+   tuned for black and go illegible on paper. It is reachable only by choosing
+   Light in the toggle; nothing falls back into it, and an OS in light mode
+   does not trigger it on its own.
+   OPEN: whether SpacePilot ships a light theme at all is Saurabh's call. */
+:root[data-theme="light"], body.light-theme {
   color-scheme: light;
   --app-ground: #ffffff;
-  --surface: #f4f4f5;
-  --surface-hover: #efeff1;
-  --surface-raised: #efeff1;
-  --surface-raised-hover: #e9e9eb;
-  --surface-inset: #e9e9eb;
+  --surface: #fafafa;
+  --surface-hover: #f4f4f5;
+  --surface-raised: #f4f4f5;
+  --surface-raised-hover: #ececee;
+  --surface-inset: #ececee;
   --surface-strong: #e4e4e7;
+  --surface-glass: rgba(250, 250, 250, 0.85);
+  --surface-glass-card: rgba(244, 244, 245, 0.9);
 
-  --border-100: #f0f0f1;
-  --border-200: #ececee;
-  --border-300: #e4e4e7;
-  --border-400: #dadade;
-  --border-500: #d4d4d8;
+  --border-100: rgba(9, 9, 11, 0.06);
+  --border-200: rgba(9, 9, 11, 0.06);
+  --border-300: rgba(9, 9, 11, 0.12);
+  --border-400: rgba(9, 9, 11, 0.20);
+  --border-500: rgba(9, 9, 11, 0.32);
 
-  --text-300: #a1a1aa;
-  --text-500: #71717a;
-  --text-700: #52525b;
+  --text-1000: #09090b;
   --text-900: #3f3f46;
-  --text-1000: #111113;
+  --text-700: #52525b;
+  --text-500: #71717a;
+  --text-300: #a1a1aa;
+  --text-inverse: #fafafa;
 
-  /* There is no accent hue in this product. The one primary action per view
-     is inverted foreground: dark on light, light on dark. */
-  --accent: var(--text-1000);
-  --accent-contrast: var(--app-ground);
-  --accent-soft: rgba(17, 17, 19, .06);
-  --accent-border: rgba(17, 17, 19, .16);
+  --accent: #b45309;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(180, 83, 9, 0.10);
+  --accent-border: rgba(180, 83, 9, 0.30);
+  --verify: #047857;  --verify-soft: rgba(4, 120, 87, 0.10);
+  --danger: #be123c;  --danger-soft: rgba(190, 18, 60, 0.10);
 
-  /* Colour is spent only on things that are true, wrong, or the agent. */
-  --danger: #d93036;  --danger-soft: rgba(217, 48, 54, .09);
-  --verify: #16a34a;  --verify-soft: rgba(22, 163, 74, .10);
-  --agent: #7c6bb3;   --agent-soft: rgba(124, 107, 179, .08);
-  --agent-border: rgba(124, 107, 179, .28);
+  --track-v2: #09090b;
+  --track-v1: #52525b;
+  --track-audio: #047857;
+  --track-playhead: #be123c;
 
-  --canvas-ground: #fafafa;
-  --focus-ring: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent-border);
+  --canvas-ground: #18181b;
   --mark-ink: #09090b;
   --mark-recessive: #a1a1aa;
 }
 
-/* Dark, two ways: the system default, and an explicit choice. Both are spelled
-   out so the toggle wins in either direction. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not(body.light-theme) { color-scheme: dark; }
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --app-ground: #000000;
-    --surface: #18181b;
-    --surface-hover: #1d1d20;
-    --surface-raised: #1d1d20;
-    --surface-raised-hover: #232326;
-    --surface-inset: #232326;
-    --surface-strong: #27272a;
-    --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
-    --border-400: #333338; --border-500: #3f3f46;
-    --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
-    --text-900: #d4d4d8; --text-1000: #ffffff;
-    --accent-soft: rgba(250, 250, 250, .08);
-    --accent-border: rgba(250, 250, 250, .18);
-    --danger: #e5484d;  --danger-soft: rgba(229, 72, 77, .12);
-    --verify: #4ade80;  --verify-soft: rgba(74, 222, 128, .12);
-    --agent: #a396d6;   --agent-soft: rgba(163, 150, 214, .10);
-    --agent-border: rgba(163, 150, 214, .30);
-    --canvas-ground: #050506;
-    --mark-ink: #fafafa; --mark-recessive: #52525b;
-  }
-}
+/* An explicit Dark choice restates the default, so choosing Dark while
+   [data-theme="light"] was set actually wins. */
 :root[data-theme="dark"], body.dark-theme {
   color-scheme: dark;
   --app-ground: #000000;
-  --surface: #18181b;
-  --surface-hover: #1d1d20;
-  --surface-raised: #1d1d20;
-  --surface-raised-hover: #232326;
-  --surface-inset: #232326;
-  --surface-strong: #27272a;
-  --border-100: #131316; --border-200: #1c1c1f; --border-300: #2a2a2d;
-  --border-400: #333338; --border-500: #3f3f46;
-  --text-300: #52525b; --text-500: #71717a; --text-700: #a1a1aa;
-  --text-900: #d4d4d8; --text-1000: #ffffff;
-  --accent-soft: rgba(250, 250, 250, .08);
-  --accent-border: rgba(250, 250, 250, .18);
-  --danger: #e5484d;  --danger-soft: rgba(229, 72, 77, .12);
-  --verify: #4ade80;  --verify-soft: rgba(74, 222, 128, .12);
-  --agent: #a396d6;   --agent-soft: rgba(163, 150, 214, .10);
-  --agent-border: rgba(163, 150, 214, .30);
-  --canvas-ground: #050506;
-  --mark-ink: #fafafa; --mark-recessive: #52525b;
+  --surface: #09090b;
+  --surface-hover: #111114;
+  --surface-raised: #111114;
+  --surface-raised-hover: #18181b;
+  --surface-inset: #18181b;
+  --surface-strong: #222226;
+  --surface-glass: rgba(17, 17, 20, 0.85);
+  --surface-glass-card: rgba(24, 24, 27, 0.9);
+  --border-100: rgba(255, 255, 255, 0.08);
+  --border-200: rgba(255, 255, 255, 0.08);
+  --border-300: rgba(255, 255, 255, 0.14);
+  --border-400: rgba(255, 255, 255, 0.22);
+  --border-500: rgba(255, 255, 255, 0.35);
+  --text-1000: #fafafa;
+  --text-900: #a1a1aa;
+  --text-700: #71717a;
+  --text-500: #52525b;
+  --text-300: #3f3f46;
+  --text-inverse: #09090b;
+  --accent: #f59e0b;
+  --accent-contrast: #09090b;
+  --accent-soft: rgba(245, 158, 11, 0.12);
+  --accent-border: rgba(245, 158, 11, 0.32);
+  --verify: #10b981;  --verify-soft: rgba(16, 185, 129, 0.12);
+  --danger: #f43f5e;  --danger-soft: rgba(244, 63, 94, 0.12);
+  --track-v2: #fafafa;
+  --track-v1: #a1a1aa;
+  --track-audio: #10b981;
+  --track-playhead: #f43f5e;
+  --canvas-ground: #000000;
+  --mark-ink: #fafafa;
+  --mark-recessive: #52525b;
 }
 
 /* Reduced motion zeroes DISTANCE, not TIME. A crossfade is the accessible
@@ -183,53 +249,43 @@
 }
 
 /* =====================================================================
-   LEGACY ALIASES
-   Old names, canonical values. Delete a line only once nothing references
-   it — `grep -rn "\--bg-panel" studio/` before removing any of these.
+   DESIGN.md's own names.
+   These are not legacy — they are the vocabulary DESIGN.md 2.5.0 publishes,
+   and studio.css and the vanilla web/ pages use them directly. They point at
+   the same values as the --surface-* / --text-N00 ramp above, so a component
+   written against either set themes correctly.
    ===================================================================== */
 :root {
-  /* surfaces, in the elevation order the old names implied */
-  --bg-root:      var(--app-ground);
-  --bg-ground:    var(--surface);
-  --bg-panel:     var(--surface-raised);
-  --bg-card:      var(--surface-inset);
-  --bg-raised:    var(--surface-strong);
-  --bg-glass:     color-mix(in srgb, var(--surface) 85%, transparent);
-  --bg-glass-card: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  /* tokens.color.background */
+  --bg-root:       var(--app-ground);
+  --bg-ground:     var(--surface);
+  --bg-panel:      var(--surface-raised);
+  --bg-card:       var(--surface-inset);
+  --bg-raised:     var(--surface-strong);
+  --bg-glass:      var(--surface-glass);
+  --bg-glass-card: var(--surface-glass-card);
 
-  /* the --mv-* set was a byte-identical duplicate of the above */
-  --mv-bg:            var(--app-ground);
-  --mv-ground:        var(--surface);
-  --mv-surface:       var(--surface-raised);
-  --mv-card:          var(--surface-inset);
-  --mv-card-hover:    var(--surface-strong);
-  --mv-border:        var(--border-200);
-  --mv-border-medium: var(--border-300);
-  --mv-border-focus:  var(--border-500);
-  --mv-text:          var(--text-1000);
-  --mv-text-muted:    var(--text-700);
-  --mv-text-dim:      var(--text-500);
-  --mv-text-faint:    var(--text-300);
-
+  /* tokens.color.border */
   --border-subtle:    var(--border-200);
   --border-medium:    var(--border-300);
   --border-highlight: var(--border-400);
   --border-focus:     var(--border-500);
 
-  --text-main:  var(--text-1000);
-  --text-muted: var(--text-700);
-  --text-dim:   var(--text-500);
-  --text-faint: var(--text-300);
+  /* tokens.color.text */
+  --text-main:    var(--text-1000);
+  --text-muted:   var(--text-900);
+  --text-dim:     var(--text-700);
+  --text-faint:   var(--text-500);
 
-  /* Truth and error keep their colour. Warning does not have one in this
-     system — amber becomes neutral emphasis, so any surface that relied on
-     the hue to mean "careful" now has to say so in words. */
+  /* tokens.color.semantic. All three keep their hue: emerald is what is true,
+     rose is what is wrong, amber is what needs a decision — a cost, a
+     threshold, a machine about to start billing. */
   --accent-emerald:   var(--verify);
   --semantic-online:  var(--verify);
   --accent-rose:      var(--danger);
   --semantic-error:   var(--danger);
-  --accent-amber:     var(--text-900);
-  --semantic-warning: var(--text-900);
+  --accent-amber:     var(--accent);
+  --semantic-warning: var(--accent);
 
   --btn-primary-bg:           var(--accent);
   --btn-primary-text:         var(--accent-contrast);
@@ -243,12 +299,16 @@
   --btn-secondary-hover-bg:   var(--surface-raised-hover);
   --btn-secondary-hover-border: var(--border-400);
 
-  /* Elevation is luminance, never a shadow. Glows were the amber/emerald/rose
-     halos; with no accent hue there is nothing left for them to glow. */
-  --shadow-sm: none; --shadow-md: none;
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, .35);
-  --shadow-glow-emerald: none;
-  --shadow-glow-amber:   none;
+  /* tokens.elevation. Real shadows: on a black ground, luminance alone cannot
+     separate two adjacent panels the way it can on white. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
+  --shadow-glow-cyan:    0 0 24px rgba(56, 189, 248, 0.25);
+  --shadow-glow-emerald: 0 0 24px rgba(16, 185, 129, 0.25);
+  /* A glow is an alarm. Amber gets one because a running meter should be able
+     to shout; rose does not, because DESIGN.md declares no rose glow. */
+  --shadow-glow-amber:   0 0 24px rgba(245, 158, 11, 0.25);
   --shadow-glow-rose:    none;
 
   /* geometry, unchanged on purpose */
@@ -259,7 +319,7 @@
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px;
   --radius-full: 9999px;
   --height-xs: 24px; --height-sm: 28px; --height-md: 32px; --height-lg: 36px;
-  --height-xl: 40px; --height-2xl: 48px; --height-header: 46px;
+  --height-xl: 40px; --height-2xl: 48px; --height-header: 52px;   /* DESIGN.md header_bar */
   --height-tl-ruler: 20px; --height-tl-toolbar: 28px;
   --height-tl-track: 36px; --height-tl-footer: 160px;
 }

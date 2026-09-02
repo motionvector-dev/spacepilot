@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- DESIGN.md typography: Plus Jakarta Sans + JetBrains Mono. Self-host these
+         before the Tauri build; a local-first cockpit should not need a CDN to
+         render its own type. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
     <!-- Performance & Preconnect Optimization -->
     <link rel="preconnect" href="https://us-assets.i.posthog.com" crossorigin />
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
@@ -83,6 +90,19 @@
           autocapture: true
         });
       }
+    </script>
+    <!-- Resolve the theme before first paint. Without this the document is
+         briefly attribute-less, which leaves every Tailwind dark: utility
+         inert for a frame even though the CSS variables are already dark. -->
+    <script>
+      (function () {
+        var p = "system";
+        try { p = localStorage.getItem("pluto-theme") || "system"; } catch (e) {}
+        var resolved = p === "system"
+          ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+          : p;
+        document.documentElement.setAttribute("data-theme", resolved);
+      })();
     </script>
   </head>
   <body class="bg-black text-[#fafafa]">
