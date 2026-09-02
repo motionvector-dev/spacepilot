@@ -113,17 +113,23 @@ in the repo now:
   the honesty rules, the three words. Read this second.
 - **`docs/design/INFERENCE-SURFACE.md`** — the `/v1` routes, the one fit verdict
   every surface repeats, and what each call records.
+- **`docs/BUILD-PLAN.md`** — ground truth of what works and the phased work
+  list, verified against main with file:line evidence.
+- **`docs/DECISION-INBOX.md`** — SpacePilot's open decisions, recreated
+  2026-09-02 (#108).
 - **`docs/LOCAL-SETUP.md`** — local dev environment setup.
 - **`docs/MCP-CLIENTS.md`** — MCP client configuration.
 - **`docs/design/RUNTIME-CAPSULES.md`** — runtime capsule design.
 - **`docs/design/HARDWARE-LANDSCAPE.md`** — hardware landscape survey.
 
-The old operational docs (AWS.md, INFERENCE.md, PIPELINE-STATE.md,
-DECISION-INBOX.md) are archived at `~/code/motionvector/handoffs/` — context
-only, not current authority. Their load-bearing facts as of the archive date:
-the AWS boundary and quota live in this file above; the inference-provider
-list is Doppler-scoped (`doppler run --`, project `unfoundbox`); and nothing
-in `outputs/` was ever a real render.
+The old operational docs (AWS.md, INFERENCE.md, PIPELINE-STATE.md) are
+archived at `~/code/motionvector/handoffs/` — context only, not current
+authority. Their load-bearing facts as of the archive date: the AWS boundary
+and quota live in this file above; the inference-provider list is
+Doppler-scoped (`doppler run --`, project `unfoundbox`); and nothing in
+`outputs/` was ever a real render. DECISION-INBOX.md was archived in the same
+2026-08-24 clearing but was recreated on 2026-09-02 (#108) and is current
+again — see the pointer above.
 
 Music generation runs about 25× realtime and spins the fans. A 10s cue is
 ~4 minutes of full-tilt GPU. Ask before starting long runs.
