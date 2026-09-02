@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-02",
+ "generated": "2026-09-03",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1977,6 +1977,85 @@
      "caveats": [],
      "compromised": [],
      "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"qwen-image-edit\", \"qwen-edit\", \"qwen-edit-plus\", \"qwen-edit-2509\", \"qwen-edit-2511\", \"qwen-image-edit-2511\".\n"
+    }
+   ]
+  },
+  {
+   "id": "qwen1-5-moe",
+   "name": "Qwen1.5 MoE",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Small mixture-of-experts text model, ~2.7B active params per token out of 14.3B total, already fully cached on this Mac.",
+   "homepage": "https://huggingface.co/mlx-community/Qwen1.5-MoE-A2.7B-Chat-4bit",
+   "license": {
+    "id": "tongyi-qianwen",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/Qwen/Qwen1.5-MoE-A2.7B/blob/main/LICENSE",
+    "restrictions": [
+     "commercial use by a product or service with more than 100 million monthly active users requires a separate licence from Alibaba Cloud",
+     "output must not be used to improve any other large language model besides Tongyi Qianwen and its derivatives",
+     "governed by the laws of China; disputes go to the People's Courts in Hangzhou"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "qwen1-5-moe-a2-7b-chat-4bit",
+     "model_id": "qwen1-5-moe",
+     "name": "Qwen1.5 MoE A2.7B Chat 4-bit (MLX)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "A2.7B",
+     "precision": "4bit",
+     "repo": "mlx-community/Qwen1.5-MoE-A2.7B-Chat-4bit",
+     "files": [
+      "added_tokens.json",
+      "config.json",
+      "merges.txt",
+      "model-00001-of-00002.safetensors",
+      "model-00002-of-00002.safetensors",
+      "model.safetensors.index.json",
+      "special_tokens_map.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.json"
+     ],
+     "revision": "cf116003d120c4216cf008eba169f98b95bdf3ee",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 8514713902.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-03",
+      "note": "Sum of the ten text-inference files named above, confirmed against both the Hub API's file listing and the bytes actually on disk in this machine's cache; excludes .gitattributes and README.md.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 10125326638.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "7.93 GiB (8,514,713,902 bytes) 4-bit cached payload plus a provisional 1.5 GiB allowance for short-context KV cache, activations, and runtime overhead on this MoE (qwen2_moe, 24 layers, 60 experts, ~2.7B active params per token, 4-bit group size 64); unflown, not a measured peak or hard limit.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "tongyi-qianwen",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/Qwen/Qwen1.5-MoE-A2.7B/blob/main/LICENSE",
+      "restrictions": [
+       "commercial use by a product or service with more than 100 million monthly active users requires a separate licence from Alibaba Cloud",
+       "output must not be used to improve any other large language model besides Tongyi Qianwen and its derivatives",
+       "governed by the laws of China; disputes go to the People's Courts in Hangzhou"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
