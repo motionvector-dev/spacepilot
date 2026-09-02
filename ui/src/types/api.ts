@@ -32,6 +32,9 @@ export interface CockpitStatus {
 }
 
 export interface GpuMetrics {
+  /** false when no instance is running — a state, not an error. */
+  running?: boolean;
+  reason?: string;
   gpu_utilization_pct: number;
   vram_used_mb: number;
   vram_total_mb: number;
@@ -230,6 +233,9 @@ export interface SkyYamlResponse {
 }
 
 export interface InspectMetricsResponse {
+  /** false when no instance is running — a state, not an error. */
+  running?: boolean;
+  reason?: string;
   gpu?: {
     utilization?: string;
     memory_used?: string;

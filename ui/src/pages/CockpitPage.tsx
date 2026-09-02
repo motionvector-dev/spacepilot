@@ -13,6 +13,7 @@ import { MultiCloudProviderHub } from '../components/cockpit/MultiCloudProviderH
 import { SpotFleetSettingsCard } from '../components/cockpit/SpotFleetSettingsCard';
 import { WebSshTerminalView } from '../components/cockpit/WebSshTerminalView';
 import { ModelWeightManager } from '../components/cockpit/ModelWeightManager';
+import { RuntimeManager } from '../components/cockpit/RuntimeManager';
 import { LoRAStudioCard } from '../components/cockpit/LoRAStudioCard';
 import { InspectBoxDrawer } from '../components/cockpit/InspectBoxDrawer';
 import { LaunchConfirmationModal } from '../components/cockpit/LaunchConfirmationModal';
@@ -290,7 +291,8 @@ export default function CockpitPage() {
       <MultiCloudProviderHub />
 
       {/* 7. Host Device Compute & Model Registry */}
-      <ModelWeightManager />
+      <RuntimeManager />
+        <ModelWeightManager />
 
       {/* 8. AWS Spot Fleet Settings & Generation Defaults */}
       <SpotFleetSettingsCard />

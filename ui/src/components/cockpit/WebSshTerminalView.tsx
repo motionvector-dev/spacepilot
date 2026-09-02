@@ -42,6 +42,7 @@ export function WebSshTerminalView({
   const wsRef = useRef<WebSocket | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const inspectActionMutation = useInspectAction();
 
   // 1. SSE Remote Worker Log Stream
@@ -235,9 +236,13 @@ export function WebSshTerminalView({
   };
 
   useEffect(() => {
-    if (!isPaused) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isPaused) return;
+    // Scroll the log's own box, not the document. scrollIntoView walks up every
+    // scrollable ancestor including <html>, so each appended line dragged the
+    // whole page down to whatever sits below the terminal — the disk gauge —
+    // no matter where the reader had scrolled to.
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [lines, isPaused]);
 
   const containerClasses = isFullscreen
@@ -386,6 +391,7 @@ export function WebSshTerminalView({
       {/* Terminal Body */}
       <div
         style={{ fontSize: `${fontSize}px` }}
+        ref={logRef}
         className={`p-4 overflow-y-auto bg-ground text-ink-700 leading-relaxed select-text flex flex-col font-mono ${
           isFullscreen ? 'flex-1 h-full' : 'h-80'
         }`}

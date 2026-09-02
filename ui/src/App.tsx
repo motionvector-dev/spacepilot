@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ThemeSwitcher } from './components/ThemeSwitcher';
 import LandingPage from './pages/LandingPage';
 import StudioPage from './pages/StudioPage';
 import CreatePage from './pages/CreatePage';
@@ -7,17 +8,7 @@ import DocsPage from './pages/DocsPage';
 import BlueprintPage from './pages/BlueprintPage';
 import OvenAdminPage from './pages/OvenAdminPage';
 
-export default function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
+function page(currentPath: string) {
   if (currentPath === '/create') {
     return <CreatePage />;
   }
@@ -43,4 +34,21 @@ export default function App() {
   }
 
   return <LandingPage />;
+}
+
+export default function App() {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  return (
+    <>
+      {page(currentPath)}
+      <ThemeSwitcher />
+    </>
+  );
 }
