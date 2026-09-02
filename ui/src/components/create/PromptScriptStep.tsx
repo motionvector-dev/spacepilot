@@ -1,0 +1,677 @@
+import { useState, useRef } from 'react';
+import { useEnhancePrompt, useDecomposeStoryboard, useUploadImage } from '../../hooks/useGenerate';
+import type { StoryboardScene } from '../../types/api';
+import { 
+  Sparkles, 
+  Loader2, 
+  ChevronDown, 
+  ChevronRight, 
+  Image as ImageIcon, 
+  X, 
+  Zap, 
+  Film, 
+  AlertTriangle, 
+  Check, 
+  Layers
+} from 'lucide-react';
+
+interface PromptScriptStepProps {
+  prompt: string;
+  setPrompt: (p: string) => void;
+  negativePrompt: string;
+  setNegativePrompt: (np: string) => void;
+  aspect: string;
+  setAspect: (a: string) => void;
+  keyframeMode: 'single' | 'dual';
+  setKeyframeMode: (mode: 'single' | 'dual') => void;
+  imagePath: string | null;
+  imageUrl: string | null;
+  imageDims: { width: number; height: number } | null;
+  detectedAspect: string | null;
+  onImageSelected: (file: File) => void;
+  onImageRemoved: () => void;
+  lastImagePath: string | null;
+  lastImageUrl: string | null;
+  lastImageDims: { width: number; height: number } | null;
+  detectedAspectEnd: string | null;
+  onLastImageSelected: (file: File) => void;
+  onLastImageRemoved: () => void;
+  setSeed?: (s: number) => void;
+}
+
+const STYLE_PRESETS = [
+  { label: 'Cinematic 35mm', tokens: 'Cinematic 35mm, anamorphic lens flare, shallow depth of field, 8k photo' },
+  { label: 'Sci-Fi Noir', tokens: 'Dark sci-fi noir, high contrast, atmospheric fog, moody neon backlighting' },
+  { label: 'Hyperreal Nature', tokens: 'Hyperrealistic nature documentary, golden hour sun, macro detail, photoreal' },
+  { label: 'Retro Anime', tokens: '80s retro anime aesthetic, hand-drawn keyframes, vivid color palette' },
+  { label: 'Macro Dynamics', tokens: 'Macro extreme close-up, liquid dynamics, volumetric refraction, ultra-crisp' },
+];
+
+const NEGATIVE_PRESETS = [
+  'blurry',
+  'low quality',
+  'distorted',
+  'watermark',
+  'cartoon',
+  'bad anatomy',
+  'overexposed',
+  'grainy artifacts',
+];
+
+export function PromptScriptStep({
+  prompt,
+  setPrompt,
+  negativePrompt,
+  setNegativePrompt,
+  aspect,
+  setAspect,
+  keyframeMode,
+  setKeyframeMode,
+  imagePath,
+  imageUrl,
+  imageDims,
+  detectedAspect,
+  onImageSelected,
+  onImageRemoved,
+  lastImagePath,
+  lastImageUrl,
+  lastImageDims,
+  detectedAspectEnd,
+  onLastImageSelected,
+  onLastImageRemoved,
+  setSeed,
+}: PromptScriptStepProps) {
+  const [isNegativeOpen, setIsNegativeOpen] = useState(false);
+  const [isStoryboardOpen, setIsStoryboardOpen] = useState(false);
+
+  // Storyboard Decomposer State
+  const [storyboardScript, setStoryboardScript] = useState('');
+  const [storyboardDuration, setStoryboardDuration] = useState('60.0');
+  const [storyboardScenes, setStoryboardScenes] = useState(6);
+  const [storyboardStyle, setStoryboardStyle] = useState('Cinematic 35mm Hollywood');
+  const [decomposedScenes, setDecomposedScenes] = useState<StoryboardScene[]>([]);
+  const [lockedSeed, setLockedSeed] = useState<number | null>(null);
+
+  const startFileInputRef = useRef<HTMLInputElement>(null);
+  const endFileInputRef = useRef<HTMLInputElement>(null);
+
+  const enhanceMutation = useEnhancePrompt();
+  const decomposeMutation = useDecomposeStoryboard();
+  const uploadImageMutation = useUploadImage();
+
+  const handleEnhance = async () => {
+    if (!prompt.trim()) {
+      setPrompt('Cinematic wide tracking shot of a sleek cybernetic hovercraft gliding through misty mountain ravines at twilight, volumetric clouds, 35mm anamorphic lens');
+      return;
+    }
+    try {
+      const res = await enhanceMutation.mutateAsync(prompt);
+      if (res.enhanced_prompt) {
+        setPrompt(res.enhanced_prompt);
+      }
+    } catch {
+      setPrompt(`${prompt}, cinematic lighting, photorealistic, 8k resolution, highly detailed, atmospheric haze, 35mm photograph`);
+    }
+  };
+
+  const handleApplyStyle = (tokens: string) => {
+    const trimmed = prompt.trim();
+    if (trimmed) {
+      setPrompt(`${trimmed}, ${tokens}`);
+    } else {
+      setPrompt(tokens);
+    }
+  };
+
+  const handleApplyNegativeToken = (token: string) => {
+    const trimmed = negativePrompt.trim();
+    if (!trimmed) {
+      setNegativePrompt(token);
+    } else if (!trimmed.toLowerCase().includes(token.toLowerCase())) {
+      setNegativePrompt(`${trimmed}, ${token}`);
+    }
+  };
+
+  const handleStartFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImageSelected(file);
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleEndFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onLastImageSelected(file);
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleDropStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onImageSelected(file);
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleDropEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onLastImageSelected(file);
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleRunStoryboard = async () => {
+    const script = storyboardScript.trim() || prompt.trim();
+    if (!script) return;
+
+    try {
+      const res = await decomposeMutation.mutateAsync({
+        script,
+        target_duration_sec: parseFloat(storyboardDuration),
+        scene_count: storyboardScenes,
+        style: storyboardStyle,
+      });
+
+      if (res.scenes) {
+        setDecomposedScenes(res.scenes);
+        setLockedSeed(res.character_seed);
+      }
+    } catch {
+      // Fallback handled in mutation
+    }
+  };
+
+  const handleUseScene = (scene: StoryboardScene) => {
+    setPrompt(scene.prompt);
+    if (setSeed && scene.character_seed) {
+      setSeed(scene.character_seed);
+    }
+    setIsStoryboardOpen(false);
+  };
+
+  // Check aspect mismatch for Dual Keyframe FLF2V
+  const isAspectMismatch = keyframeMode === 'dual' && 
+    Boolean(detectedAspect && detectedAspectEnd && detectedAspect !== detectedAspectEnd);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* 1. Prompt Definition Card */}
+      <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">Prompt Definition</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (prompt.trim() && !storyboardScript.trim()) {
+                  setStoryboardScript(prompt.trim());
+                }
+                setIsStoryboardOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181b] border border-white/[0.12] text-xs font-semibold text-white/80 hover:text-white hover:border-white/30 hover:bg-[#222226] transition-all cursor-pointer"
+              title="Gemini Storyboard & Screenplay Decomposer (60s -> 6-8 Scenes)"
+            >
+              <Film className="w-3 h-3 text-cyan-400" />
+              <span>Decompose Script</span>
+            </button>
+            <button 
+              onClick={handleEnhance}
+              disabled={enhanceMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181b] border border-white/[0.14] text-xs font-semibold text-white/80 hover:text-white hover:border-white/30 hover:bg-[#222226] transition-all cursor-pointer disabled:opacity-50"
+              title="AI Prompt Expansion"
+            >
+              {enhanceMutation.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+              ) : (
+                <Sparkles className="w-3 h-3 text-purple-400" />
+              )}
+              <span>{enhanceMutation.isPending ? 'Enhancing...' : 'Enhance'}</span>
+            </button>
+          </div>
+        </div>
+
+        <textarea 
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          className="w-full h-32 p-3.5 bg-black border border-white/[0.14] rounded-lg text-[14.5px] text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all resize-y placeholder-white/30 leading-relaxed font-sans"
+          placeholder="Describe the scene with rich visual details... (e.g. Cinematic wide tracking shot of a futuristic motorcycle accelerating through neon-lit rain-slicked Tokyo streets at midnight, 35mm lens, atmospheric haze)"
+        />
+
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-2">
+            {STYLE_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() => handleApplyStyle(preset.tokens)}
+                className="px-2.5 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-[11px] font-medium text-white/70 hover:text-white transition-all whitespace-nowrap cursor-pointer"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[11px] font-mono text-white/40 whitespace-nowrap shrink-0">
+            {prompt.length} / 4000
+          </span>
+        </div>
+
+        {/* 2. Negative Prompt Collapsible Field */}
+        <div className="border-t border-white/[0.06] pt-3 flex flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsNegativeOpen(!isNegativeOpen)}
+            className="flex items-center justify-between text-left group cursor-pointer"
+          >
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-white/60 group-hover:text-white/90 transition-colors">
+              {isNegativeOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              <span>Negative Prompt (Optional Filter)</span>
+              {negativePrompt.trim() && (
+                <span className="ml-1.5 px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono text-[10px]">
+                  Active
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] font-mono text-white/40">
+              {negativePrompt.length > 0 ? `${negativePrompt.length} chars` : 'Collapsed'}
+            </span>
+          </button>
+
+          {isNegativeOpen && (
+            <div className="flex flex-col gap-2 mt-1 animate-in fade-in duration-200">
+              <textarea
+                value={negativePrompt}
+                onChange={(e) => setNegativePrompt(e.target.value)}
+                rows={2}
+                className="w-full p-2.5 bg-black border border-white/[0.12] rounded-lg text-xs text-white focus:outline-none focus:border-white/30 placeholder-white/30 font-mono"
+                placeholder="Specify unwanted elements... (e.g. blurry, low quality, distorted anatomy, cartoon, watermark, glitch)"
+              />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] font-semibold text-white/40 uppercase mr-1">Quick Filters:</span>
+                {NEGATIVE_PRESETS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleApplyNegativeToken(tag)}
+                    className="px-2 py-0.5 rounded bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] text-[10.5px] text-white/60 hover:text-white font-mono transition-colors cursor-pointer"
+                  >
+                    +{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Keyframing Mode & Dual Image Dropzones */}
+      <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-white/60" />
+            <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">Keyframe Grounding</h2>
+          </div>
+          {/* Keyframe Mode Segmented Control */}
+          <div className="flex bg-black p-0.5 rounded-lg border border-white/[0.08]">
+            <button
+              onClick={() => setKeyframeMode('single')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                keyframeMode === 'single'
+                  ? 'bg-[#18181b] text-white border border-white/[0.12] shadow-sm'
+                  : 'text-white/40 hover:text-white/80'
+              }`}
+            >
+              Single Keyframe (I2V)
+            </button>
+            <button
+              onClick={() => setKeyframeMode('dual')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                keyframeMode === 'dual'
+                  ? 'bg-[#18181b] text-white border border-white/[0.12] shadow-sm'
+                  : 'text-white/40 hover:text-white/80'
+              }`}
+            >
+              Dual Keyframe (FLF2V Morph)
+            </button>
+          </div>
+        </div>
+
+        {/* Aspect Mismatch Alert */}
+        {isAspectMismatch && (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+            <div>
+              <span className="font-bold">Aspect Ratio Mismatch:</span> Start keyframe is{' '}
+              <span className="font-mono">{detectedAspect}</span> while end keyframe is{' '}
+              <span className="font-mono">{detectedAspectEnd}</span>. FLF2V morph requires matching frame resolutions.
+            </div>
+          </div>
+        )}
+
+        <div className={`grid ${keyframeMode === 'dual' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-4`}>
+          {/* First Keyframe Dropzone */}
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+                {keyframeMode === 'dual' ? 'Start Keyframe (Frame 0)' : 'Reference Keyframe (I2V)'}
+              </span>
+              {imageDims && (
+                <span className="text-[10.5px] font-mono text-white/40">
+                  {imageDims.width}×{imageDims.height}
+                </span>
+              )}
+            </div>
+
+            <input 
+              type="file" 
+              ref={startFileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleStartFileChange}
+            />
+
+            {!imageUrl ? (
+              <div 
+                onClick={() => startFileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDropStart}
+                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/[0.12] hover:border-cyan-500/50 bg-black/40 hover:bg-black/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#111114] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-all">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-white/80 group-hover:text-white">
+                    Drop start reference image or browse
+                  </p>
+                  <p className="text-[11px] text-white/40">PNG, JPG, WebP up to 20MB</p>
+                </div>
+              </div>
+            ) : (
+              <div className="relative p-3 bg-black border border-white/[0.12] rounded-xl flex flex-col gap-2.5 group">
+                <div className="relative max-h-48 rounded-lg overflow-hidden bg-[#111114] flex items-center justify-center border border-white/[0.08]">
+                  <img 
+                    src={imageUrl} 
+                    alt="Start Keyframe" 
+                    className="max-h-48 w-full object-contain rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={onImageRemoved}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 hover:bg-rose-500/90 text-white/70 hover:text-white transition-all cursor-pointer backdrop-blur-md"
+                    title="Remove reference keyframe"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/60 bg-[#111114] px-2 py-0.5 rounded border border-white/[0.08]">
+                    <span>{imageDims ? `${imageDims.width}×${imageDims.height}` : imagePath}</span>
+                    {detectedAspect && (
+                      <>
+                        <span className="text-white/30">·</span>
+                        <span className="text-cyan-400">{detectedAspect}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {detectedAspect && (
+                    <button
+                      type="button"
+                      onClick={() => setAspect(detectedAspect)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        aspect === detectedAspect
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-[#18181b] text-white/80 hover:text-white border border-white/[0.12]'
+                      }`}
+                    >
+                      {aspect === detectedAspect ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Matched</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3 h-3 text-cyan-400" />
+                          <span>Auto-Aspect</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* End Keyframe Dropzone (FLF2V Dual Mode) */}
+          {keyframeMode === 'dual' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+                  End Keyframe (Frame End - Morph)
+                </span>
+                {lastImageDims && (
+                  <span className="text-[10.5px] font-mono text-white/40">
+                    {lastImageDims.width}×{lastImageDims.height}
+                  </span>
+                )}
+              </div>
+
+              <input 
+                type="file" 
+                ref={endFileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleEndFileChange}
+              />
+
+              {!lastImageUrl ? (
+                <div 
+                  onClick={() => endFileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropEnd}
+                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/[0.12] hover:border-purple-500/50 bg-black/40 hover:bg-black/80 rounded-xl cursor-pointer transition-all gap-2 group min-h-[140px]"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#111114] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-purple-400 group-hover:border-purple-500/30 transition-all">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-white/80 group-hover:text-white">
+                      Drop morph destination keyframe
+                    </p>
+                    <p className="text-[11px] text-white/40">FLF2V end frame target</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative p-3 bg-black border border-white/[0.12] rounded-xl flex flex-col gap-2.5 group">
+                  <div className="relative max-h-48 rounded-lg overflow-hidden bg-[#111114] flex items-center justify-center border border-white/[0.08]">
+                    <img 
+                      src={lastImageUrl} 
+                      alt="End Keyframe" 
+                      className="max-h-48 w-full object-contain rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={onLastImageRemoved}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 hover:bg-rose-500/90 text-white/70 hover:text-white transition-all cursor-pointer backdrop-blur-md"
+                      title="Remove end keyframe"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/60 bg-[#111114] px-2 py-0.5 rounded border border-white/[0.08]">
+                      <span>{lastImageDims ? `${lastImageDims.width}×${lastImageDims.height}` : lastImagePath}</span>
+                      {detectedAspectEnd && (
+                        <>
+                          <span className="text-white/30">·</span>
+                          <span className="text-purple-400">{detectedAspectEnd}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 4. Gemini Storyboard & Screenplay Decomposer Modal */}
+      {isStoryboardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-[#0e0e11] border border-white/[0.14] rounded-2xl p-6 flex flex-col gap-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                  <Film className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">Gemini Storyboard &amp; Script Decomposer</h3>
+                  <p className="text-xs text-white/50">
+                    Deconstruct full narratives into 4–8 cinematic shots with locked character seeds.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsStoryboardOpen(false)}
+                className="p-2 rounded-lg bg-[#18181b] hover:bg-[#222226] text-white/70 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider font-mono">
+                Full Narrative / Screenplay Script
+              </label>
+              <textarea
+                value={storyboardScript}
+                onChange={(e) => setStoryboardScript(e.target.value)}
+                rows={4}
+                className="w-full p-3.5 bg-black border border-white/[0.14] rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50 leading-relaxed font-sans placeholder-white/30"
+                placeholder="Paste a 60-second narrative story or script here... (e.g. A solitary cybernetic samurai wanders through rain-drenched Neo-Tokyo, discovers an ancient glowing temple hidden beneath skyscrapers, and steps through a portal of pure starlight into hyperspace.)"
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-white/60">Target Duration</label>
+                  <select
+                    value={storyboardDuration}
+                    onChange={(e) => setStoryboardDuration(e.target.value)}
+                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="30.0">30s (Short Promo)</option>
+                    <option value="45.0">45s (Fast Narrative)</option>
+                    <option value="60.0">60s (Standard Storyboard)</option>
+                    <option value="90.0">90s (Extended Short)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-white/60">Scene Count</label>
+                  <select
+                    value={storyboardScenes}
+                    onChange={(e) => setStoryboardScenes(parseInt(e.target.value, 10))}
+                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value={4}>4 Scenes (Compact)</option>
+                    <option value={6}>6 Scenes (Recommended)</option>
+                    <option value={8}>8 Scenes (Deep Directing)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-white/60">Directing Style</label>
+                  <select
+                    value={storyboardStyle}
+                    onChange={(e) => setStoryboardStyle(e.target.value)}
+                    className="bg-black border border-white/[0.14] rounded-md px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="Cinematic 35mm Hollywood">Cinematic 35mm Hollywood</option>
+                    <option value="Sci-Fi Cyberpunk Noir">Sci-Fi Cyberpunk Noir</option>
+                    <option value="Bioluminescent Nature Documentary">Nature Documentary</option>
+                    <option value="Anime Masterpiece Studio Ghibli">Anime Masterpiece</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                onClick={handleRunStoryboard}
+                disabled={decomposeMutation.isPending || (!storyboardScript.trim() && !prompt.trim())}
+                className="w-full py-2.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+              >
+                {decomposeMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <span>Deconstructing Narrative...</span>
+                  </>
+                ) : (
+                  <>
+                    <Film className="w-4 h-4" />
+                    <span>Deconstruct Narrative</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Decomposed Output Grid */}
+            {decomposedScenes.length > 0 && (
+              <div className="border-t border-white/[0.08] pt-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center font-mono text-xs">
+                  <span className="font-bold text-white">
+                    Generated Storyboard ({decomposedScenes.length} Scenes · {storyboardDuration}s Total)
+                  </span>
+                  {lockedSeed && (
+                    <span className="text-emerald-400">
+                      Locked Character Seed: #{lockedSeed}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                  {decomposedScenes.map((sc, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 bg-black/60 border border-white/[0.08] hover:border-cyan-500/40 rounded-xl flex flex-col gap-2 transition-colors"
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="font-bold text-white/90">Scene {sc.scene_idx || idx + 1} · {sc.duration_sec}s</span>
+                        <span className="px-1.5 py-0.5 rounded bg-[#18181b] text-cyan-400 border border-white/[0.06]">
+                          {sc.camera_motion || 'Dolly In'}
+                        </span>
+                      </div>
+                      <div className="font-bold text-xs text-white">{sc.title || `Shot ${idx + 1}`}</div>
+                      <p className="text-[11.5px] text-white/60 line-clamp-3 leading-relaxed">
+                        {sc.prompt}
+                      </p>
+                      <div className="pt-1 text-[10px] font-mono text-white/40 border-t border-white/[0.06] flex justify-between">
+                        <span>{sc.shot_type || 'Tracking'}</span>
+                        <span>{sc.lighting || 'Cinematic'}</span>
+                      </div>
+                      <button
+                        onClick={() => handleUseScene(sc)}
+                        className="w-full mt-1 py-1.5 rounded bg-[#18181b] hover:bg-cyan-500 hover:text-black border border-white/[0.12] text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Zap className="w-3 h-3" />
+                        <span>Use Scene in Prompt</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
