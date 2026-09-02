@@ -48,10 +48,18 @@ jobs:
         with:
           python-version: "3.11"
 
+      # -n: fail immediately if sudo needs a password rather than blocking on
+      # a tty prompt the Actions log can't show. Without it a runner account
+      # missing a NOPASSWD sudoers entry hangs here silently until
+      # timeout-minutes kills the job — that's what happened on
+      # lenovo-spacepilot 2026-09-02 (19 min of no output, then "The
+      # operation was canceled"). If this now fails with "sudo: a password is
+      # required", the fix is a NOPASSWD sudoers entry on the runner host,
+      # not a workflow change.
       - name: Install system packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          sudo -n apt-get update
+          sudo -n apt-get install -y --no-install-recommends ffmpeg libsndfile1
 
       # Install from the declared file, never a hand-typed list. Two PRs in a
       # row added a dependency, declared it correctly, and still went red here
@@ -84,8 +92,8 @@ jobs:
 
       - name: Install system packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          sudo -n apt-get update
+          sudo -n apt-get install -y --no-install-recommends ffmpeg libsndfile1
 
       - name: Install dependencies
         run: |
