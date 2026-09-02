@@ -1205,15 +1205,23 @@ def _cmd_run_transcribe(args, cfg=None) -> int:
 def _cmd_run_text(args, cfg=None) -> int:
     from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
     from spacepilot import runtimes as rt
+    from spacepilot.routes import default_variant_id
     from spacepilot.services.execution import LocalExecutionError
     from spacepilot.services.text_execution import (
         TextExecutionService, TextRequest, default_text_output,
     )
 
+    requested = getattr(args, "model", None)
+    variant_id = requested or default_variant_id("text")
+    if variant_id is None:
+        print("  No text variant is served locally; nothing to run.")
+        return 1
+    print(f"  model       {variant_id}" + ("" if requested else " (default — pass --model to pick another)"))
+
     driver = MlxLmDriver(python_bin=rt.interpreter(cfg))
     service = TextExecutionService(driver=driver)
     try:
-        plan = service.plan("text")
+        plan = service.plan("text", variant_id=variant_id)
     except (ValueError, LocalExecutionError) as exc:
         print(f"  Cannot plan run: {exc}")
         return 1
@@ -2124,8 +2132,11 @@ def main(argv: list[str] | None = None):
     run_tr.add_argument("--yes", action="store_true",
                         help="Execute after printing the plan")
     run_text = run_sub.add_parser(
-        "text", help="Generate text through the conservative pinned MLX-LM route")
+        "text", help="Generate text through a served MLX-LM text variant")
     run_text.add_argument("--prompt", required=True, help="Prompt for the model")
+    run_text.add_argument("--model", dest="model", default=None,
+                          help="Text variant id to run (default: the first "
+                               "variant mlx-lm serves; see `spacepilot models`)")
     run_text.add_argument("--output", "--out", "-o", dest="output", default=None,
                           help="Output text path (.txt)")
     run_text.add_argument("--max-tokens", type=int, default=256,

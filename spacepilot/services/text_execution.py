@@ -10,12 +10,19 @@ from typing import Any, Callable, Optional
 from spacepilot.device_probe import DeviceProfile, probe_local_device
 from spacepilot import measurements as ms
 from spacepilot.model_registry import Variant, registry
+from spacepilot.routes import default_variant_id
 from spacepilot.services.compatibility import Verdict, assess
 from spacepilot.services.execution import LocalExecutionError
 from spacepilot.services.model_catalog import catalog_manager
 from spacepilot.services.provenance import FlownSpeed, local_speeds
 
 
+# Deprecated: kept as an alias of the default served text variant for one
+# release, for any caller or test that still imports it directly. New code
+# should read `spacepilot.routes.served_variants("text")` (or pass no
+# `variant_id` to `TextExecutionService.plan`, which does the same lookup) —
+# the daemon now serves every text variant the mlx-lm runtime declares it
+# runs, not only this one.
 VARIANT_ID = "qwen3-8-27b-4bit"
 RUNTIME_ID = "mlx-lm"
 MAX_SAFE_TOKENS = 256
@@ -98,18 +105,21 @@ class TextExecutionService:
         self.system_writer = system_writer or ms.write_system
         self.contention_sampler = contention_sampler or ms.sample_contention
 
-    def plan(self, workload: str) -> TextRunPlan:
+    def plan(self, workload: str, variant_id: Optional[str] = None) -> TextRunPlan:
         if workload != "text":
             raise ValueError("unsupported workload; supported: text")
+        resolved_variant_id = variant_id or default_variant_id("text")
+        if resolved_variant_id is None:
+            raise LocalExecutionError("no text variant is served locally")
         profile = self.profile_probe()
         system = ms.system_from_profile(profile)
-        variant = registry().variant(VARIANT_ID)
-        recipe = catalog_manager.recipes.get(VARIANT_ID)
+        variant = registry().variant(resolved_variant_id)
+        recipe = catalog_manager.recipes.get(resolved_variant_id)
         if variant is None or recipe is None:
-            raise LocalExecutionError(f"exact text route {VARIANT_ID!r} is absent")
-        ready, detail = self.driver.route_status(VARIANT_ID)
+            raise LocalExecutionError(f"exact text route {resolved_variant_id!r} is absent")
+        ready, detail = self.driver.route_status(resolved_variant_id)
         speed = next((row for row in local_speeds(
-            self.measurement_loader(), system_id=system.id, variant_id=VARIANT_ID,
+            self.measurement_loader(), system_id=system.id, variant_id=resolved_variant_id,
         ) if row.metric == "tokens_per_second"), None)
         return TextRunPlan("text", system, (
             TextCandidate(variant, assess(recipe, profile), speed, ready, detail),
@@ -131,7 +141,7 @@ class TextExecutionService:
     def execute(self, plan: TextRunPlan, request: TextRequest) -> TextRunResult:
         candidate, output, before, contention_before = self._start(plan, request)
         result = self.driver.infer(
-            prompt=request.prompt, out_path=str(output), variant_id=VARIANT_ID,
+            prompt=request.prompt, out_path=str(output), variant_id=candidate.variant.id,
             max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
             temperature=request.temperature,
             messages=list(request.messages) if request.messages else None,
@@ -150,7 +160,7 @@ class TextExecutionService:
         candidate, output, before, contention_before = self._start(plan, request)
         result = None
         for event in self.driver.stream(
-            prompt=request.prompt, out_path=str(output), variant_id=VARIANT_ID,
+            prompt=request.prompt, out_path=str(output), variant_id=candidate.variant.id,
             max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
             temperature=request.temperature,
             messages=list(request.messages) if request.messages else None,
@@ -197,9 +207,10 @@ class TextExecutionService:
         contention = "solo" if contention_before == contention_after == "solo" else (
             "unknown" if "unknown" in {contention_before, contention_after} else "loaded")
         run_id = request.run_id or uuid.uuid4().hex
+        variant_id = candidate.variant.id
         self.system_writer(plan.system)
         measurement_path = self.measurement_recorder(
-            system=plan.system, model_id=VARIANT_ID, variant_id=VARIANT_ID,
+            system=plan.system, model_id=variant_id, variant_id=variant_id,
             metric="tokens_per_second", value=float(result["generation_tps"]),
             contention=contention, runtime_id=RUNTIME_ID,
             quantisation=candidate.variant.precision,
@@ -220,7 +231,7 @@ class TextExecutionService:
             note="ordinary bounded spacepilot run text success; text artifact verified",
         )
         return TextRunResult(
-            "completed", VARIANT_ID, output, resolved_revision,
+            "completed", variant_id, output, resolved_revision,
             float(result["wall_seconds"]), float(result["load_seconds"]),
             float(result["generation_tps"]), result["prompt_tokens"],
             result["generation_tokens"], float(result["peak_memory_gb"]),

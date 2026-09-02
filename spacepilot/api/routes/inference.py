@@ -52,19 +52,20 @@ def _served_variants() -> Dict[str, Any]:
 def _route_for(variant_id: str) -> Optional[str]:
     """The wired execution route for a variant, or None if there is not one.
 
-    Only two variants have one today. A variant with no route is still listed
-    by `/v1/models` — it is real, it has a fit verdict, and hiding it would
-    make the catalogue lie in the other direction — but it is refused at the
-    POST routes rather than silently redirected to a model the caller did not
-    ask for.
-    """
-    from spacepilot.services import embedding_execution, text_execution
+    Derived from the registry (`spacepilot.routes.route_for`): a variant is
+    served when its model id sits in a wired runtime's `runs:` list and its
+    backends include this machine's local backend. Every mlx-lm text and
+    embedding variant answers here, not just one hardcoded pair — see
+    `spacepilot/routes.py` for the shared rule every surface reads.
 
-    if variant_id == text_execution.VARIANT_ID:
-        return "mlx-lm"
-    if variant_id == embedding_execution.VARIANT_ID:
-        return "mlx-lm"
-    return None
+    A variant with no route is still listed by `/v1/models` — it is real, it
+    has a fit verdict, and hiding it would make the catalogue lie in the
+    other direction — but it is refused at the POST routes rather than
+    silently redirected to a model the caller did not ask for.
+    """
+    from spacepilot.routes import route_for
+
+    return route_for(variant_id)
 
 
 @router.get("/models")
@@ -184,7 +185,7 @@ def _plan_text(model_id: str, verdict):
     from spacepilot.services.text_execution import TextExecutionService
 
     service = TextExecutionService()
-    plan = service.plan("text")
+    plan = service.plan("text", variant_id=model_id)
     if plan.selected is None:
         detail = plan.candidates[0].route_detail if plan.candidates else "no candidate"
         raise _error(409, f"{model_id} is not runnable here: {detail}",
@@ -467,7 +468,7 @@ def embeddings(body: EmbeddingsRequest, _: None = Depends(require_token)):
     inputs = tuple([body.input] if isinstance(body.input, str) else body.input)
 
     service = EmbeddingExecutionService()
-    plan = service.plan()
+    plan = service.plan(variant_id=model_id)
     if plan.selected is None:
         detail = plan.candidates[0].route_detail if plan.candidates else "no candidate"
         raise _error(409, f"{model_id} is not runnable here: {detail}",

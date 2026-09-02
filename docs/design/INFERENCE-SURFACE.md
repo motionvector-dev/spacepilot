@@ -68,20 +68,34 @@ numbers only exist once generation finishes.
 ## Model id to driver
 
 A `model` value is a registry **variant id** (`qwen3-8-27b-4bit`), not a repo
-path. Resolution:
+path. Resolution is a lookup against the registry, not a hardcoded pair —
+`spacepilot/routes.py` is the one place that answers it, read by `/v1/models`,
+both POST routes, the text and embedding execution services, and `spacepilot
+run text --model`:
 
 ```
 model id ──▶ registry variant ──▶ recipe ──▶ fit_verdict
                                      │
-                                     ├─ mlx-lm driver   (metal, first choice)
-                                     └─ gguf driver     (intended fallback, not wired)
+                                     └─ spacepilot.routes.route_for(variant_id)
+                                          served when: variant.model_id is in a
+                                          WIRED runtime's `runs:` list, and the
+                                          variant declares that runtime's backend
+                                          (metal, today) ──▶ mlx-lm driver
 ```
 
-The gguf fallback is named because it is the plan, not because it exists.
+Every text and embedding variant the mlx-lm runtime's `runs:` list names is
+served this way, not one hardcoded id each — adding a model to `runs:` (with
+a matching registry entry and recipe) is enough for it to show up
+`served: true` and answer `/v1/chat/completions`, no code change needed.
+
+`WIRED_RUNTIMES` in `spacepilot/routes.py` is the guard on that: a runtime
+can declare `runs:` for a model with no execution path behind it at all —
+`llama-cpp.yaml` lists `deepseek-r1-distill-qwen`, but
 `spacepilot/drivers/gguf_driver.py` today is a screenplay decomposer with a
-fixed output shape, not a chat driver; wiring it to `/v1` is M3 work. Until
-then `/v1/models` marks every unwired variant `served: false` and the POST
-routes refuse it, rather than quietly answering with a model nobody asked for.
+fixed output shape, not a chat driver; wiring it to `/v1` is M3 work. Only
+runtimes in that list count as served, so `/v1/models` marks every unwired
+variant `served: false` and the POST routes refuse it, rather than quietly
+answering with a model nobody asked for.
 
 - Unknown id → **404**, listing what `/v1/models` would have said.
 - Known id, `wont_fit` → **409**, body carries the verdict. Never a silent
