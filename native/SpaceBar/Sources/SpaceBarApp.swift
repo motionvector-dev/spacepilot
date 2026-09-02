@@ -6,7 +6,23 @@ import Speech
 import Darwin
 
 // MARK: - SpaceBar Application Entrypoint
+
+/// The real entry point, so the bundle check runs before AppKit builds the
+/// delegate — `VoiceDuplexManager` is a stored property of `AppDelegate`, and
+/// its `init` reaches TCC. By the time `applicationDidFinishLaunching` runs,
+/// an unbundled process is already dead.
 @main
+enum SpaceBarMain {
+    static func main() {
+        if DryRunVoice.isRequested() {
+            DryRunVoice.run()
+            return
+        }
+        LaunchGuard.enforceOrExit()
+        SpaceBarApp.main()
+    }
+}
+
 struct SpaceBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -91,7 +107,18 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     private let afmManager = AppleFoundationModelManager()
     private let client = DaemonClient()
 
-    override init() {
+    /// Where permission answers come from. `.system` in the app; stubbed in
+    /// `--dry-run-voice`, which is how the denied and restricted paths get
+    /// exercised without touching the microphone.
+    let permissions: PermissionSource
+
+    /// Whether we installed a tap, so teardown does not reach for
+    /// `inputNode` on a Mac that has no input device. `AVAudioEngine.inputNode`
+    /// raises an Objective-C exception in that case, which Swift cannot catch.
+    private var tapIsInstalled = false
+
+    init(permissions: PermissionSource = .system) {
+        self.permissions = permissions
         super.init()
         speechSynthesizer.delegate = self
         startPolling()
@@ -144,9 +171,9 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     /// the authorization-status calls cross into TCC, and a SwiftUI body is
     /// evaluated far too often to be a sensible place to ask.
     func permissionGap() -> PopoverState.PermissionGap? {
-        let speech = SFSpeechRecognizer.authorizationStatus()
+        let speech = VoicePermissions.speechStatus(permissions)
         if speech == .denied || speech == .restricted { return .speechRecognition }
-        let mic = AVCaptureDevice.authorizationStatus(for: .audio)
+        let mic = VoicePermissions.microphoneStatus(permissions)
         if mic == .denied || mic == .restricted { return .microphone }
         return nil
     }
@@ -165,38 +192,40 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         case .listening, .thinking:
             stopListening()
         case .needsPermission(let gap):
+            // In a dry run there is no user and no System Settings to open.
+            guard !permissions.isStubbed else { return }
             if let url = gap.settingsURL { NSWorkspace.shared.open(url) }
         case .daemonOffline:
             Task { await refreshDaemon() }
         case .idle, .speaking, .interrupted:
-            startListening()
+            Task { await startListening() }
         }
     }
 
-    func startListening() {
-        SFSpeechRecognizer.requestAuthorization { [weak self] authStatus in
-            Task { @MainActor in
-                guard let self else { return }
-                guard authStatus == .authorized else {
-                    self.state = .needsPermission(.speechRecognition)
-                    return
-                }
-                AVCaptureDevice.requestAccess(for: .audio) { granted in
-                    Task { @MainActor in
-                        guard granted else {
-                            self.state = .needsPermission(.microphone)
-                            return
-                        }
-                        self.setupAudioGraph()
-                    }
-                }
-            }
+    /// Ask, then open the graph. Both requests go through `VoicePermissions`,
+    /// which is `nonisolated` on purpose — see the header of that file for the
+    /// SIGTRAP this shape replaces. Denied and restricted both land in
+    /// `no-mic-permission`; neither is a trap and neither is silent.
+    func startListening() async {
+        let speech = await VoicePermissions.requestSpeech(permissions)
+        guard speech == .authorized else {
+            state = .needsPermission(.speechRecognition)
+            return
         }
+        let granted = await VoicePermissions.requestMicrophone(permissions)
+        guard granted else {
+            state = .needsPermission(.microphone)
+            return
+        }
+        setupAudioGraph()
     }
 
     func stopListening() {
         if audioEngine.isRunning { audioEngine.stop() }
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if tapIsInstalled {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            tapIsInstalled = false
+        }
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -209,6 +238,21 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     }
 
     private func setupAudioGraph() {
+        // A dry run proves the permission ladder, not the audio hardware.
+        // Opening a real input device is exactly what it must not do.
+        guard !permissions.isStubbed else {
+            state = .listening
+            return
+        }
+
+        guard let recognizer = speechRecognizer else {
+            // No recogniser for this locale. Say so; do not open a microphone
+            // whose audio nothing will read.
+            state = .needsPermission(.speechRecognition)
+            print("SpaceBar: no speech recogniser for en-US on this Mac")
+            return
+        }
+
         let inputNode = audioEngine.inputNode
 
         // Voice-processing IO gives us echo cancellation, which is what makes
@@ -221,10 +265,17 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         }
 
         let hwFormat = inputNode.inputFormat(forBus: 0)
-        guard hwFormat.sampleRate > 0 else { return }
+        guard hwFormat.sampleRate > 0, hwFormat.channelCount > 0 else {
+            state = .idle
+            print("SpaceBar: no usable input format on bus 0")
+            return
+        }
 
         guard let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true),
-              let converter = AVAudioConverter(from: hwFormat, to: targetFormat) else { return }
+              let converter = AVAudioConverter(from: hwFormat, to: targetFormat) else {
+            state = .idle
+            return
+        }
 
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -233,45 +284,74 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         // Local-first is a claim we can actually keep here. Without this,
         // SFSpeechRecognizer may send audio to Apple's servers, which would
         // make the Info.plist string false and the ladder in SPACEBAR.md a lie.
-        if speechRecognizer?.supportsOnDeviceRecognition == true {
+        if recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }
         recognitionRequest = request
 
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+        recognitionTask = startRecognition(on: recognizer, request: request)
+
+        if tapIsInstalled { inputNode.removeTap(onBus: 0) }
+        installTap(
+            on: inputNode,
+            hwFormat: hwFormat,
+            targetFormat: targetFormat,
+            converter: converter,
+            request: request
+        )
+        tapIsInstalled = true
+
+        do {
+            audioEngine.prepare()
+            try audioEngine.start()
+            state = .listening
+        } catch {
+            inputNode.removeTap(onBus: 0)
+            tapIsInstalled = false
+            state = .idle
+            print("SpaceBar: audio engine — \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: The two callbacks that must not be main-actor-isolated
+    //
+    // Both of these are called off the main thread — the recognition handler on
+    // Speech's own queue, the tap on the realtime audio render thread. Written
+    // inline in a `@MainActor` method, Swift 6 infers them main-actor-isolated
+    // and emits an executor check that traps. Formed inside these `nonisolated`
+    // methods they inherit no isolation, and each hops to the main actor
+    // explicitly with a value that is already Sendable.
+
+    private nonisolated func startRecognition(
+        on recognizer: SFSpeechRecognizer,
+        request: SFSpeechAudioBufferRecognitionRequest
+    ) -> SFSpeechRecognitionTask {
+        recognizer.recognitionTask(with: request) { [weak self] result, error in
+            // `heard` is a String before the hop. The result object itself is
+            // not Sendable and must not cross.
+            let heard = result?.bestTranscription.formattedString
+            let failure = error?.localizedDescription
             Task { @MainActor in
                 guard let self else { return }
-                if let result {
-                    let heard = result.bestTranscription.formattedString
-                    self.lastHeard = heard
-
-                    // Barge-in: the user talking wins, immediately.
-                    if case .speaking = self.state, !heard.isEmpty {
-                        self.speechSynthesizer.stopSpeaking(at: .immediate)
-                        self.state = .interrupted
-                    } else if !heard.isEmpty, case .listening = self.state {
-                        // stay listening
-                    }
-
-                    self.debounceTask?.cancel()
-                    self.debounceTask = Task {
-                        try? await Task.sleep(nanoseconds: 1_200_000_000)
-                        guard !Task.isCancelled, !heard.isEmpty else { return }
-                        await self.answer(heard)
-                    }
-                }
-                if let error {
-                    print("SpaceBar: recognition — \(error.localizedDescription)")
-                }
+                if let heard { self.heard(heard) }
+                if let failure { print("SpaceBar: recognition — \(failure)") }
             }
         }
+    }
 
+    private nonisolated func installTap(
+        on inputNode: AVAudioInputNode,
+        hwFormat: AVAudioFormat,
+        targetFormat: AVAudioFormat,
+        converter: AVAudioConverter,
+        request: SFSpeechAudioBufferRecognitionRequest
+    ) {
         final class StreamState: @unchecked Sendable { var hasData = true }
 
-        inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] buffer, _ in
             let outputCapacity = AVAudioFrameCount(Double(buffer.frameLength) * 16000.0 / hwFormat.sampleRate)
-            guard let converted = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { return }
+            guard outputCapacity > 0,
+                  let converted = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { return }
 
             var convError: NSError?
             let stream = StreamState()
@@ -291,24 +371,35 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
                 guard n > 0 else { return }
                 var sum: Float = 0
                 for i in 0..<n { sum += abs(channelData[i]) }
-                let avg = sum / Float(n)
-                Task { @MainActor in self?.audioLevel = min(1.0, avg * 5.0) }
+                let level = min(1.0, (sum / Float(n)) * 5.0)
+                Task { @MainActor in self?.audioLevel = level }
             }
         }
+    }
 
-        do {
-            audioEngine.prepare()
-            try audioEngine.start()
-            state = .listening
-        } catch {
-            state = .idle
-            print("SpaceBar: audio engine — \(error.localizedDescription)")
+    /// One transcription update, on the main actor.
+    private func heard(_ text: String) {
+        lastHeard = text
+        guard !text.isEmpty else { return }
+
+        // Barge-in: the user talking wins, immediately.
+        if case .speaking = state {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+            state = .interrupted
+        }
+
+        debounceTask?.cancel()
+        debounceTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled, let self else { return }
+            await self.answer(text)
         }
     }
 
     private func answer(_ text: String) async {
-        guard SystemLanguageModel.default.isAvailable else {
-            lastSaid = "The on-device model is not available on this Mac."
+        guard case .available = SystemLanguageModel.default.availability else {
+            state = .idle
+            lastSaid = "Apple Intelligence is off, so there is no on-device model to answer with."
             speak(lastSaid)
             return
         }
@@ -332,6 +423,11 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     }
 
     private func speak(_ text: String) {
+        // A dry run must not make the Mac talk out loud.
+        guard !permissions.isStubbed else {
+            state = .speaking
+            return
+        }
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.rate = 0.52
@@ -657,10 +753,20 @@ struct SpaceBarPopoverView: View {
 // MARK: - Apple Foundation Model
 @available(macOS 15.0, *)
 actor AppleFoundationModelManager {
-    private var session: LanguageModelSession
+    /// Built on first use, not at launch.
+    ///
+    /// The old code created a `LanguageModelSession` in `init`, which ran when
+    /// `AppDelegate` allocated its `VoiceDuplexManager` — so every launch paid
+    /// for a session, including on a Mac where Apple Intelligence is switched
+    /// off and there is no model behind it. Nothing needs one until the first
+    /// question, and `answer()` has already checked availability by then.
+    private var session: LanguageModelSession?
 
-    init() {
-        self.session = LanguageModelSession(instructions: SpacePilotInstructions.system)
+    private func activeSession() -> LanguageModelSession {
+        if let session { return session }
+        let fresh = LanguageModelSession(instructions: SpacePilotInstructions.system)
+        session = fresh
+        return fresh
     }
 
     /// Telemetry is injected into the prompt, not the instructions, so the
@@ -681,7 +787,7 @@ actor AppleFoundationModelManager {
             loadedModels: daemon?.loadedModels ?? [],
             daemonReachable: daemon != nil
         )
-        let response = try await session.respond(to: "\(block)\n\n\(userText)")
+        let response = try await activeSession().respond(to: "\(block)\n\n\(userText)")
         return response.content
     }
 }
