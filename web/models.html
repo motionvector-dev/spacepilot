@@ -352,7 +352,7 @@ function ceilingFor(memBytes, backend) {
   return Math.max(0, memBytes - reserve);
 }
 
-/* The same rule as spacepilot/pluto/services/compatibility.py, which is canonical.
+/* The same rule as spacepilot/services/compatibility.py, which is canonical.
    Thresholds come from registry.json rather than being retyped here, so the two
    cannot drift apart on the numbers. */
 function assess(v, machine) {

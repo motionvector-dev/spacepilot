@@ -3,7 +3,7 @@
 Those are two different questions and the old code answered both with
 `Path(__file__).parents[2]`, which is the repo root in a checkout and
 `site-packages/` in an install. So a released wheel looked for its catalogue in
-a directory that did not exist, and `pluto measure` wrote records into
+a directory that did not exist, and `spacepilot measure` wrote records into
 site-packages, where they are invisible, unbackuped, and destroyed by the next
 `pip install --upgrade`.
 
@@ -22,7 +22,7 @@ install still sees the records that came with it and a long-lived one sees
 both.
 
 **A checkout is the exception, on purpose.** The corpus is also a git tree that
-people contribute to by opening a PR. If a contributor's `pluto measure` wrote
+people contribute to by opening a PR. If a contributor's `spacepilot measure` wrote
 into `~/Library/Application Support/` there would be nothing to commit, and the
 corpus would stop growing. So inside a checkout the writable root is the repo's
 own `spacepilot/registry/`, exactly as before.
@@ -86,7 +86,7 @@ def shipped_registry_root() -> Path:
 def checkout_root() -> Path | None:
     """The repo root when running from a source checkout, otherwise None.
 
-    Same walk `spacepilot.pluto.core.config` uses. `pyproject.toml` beside a
+    Same walk `spacepilot.core.config` uses. `pyproject.toml` beside a
     `spacepilot/` directory is what a checkout has and an installed package
     does not: `site-packages/` holds the package but never the project file.
     """

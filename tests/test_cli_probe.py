@@ -18,7 +18,7 @@ def _profile():
 
 
 class TestCliProbe(unittest.TestCase):
-    @patch("spacepilot.pluto.measurements.write_system")
+    @patch("spacepilot.measurements.write_system")
     @patch("spacepilot.device_probe.probe_local_device")
     def test_read_only_prints_id_and_writes_nothing(self, mock_probe, mock_write):
         mock_probe.return_value = _profile()
@@ -33,7 +33,7 @@ class TestCliProbe(unittest.TestCase):
         self.assertIn("not saved", text)
         mock_write.assert_not_called()
 
-    @patch("spacepilot.pluto.measurements.write_system")
+    @patch("spacepilot.measurements.write_system")
     @patch("spacepilot.device_probe.probe_local_device")
     def test_save_writes_the_record(self, mock_probe, mock_write):
         mock_probe.return_value = _profile()

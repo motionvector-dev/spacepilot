@@ -29,7 +29,7 @@ def test_spacepilot_env_names_are_canonical_with_pluto_fallback(monkeypatch):
 
 
 def test_settings_accepts_spacepilot_names_and_preserves_pluto_fallback(tmp_path, monkeypatch):
-    from spacepilot.pluto.core.config import Settings
+    from spacepilot.core.config import Settings
 
     monkeypatch.setenv("SPACEPILOT_OUTPUTS_DIR", str(tmp_path / "canonical-output"))
     monkeypatch.setenv("PLUTO_OUTPUTS_DIR", str(tmp_path / "legacy-output"))
@@ -131,7 +131,7 @@ def test_xdg_data_home_is_honoured_off_macos(tmp_path, monkeypatch):
 
 
 def test_a_checkout_writes_to_the_repo(monkeypatch):
-    """A contributor's `pluto measure` has to produce something they can commit,
+    """A contributor's `spacepilot measure` has to produce something they can commit,
     or the corpus stops growing."""
     monkeypatch.delenv("SPACEPILOT_DATA_DIR", raising=False)
     root = paths.checkout_root()
@@ -203,7 +203,7 @@ def test_recommender_cache_writes_canonical_and_reads_legacy(tmp_path, monkeypat
 
 def test_a_record_written_under_the_override_is_read_back(tmp_path, monkeypatch):
     """End to end through the measurement store, not just the path helpers."""
-    import spacepilot.pluto.measurements as ms
+    import spacepilot.measurements as ms
 
     store = tmp_path / "measurements"
     monkeypatch.setattr(ms, "MEASUREMENTS_DIR", store)

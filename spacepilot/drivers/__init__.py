@@ -1,4 +1,4 @@
-"""In-process local execution drivers for Pluto / SpacePilot."""
+"""In-process local execution drivers for SpacePilot."""
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 from spacepilot.drivers.kokoro_driver import KokoroDriver

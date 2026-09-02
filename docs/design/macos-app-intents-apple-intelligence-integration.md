@@ -24,7 +24,7 @@ This specification defines the architecture for **SpaceBar** (`spacebar.app`) to
 ├───────────────────────┼────────────────────────────────────────────────────────────────┤
 │  IPC Transport        │ Unix Domain Socket (`/tmp/spacepilot.sock`) / REST localhost   │
 ├───────────────────────┼────────────────────────────────────────────────────────────────┤
-│  SpacePilot Engines   │ Wan 2.1 Engine · mFLUX · SeedVR2 · Kokoro TTS · Pluto MCP      │
+│  SpacePilot Engines   │ Wan 2.1 Engine · mFLUX · SeedVR2 · Kokoro TTS · SpacePilot MCP      │
 └───────────────────────┴────────────────────────────────────────────────────────────────┘
 ```
 

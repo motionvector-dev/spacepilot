@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Wan2.1 Video Engine Adapter for Pluto.
+"""Wan2.1 Video Engine Adapter for SpacePilot.
 
 Implements the BaseVideoEngine interface for Wan2.1 (1.3B and 14B DiT).
 Features 3D Causal VAE architecture with temporal compression factor 4x (4k + 1 frames)

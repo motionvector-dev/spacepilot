@@ -1,8 +1,8 @@
 """The CLI's provenance vocabulary must not turn estimates into measurements."""
 
-from spacepilot.pluto.measurements import Measurement, summarise
-from spacepilot.pluto.registry import Fact
-from spacepilot.pluto.services.provenance import (
+from spacepilot.measurements import Measurement, summarise
+from spacepilot.model_registry import Fact
+from spacepilot.services.provenance import (
     fact_provenance,
     format_fact,
     format_local_speed,

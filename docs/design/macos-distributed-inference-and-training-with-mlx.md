@@ -18,7 +18,7 @@ Starting in **macOS 26.2**, Apple introduced kernel-level **Remote Direct Memory
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                        SPACEPILOT DISTRIBUTED MLX STACK                           │
 ├───────────────────────────────────────────────────────────────────────────────────┤
-│  Layer 4: Application   │ SpaceBar HUD / Web Cockpit / Pluto Agentic MCP Server   │
+│  Layer 4: Application   │ SpaceBar HUD / Web Cockpit / SpacePilot Agentic MCP Server   │
 │  Layer 3: Framework     │ MLX & MLX LM (Tensor Parallelism / Data Parallelism)   │
 │  Layer 2: Collective    │ JACCL (Mesh & Ring Auto-Routing, Metal Fast Synch)      │
 │  Layer 1: Transport     │ RDMA over Thunderbolt 5 (Bi-directional 80-120 Gbps)    │
@@ -70,7 +70,7 @@ SpacePilot maps model architectures to distributed runtimes according to the fol
 | :--- | :--- | :--- | :--- | :--- |
 | **Tensor Parallelism** (Default) | Width (Weights per layer) | All-Reduce every layer / token | Interactive Chat / Video Denoising | `spacepilot.engines.wan_engine` / `mflux` |
 | **Pipeline Parallelism** | Depth (Sequential layer groups) | Point-to-Point activations | Massive MoE Models (>500B params) | `spacepilot.drivers.gguf_driver` |
-| **Data Parallelism** | Batch (Replicated model weights)| Ring All-Reduce gradients | Local LoRA / Adapter Training | `spacepilot.pluto.lora` |
+| **Data Parallelism** | Batch (Replicated model weights)| Ring All-Reduce gradients | Local LoRA / Adapter Training | `spacepilot.services.lora` |
 
 ### 3.1 Trillion-Parameter Memory Sizing Formula
 To host a model across $N$ cluster nodes:

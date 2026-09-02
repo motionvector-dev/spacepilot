@@ -4,8 +4,8 @@ def test_every_runs_entry_names_a_registered_model():
     """A runtime's runs[] is a capability claim; it must point at a model file
     that exists. mlx-audio claimed musicgen and bark, stable-audio-tools
     claimed stable-audio-open — none was a model id, and nothing noticed."""
-    from spacepilot.pluto.registry import registry
-    from spacepilot.pluto.runtimes import load_runtimes
+    from spacepilot.model_registry import registry
+    from spacepilot.runtimes import load_runtimes
 
     model_ids = set(registry().models.keys())
     assert len(model_ids) > 10, "model registry walk is vacuous"

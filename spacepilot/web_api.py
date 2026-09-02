@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Pluto Studio Backend API.
+"""SpacePilot Backend API.
 
-Modular entrypoint delegating to spacepilot.pluto package layout while preserving
+Modular entrypoint delegating to the spacepilot package layout while preserving
 100% backwards compatibility for existing imports, monkeypatching, and tests.
 """
 
@@ -23,15 +23,15 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 # Core package layout
-from spacepilot.pluto.core.config import Settings, get_settings, PLUTO_ROOT
-from spacepilot.pluto.core.utils import (
+from spacepilot.core.config import Settings, get_settings, REPO_ROOT
+from spacepilot.core.utils import (
     run_ffmpeg,
     discard_partial,
     ffmpeg_error,
     write_meta,
     resolve_output,
 )
-from spacepilot.pluto.services.audio import (
+from spacepilot.services.audio import (
     CLOUD_NOT_READY,
     mlx_generate_audio,
     loudnorm_two_pass,
@@ -41,7 +41,7 @@ from spacepilot.pluto.services.audio import (
     kokoro_assets,
     get_kokoro_search_paths,
 )
-from spacepilot.pluto.services.image_utils import (
+from spacepilot.services.image_utils import (
     MAX_IMAGE_SIZE,
     ALLOWED_IMAGE_MIMES,
     sanitize_upload_filename,
@@ -50,7 +50,7 @@ from spacepilot.pluto.services.image_utils import (
     get_aspect_ratio_str,
     parse_multipart_form_data,
 )
-from spacepilot.pluto.services.generation import (
+from spacepilot.services.generation import (
     GenerateRequest,
     ExtendRequest,
     UpscaleRequest,
@@ -58,19 +58,19 @@ from spacepilot.pluto.services.generation import (
     CompositeMotionVectorRequest,
     worker_headers,
 )
-from spacepilot.pluto.api.routes.engines import MultiEngineGenerateRequest
-from spacepilot.pluto.api.routes.lora import TrainLoRARequest
-from spacepilot.pluto.api.routes.audio import (
+from spacepilot.api.routes.engines import MultiEngineGenerateRequest
+from spacepilot.api.routes.lora import TrainLoRARequest
+from spacepilot.api.routes.audio import (
     MusicRequest,
     VoiceRequest,
     MixDuckedAudioRequest,
     LocalSynthesizeAudioRequest,
 )
-from spacepilot.pluto.api.routes.storyboard import (
+from spacepilot.api.routes.storyboard import (
     StoryboardDecomposeRequest,
     LocalNarrativeDecomposeRequest,
 )
-from spacepilot.pluto.api.routes.gpu import (
+from spacepilot.api.routes.gpu import (
     GpuActionRequest,
     InspectActionRequest,
 )
@@ -83,8 +83,8 @@ from spacepilot.cli import (
     run_cmd,
 )
 from spacepilot.storyboard_decomposer import decompose_storyboard
-from spacepilot.pluto.app import create_app
-from spacepilot.pluto.api.deps import require_token  # re-export for backward compat
+from spacepilot.app import create_app
+from spacepilot.api.deps import require_token  # re-export for backward compat
 from spacepilot.paths import env_value
 
 # Settings & Directory Aliases
@@ -111,7 +111,7 @@ _watchdog_event = None
 
 
 def update_activity() -> None:
-    from spacepilot.pluto.api import deps
+    from spacepilot.api import deps
     deps.update_activity()
     global _last_activity_time
     _last_activity_time = deps.get_last_activity_time()
@@ -259,7 +259,7 @@ async def idle_watchdog_loop():
                     _watchdog_event = {"event": "auto_shutdown", "time": now, "idle_mins": idle_mins}
                     if api_mod:
                         api_mod._watchdog_event = _watchdog_event
-                    infra_script = PLUTO_ROOT / "infra" / "gpu-box.sh"
+                    infra_script = REPO_ROOT / "infra" / "gpu-box.sh"
                     if infra_script.exists():
                         try:
                             rc_fn = getattr(api_mod, "run_cmd", run_cmd) if api_mod else run_cmd

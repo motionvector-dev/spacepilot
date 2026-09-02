@@ -409,7 +409,7 @@ class LocalLogPublisher:
         self.state_path = Path(state_path or daemon_log_state_path()).expanduser().resolve()
         self.page_size = page_size
         if systems_loader is None or measurements_loader is None:
-            from spacepilot.pluto import measurements as measurement_store
+            from spacepilot import measurements as measurement_store
             systems_loader = systems_loader or measurement_store.load_systems
             measurements_loader = measurements_loader or measurement_store.load_measurements
         self.systems_loader = systems_loader

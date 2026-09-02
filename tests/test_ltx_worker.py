@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "spacepilot"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "spacepilot"))
 
 
 from unittest.mock import MagicMock
@@ -114,7 +114,7 @@ def test_non_ascii_auth_header_is_rejected_not_crashed(client):
 
 def test_download_does_not_escape_output_dir(client, worker):
     """A job id must not walk out of OUTPUT_DIR."""
-    secret = PLUTO_ROOT / "pytest_worker_marker.txt"
+    secret = REPO_ROOT / "pytest_worker_marker.txt"
     secret.write_text("should never be served")
     try:
         response = client.get(

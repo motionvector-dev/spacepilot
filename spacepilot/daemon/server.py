@@ -21,7 +21,7 @@ import uvicorn
 
 from spacepilot.daemon.api import FleetControl, PeerReads, create_local_app, create_peer_app
 from spacepilot.daemon.picture import PictureSampler
-from spacepilot.pluto.services.execution import LocalExecutionService
+from spacepilot.services.execution import LocalExecutionService
 from spacepilot.substrate import DirectLocal, Substrate
 
 

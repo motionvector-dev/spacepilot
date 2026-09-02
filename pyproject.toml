@@ -18,17 +18,17 @@ classifiers = [
 ]
 dependencies = [
     "fastapi>=0.100.0,<1.0",
-    "starlette>=0.37",  # imported directly by pluto/api/security.py, not only via fastapi
+    "starlette>=0.37",  # imported directly by spacepilot/api/security.py, not only via fastapi
     "uvicorn>=0.22.0",
-    "python-multipart>=0.0.9",  # fastapi upload parsing, imported by pluto/api/routes/assets.py
+    "python-multipart>=0.0.9",  # fastapi upload parsing, imported by spacepilot/api/routes/assets.py
     "pydantic>=2.0",
     "httpx>=0.24.0",
     "mcp>=2.0,<3",  # 2.0 renamed FastMCP to MCPServer; 1.x will not import
     "soundfile>=0.12.0",
     "numpy>=1.24.0",
-    "Pillow>=10.0",  # pluto/services/image_utils.py, pluto/api/routes/generate.py
+    "Pillow>=10.0",  # spacepilot/services/image_utils.py, spacepilot/api/routes/generate.py
     "PyYAML>=6.0",
-    "packaging>=23.0",  # pluto/runtimes.py parses the interpreter gates shown by `runtimes list`
+    "packaging>=23.0",  # spacepilot/runtimes.py parses the interpreter gates shown by `runtimes list`
     "huggingface_hub>=0.20",  # paths.py resolves the shared model cache
     "litellm>=1.98.0",
     "psutil>=5.9.0",
@@ -40,6 +40,7 @@ dependencies = [
 local-ml = [
     "onnxruntime>=1.16.0",
     "kokoro-onnx>=0.3.0",
+    "faster-whisper>=1.0.0",
     "torch>=2.1.0",
     "scipy>=1.11.0",
 ]
@@ -70,7 +71,7 @@ Source = "https://github.com/motionvector-dev/spacepilot"
 
 [project.scripts]
 spacepilot = "spacepilot.cli:main"
-spacepilot-mcp = "spacepilot.pluto_mcp_server:main"
+spacepilot-mcp = "spacepilot.mcp_server:main"
 
 [tool.setuptools.packages.find]
 # Without this, setuptools flattened the source tree into sixteen generic

@@ -56,7 +56,7 @@ class _Driver:
 
 
 def _service(tmp_path, driver=None, recorder=None):
-    from spacepilot.pluto.services.text_execution import TextExecutionService
+    from spacepilot.services.text_execution import TextExecutionService
 
     return TextExecutionService(
         driver=driver or _Driver(),
@@ -69,8 +69,8 @@ def _service(tmp_path, driver=None, recorder=None):
 
 
 def test_registry_has_exact_pinned_qwen_route():
-    from spacepilot.pluto.registry import registry
-    from spacepilot.pluto.runtimes import load_runtimes
+    from spacepilot.model_registry import registry
+    from spacepilot.runtimes import load_runtimes
 
     variant = registry().variant("qwen3-8-27b-4bit")
     assert variant is not None
@@ -99,7 +99,7 @@ def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
         tmp_path, driver=driver,
         recorder=lambda **fields: recorded.update(fields) or tmp_path / "measurement.yaml",
     )
-    from spacepilot.pluto.services.text_execution import TextRequest
+    from spacepilot.services.text_execution import TextRequest
 
     plan = service.plan("text")
     output = tmp_path / "answer.txt"
@@ -123,8 +123,8 @@ def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
     ("temperature", -0.1), ("temperature", 2.1),
 ])
 def test_safe_route_rejects_unbounded_knobs(tmp_path, field, value):
-    from spacepilot.pluto.services.execution import LocalExecutionError
-    from spacepilot.pluto.services.text_execution import TextRequest
+    from spacepilot.services.execution import LocalExecutionError
+    from spacepilot.services.text_execution import TextRequest
 
     values = dict(max_tokens=128, max_kv_size=2048, temperature=0.0)
     values[field] = value
@@ -182,7 +182,7 @@ def test_cli_text_uses_the_configured_runtime_interpreter(tmp_path):
         "run_workload": "text", "prompt": "hello", "output": str(tmp_path / "x.txt"),
         "max_tokens": 64, "max_kv_size": 1024, "temperature": 0.0, "yes": False,
     })()
-    with patch("spacepilot.pluto.services.text_execution.TextExecutionService",
+    with patch("spacepilot.services.text_execution.TextExecutionService",
                return_value=service) as service_cls, \
          patch("spacepilot.drivers.mlx_lm_driver.MlxLmDriver",
                wraps=MlxLmDriver) as driver_cls:
@@ -213,7 +213,7 @@ def test_cli_text_non_tty_never_executes_without_yes(tmp_path, capsys):
         "run_workload": "text", "prompt": "hello", "output": str(tmp_path / "x.txt"),
         "max_tokens": 64, "max_kv_size": 1024, "temperature": 0.0, "yes": False,
     })()
-    with patch("spacepilot.pluto.services.text_execution.TextExecutionService",
+    with patch("spacepilot.services.text_execution.TextExecutionService",
                return_value=service), patch.object(cli.sys, "stdin", StringIO("y\n")):
         assert cli.cmd_run(args, {}) == 1
     service.execute.assert_not_called()

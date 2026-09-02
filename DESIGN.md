@@ -86,7 +86,7 @@ tokens:
 **Supersedes / Superseded by**: none
 
 This spec covers the UI layer only. The backend it talks to is the modular
-`spacepilot/pluto/api/routes/` FastAPI app, live on main with 14 route modules
+`spacepilot/api/routes/` FastAPI app, live on main with 14 route modules
 (assets, audio, billing, checkpoints, compute, engines, generate, gpu, health,
 lora, recipes, storyboard, views, `__init__`).
 

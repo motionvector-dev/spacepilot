@@ -4,6 +4,7 @@ Plan-level tests start no model. The one real-synthesis test runs Kokoro only
 when its assets are already on this machine, and skips honestly otherwise.
 """
 
+import json
 import wave
 from io import StringIO
 from pathlib import Path
@@ -16,8 +17,8 @@ from spacepilot.device_probe import DeviceProfile, GIB
 from spacepilot.drivers.whisper_cpp_driver import (
     WhisperCppDriver, WhisperSubprocessError, audio_duration_seconds,
 )
-from spacepilot.pluto.measurements import Measurement
-from spacepilot.pluto.services.audio_execution import (
+from spacepilot.measurements import Measurement
+from spacepilot.services.audio_execution import (
     SPEECH_ROUTES,
     TRANSCRIBE_ROUTES,
     SpeechExecutionService,
@@ -25,7 +26,7 @@ from spacepilot.pluto.services.audio_execution import (
     TranscribeExecutionService,
     TranscribeRequest,
 )
-from spacepilot.pluto.services.execution import LocalExecutionError
+from spacepilot.services.execution import LocalExecutionError
 
 
 def _profile(*, backend="metal", memory_gb=32, free_gb=30):
@@ -361,7 +362,7 @@ def test_cli_speech_non_tty_never_executes_without_yes(tmp_path, capsys):
         "run_workload": "speech", "text": "hello", "voice": "af_heart",
         "output": str(tmp_path / "x.wav"), "yes": False,
     })()
-    with patch("spacepilot.pluto.services.audio_execution.SpeechExecutionService",
+    with patch("spacepilot.services.audio_execution.SpeechExecutionService",
                return_value=service), \
          patch.object(cli.sys, "stdin", StringIO("y\n")):
         assert cli.cmd_run(args, {}) == 1
@@ -376,7 +377,7 @@ def test_cli_transcribe_refuses_missing_audio_before_confirmation(tmp_path, caps
         "run_workload": "transcribe", "audio": str(tmp_path / "absent.wav"),
         "output": str(tmp_path / "x.txt"), "yes": True,
     })()
-    with patch("spacepilot.pluto.services.audio_execution.TranscribeExecutionService",
+    with patch("spacepilot.services.audio_execution.TranscribeExecutionService",
                return_value=service):
         assert cli.cmd_run(args, {}) == 1
     service.execute.assert_not_called()
@@ -403,6 +404,101 @@ def test_cli_parser_accepts_speech_and_transcribe(tmp_path):
     assert args.output is None
 
 
+def test_speech_honors_spacepilot_python_when_host_venv_lacks_kokoro(tmp_path, monkeypatch):
+    """Simulate a bare pipx venv (no kokoro_onnx in host sys.executable) where
+    SPACEPILOT_PYTHON points to an interpreter that has kokoro_onnx installed."""
+    import subprocess
+    from spacepilot.drivers.kokoro_driver import KokoroDriver
+
+    fake_py = "/mock/envs/local-ml-py311/bin/python"
+    monkeypatch.setenv("SPACEPILOT_PYTHON", fake_py)
+
+    model_file = tmp_path / "kokoro-v1.0.onnx"
+    voices_file = tmp_path / "voices-v1.0.bin"
+    model_file.write_bytes(b"mock onnx")
+    voices_file.write_bytes(b"mock voices")
+
+    driver = KokoroDriver(
+        model_path=str(model_file),
+        voices_path=str(voices_file),
+        python_bin=fake_py,
+    )
+
+    def mock_subprocess_run(cmd, *args, **kwargs):
+        if "-c" in cmd and "import kokoro_onnx" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+        if "spacepilot.drivers.kokoro_runner" in cmd:
+            out_idx = cmd.index("--output") + 1
+            out_wav = Path(cmd[out_idx])
+            _wav(out_wav, seconds=2.0)
+            payload = json.dumps({
+                "status": "completed",
+                "voice": "af_heart",
+                "speed": 1.0,
+                "sample_rate": 24000,
+                "duration_sec": 2.0,
+                "target_lufs": -16.0,
+                "elapsed_sec": 0.8,
+                "load_seconds": 0.2,
+                "file_path": str(out_wav),
+            })
+            return subprocess.CompletedProcess(cmd, 0, stdout=f"SPACEPILOT_RESULT {payload}\n", stderr="")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+
+    service = _speech_service(tmp_path, driver=driver)
+    plan = service.plan("speech")
+    assert plan.selected is not None
+    assert plan.candidates[0].route_state == "ready"
+    assert "kokoro-onnx" in plan.candidates[0].route_detail
+
+    output = tmp_path / "speech.wav"
+    result = service.execute(plan, SpeechRequest("speech", "hello from external venv", "af_heart", output))
+    assert result.status == "completed"
+    assert result.output == output
+    assert result.audio_seconds == 2.0
+    assert result.realtime_factor == pytest.approx(2.0 / 0.8)
+
+
+def test_speech_missing_kokoro_states_clear_error_naming_spacepilot_python(tmp_path, monkeypatch):
+    """When neither host nor configured interpreter has kokoro-onnx, the candidate
+    detail explicitly names SPACEPILOT_PYTHON and marks no route."""
+    import subprocess
+    from spacepilot.drivers.kokoro_driver import KokoroDriver
+
+    fake_py = "/mock/bare/bin/python"
+    monkeypatch.setenv("SPACEPILOT_PYTHON", fake_py)
+
+    model_file = tmp_path / "kokoro-v1.0.onnx"
+    voices_file = tmp_path / "voices-v1.0.bin"
+    model_file.write_bytes(b"mock onnx")
+    voices_file.write_bytes(b"mock voices")
+
+    driver = KokoroDriver(
+        model_path=str(model_file),
+        voices_path=str(voices_file),
+        python_bin=fake_py,
+    )
+
+    def mock_subprocess_run(cmd, *args, **kwargs):
+        if "-c" in cmd and "import kokoro_onnx" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="ModuleNotFoundError: No module named 'kokoro_onnx'"
+            )
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+
+    service = _speech_service(tmp_path, driver=driver)
+    plan = service.plan("speech")
+    assert plan.selected is None
+    assert plan.candidates[0].route_state == "no route"
+    detail = plan.candidates[0].route_detail
+    assert "kokoro-onnx is unavailable in /mock/bare/bin/python" in detail
+    assert "SPACEPILOT_PYTHON" in detail
+
+
 def _kokoro_assets_here():
     model = Path.home() / ".cache/hyperframes/tts/models/kokoro-v1.0.onnx"
     voices = Path.home() / ".cache/hyperframes/tts/voices/voices-v1.0.bin"
@@ -414,8 +510,13 @@ def _kokoro_assets_here():
 @pytest.mark.skipif(_kokoro_assets_here() is None,
                     reason="Kokoro ONNX assets are not on this machine")
 def test_real_kokoro_synthesis_records_a_real_measurement(tmp_path):
-    pytest.importorskip("kokoro_onnx")
     from spacepilot.drivers.kokoro_driver import KokoroDriver
+    from spacepilot import runtimes as rt
+
+    driver = KokoroDriver(python_bin=rt.interpreter())
+    ready, _ = driver.runtime_ready()
+    if not ready:
+        pytest.skip("kokoro-onnx is not installed in the active runtime interpreter")
 
     model, voices = _kokoro_assets_here()
     recorded = {}
@@ -426,7 +527,7 @@ def test_real_kokoro_synthesis_records_a_real_measurement(tmp_path):
 
     service = _speech_service(
         tmp_path,
-        driver=KokoroDriver(model_path=model, voices_path=voices),
+        driver=KokoroDriver(model_path=model, voices_path=voices, python_bin=rt.interpreter()),
         recorder=recorder,
     )
     plan = service.plan("speech")
@@ -438,3 +539,4 @@ def test_real_kokoro_synthesis_records_a_real_measurement(tmp_path):
     assert recorded["variant_id"] == "kokoro-82m-onnx"
     assert recorded["value"] > 0
     assert recorded["resolved_revision"] is None
+

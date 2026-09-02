@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Video Engine Registry for Pluto.
+"""Video Engine Registry for SpacePilot.
 
 Provides dynamic lookup, alias resolution, and graceful fallback
 for video generation engines (LTX-Video 2.5, Wan2.1 1.3B/14B, HunyuanVideo).
@@ -13,7 +13,7 @@ from spacepilot.engines.ltx_engine import LTXVideoEngine
 from spacepilot.engines.wan_engine import WanVideoEngine
 from spacepilot.engines.hunyuan_engine import HunyuanVideoEngine
 
-logger = logging.getLogger("pluto.engines")
+logger = logging.getLogger("spacepilot.engines")
 
 DEFAULT_ENGINE_ID = "ltx-2.5"
 

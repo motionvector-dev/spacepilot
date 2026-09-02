@@ -3,9 +3,9 @@
 import pytest
 from unittest import mock
 from fastapi.testclient import TestClient
-from spacepilot.pluto.app import create_app
-from spacepilot.pluto.core.config import get_settings
-from spacepilot.pluto.services.model_catalog import catalog_manager
+from spacepilot.app import create_app
+from spacepilot.core.config import get_settings
+from spacepilot.services.model_catalog import catalog_manager
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def test_compatibility_report_carries_registry_caveats(client):
     assert distil["caveats"][0]["capability"] == "audio.transcription"
 
 
-@mock.patch("spacepilot.pluto.services.model_catalog.asyncio.create_task")
+@mock.patch("spacepilot.services.model_catalog.asyncio.create_task")
 def test_download_recipe_flow(mock_create_task, client, auth_headers):
     # 1. Trigger download
     res = client.post("/api/compute/recipes/wan-2-1-t2v-1-3b/download", headers=auth_headers)

@@ -72,7 +72,7 @@ def test_gguf_resolves_the_registered_concrete_file(tmp_path, monkeypatch):
     variant = SimpleNamespace(repo="org/gguf", revision="tag-v1", files=["model-q4.gguf"])
     fake_registry = SimpleNamespace(variant=lambda variant_id: variant)
 
-    import spacepilot.pluto.registry as registry_module
+    import spacepilot.model_registry as registry_module
 
     monkeypatch.delenv("SPACEPILOT_GGUF_MODEL", raising=False)
     monkeypatch.delenv("PLUTO_GGUF_MODEL", raising=False)
@@ -97,7 +97,7 @@ def test_drivers_never_restore_machine_specific_weight_guesses():
 
 
 def test_measurement_prefers_resolved_bytes_over_registry_pin(system, tmp_path):
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     resolved = "c" * 40
     path = ms.record(
@@ -115,6 +115,6 @@ def test_measurement_prefers_resolved_bytes_over_registry_pin(system, tmp_path):
 
 @pytest.fixture
 def system():
-    from spacepilot.pluto.measurements import System
+    from spacepilot.measurements import System
 
     return System(id="resolver-test", backend="cpu", os_name="linux")

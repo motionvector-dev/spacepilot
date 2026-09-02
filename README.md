@@ -53,7 +53,7 @@ mock — an ffmpeg test pattern, not a real model run.
 │     └── Narrative: In-process GGUF screenplay deconstruction & 3D vectors   │
 │                                                                             │
 │  3. Agentic Protocol & Tool Modules                                         │
-│     ├── FastMCP Tool Server (spacepilot/pluto_mcp_server.py): 12+ tools for AI     │
+│     ├── FastMCP Tool Server (spacepilot/mcp_server.py): 12+ tools for AI     │
 │     ├── DocIR 2.0 Edit Protocol: Byte-exact, reversible patch operations   │
 │     └── WebSocket PTY Bridge: Live interactive shell & worker streaming    │
 │                                                                             │
@@ -126,7 +126,7 @@ Every endpoint that spends compute or creates assets is gated by `X-SpacePilot-T
 
 ---
 
-## FastMCP Server Tools (`spacepilot/pluto_mcp_server.py`)
+## FastMCP Server Tools (`spacepilot/mcp_server.py`)
 
 Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
 
@@ -163,7 +163,7 @@ clients that cannot use HTTP.
 spacepilot/cli.py               CLI command router
 src/
 ├── web_api.py               SpacePilot Studio FastAPI server & web UI router
-├── pluto_mcp_server.py         Native FastMCP tool server
+├── mcp_server.py                Native FastMCP tool server
 ├── device_probe.py             Zero-dependency cross-platform hardware profiler
 ├── model_recommender.py        Model catalog & dynamic fit scoring engine
 ├── local_workers.py            Local in-process worker memory manager (LRU)
@@ -179,7 +179,7 @@ src/
 │   └── gguf_driver.py          GGUF screenplay deconstruction driver
 ├── storyboard_decomposer.py    Screenplay-to-shot decomposition
 ├── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
-└── pluto/api/routes/           Modular FastAPI backend, live on main: 14 route
+└── api/routes/                  Modular FastAPI backend, live on main: 14 route
                                  modules (assets, audio, billing, checkpoints,
                                  compute, engines, generate, gpu, health, lora,
                                  recipes, storyboard, views, __init__)

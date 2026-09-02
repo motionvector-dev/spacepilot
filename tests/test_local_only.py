@@ -8,11 +8,11 @@ middleware was never mounted.
 import pytest
 from fastapi.testclient import TestClient
 
-from spacepilot.pluto.app import create_app
-from spacepilot.pluto.api.security import (
+from spacepilot.app import create_app
+from spacepilot.api.security import (
     is_local_hostname, is_loopback_client, origin_allowed,
 )
-from spacepilot.pluto.core.config import get_settings
+from spacepilot.core.config import get_settings
 
 
 @pytest.fixture
@@ -114,7 +114,7 @@ def test_serving_remotely_is_a_deliberate_opt_in(monkeypatch):
     then refuses everything that reaches it, which reads as a bug and invites
     someone to disable the wrong half.
     """
-    import spacepilot.pluto.core.config as cfg
+    import spacepilot.core.config as cfg
     monkeypatch.setenv("PLUTO_ALLOW_REMOTE", "1")
     monkeypatch.setattr(cfg, "_settings_instance", None)
     assert cfg.get_settings().local_only is False

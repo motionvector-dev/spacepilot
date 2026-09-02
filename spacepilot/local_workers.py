@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local Worker Manager for Pluto / SpacePilot In-Process Inference.
+"""Local Worker Manager for SpacePilot In-Process Inference.
 
 Coordinates in-process local driver instances, tracks resident memory / VRAM
 headroom, performs LRU model eviction under memory pressure, and dispatches tasks.
@@ -19,7 +19,7 @@ from spacepilot.drivers.base import InferenceDriver, DriverSpec
 from spacepilot.drivers.kokoro_driver import KokoroDriver
 from spacepilot.drivers.gguf_driver import GGUFDriver
 
-logger = logging.getLogger("pluto.local_workers")
+logger = logging.getLogger("spacepilot.local_workers")
 
 GIB = 1024 ** 3
 
