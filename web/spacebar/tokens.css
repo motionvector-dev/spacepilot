@@ -1,111 +1,227 @@
 /* ==========================================================================
-   SPACEBAR TOKENS — an extension of the SpacePilot brand system.
-   Source of truth: design-system/foundations/tokens-palette.html
-   (palette, theming, radii, type) and motion-rules.html (durations).
+   SPACEBAR TOKENS — the single source of colour for SpaceBar.
 
-   The palette block below is verbatim brand law — do not edit values here,
-   edit the foundation. Everything after the "SpaceBar extension" header adds
-   only what the hardware-truth popover needs that the brand did not define:
-   the gold ramp as the attention color, the agent color for remote/agent
-   attribution, the chrome ramp as the machine fill, and the Aurora.
+   This file is the ONLY place SpaceBar colours are written down. The Swift
+   app does not repeat them: native/SpaceBar/tools/gen_tokens.py reads this
+   file and writes native/SpaceBar/Sources/Tokens.swift. Edit here, rerun the
+   generator, and the popover and the web mockups cannot drift.
 
-   No color outside the brand kit is introduced anywhere in this file.
+   The palette is MotionVector's, from ~/code/design.md: zinc neutrals, one
+   violet accent, light as the default. It supersedes the gold/silver "brand
+   law" that PR 94 declared. Gold survives as an opt-in accent — set
+   data-accent="gold" on <html> — and nothing depends on it.
+
+   Three states, three blocks, always in this order:
+     1. bare :root                      — the complete light palette
+     2. @media (prefers-color-scheme: dark) guarded by :not([data-theme=light])
+     3. :root[data-theme="dark"]        — an explicit dark choice wins anywhere
+
+   No token gets its only definition inside a media query. Every name is
+   declared on bare :root first; the other two blocks only override.
    ========================================================================== */
 
-/* --- Brand palette (verbatim: design-system/foundations/tokens-palette.html) --- */
+/* --- 1. Light (the default) ---------------------------------------------- */
 :root {
-  --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
-  --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
-  --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
-  --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
-  --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
-  --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
-  --invbg: #fafafa; --invink: #09090b;
-  --mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
-  --sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --r1: 6px; --r2: 10px; --r3: 14px;
-}
-:root[data-theme="light"] {
-  --root: #fdfdfc; --ground: #f7f7f5; --panel: #f2f2ef; --card: #ffffff; --raised: #e6e6e1;
-  --line: rgba(0, 0, 0, .08); --line2: rgba(0, 0, 0, .14); --line3: rgba(0, 0, 0, .22);
-  --ink: #09090b; --ink2: #52525b; --ink3: #71717a; --ink4: #a1a1aa;
-  --true: #059669; --wrong: #e11d48; --agent: #5b528f;
-  --silver: #5c6672; --silver-line: rgba(92, 102, 114, .32);
-  --gold: #8a6a22; --gold-line: rgba(138, 106, 34, .34);
-  --invbg: #09090b; --invink: #fafafa;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
-    --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
-    --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
-    --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
-    --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
-    --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
-    --invbg: #fafafa; --invink: #09090b;
-  }
-}
-:root[data-theme="dark"] {
-  --root: #000000; --ground: #09090b; --panel: #111114; --card: #18181b; --raised: #222226;
-  --line: rgba(255, 255, 255, .08); --line2: rgba(255, 255, 255, .14); --line3: rgba(255, 255, 255, .22);
-  --ink: #fafafa; --ink2: #a1a1aa; --ink3: #71717a; --ink4: #52525b;
-  --true: #10b981; --wrong: #f43535; --agent: #a49bd0;
-  --silver: #cfd4dc; --silver-line: rgba(207, 212, 220, .30);
-  --gold: #c9a227; --gold-line: rgba(201, 162, 39, .40);
-  --invbg: #fafafa; --invink: #09090b;
+  --mv-ground: #ffffff;
+  --mv-surface: #f4f4f5;
+  --mv-surface-2: #efeff1;
+  --mv-surface-3: #e4e4e7;
+  --mv-border: #e4e4e7;
+  --mv-border-soft: #ececee;
+  --mv-border-strong: #d4d4d8;
+  --mv-ink: #111113;
+  --mv-text: #3f3f46;
+  --mv-muted: #52525b;
+  --mv-faint: #a1a1aa;
+  --mv-accent: #7c6bb3;
+  --mv-accent-soft: rgba(124, 107, 179, 0.08);
+  --mv-accent-border: rgba(124, 107, 179, 0.28);
+  --mv-accent-contrast: #ffffff;
+
+  /* Two state colours, and only two. Green means measured and healthy;
+     red means a real failure. Everything quiet — offline, asleep, stale —
+     is --mv-faint, because a dormant machine is not an error. */
+  --mv-true: #059669;
+  --mv-wrong: #e11d48;
+
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --mv-rise: 10px;
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 220ms;
+  --motion-slower: 300ms;
+  --motion-exit: 120ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --motion-enter-scale: 0.98;
+  --stagger-step: 40ms;
+
+  color-scheme: light;
 }
 
-/* --- Chrome alloy ramp (verbatim: design-system/foundations/metal-chrome.html) --- */
-:root, :root[data-theme="dark"] {
-  --chrome-1: #545c67; --chrome-2: #a7b0bc; --chrome-3: #e8edf4; --chrome-4: #ffffff;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --chrome-1: #21272f; --chrome-2: #434c58; --chrome-3: #717d8c; --chrome-4: #a4b1bf;
+/* --- 2. Dark, by system preference --------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --mv-ground: #000000;
+    --mv-surface: #18181b;
+    --mv-surface-2: #1d1d20;
+    --mv-surface-3: #27272a;
+    --mv-border: #2a2a2d;
+    --mv-border-soft: #1c1c1f;
+    --mv-border-strong: #3f3f46;
+    --mv-ink: #ffffff;
+    --mv-text: #d4d4d8;
+    --mv-muted: #a1a1aa;
+    --mv-faint: #52525b;
+    --mv-accent: #a396d6;
+    --mv-accent-soft: rgba(163, 150, 214, 0.1);
+    --mv-accent-border: rgba(163, 150, 214, 0.3);
+    --mv-accent-contrast: #0d0d0f;
+    --mv-true: #10b981;
+    --mv-wrong: #f43535;
   }
 }
-:root[data-theme="light"] {
-  --chrome-1: #21272f; --chrome-2: #434c58; --chrome-3: #717d8c; --chrome-4: #a4b1bf;
+
+/* --- 3. Dark, chosen explicitly ------------------------------------------ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --mv-ground: #000000;
+  --mv-surface: #18181b;
+  --mv-surface-2: #1d1d20;
+  --mv-surface-3: #27272a;
+  --mv-border: #2a2a2d;
+  --mv-border-soft: #1c1c1f;
+  --mv-border-strong: #3f3f46;
+  --mv-ink: #ffffff;
+  --mv-text: #d4d4d8;
+  --mv-muted: #a1a1aa;
+  --mv-faint: #52525b;
+  --mv-accent: #a396d6;
+  --mv-accent-soft: rgba(163, 150, 214, 0.1);
+  --mv-accent-border: rgba(163, 150, 214, 0.3);
+  --mv-accent-contrast: #0d0d0f;
+  --mv-true: #10b981;
+  --mv-wrong: #f43535;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mv-rise: 0px;
+    --motion-enter-scale: 1;
+    --stagger-step: 0ms;
+  }
 }
 
 /* ==========================================================================
-   SPACEBAR EXTENSION — popover chrome, motion, Aurora. No new colors.
-   ========================================================================== */
+   ALTERNATE ACCENT — gold, opt-in only.
 
+   PR 94 declared gold #c9a227 and silver brand law. design.md supersedes
+   that. This block keeps gold reachable without letting it back into the
+   default: set data-accent="gold" on <html> and only the accent changes.
+   Nothing in the app or the mockups reads gold unless that attribute is set.
+   ========================================================================== */
+:root[data-accent="gold"] {
+  --mv-accent: #8a6a22;
+  --mv-accent-soft: rgba(138, 106, 34, 0.10);
+  --mv-accent-border: rgba(138, 106, 34, 0.34);
+  --mv-accent-contrast: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="gold"]:not([data-theme="light"]) {
+    --mv-accent: #c9a227;
+    --mv-accent-soft: rgba(201, 162, 39, 0.12);
+    --mv-accent-border: rgba(201, 162, 39, 0.40);
+    --mv-accent-contrast: #0d0d0f;
+  }
+}
+:root[data-accent="gold"][data-theme="dark"] {
+  --mv-accent: #c9a227;
+  --mv-accent-soft: rgba(201, 162, 39, 0.12);
+  --mv-accent-border: rgba(201, 162, 39, 0.40);
+  --mv-accent-contrast: #0d0d0f;
+}
+
+/* ==========================================================================
+   ALIASES — the short names the existing mockups in states/ and components/
+   already use. They resolve to the canonical tokens above, so no mockup
+   carries a colour of its own and none of them broke when the palette moved.
+   Add nothing here that is not a rename of something above.
+   ========================================================================== */
 :root {
-  /* Type scale: two sizes only (design-system/foundations/fonts.html) */
+  --root: var(--mv-ground);
+  --ground: var(--mv-ground);
+  --panel: var(--mv-surface);
+  --card: var(--mv-surface-2);
+  --raised: var(--mv-surface-3);
+
+  --line: var(--mv-border-soft);
+  --line2: var(--mv-border);
+  --line3: var(--mv-border-strong);
+
+  --ink: var(--mv-ink);
+  --ink2: var(--mv-text);
+  --ink3: var(--mv-muted);
+  --ink4: var(--mv-faint);
+
+  --true: var(--mv-true);
+  --wrong: var(--mv-wrong);
+  --agent: var(--mv-accent);
+  --gold: var(--mv-accent);
+  --gold-line: var(--mv-accent-border);
+  --silver: var(--mv-muted);
+  --silver-line: var(--mv-border);
+
+  --invbg: var(--mv-ink);
+  --invink: var(--mv-ground);
+
+  --mono: var(--font-mono);
+  --sans: var(--font-sans);
+
+  --t-enter: var(--motion-base) var(--ease-out);
+  --t-exit: var(--motion-exit) var(--ease-out);
+  --t-stagger: var(--stagger-step);
+  --t-crossfade: var(--motion-slow) var(--ease-in-out);
+  --t-cargo: var(--motion-slow) var(--ease-out);
+  --t-route: var(--motion-slow) var(--ease-out);
+
+  /* Type scale: two sizes only. */
   --fs-chrome: 13px;   /* body of every panel, row, control */
   --fs-label: 10px;    /* uppercase · letterspaced · the eyebrow voice */
 
-  /* Motion (verbatim durations from design-system/motion/motion-rules.html) */
-  --t-enter: 180ms ease-out;          /* opacity + 4px rise */
-  --t-exit: 120ms ease-out;           /* opacity only — travels nowhere */
-  --t-stagger: 40ms;                  /* caps at the fifth sibling */
-  --t-crossfade: 240ms ease-in-out;   /* state replaces state, in place */
-  --t-cargo: 220ms ease-out;          /* dashed → solid, layered: the docking motion */
-  --t-route: 200ms ease-out;          /* the whole viewport, once */
-
+  --r1: 6px;
+  --r2: 10px;
+  --r3: 14px;
   --r-popover: 16px;
-  --fill-machine: linear-gradient(90deg, var(--chrome-1), var(--chrome-2), var(--chrome-3));
+
+  /* The machine fill: a neutral ramp, no second accent. */
+  --fill-machine: linear-gradient(90deg, var(--mv-faint), var(--mv-muted), var(--mv-text));
 }
 
-/* Base popover layout — opaque instrument panel, no blur pretense */
+/* Base popover layout — an opaque instrument panel, no blur pretense */
 .spacebar-popover {
   width: 360px;
-  background: var(--panel);
-  border: 1px solid var(--line2);
+  background: var(--mv-surface);
+  border: 1px solid var(--mv-border);
   border-radius: var(--r-popover);
   padding: 14px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.10);
   position: relative;
   overflow: hidden;
-  font-family: var(--sans);
+  font-family: var(--font-sans);
   font-size: var(--fs-chrome);
-  color: var(--ink);
+  color: var(--mv-text);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .spacebar-popover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
 }
 
-/* Apple Intelligence Aurora Glow Border — active inference pass.
-   Gradient is brand-native: agent → silver → true. Instrument-slow: 4s/rev. */
+/* The thinking ring — one accent, drawn only while inference is running.
+   4s per revolution: instrument-slow, not a loading spinner. */
 @property --aur {
   syntax: '<angle>';
   inherits: false;
@@ -117,7 +233,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(from var(--aur), var(--agent), var(--silver), var(--true), var(--agent));
+  background: conic-gradient(from var(--aur), var(--mv-accent), var(--mv-accent-border), var(--mv-accent));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -129,9 +245,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; transition-duration: 80ms !important; }
   .spacebar-popover.aurora-active::before {
     animation: none;
-    background: linear-gradient(135deg, var(--agent), var(--silver), var(--true));
+    background: linear-gradient(135deg, var(--mv-accent), var(--mv-accent-border));
   }
 }
