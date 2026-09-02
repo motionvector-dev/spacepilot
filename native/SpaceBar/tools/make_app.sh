@@ -83,6 +83,34 @@ cp "$PLIST" "$APP/Contents/Info.plist"
   "$APP/Contents/Info.plist" 2>/dev/null \
   || /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable SpaceBar" "$APP/Contents/Info.plist"
 
+# -------------------------------------------- 4b. don't poison the real grant
+#
+# The build is ad-hoc signed (`codesign --sign -`, step 5 below), so every
+# rebuild gets a new CDHash. Confirmed on this machine, 2026-09-02: TCC logs
+# `com.apple.TCC:access] Failed to match existing code requirement for
+# subject dev.motionvector.SpaceBar` on every single rebuild — expected for
+# ad-hoc signing. What is not expected, and is what made Talk silently do
+# nothing, is that three of four real Talk presses that day produced no
+# permission dialog at all (no AUTHREQ_PROMPTING in the TCC log) after that
+# mismatch, only a hang — because five different worktrees (spacebar-test,
+# spacebar-fix, this one, and others) had all built and ad-hoc-signed the
+# *same* CFBundleIdentifier within about an hour, each with a different
+# CDHash, hammering the one grant record Saurabh actually uses day to day.
+#
+# The fix that stays inside this script: only the canonical worktree gets the
+# production identifier. Every other checkout — every throwaway debug
+# worktree, this one included — gets a distinct one, so a debug rebuild can
+# never again collide with the grant the daily-driver app depends on. The
+# first launch from a new debug worktree costs one extra permission prompt;
+# that is the entire price.
+CANONICAL_ROOT="$HOME/code/.mvec-local/worktrees/main/spacepilot"
+if [ "$ROOT" != "$CANONICAL_ROOT/native/SpaceBar" ]; then
+  DEBUG_ID="dev.motionvector.SpaceBar.dev"
+  echo "==> non-canonical worktree — rebinding CFBundleIdentifier to $DEBUG_ID"
+  echo "    (canonical: $CANONICAL_ROOT)"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $DEBUG_ID" "$APP/Contents/Info.plist"
+fi
+
 # SwiftPM emits resource bundles next to the binary. Copy any that exist.
 BIN_DIR="$(dirname "$BINARY")"
 shopt -s nullglob
