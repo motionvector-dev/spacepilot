@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" style="background:#09090b; font-family:'Comic Sans MS', 'Chalkboard SE', 'Courier New', monospace;">
+  <style>
+    .border { stroke: #27272a; stroke-width: 2.5; fill: none; }
+    .line { stroke: #f4f4f5; stroke-width: 3; fill: none; stroke-linecap: round; }
+    .box { stroke: #3f3f46; stroke-width: 2; fill: #18181b; }
+    .panel-line { stroke: #27272a; stroke-width: 2; }
+    .title { fill: #fafafa; font-size: 32px; font-weight: bold; letter-spacing: 0.5px; }
+    .subtitle { fill: #a1a1aa; font-size: 19px; }
+    .header-text { fill: #f4f4f5; font-size: 22px; font-weight: bold; }
+    .text { fill: #f4f4f5; font-size: 18px; }
+    .small-text { fill: #a1a1aa; font-size: 16px; }
+    .punch { fill: #f43f5e; font-size: 20px; font-weight: bold; }
+    .green { fill: #10b981; font-size: 20px; font-weight: bold; }
+    .cyan { fill: #06b6d4; font-size: 18px; font-weight: bold; }
+  </style>
+
+  <!-- Outer Border -->
+  <rect x="25" y="25" width="1030" height="1300" class="border" rx="16"/>
+
+  <!-- Header Banner -->
+  <text x="60" y="85" class="title">xkcd: THE 40-YEAR PLASTIC TRAP (1984 – 2026)</text>
+  <text x="60" y="120" class="subtitle">Why are humans still sliding mice when we should be piloting starships?</text>
+  <line x1="60" y1="145" x2="1020" y2="145" class="panel-line"/>
+
+  <!-- 3 Vertical Stacked Panels (4:5 Mobile Feed Optimized) -->
+
+  <!-- PANEL 1: 1984 -->
+  <g transform="translate(60, 175)">
+    <rect x="0" y="0" width="960" height="320" class="box" rx="12"/>
+    <text x="35" y="45" class="header-text">1984: THE MACINTOSH &amp; THE 16px BUTTON</text>
+    <text x="35" y="75" class="small-text">Douglas Engelbart invented the mouse in 1968. Apple shipped the Mac in 1984.</text>
+    
+    <!-- Stick Figure 1984 -->
+    <g transform="translate(140, 95)">
+      <circle cx="50" cy="40" r="20" class="line"/>
+      <line x1="50" y1="60" x2="50" y2="135" class="line"/>
+      <line x1="50" y1="80" x2="10" y2="110" class="line"/>
+      <line x1="50" y1="80" x2="90" y2="110" class="line"/>
+      <line x1="50" y1="135" x2="20" y2="190" class="line"/>
+      <line x1="50" y1="135" x2="80" y2="190" class="line"/>
+      <!-- Desk & Ball Mouse -->
+      <rect x="-20" y="110" width="45" height="35" class="line"/>
+      <rect x="75" y="110" width="22" height="12" rx="4" class="line"/>
+    </g>
+    
+    <text x="360" y="145" class="text">"Look! I physically slide this plastic ball across a pad"</text>
+    <text x="360" y="175" class="text">"to drag a pixelated folder into the Trash can!"</text>
+    <text x="360" y="225" class="cyan">Bandwidth: 30 WPM · Physical Coordinates</text>
+  </g>
+
+  <!-- PANEL 2: 2024 -->
+  <g transform="translate(60, 525)">
+    <rect x="0" y="0" width="960" height="320" class="box" rx="12"/>
+    <text x="35" y="45" class="header-text" style="fill:#f43f5e;">2024: THE 40-YEAR DESK PRISON</text>
+    <text x="35" y="75" class="small-text">Still hunched over the same plastic QWERTY keys in 4K resolution.</text>
+    
+    <!-- Stick Figure 2024 (Hunched Over 3 Monitors) -->
+    <g transform="translate(140, 95)">
+      <circle cx="50" cy="45" r="20" class="line"/>
+      <line x1="50" y1="65" x2="35" y2="140" class="line"/>
+      <line x1="45" y1="85" x2="0" y2="115" class="line"/>
+      <line x1="45" y1="85" x2="85" y2="115" class="line"/>
+      <line x1="35" y1="140" x2="5" y2="195" class="line"/>
+      <line x1="35" y1="140" x2="65" y2="195" class="line"/>
+      <!-- Multi-Monitors -->
+      <rect x="-30" y="80" width="35" height="50" class="line"/>
+      <rect x="15" y="70" width="50" height="60" class="line"/>
+      <rect x="75" y="80" width="35" height="50" class="line"/>
+    </g>
+    
+    <text x="360" y="140" class="punch">"40 years later... still sliding plastic across a desk"</text>
+    <text x="360" y="170" class="punch">"hunting through File &gt; Export &gt; MP4 dropdown menus."</text>
+    <text x="360" y="225" class="small-text">Carpal tunnel, $12/hr cloud token bills, and zero sovereignty.</text>
+  </g>
+
+  <!-- PANEL 3: 2026+ -->
+  <g transform="translate(60, 875)">
+    <rect x="0" y="0" width="960" height="340" class="box" style="stroke:#10b981; fill:#064e3b; fill-opacity:0.2;" rx="12"/>
+    <text x="35" y="45" class="green">2026+: SOVEREIGN INTENT (SPACEPILOT)</text>
+    <text x="35" y="75" class="small-text">Voice ("Space..."), 85µs ANE Latent Vectors &amp; Starships.</text>
+    
+    <!-- Stick Figure 2026 (Floating Free) -->
+    <g transform="translate(140, 85)">
+      <circle cx="50" cy="35" r="20" class="line" style="stroke:#10b981;"/>
+      <line x1="50" y1="55" x2="50" y2="125" class="line" style="stroke:#10b981;"/>
+      <line x1="50" y1="70" x2="10" y2="35" class="line" style="stroke:#10b981;"/>
+      <line x1="50" y1="70" x2="90" y2="35" class="line" style="stroke:#10b981;"/>
+      <line x1="50" y1="125" x2="20" y2="180" class="line" style="stroke:#10b981;"/>
+      <line x1="50" y1="125" x2="80" y2="180" class="line" style="stroke:#10b981;"/>
+      <!-- Glowing HUD Halo -->
+      <circle cx="50" cy="35" r="50" class="line" style="stroke:#3b82f6; stroke-dasharray: 6,6; opacity:0.8;"/>
+    </g>
+    
+    <text x="360" y="135" class="green">"Space, render the artificial universe at 120 FPS."</text>
+    <text x="360" y="170" class="text">"No keyboard. No mouse. No cloud tollbooth."</text>
+    <text x="360" y="215" class="cyan">Bandwidth: Speed of Thought · 25.0 GB UMA · $0.00</text>
+  </g>
+
+  <!-- Footer Alt Text -->
+  <text x="60" y="1275" class="small-text" style="font-style: italic;">
+    Alt text: "Humans didn't evolve brains capable of general relativity just to hunt through File &gt; Export &gt; MP4 for four decades."
+  </text>
+</svg>
