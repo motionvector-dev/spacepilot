@@ -23,17 +23,22 @@ on:
 # A new push supersedes the run already in flight for the same ref. Runs on the
 # release branches are never cancelled: their result is the record of whether
 # that commit was good.
+#
+# pytest and packaging both run on lenovo-spacepilot, the one self-hosted
+# runner for this repo (private repo only — never attach a self-hosted runner
+# to a public one). A single runner only executes one job at a time, so the
+# two already queue rather than race each other; this group additionally
+# drops a superseded run instead of leaving it queued behind a newer push.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev' }}
 
-# Runs on Linux because this repo is private and macOS runners bill at 10x.
 # The product itself is macOS-only (videotoolbox, CoreML, MLX): no test asserts
 # a successful videotoolbox render, so the suite is portable, but anything that
-# starts depending on those encoders needs a macos-latest job instead.
+# starts depending on those encoders needs a macOS job instead.
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lenovo]
     timeout-minutes: 20
 
     steps:
@@ -42,12 +47,23 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-          cache: pip
 
-      - name: Install system packages
+      # No sudo here, ever. lenovo-spacepilot's runner account has no
+      # NOPASSWD sudoers entry, so `sudo apt-get ...` blocks on a tty
+      # password prompt the Actions log can't show — confirmed live on the
+      # host 2026-09-02 after it silently ate two job timeouts. ffmpeg and
+      # libsndfile1 are already installed on lenovo-spacepilot; this step
+      # only verifies that and fails with the exact commands to run by hand
+      # if either is ever missing.
+      - name: Verify system packages are present
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          missing=""
+          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
+          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
+            exit 1
+          fi
 
       # Install from the declared file, never a hand-typed list. Two PRs in a
       # row added a dependency, declared it correctly, and still went red here
@@ -68,7 +84,7 @@ jobs:
   # a venv, and because a red here means "the release is broken", not "a test
   # is broken".
   packaging:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lenovo]
     timeout-minutes: 15
 
     steps:
@@ -77,12 +93,18 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-          cache: pip
 
-      - name: Install system packages
+      # See the pytest job's identical step above: no sudo here, ever —
+      # verified present, or fails with the exact command for Saurabh.
+      - name: Verify system packages are present
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          missing=""
+          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
+          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
@@ -95,7 +117,9 @@ jobs:
 
   # Two gates the repo went 38 merged PRs without. Both are free on
   # ubuntu-latest and finish in seconds, so they run as their own job rather
-  # than lengthening the one people wait on.
+  # than lengthening the one people wait on. Left on ubuntu-latest rather than
+  # moved to lenovo-spacepilot: measured across several runs this job takes
+  # ~30-35s end to end, under the bar for moving it (2026-09-02).
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
