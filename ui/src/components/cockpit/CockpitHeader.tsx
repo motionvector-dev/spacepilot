@@ -39,17 +39,17 @@ export function CockpitHeader({
   const isUrgent = remainingSeconds > 0 && remainingSeconds <= 300; // Under 5 minutes
 
   return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between pb-6 border-b border-white/10 gap-4">
+    <div className="flex flex-col md:flex-row md:items-end justify-between pb-6 border-b border-line-200 gap-4">
       <div>
         <div className="flex items-center gap-3 mb-1 flex-wrap">
-          <h1 className="text-[28px] font-bold tracking-tight text-[#fafafa]">
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">
             Autonomous GPU Spot Cockpit
           </h1>
-          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#a1a1aa] bg-[#111114] border border-white/10 px-2.5 py-1 rounded-full">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-ink-700 bg-raised border border-line-200 px-2.5 py-1 rounded-full">
             <span className={`w-1.5 h-1.5 rounded-full ${
-              status === 'online' ? 'bg-[#10b981] shadow-[0_0_6px_#10b981]' : 
-              status === 'offline' ? 'bg-[#71717a]' : 
-              'bg-[#f59e0b] animate-pulse'
+              status === 'online' ? 'bg-verify' :
+              status === 'offline' ? 'bg-ink-500' :
+              'bg-ink-500 animate-pulse'
             }`} />
             <span>HUD {status.toUpperCase()}</span>
           </div>
@@ -57,16 +57,16 @@ export function CockpitHeader({
           {/* Dead Man's Switch Live Countdown Pill */}
           {status === 'online' && (
             <div className={`flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-1 rounded-full border transition-all ${
-              isUrgent 
-                ? 'bg-[#f43535]/15 text-[#f43535] border-[#f43535]/40 animate-pulse' 
-                : 'bg-[#111114] text-[#f59e0b] border-white/10'
+              isUrgent
+                ? 'bg-danger-soft text-danger border-danger animate-pulse'
+                : 'bg-raised text-ink-700 border-line-200'
             }`}>
-              {isUrgent ? <AlertCircle className="w-3.5 h-3.5 text-[#f43535]" /> : <Clock className="w-3.5 h-3.5 text-[#f59e0b]" />}
-              <span>⏱ {formattedTime} WATCHDOG</span>
+              {isUrgent ? <AlertCircle className="w-3.5 h-3.5 text-danger" /> : <Clock className="w-3.5 h-3.5 text-ink-700" />}
+              <span>⏱ {formattedTime} AUTO-SHUTDOWN</span>
             </div>
           )}
         </div>
-        <p className="text-sm text-[#a1a1aa]">
+        <p className="text-sm text-ink-700">
           Multi-cloud broker telemetry, resident VRAM watchdog, and zero-data-loss spot orchestration.
         </p>
       </div>
@@ -74,17 +74,17 @@ export function CockpitHeader({
       {/* Header Actions: Dead Man's Switch Extend + Refresh */}
       <div className="flex items-center gap-2 flex-wrap">
         {status === 'online' && (
-          <div className="flex items-center bg-[#111114] border border-white/10 rounded-lg p-1 gap-1">
-            <span className="text-[11px] font-mono text-[#71717a] px-2 hidden sm:inline">
+          <div className="flex items-center bg-raised border border-line-200 rounded-lg p-1 gap-1">
+            <span className="text-[11px] font-mono text-ink-500 px-2 hidden sm:inline">
               Watchdog:
             </span>
             <button
               onClick={() => onExtendWatchdog?.(15)}
               disabled={isExtending}
               title="Extend auto-shutdown timeout by 15 minutes"
-              className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-[#18181b] text-[#fafafa] border border-white/10 hover:bg-[#222226] hover:border-white/20 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-inset text-ink border border-line-200 hover:bg-strong hover:border-line-400 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
             >
-              <Plus className="w-3 h-3 text-[#10b981]" />
+              <Plus className="w-3 h-3 text-verify" />
               <span>15m</span>
             </button>
 
@@ -92,9 +92,9 @@ export function CockpitHeader({
               onClick={() => onExtendWatchdog?.(30)}
               disabled={isExtending}
               title="Extend auto-shutdown timeout by 30 minutes"
-              className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-[#18181b] text-[#fafafa] border border-white/10 hover:bg-[#222226] hover:border-white/20 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-inset text-ink border border-line-200 hover:bg-strong hover:border-line-400 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
             >
-              <Plus className="w-3 h-3 text-[#10b981]" />
+              <Plus className="w-3 h-3 text-verify" />
               <span>30m</span>
             </button>
 
@@ -102,17 +102,17 @@ export function CockpitHeader({
               onClick={onResetWatchdog}
               disabled={isExtending}
               title="Reset watchdog timer back to default timeout"
-              className="font-mono text-xs font-semibold px-2 py-1 rounded bg-white/5 text-[#a1a1aa] hover:text-[#fafafa] hover:bg-white/10 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              className="font-mono text-xs font-semibold px-2 py-1 rounded text-ink-700 hover:text-ink hover:bg-strong transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
             >
-              <ShieldCheck className="w-3 h-3 text-[#3b82f6]" />
+              <ShieldCheck className="w-3 h-3 text-ink-700" />
               <span className="hidden sm:inline">Reset</span>
             </button>
           </div>
         )}
 
-        <button 
+        <button
           onClick={onRefresh}
-          className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-white/10 bg-[#18181b] text-[#fafafa] cursor-pointer inline-flex items-center gap-2 transition-all duration-150 hover:bg-[#222226] hover:border-white/20 shrink-0"
+          className="font-sans text-[13px] font-semibold px-4 py-2 rounded-md border border-line-200 bg-inset text-ink cursor-pointer inline-flex items-center gap-2 transition-all duration-150 hover:bg-strong hover:border-line-400 shrink-0"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh State</span>

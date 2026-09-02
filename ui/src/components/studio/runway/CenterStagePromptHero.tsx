@@ -143,51 +143,47 @@ export const CenterStagePromptHero = () => {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-start bg-black overflow-y-auto pt-[60px] pb-32 pl-[56px] pr-[320px] scrollbar-hide select-none">
-      {/* Background Subtle Radial Gradient Grid */}
+    <div className="absolute inset-0 flex flex-col items-center justify-start bg-ground overflow-y-auto pt-[60px] pb-32 pl-[56px] pr-[320px] scrollbar-hide select-none">
+      {/* Background Subtle Radial Gradient Grid — already a neutral gray hairline, not one of the mapped hues */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800c_1px,transparent_1px),linear-gradient(to_bottom,#8080800c_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
 
       <div className="relative w-full max-w-3xl px-6 z-10 flex flex-col items-center mt-4">
         {/* Hero Title & Subtitle */}
         <div className="mb-6 text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/70 font-mono mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-inset border border-line-200 text-xs text-ink-700 font-mono mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-verify" />
             <span>MotionVector Gen-4 · Agent-First Creative Suite</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white font-sans">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-ink font-sans">
             What do you want to create?
           </h2>
-          <p className="text-white/40 text-xs md:text-sm max-w-md mx-auto">
-            Describe your vision, attach reference frames, or invoke skills with <code className="text-emerald-400 bg-emerald-400/10 px-1 py-0.5 rounded font-mono">/T2V</code> or <code className="text-cyan-400 bg-cyan-400/10 px-1 py-0.5 rounded font-mono">/I2V</code>.
+          <p className="text-ink-500 text-xs md:text-sm max-w-md mx-auto">
+            Describe your vision, attach reference frames, or invoke skills with <code className="text-verify bg-verify-soft px-1 py-0.5 rounded font-mono">/T2V</code> or <code className="text-ink-900 bg-inset px-1 py-0.5 rounded font-mono">/I2V</code>.
           </p>
         </div>
 
         {/* Universal Floating Prompt Input Card */}
         <div className="w-full relative group">
-          <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 via-cyan-500/30 to-purple-500/30 rounded-2xl blur opacity-30 transition duration-500 ${
-            isGenerating ? 'opacity-90 animate-pulse' : 'group-hover:opacity-60'
-          }`} />
+          <div className="relative flex flex-col w-full bg-raised border border-line-200 rounded-2xl overflow-hidden transition-all duration-300 focus-within:border-line-400">
 
-          <div className="relative flex flex-col w-full bg-[#111114] border border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 focus-within:border-white/25 focus-within:shadow-[0_0_30px_rgba(255,255,255,0.06)]">
-            
             {/* Attached Media Thumbnail Bar */}
             {attachedImage && (
-              <div className="flex items-center gap-2 px-4 pt-3 pb-1 border-b border-white/5 bg-black/40">
-                <div className="relative group/thumb flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1 pr-2">
-                  <img 
-                    src={attachedImage.url} 
-                    alt={attachedImage.name} 
-                    className="w-8 h-8 rounded object-cover border border-white/10"
+              <div className="flex items-center gap-2 px-4 pt-3 pb-1 border-b border-line-100 bg-ground/40">
+                <div className="relative group/thumb flex items-center gap-2 bg-inset border border-line-200 rounded-lg p-1 pr-2">
+                  <img
+                    src={attachedImage.url}
+                    alt={attachedImage.name}
+                    className="w-8 h-8 rounded object-cover border border-line-200"
                   />
                   <div className="flex flex-col text-left">
-                    <span className="text-[11px] font-medium text-white/90 truncate max-w-[140px]">
+                    <span className="text-[11px] font-medium text-ink-900 truncate max-w-[140px]">
                       {attachedImage.name}
                     </span>
-                    <span className="text-[9px] font-mono text-emerald-400">First Frame Keyframe</span>
+                    <span className="text-[9px] font-mono text-verify">First Frame Keyframe</span>
                   </div>
                   <button
                     onClick={() => setAttachedImage(null)}
-                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white cursor-pointer ml-1"
+                    className="p-1 rounded hover:bg-strong text-ink-500 hover:text-ink cursor-pointer ml-1"
                     title="Remove attached image"
                   >
                     <X className="w-3 h-3" />
@@ -207,12 +203,12 @@ export const CenterStagePromptHero = () => {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-1 flex-shrink-0 w-8 h-8 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors cursor-pointer"
+                className="mt-1 flex-shrink-0 w-8 h-8 rounded-full bg-inset border border-line-200 hover:bg-strong flex items-center justify-center text-ink-700 hover:text-ink transition-colors cursor-pointer"
                 title="Attach Keyframe Image (/I2V)"
               >
                 <Plus className="w-4 h-4" />
               </button>
-              
+
               <div className="relative flex-1 ml-3">
                 <textarea
                   ref={textareaRef}
@@ -221,14 +217,14 @@ export const CenterStagePromptHero = () => {
                   onKeyDown={handleTabCompletion}
                   placeholder={currentSuggestion}
                   rows={3}
-                  className="w-full bg-transparent text-white/95 placeholder:text-white/25 resize-none outline-none text-base font-sans leading-relaxed scrollbar-hide py-1"
+                  className="w-full bg-transparent text-ink placeholder:text-ink-300 resize-none outline-none text-base font-sans leading-relaxed scrollbar-hide py-1"
                   autoFocus
                 />
               </div>
             </div>
 
             {/* Prompt Bottom Action Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-t border-white/5 relative">
+            <div className="flex items-center justify-between px-4 py-3 bg-inset border-t border-line-100 relative">
               <div className="flex items-center gap-2">
                 {/* Generation Preferences Button ("Ask · Quality") */}
                 <div className="relative">
@@ -236,35 +232,35 @@ export const CenterStagePromptHero = () => {
                     onClick={() => setShowPrefsPopover(!showPrefsPopover)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
                       showPrefsPopover
-                        ? 'bg-white/15 text-white border-white/30'
-                        : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/70 hover:text-white'
+                        ? 'bg-strong text-ink border-line-400'
+                        : 'bg-inset hover:bg-strong border-line-200 text-ink-700 hover:text-ink'
                     }`}
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-verify" />
                     <span>{generationPreferences.mode === 'ask' ? 'Ask' : 'Auto'} · {generationPreferences.target.toUpperCase()}</span>
                   </button>
 
                   {/* Preferences Popover Modal */}
                   {showPrefsPopover && (
-                    <div 
-                      className="absolute left-0 bottom-full mb-2 w-72 bg-[#18181b] border border-white/15 rounded-xl shadow-2xl p-4 z-50 text-xs font-sans space-y-3"
+                    <div
+                      className="absolute left-0 bottom-full mb-2 w-72 bg-inset border border-line-300 rounded-xl shadow-lg p-4 z-50 text-xs font-sans space-y-3"
                       onMouseLeave={() => setShowPrefsPopover(false)}
                     >
-                      <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                        <span className="font-bold text-white">Generation Preferences</span>
-                        <span className="text-[10px] font-mono text-emerald-400">L40S 48GB</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-line-200">
+                        <span className="font-bold text-ink">Generation Preferences</span>
+                        <span className="text-[10px] font-mono text-verify">L40S 48GB</span>
                       </div>
 
                       {/* Ask vs Auto */}
                       <div>
-                        <span className="text-[10px] font-mono text-white/50 block mb-1">When generating media</span>
+                        <span className="text-[10px] font-mono text-ink-500 block mb-1">When generating media</span>
                         <div className="grid grid-cols-2 gap-1.5 font-mono">
                           <button
                             onClick={() => setGenerationPreferences({ mode: 'ask' })}
                             className={`py-1 rounded border text-center cursor-pointer transition-all ${
                               generationPreferences.mode === 'ask'
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-bold'
-                                : 'bg-black/40 text-white/50 border-white/5'
+                                ? 'bg-verify-soft text-verify border-verify/40 font-bold'
+                                : 'bg-ground/40 text-ink-500 border-line-100'
                             }`}
                           >
                             Ask (Confirm)
@@ -273,8 +269,8 @@ export const CenterStagePromptHero = () => {
                             onClick={() => setGenerationPreferences({ mode: 'auto' })}
                             className={`py-1 rounded border text-center cursor-pointer transition-all ${
                               generationPreferences.mode === 'auto'
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-bold'
-                                : 'bg-black/40 text-white/50 border-white/5'
+                                ? 'bg-verify-soft text-verify border-verify/40 font-bold'
+                                : 'bg-ground/40 text-ink-500 border-line-100'
                             }`}
                           >
                             Auto (Instant)
@@ -284,7 +280,7 @@ export const CenterStagePromptHero = () => {
 
                       {/* Optimize Target */}
                       <div>
-                        <span className="text-[10px] font-mono text-white/50 block mb-1">Optimize generations</span>
+                        <span className="text-[10px] font-mono text-ink-500 block mb-1">Optimize generations</span>
                         <div className="grid grid-cols-4 gap-1 font-mono text-[10px]">
                           {(['quality', 'speed', 'cost', 'custom'] as const).map((tgt) => (
                             <button
@@ -292,8 +288,8 @@ export const CenterStagePromptHero = () => {
                               onClick={() => setGenerationPreferences({ target: tgt })}
                               className={`py-1 rounded border text-center capitalize cursor-pointer transition-all ${
                                 generationPreferences.target === tgt
-                                  ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 font-bold'
-                                  : 'bg-black/40 text-white/50 border-white/5'
+                                  ? 'bg-strong text-ink-900 border-line-400 font-bold'
+                                  : 'bg-ground/40 text-ink-500 border-line-100'
                               }`}
                             >
                               {tgt}
@@ -304,7 +300,7 @@ export const CenterStagePromptHero = () => {
 
                       {/* Duration */}
                       <div>
-                        <span className="text-[10px] font-mono text-white/50 block mb-1">Duration & Aspect</span>
+                        <span className="text-[10px] font-mono text-ink-500 block mb-1">Duration & Aspect</span>
                         <div className="grid grid-cols-3 gap-1 font-mono text-[10px]">
                           {[4, 8, 16].map((sec) => (
                             <button
@@ -312,8 +308,8 @@ export const CenterStagePromptHero = () => {
                               onClick={() => setGenerationPreferences({ duration: sec })}
                               className={`py-1 rounded border text-center cursor-pointer transition-all ${
                                 generationPreferences.duration === sec
-                                  ? 'bg-white/20 text-white border-white/40 font-bold'
-                                  : 'bg-black/40 text-white/50 border-white/5'
+                                  ? 'bg-strong text-ink border-line-400 font-bold'
+                                  : 'bg-ground/40 text-ink-500 border-line-100'
                               }`}
                             >
                               {sec}s
@@ -327,22 +323,22 @@ export const CenterStagePromptHero = () => {
 
                 {/* Tab to Autocomplete Cue */}
                 {(!prompt || prompt.length === 0) && (
-                  <div className="text-[11px] text-white/40 hidden sm:flex items-center gap-1 font-mono">
-                    Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 text-white/70 text-[10px]">Tab</kbd> to complete
+                  <div className="text-[11px] text-ink-500 hidden sm:flex items-center gap-1 font-mono">
+                    Press <kbd className="px-1.5 py-0.5 rounded bg-inset border border-line-300 text-ink-700 text-[10px]">Tab</kbd> to complete
                   </div>
                 )}
               </div>
 
               {/* Submit / Generate Button */}
-              <button 
+              <button
                 onClick={handleSubmit}
                 disabled={isGenerating}
                 className={`flex items-center justify-center h-8 px-3.5 rounded-full transition-all duration-300 gap-1.5 cursor-pointer font-medium text-xs ${
-                  isGenerating 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  isGenerating
+                    ? 'bg-verify-soft text-verify border border-verify/30'
                     : prompt.trim().length > 0 || currentSuggestion
-                    ? 'bg-white text-black hover:bg-white/90 hover:scale-105 shadow-md' 
-                    : 'bg-white/10 text-white/30 cursor-not-allowed'
+                    ? 'bg-accent text-accent-contrast hover:brightness-110 hover:scale-105'
+                    : 'bg-inset text-ink-300 cursor-not-allowed'
                 }`}
                 title="Generate Video (Enter)"
               >
@@ -362,11 +358,12 @@ export const CenterStagePromptHero = () => {
           </div>
         </div>
 
-        {/* Generation Status & Error Bar */}
+        {/* Generation Status & Error Bar — amber carried "failed" meaning here; the colour is now
+            neutral and the word "Error" is added so the message still reads as a failure. */}
         {generationError && (
-          <div className="w-full mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono flex items-center justify-between">
-            <span>{generationError}</span>
-            <button onClick={() => setGenerationError(null)} className="text-amber-400 hover:text-white">
+          <div className="w-full mt-3 p-2.5 rounded-lg bg-inset border border-line-300 text-ink text-xs font-mono flex items-center justify-between">
+            <span>Error: {generationError}</span>
+            <button onClick={() => setGenerationError(null)} className="text-ink-700 hover:text-ink">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -375,7 +372,7 @@ export const CenterStagePromptHero = () => {
         {/* Quick Creative Inspiration Chips */}
         <div className="w-full mt-6">
           <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">
+            <span className="text-[11px] font-mono text-ink-500 uppercase tracking-wider">
               Creative Inspirations:
             </span>
           </div>
@@ -386,9 +383,9 @@ export const CenterStagePromptHero = () => {
                 <button
                   key={chip.id}
                   onClick={() => setPrompt(chip.prompt)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181b]/80 hover:bg-[#222226] border border-white/10 hover:border-white/20 text-xs text-white/70 hover:text-white transition-all cursor-pointer group"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-inset/80 hover:bg-strong border border-line-200 hover:border-line-300 text-xs text-ink-700 hover:text-ink transition-all cursor-pointer group"
                 >
-                  <Icon className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <Icon className="w-3.5 h-3.5 text-verify group-hover:scale-110 transition-transform" />
                   <span>{chip.label}</span>
                 </button>
               );
@@ -397,14 +394,14 @@ export const CenterStagePromptHero = () => {
         </div>
 
         {/* Active Takes Reel Preview Card */}
-        <div className="w-full mt-8 bg-[#111114] border border-white/10 rounded-xl p-4 shadow-xl">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="w-full mt-8 bg-raised border border-line-200 rounded-xl p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-line-200">
             <div className="flex items-center gap-2 font-mono text-xs">
-              <Film className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-white">Audition Takes Bin</span>
-              <span className="text-white/40">({takes.length} Takes)</span>
+              <Film className="w-4 h-4 text-verify" />
+              <span className="font-bold text-ink">Audition Takes Bin</span>
+              <span className="text-ink-500">({takes.length} Takes)</span>
             </div>
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            <span className="text-[10px] font-mono text-verify bg-verify-soft px-2 py-0.5 rounded border border-verify/30">
               LTX-2.5 48GB Ready
             </span>
           </div>
@@ -416,19 +413,19 @@ export const CenterStagePromptHero = () => {
                 onClick={() => setSelectedTakeId(take.id)}
                 className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col gap-2 ${
                   selectedTakeId === take.id
-                    ? 'bg-[#18181b] border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
-                    : 'bg-black/40 border-white/10 hover:border-white/20'
+                    ? 'bg-inset border-verify'
+                    : 'bg-ground/40 border-line-200 hover:border-line-300'
                 }`}
               >
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="font-bold text-white">Take #{take.id}</span>
-                  <span className="text-emerald-400 text-[10px]">SEED {take.seed}</span>
+                  <span className="font-bold text-ink">Take #{take.id}</span>
+                  <span className="text-verify text-[10px]">SEED {take.seed}</span>
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-mono text-white/50">
+                <div className="flex justify-between items-center text-[10px] font-mono text-ink-500">
                   <span>Pan: +{take.panDeg}°</span>
                   <span>Zoom: {take.zoomRatio}x</span>
                 </div>
-                <div className="flex items-center justify-center h-12 bg-black/60 rounded border border-white/5 text-white/40 group hover:text-white">
+                <div className="flex items-center justify-center h-12 bg-ground/60 rounded border border-line-100 text-ink-500 group hover:text-ink">
                   <Play className="w-5 h-5 fill-current" />
                 </div>
               </div>

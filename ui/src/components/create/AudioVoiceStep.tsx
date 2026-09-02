@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSynthesizeAudio } from '../../hooks/useGenerate';
-import { 
-  Mic, 
-  Loader2, 
-  Play, 
-  Pause, 
-  Volume2, 
-  Check, 
+import {
+  Mic,
+  Loader2,
+  Play,
+  Pause,
+  Volume2,
+  Check,
   Music,
   Radio
 } from 'lucide-react';
@@ -100,10 +100,10 @@ export function AudioVoiceStep({
       for (let i = 0; i < bufferLength; i++) {
         const barHeight = (dataArray[i] / 255) * height * 0.85;
 
-        // Dynamic gradient for waveform bars
+        // Dynamic gradient for waveform bars — neutral luminance ramp, no hue.
         const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
-        gradient.addColorStop(0, '#06b6d4');
-        gradient.addColorStop(1, '#a855f7');
+        gradient.addColorStop(0, '#71717a');
+        gradient.addColorStop(1, '#fafafa');
 
         ctx.fillStyle = gradient;
         ctx.fillRect(x, height - barHeight, barWidth - 1, barHeight);
@@ -119,8 +119,8 @@ export function AudioVoiceStep({
       for (let i = 0; i < numBars; i++) {
         const factor = Math.sin(time + i * 0.3) * 0.5 + 0.5;
         const baseHeight = isPlaying ? 10 + factor * (height - 16) : 4 + Math.sin(i * 0.2) * 8 + 6;
-        
-        ctx.fillStyle = isPlaying ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.18)';
+
+        ctx.fillStyle = isPlaying ? 'rgba(250, 250, 250, 0.55)' : 'rgba(161, 161, 170, 0.25)';
         const x = i * barWidth + 1;
         const y = (height - baseHeight) / 2;
         ctx.beginPath();
@@ -191,27 +191,27 @@ export function AudioVoiceStep({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-5 bg-[#09090b] border border-white/[0.08] rounded-xl shadow-sm hover:border-white/[0.14] transition-colors">
-      <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+    <div className="flex flex-col gap-4 p-5 bg-surface border border-line-200 rounded-xl hover:border-line-300 transition-colors">
+      <div className="flex justify-between items-center border-b border-line-100 pb-3">
         <div className="flex items-center gap-2">
-          <Mic className="w-4 h-4 text-cyan-400" />
-          <h2 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+          <Mic className="w-4 h-4 text-ink-700" />
+          <h2 className="text-[13px] font-semibold text-ink-700 uppercase tracking-wider">
             Voiceover &amp; BGM Ducking
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+          <span className="text-[11px] font-mono text-verify bg-verify-soft px-2 py-0.5 rounded border border-verify/20">
             -16 LUFS (EBU R128)
           </span>
-          <button 
+          <button
             type="button"
             onClick={() => setDucking(!ducking)}
             className={`w-8 h-4 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer ${
-              ducking ? 'bg-emerald-500' : 'bg-[#222226]'
+              ducking ? 'bg-verify' : 'bg-strong'
             }`}
             title="Auto-duck BGM under voiceover"
           >
-            <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
+            <div className={`w-3 h-3 rounded-full bg-ink transition-transform ${
               ducking ? 'translate-x-4' : 'translate-x-0'
             }`} />
           </button>
@@ -220,14 +220,14 @@ export function AudioVoiceStep({
 
       {/* Voiceover Script Input */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+        <label className="text-[11px] font-bold text-ink-500 uppercase tracking-wider">
           Dialogue / Narration Script
         </label>
         <textarea
           value={dialogue}
           onChange={(e) => setDialogue(e.target.value)}
           rows={2}
-          className="w-full p-3 bg-black border border-white/[0.14] rounded-lg text-[13px] text-white focus:outline-none focus:border-white/30 placeholder-white/30 font-sans"
+          className="w-full p-3 bg-ground border border-line-300 rounded-lg text-[13px] text-ink focus:outline-none focus:border-line-500 placeholder-ink-300 font-sans"
           placeholder="Optional narrator / dialogue speech (Kokoro TTS auto-ducked over BGM track)..."
         />
       </div>
@@ -235,14 +235,14 @@ export function AudioVoiceStep({
       {/* Controls Grid: Voice Profile & BGM Bed */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-white/60 flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5 text-purple-400" />
+          <label className="text-[11px] font-semibold text-ink-700 flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5 text-agent" />
             <span>Kokoro Voice Profile</span>
           </label>
-          <select 
+          <select
             value={voice}
             onChange={(e) => setVoice(e.target.value)}
-            className="w-full bg-black border border-white/[0.14] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-ground border border-line-300 rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-line-500 cursor-pointer"
           >
             <option value="af_heart">Heart (Warm Female · Recommended)</option>
             <option value="af_bella">Bella (Expressive Female)</option>
@@ -256,14 +256,14 @@ export function AudioVoiceStep({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-white/60 flex items-center gap-1.5">
-            <Music className="w-3.5 h-3.5 text-cyan-400" />
+          <label className="text-[11px] font-semibold text-ink-700 flex items-center gap-1.5">
+            <Music className="w-3.5 h-3.5 text-ink-700" />
             <span>Background Music (BGM Bed)</span>
           </label>
-          <select 
+          <select
             value={bgmBed}
             onChange={(e) => setBgmBed(e.target.value)}
-            className="w-full bg-black border border-white/[0.14] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-ground border border-line-300 rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-line-500 cursor-pointer"
           >
             <option value="ambient-cinematic">Ambient Pad (Cinematic Float)</option>
             <option value="synth-pop-electronic">Sci-Fi Pulse (Electronic Beat)</option>
@@ -275,25 +275,25 @@ export function AudioVoiceStep({
       </div>
 
       {/* Dynamic Audio Waveform Visualizer Canvas */}
-      <div className="flex flex-col gap-2 p-3.5 bg-black/70 border border-white/[0.08] rounded-xl">
+      <div className="flex flex-col gap-2 p-3.5 bg-inset border border-line-200 rounded-xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-white/50" />
-            <span className="text-[11px] font-mono text-white/60">Waveform Spectral Canvas</span>
+            <Volume2 className="w-4 h-4 text-ink-500" />
+            <span className="text-[11px] font-mono text-ink-700">Waveform Spectral Canvas</span>
           </div>
           {audioUrl && (
-            <span className="text-[11px] font-mono text-cyan-400">
+            <span className="text-[11px] font-mono text-ink-700">
               {playbackTime} / {durationText}
             </span>
           )}
         </div>
 
         {/* Real Canvas Waveform */}
-        <canvas 
-          ref={canvasRef} 
-          width={440} 
-          height={48} 
-          className="w-full h-12 rounded-lg bg-[#0e0e11] border border-white/[0.06]"
+        <canvas
+          ref={canvasRef}
+          width={440}
+          height={48}
+          className="w-full h-12 rounded-lg bg-ground border border-line-100"
         />
 
         <div className="flex items-center justify-between pt-1 gap-2">
@@ -301,16 +301,16 @@ export function AudioVoiceStep({
             type="button"
             onClick={handleSynthesize}
             disabled={synthMutation.isPending || !dialogue.trim()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#18181b] hover:bg-[#222226] border border-white/[0.12] rounded-lg text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-inset hover:bg-strong border border-line-300 rounded-lg text-xs font-semibold text-ink-900 hover:text-ink transition-all cursor-pointer disabled:opacity-50"
           >
             {synthMutation.isPending ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-agent" />
                 <span>Synthesizing &amp; Ducking...</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 text-cyan-400" />
+                <Play className="w-3.5 h-3.5 text-ink-700" />
                 <span>Preview Ducked VO</span>
               </>
             )}
@@ -321,13 +321,13 @@ export function AudioVoiceStep({
               <button
                 type="button"
                 onClick={togglePlay}
-                className="p-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                className="p-1.5 rounded-lg bg-inset hover:bg-strong text-ink transition-all cursor-pointer"
                 title={isPlaying ? 'Pause Preview' : 'Play Preview'}
               >
-                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-black" />}
+                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-ink" />}
               </button>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
-                <Check className="w-3 h-3 text-emerald-400" />
+              <div className="flex items-center gap-1 text-[11px] font-mono text-verify bg-verify-soft px-2 py-1 rounded border border-verify/20">
+                <Check className="w-3 h-3 text-verify" />
                 <span>Ready</span>
               </div>
             </div>
