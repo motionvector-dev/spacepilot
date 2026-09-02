@@ -52,11 +52,12 @@ one machine because there is one machine.
 
 ## Brains
 
-Two implementations of one `Brain` protocol answer `Talk`. `AppleBrain`
+Three implementations of one `Brain` protocol answer `Talk`. `AppleBrain`
 (`AppleFoundationModelManager`) is unchanged: `SystemLanguageModel.default`,
 on device, free. `DaemonBrain` sends the same system instructions and the
 same telemetry block to the daemon's `POST /v1/chat/completions` instead —
-`docs/design/INFERENCE-SURFACE.md` is the wire shape. Neither fabricates: a
+`docs/design/INFERENCE-SURFACE.md` is the wire shape. `CoreAIBrain` runs an
+exported Core AI `.aimodel` inside this process. None of them fabricates: a
 brain that cannot answer throws a `BrainError` and the popover says why,
 never a plausible-looking reply.
 
@@ -67,7 +68,14 @@ session, then Apple:
 SpaceBar --brain apple
 SpaceBar --brain daemon --model qwen3-8-27b-4bit
 SpaceBar --brain daemon                              # auto-picks a model
+SpaceBar --brain coreai                              # the default export
+SpaceBar --brain coreai --model ~/some/other.aimodel-folder
 ```
+
+`--model` means two different things: a daemon model id under `--brain
+daemon`, a path to an exported bundle under `--brain coreai`. They persist
+under separate `UserDefaults` keys, so switching brains back and forth never
+clobbers the other one's setting.
 
 With `--brain daemon` and no `--model`, `DaemonBrain` asks `GET /v1/models`
 and takes the first variant that is both `kind: text` and `verdict.level:
@@ -78,10 +86,11 @@ listing, which only happens when the daemon has `ANTHROPIC_API_KEY` set —
 see INFERENCE-SURFACE.md's "Remote providers".
 
 The choice persists in `UserDefaults`, and the Diagnostics disclosure carries
-a picker — three fixed choices (Apple Intelligence, daemon auto, daemon
-`claude-sonnet-5`) plus whatever is active right now, so an explicit
-`--model` still shows correctly even when it is not one of the three.
-Switching takes effect on the next question.
+a picker — four fixed choices (Apple Intelligence, daemon auto, daemon
+`claude-sonnet-5`, and Core AI showing the bundle's folder name) plus
+whatever is active right now, so an explicit `--model` still shows correctly
+even when it is not one of the four. Switching takes effect on the next
+question.
 
 **What each needs.** Apple: Apple Intelligence turned on; if it is off,
 `Talk` says so instead of thinking. Daemon: the daemon up on
@@ -93,8 +102,51 @@ can't answer with the daemon brain"; a requested model not in the listing
 names the ones that are; anything else the daemon refuses with (weights not
 cached, a driver error) is read back in the daemon's own words.
 
-`--self-test <wav>` takes the same two flags, so the daemon path can be
-proven with no microphone in it — see `docs/LOCAL-TEST.md`.
+### The Core AI brain
+
+`CoreAIBrain` loads an exported `.aimodel` bundle with
+`CoreAILanguageModel(resourcesAt:)` and answers through a
+`LanguageModelSession` built on it — the same `SpacePilotInstructions.system`
+and the same telemetry block the other two use. **It makes no network
+requests at all.** It does not go through `DaemonClient`, so the allowlist in
+"Read-only, for now" below is not even in the path: there is nothing for it
+to reach. The weights are on disk, the inference is in this process, and the
+machine can be offline.
+
+Export a model first. From a checkout of `apple/coreai-models`:
+
+```bash
+uv run coreai.llm.export Qwen/Qwen3-0.6B
+```
+
+That writes `exports/qwen3_0_6b_4bit_dynamic/` — a folder holding the
+`.aimodel` and a `tokenizer/`. Move it out of Apple's checkout; SpaceBar
+defaults to
+`~/code/motionvector/media-scratch/coreai-exports/Qwen3-0.6B/qwen3_0_6b_4bit_dynamic`.
+On an M-series Mac the export takes about 4.5 minutes, peaks near 5.7 GB
+resident, and produces 331 MB at the macOS default compression (4-bit
+dynamic). `--model` points at the bundle *folder*, not the `.aimodel` inside
+it.
+
+Loading is lazy — the first question pays a few hundred MB off disk, and
+nothing is read at launch on a Mac where nobody picks this brain. A load that
+fails is a spoken sentence, never a trap: no bundle at that path says so and
+names the folder; a runtime that refuses the bundle reads back its own error.
+The session is not cached on failure, so exporting the model and asking again
+works without relaunching.
+
+**Toolchain.** Apple's package declares `.macOS("27.0")`, which raises
+SpaceBar's own floor from 26.0 to 27.0 — there is no build that keeps both
+this brain and macOS 26. Building it needs the macOS 27 SDK *and* Xcode 27:
+the 27 SDK makes SwiftUI's property wrappers macros, and the plugin that
+expands them (`SwiftUIMacros`) ships only with Xcode. Command Line Tools 27
+carries the SDK but not the plugin, so `swift build` there fails on the first
+`@State` with `plugin for module 'SwiftUIMacros' not found`. Apple's own
+runtime compiles fine under that toolchain; it is SpaceBar's SwiftUI that
+does not.
+
+`--self-test <wav>` takes the same two flags, so the daemon and Core AI paths
+can both be proven with no microphone in them — see `docs/LOCAL-TEST.md`.
 
 **Read-only, for now.** `DaemonClient` only ever sends the five requests in
 `DaemonRoute.allowed` — `GET /healthz`, `GET /api/compute/local-status`,

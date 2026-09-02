@@ -120,21 +120,38 @@ both. SpaceBar: from the clean main worktree,
 
 ## Choosing the brain
 
-`SpaceBar` and `--self-test` both take `--brain apple|daemon` and, for the
-daemon brain, `--model <id>`. Apple is the default and needs nothing beyond
-Apple Intelligence being on. The daemon brain needs the daemon up on
-`127.0.0.1:8088`:
+`SpaceBar` and `--self-test` both take `--brain apple|daemon|coreai` and
+`--model <value>`. Apple is the default and needs nothing beyond Apple
+Intelligence being on. The daemon brain needs the daemon up on
+`127.0.0.1:8088`. The Core AI brain needs an exported `.aimodel` bundle on
+disk and nothing else — no daemon, no network:
 
 ```bash
 open "$APP" --args --brain apple
 open "$APP" --args --brain daemon --model qwen3-8-27b-4bit
+open "$APP" --args --brain coreai
+open "$APP" --args --brain coreai --model ~/some/other/bundle-folder
 ```
 
-Omit `--model` and it auto-picks the first `runs_well`, served text model
-from `GET /v1/models`. The choice persists in `UserDefaults`, so a plain
-`open "$APP"` after either of the above remembers it; the Diagnostics
-disclosure has a picker for switching without a relaunch. See
-`docs/design/SPACEBAR.md`, "Brains".
+`--model` is a daemon model id under `--brain daemon` and a bundle path under
+`--brain coreai`; they persist separately. Omit it under `daemon` and it
+auto-picks the first `runs_well`, served text model from `GET /v1/models`;
+omit it under `coreai` and it uses
+`~/code/motionvector/media-scratch/coreai-exports/Qwen3-0.6B/qwen3_0_6b_4bit_dynamic`.
+The choice persists in `UserDefaults`, so a plain `open "$APP"` after any of
+the above remembers it; the Diagnostics disclosure has a picker for switching
+without a relaunch. See `docs/design/SPACEBAR.md`, "Brains".
+
+Proving the Core AI chain with no microphone in it:
+
+```bash
+open "$APP" --args --self-test ~/some/clip.wav --brain coreai
+```
+
+Building the Core AI brain at all needs **Xcode 27**. Command Line Tools 27
+carries the macOS 27 SDK but not the `SwiftUIMacros` plugin the 27 SDK's
+`@State` needs, so `swift build` under it stops at the first SwiftUI property
+wrapper. SPACEBAR.md's "Toolchain" note has the detail.
 
 ## Testing against Claude instead of a local model
 

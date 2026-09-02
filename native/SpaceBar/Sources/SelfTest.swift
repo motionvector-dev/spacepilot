@@ -80,16 +80,22 @@ enum SelfTest {
         report("transcribe", start: transcribeStart, ok: "\"\(transcript)\"")
 
         // Stage 3 — the same brain call `answer()` makes, minus the debounce.
-        // `--brain apple|daemon` (default apple) and `--model <id>` select
-        // it the same way `BrainSelection.resolve()` does for the app —
-        // this is what proves the daemon chain end to end with no
-        // microphone in the path.
+        // `--brain apple|daemon|coreai` (default apple) and `--model
+        // <id-or-path>` select it the same way `BrainSelection.resolve()`
+        // does for the app — this is what proves the daemon and Core AI
+        // chains end to end with no microphone in the path.
         let selection = BrainSelection.resolve()
         let brain: any Brain
-        if selection.kind == .apple {
+        switch selection.kind {
+        case .apple:
             brain = AppleFoundationModelManager()
-        } else {
+        case .daemon:
             brain = DaemonBrain(client: DaemonClient(), requestedModel: selection.daemonModel)
+        case .coreai:
+            let url = selection.coreaiModelPath
+                .map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+                ?? CoreAIBrain.defaultModelURL
+            brain = CoreAIBrain(modelURL: url)
         }
         print("[brain] \(brain.label)")
 

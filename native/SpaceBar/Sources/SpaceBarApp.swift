@@ -148,11 +148,36 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             return afmManager
         case .daemon:
             return DaemonBrain(client: client, requestedModel: brainSelection.daemonModel)
+        case .coreai:
+            return coreaiBrain(for: brainSelection.coreaiModelPath)
         }
     }
 
+    /// One `CoreAIBrain` per model path, kept for the life of the app. The
+    /// brain loads ~331 MB off disk on its first question and caches the
+    /// session; handing out a fresh instance every time `brain` is read —
+    /// which `answer()` does on every question — would pay that cost again
+    /// on each one. Keyed by path so switching models still reloads.
+    private func coreaiBrain(for path: String?) -> CoreAIBrain {
+        let url = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+            ?? CoreAIBrain.defaultModelURL
+        if let cached = coreaiBrains[url] { return cached }
+        let fresh = CoreAIBrain(modelURL: url)
+        coreaiBrains[url] = fresh
+        return fresh
+    }
+
+    private var coreaiBrains: [URL: CoreAIBrain] = [:]
+
     /// What the Diagnostics picker shows for the brain in play right now.
     var brainLabel: String { brain.label }
+
+    /// The `.aimodel` bundle the Core AI row names, whether or not that brain
+    /// is the one selected — so the menu item reads as a real choice before
+    /// it is picked.
+    var coreaiModelName: String {
+        coreaiBrain(for: brainSelection.coreaiModelPath).modelURL.lastPathComponent
+    }
 
     /// Where permission answers come from. `.system` in the app; stubbed in
     /// `--dry-run-voice`, which is how the denied and restricted paths get
@@ -952,13 +977,28 @@ struct SpaceBarPopoverView: View {
                 .frame(width: 78, alignment: .leading)
             Menu {
                 Button("Apple Intelligence") {
-                    voice.brainSelection = BrainSelection(kind: .apple, daemonModel: voice.brainSelection.daemonModel)
+                    voice.brainSelection = BrainSelection(
+                        kind: .apple,
+                        daemonModel: voice.brainSelection.daemonModel,
+                        coreaiModelPath: voice.brainSelection.coreaiModelPath
+                    )
                 }
                 Button("Daemon · auto") {
-                    voice.brainSelection = BrainSelection(kind: .daemon, daemonModel: nil)
+                    voice.brainSelection = BrainSelection(
+                        kind: .daemon,
+                        daemonModel: nil,
+                        coreaiModelPath: voice.brainSelection.coreaiModelPath
+                    )
                 }
                 Button("Daemon · claude-sonnet-5") {
                     voice.brainSelection = BrainSelection(kind: .daemon, daemonModel: "claude-sonnet-5")
+                }
+                Button("Core AI · \(voice.coreaiModelName)") {
+                    voice.brainSelection = BrainSelection(
+                        kind: .coreai,
+                        daemonModel: voice.brainSelection.daemonModel,
+                        coreaiModelPath: voice.brainSelection.coreaiModelPath
+                    )
                 }
             } label: {
                 Text(voice.brainLabel)
