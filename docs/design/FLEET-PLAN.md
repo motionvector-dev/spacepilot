@@ -5,6 +5,32 @@
 (§3) and `docs/design/CONCEPT.md`; this doc is the execution bridge — what
 exists, what is missing, and the order to build it.
 
+**Revalidated 2026-09-02** against main `01027f4`, as part of the merge train
+that landed this doc. `spacepilot/pluto/*` paths below are fixed to their
+current location (`spacepilot/*` — the package was flattened in #101; the
+line numbers otherwise still match). More substantively, `spacepilot/daemon/`
+moved further than this plan assumed:
+
+- **W6 (LOG gossip) is now substantially built.** `spacepilot/daemon/log.py`
+  ships signed records, signed pages, and `LogStore.records_since(epoch,
+  sequence)` — pull-since-a-cursor plus union-merge-on-ingest, matching this
+  workstream's shape. Re-verify the "no CRDT, converges order-free" property
+  with a test before calling it done, but the code is there.
+- **W5 (liveness/sleep) is further along than "gap".** `daemon/fleet.py`
+  already carries the full `ready/busy/asleep/gone` state machine with aging
+  (`FleetMember`, `FleetRowFacts`). What's still missing, confirmed by grep,
+  is the scheduler side: no `plan()` path renders "queued — asleep, checked
+  Ns ago" yet. Keep "Partly built."
+- **W0, W1, W3 are still open**, re-confirmed against current main: no
+  `timeout=` reaches `driver.infer()` in `spacepilot/services/text_execution.py:133`;
+  no `on_paper.py` module exists anywhere in the tree; `spacepilot/mcp_server.py`
+  carries 17 tools (not 16 — recounted 2026-09-02), still none named `plan`
+  or `execute`.
+- **W4 (substrate parity)**: `tests/test_daemon_phase4.py` exercises both
+  `DirectLocal` and `DaemonClient` against `spacepilot/substrate.py`, but no
+  single parametrized fixture-identity test was found by grep. Unconfirmed
+  either way without reading that file closely — don't assume built.
+
 **Scope**: everything between the running single-machine core and the
 multi-machine fleet the paper describes. Not in scope: new models, new
 runtimes, multi-tenant fleets.
@@ -17,20 +43,20 @@ Verified by reading main and the PR #78 worktree, not from memory.
 
 | Paper commitment | Code today | Verdict |
 |---|---|---|
-| Provenance typing (flown / on paper / unflown) | `pluto/services/provenance.py:21-47` — `FactProvenance` with the three states and the rendering rule | **Built** |
-| Caveat taxonomy | `pluto/registry.py:80-104` — `CAVEAT_STATUSES` (preserved/degraded/untrained/absent), `CAVEAT_PROVENANCES` (measured/inferred/declared), `Caveat` dataclass | **Built** |
-| Measurement corpus (LOG) | `pluto/measurements.py` — `Measurement` dataclass with revision/knobs/contention/status, `record()`, YAML on disk per system/model | **Built** |
+| Provenance typing (flown / on paper / unflown) | `spacepilot/services/provenance.py:20-47` — `FactProvenance` with the three states and the rendering rule | **Built** |
+| Caveat taxonomy | `spacepilot/model_registry.py:80-104` — `CAVEAT_STATUSES` (preserved/degraded/untrained/absent), `CAVEAT_PROVENANCES` (measured/inferred/declared); `Caveat` dataclass at :164 | **Built** |
+| Measurement corpus (LOG) | `spacepilot/measurements.py` — `Measurement` dataclass with revision/knobs/contention/status, `record()`, YAML on disk per system/model | **Built** |
 | Resolver | `paths.py` `resolve()` — content-addressed cache, offline | **Built** |
 | Substrate (DaemonClient ≡ DirectLocal) | `substrate.py` — wire-shaped dicts, no-retry-on-lost-response | **Built** |
 | Daemon, UDS + tailnet peers, Ed25519 | `daemon/server.py` (479 lines), `daemon/peer_auth.py` (338), `daemon/fleet.py` (506) | **Built** |
 | Liveness (ready/busy/asleep/gone, aged) | `daemon/fleet.py` — `FleetMember`, ages; sleep states in the paper's shape | **Partly built** |
-| Agent surface over MCP | `pluto_mcp_server.py` — 16 tools, all probe/download/checkpoint; **no plan, no execute** | **Gap** |
+| Agent surface over MCP | `spacepilot/mcp_server.py` — 17 tools, all probe/download/checkpoint; **no plan, no execute** | **Gap** |
 | Consent gate for agents | CLI has `--yes`/TTY refusal; MCP has nothing | **Gap** |
 | Cold-start evidence (fresh fleet) | No importer for public corpora | **Gap** |
 
 Two defects found while verifying:
 
-1. **No wall-clock bound on `infer()`** — `pluto/services/text_execution.py:133`
+1. **No wall-clock bound on `infer()`** — `spacepilot/services/text_execution.py:133`
    calls `driver.infer(...)` with no `timeout`; the driver default is `None`.
    Token count and KV are bounded; time is not. A stalled 15 GB load into swap
    hangs the CLI forever. The driver already raises on `TimeoutExpired` — the
@@ -88,7 +114,7 @@ Ordered. Each one is small, testable, and lands on its own branch.
 A fresh fleet has zero flown records; the ranked table is all dashes. Import
 public benchmark corpora as dated, cited *on paper* rows.
 
-- New module `pluto/services/on_paper.py`: load a Pipette export, map each row
+- New module `spacepilot/services/on_paper.py`: load a Pipette export, map each row
   to a registry variant (model × quant × runtime), emit `FactProvenance`
   records with source URL and date.
 - Never blend: imported rows render `on paper (pipette, 2026-08-21)`, never as
