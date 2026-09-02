@@ -72,7 +72,15 @@ def list_models():
     """Every local text and embedding variant, with the shared fit verdict.
 
     Read-only and free, so it is open like `/api/measurements`.
+
+    `claude-sonnet-5` joins the list only when `ANTHROPIC_API_KEY` is set in
+    this process's environment — an offline machine must never advertise a
+    model it cannot actually serve. It carries no fit verdict (it never runs
+    on this machine, so there is nothing local to grade); `level` is
+    `"remote"` instead of one of the three local words.
     """
+    from spacepilot.services import anthropic_provider
+
     profile = probe_local_device()
     system_id = ms.system_from_profile(profile).id
     data = []
@@ -90,6 +98,23 @@ def list_models():
                 "revision": variant.revision,
                 "served": route is not None,
                 "license": variant.license.id,
+            },
+        })
+    if anthropic_provider.api_key_present():
+        data.append({
+            "id": anthropic_provider.MODEL_ID,
+            "object": "model",
+            "owned_by": "anthropic",
+            "x_spacepilot": {
+                "kind": "text",
+                "verdict": {"level": "remote",
+                            "reason": "runs on Anthropic's API, not this machine",
+                            "headroom_bytes": None},
+                "system_id": system_id,
+                "runtime": anthropic_provider.RUNTIME_ID,
+                "revision": None,
+                "served": True,
+                "license": "proprietary",
             },
         })
     return {"object": "list", "data": data}
@@ -167,11 +192,174 @@ def _plan_text(model_id: str, verdict):
     return service, plan
 
 
+def _anthropic_extensions(system_id, run_id, tokens_in, tokens_out, wall_seconds) -> Dict[str, Any]:
+    return {
+        "verdict": {"level": "remote"},
+        "provider": "anthropic",
+        "system_id": system_id,
+        "runtime": "anthropic",
+        "run_id": run_id,
+        "tokens_in": tokens_in,
+        "tokens_out": tokens_out,
+        "wall_seconds": wall_seconds,
+    }
+
+
+def _record_anthropic_measurement(system, run_id: str, result) -> None:
+    """One Measurement per call, same as every other `/v1` route.
+
+    `value` is real wall time observed round-tripping this call, not a
+    fabrication — timing our own request is a measurement even though the
+    weights ran somewhere else.
+    """
+    from spacepilot.services import anthropic_provider
+
+    ms.write_system(system)
+    tokens_per_second = (
+        result.tokens_out / result.wall_seconds if result.wall_seconds > 0 else 0.0
+    )
+    ms.record(
+        system=system, model_id=anthropic_provider.MODEL_ID,
+        metric="tokens_per_second", value=float(tokens_per_second),
+        runtime_id=anthropic_provider.RUNTIME_ID,
+        wall_seconds=result.wall_seconds, run_id=run_id,
+        tokens_in=result.tokens_in, tokens_out=result.tokens_out,
+        note="anthropic api call; remote machine ran the weights, this machine "
+             "only timed the round trip",
+    )
+
+
+def _refusal_error(run_id: str, result):
+    message = "the model declined to answer"
+    if result.refusal_category:
+        message = f"{message}: {result.refusal_category}"
+    return _error(400, message, "refusal", "refusal", {"run_id": run_id})
+
+
+def _chat_completions_anthropic(body: ChatCompletionRequest):
+    """`claude-*` models dispatch here instead of the registry/mlx path.
+
+    No fit verdict — the model does not run on this machine, so there is
+    nothing local to grade. `x_spacepilot.verdict` is the fixed `"remote"`
+    marker instead.
+    """
+    from spacepilot.services import anthropic_provider
+
+    if body.model != anthropic_provider.MODEL_ID:
+        raise _error(404, f"no model {body.model!r}; see GET /v1/models",
+                     "invalid_request_error", "model_not_found")
+    if not anthropic_provider.api_key_present():
+        raise _error(503, "ANTHROPIC_API_KEY is not set on this machine",
+                     "unavailable_error", "provider_unconfigured")
+
+    profile = probe_local_device()
+    system = ms.system_from_profile(profile)
+    run_id = uuid.uuid4().hex
+    created = int(time.time())
+    provider = anthropic_provider.default_provider()
+    max_tokens = (
+        body.max_tokens if "max_tokens" in body.model_fields_set
+        else anthropic_provider.DEFAULT_MAX_TOKENS
+    )
+    messages = [m.model_dump() for m in body.messages]
+
+    if body.stream:
+        return StreamingResponse(
+            _stream_chat_anthropic(provider, messages, body.temperature, max_tokens,
+                                   anthropic_provider.MODEL_ID, system, run_id, created),
+            media_type="text/event-stream",
+        )
+
+    try:
+        result = provider.complete(
+            messages=messages, max_tokens=max_tokens, temperature=body.temperature,
+        )
+    except anthropic_provider.AnthropicProviderError as exc:
+        raise _error(502, str(exc), "driver_error", "driver_failed", {"run_id": run_id})
+
+    _record_anthropic_measurement(system, run_id, result)
+
+    if result.finish_reason == "refusal":
+        raise _refusal_error(run_id, result)
+
+    return {
+        "id": f"chatcmpl-{run_id}",
+        "object": "chat.completion",
+        "created": created,
+        "model": anthropic_provider.MODEL_ID,
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": result.content},
+            "finish_reason": "stop",
+        }],
+        "usage": {
+            "prompt_tokens": result.tokens_in,
+            "completion_tokens": result.tokens_out,
+            "total_tokens": result.tokens_in + result.tokens_out,
+        },
+        "x_spacepilot": _anthropic_extensions(
+            system.id, run_id, result.tokens_in, result.tokens_out, result.wall_seconds),
+    }
+
+
+def _stream_chat_anthropic(provider, messages, temperature, max_tokens, model_id,
+                           system, run_id, created):
+    """Mirrors `_stream_chat`'s shape: role delta, content deltas, then usage."""
+    head = {"id": f"chatcmpl-{run_id}", "object": "chat.completion.chunk",
+            "created": created, "model": model_id}
+    yield _sse({**head, "choices": [
+        {"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]})
+
+    result = None
+    try:
+        for kind, value in provider.stream_complete(
+            messages=messages, max_tokens=max_tokens, temperature=temperature,
+        ):
+            if kind == "chunk":
+                yield _sse({**head, "choices": [
+                    {"index": 0, "delta": {"content": value}, "finish_reason": None}]})
+            else:
+                result = value
+    except Exception as exc:
+        yield _sse({"error": {"message": str(exc), "type": "driver_error",
+                              "code": "execution_failed"},
+                    "x_spacepilot": {"run_id": run_id}})
+        yield "data: [DONE]\n\n"
+        return
+
+    _record_anthropic_measurement(system, run_id, result)
+
+    if result.finish_reason == "refusal":
+        message = "the model declined to answer"
+        if result.refusal_category:
+            message = f"{message}: {result.refusal_category}"
+        yield _sse({"error": {"message": message, "type": "refusal", "code": "refusal"},
+                    "x_spacepilot": {"run_id": run_id}})
+        yield "data: [DONE]\n\n"
+        return
+
+    yield _sse({
+        **head,
+        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        "usage": {
+            "prompt_tokens": result.tokens_in,
+            "completion_tokens": result.tokens_out,
+            "total_tokens": result.tokens_in + result.tokens_out,
+        },
+        "x_spacepilot": _anthropic_extensions(
+            system.id, run_id, result.tokens_in, result.tokens_out, result.wall_seconds),
+    })
+    yield "data: [DONE]\n\n"
+
+
 @router.post("/chat/completions")
 def chat_completions(body: ChatCompletionRequest, _: None = Depends(require_token)):
     from spacepilot.services.text_execution import TextRequest, default_text_output
 
     update_activity()
+    if body.model.startswith("claude-"):
+        return _chat_completions_anthropic(body)
+
     profile = probe_local_device()
     model_id, verdict = _resolve(body.model, profile)
     service, plan = _plan_text(model_id, verdict)

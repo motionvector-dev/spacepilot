@@ -100,4 +100,24 @@ mvec-local status
 After a merge to main: `mvec-local main sync spacepilot --apply`, then restart
 both. SpaceBar: from the clean main worktree,
 `~/code/.mvec-local/worktrees/main/spacepilot/native/SpaceBar/tools/make_app.sh`
+
+## Testing against Claude instead of a local model
+
+`claude-sonnet-5` is a second backend behind `/v1/chat/completions` — see
+`docs/design/INFERENCE-SURFACE.md`, "Remote providers" — for testing
+SpaceBar's brain while Apple Intelligence is off, or while the local rungs
+are not wired yet. `ANTHROPIC_API_KEY` comes from Doppler
+(`unfoundbox`/`dev_personal`), never from a file in the repo:
+
+```bash
+doppler run --project unfoundbox --config dev_personal -- \
+  curl -sS http://127.0.0.1:8088/v1/chat/completions \
+    -H "X-SpacePilot-Token: $(cat .studio_token)" \
+    -H "Content-Type: application/json" \
+    -d '{"model": "claude-sonnet-5", "messages": [{"role": "user", "content": "Say hi in five words."}]}'
+```
+
+`GET /v1/models` lists `claude-sonnet-5` only when the key is present in the
+daemon's own environment, so start the daemon itself under `doppler run --`
+if it is not already — `X-SpacePilot-Token` still gates the POST regardless.
 then the `open` line it prints.

@@ -160,6 +160,58 @@ strings embedded, cosine 0.87 between two paraphrases and 0.56 between
 unrelated sentences, peak memory 0.62 GB. That is a working embedder, not a
 plausible-looking one.
 
+## Remote providers
+
+The dock's third rung, arriving early. M1/M2 built the local rungs — mlx-lm
+now, gguf and CoreAI later — each earning a fit verdict on this machine.
+Renting a box (`CONCEPT.md`'s "money is loud") is the rung after that, still
+undesigned. Between them, one thing does not fit the local ladder at all: a
+model that never runs on this machine because it is not supposed to — testing
+SpaceBar's brain against a strong model while Apple Intelligence is off, or
+while the local rungs are not there yet. `claude-sonnet-5` is that: a second
+backend behind the same `/v1/chat/completions`, for testing, not a competitor
+to the local rungs.
+
+**Dispatch.** `chat_completions` checks the prefix before anything else: a
+`model` starting with `claude-` skips the registry, `fit_verdict`, and the
+mlx-lm plan entirely and goes to `spacepilot/services/anthropic_provider.py`.
+Only `claude-sonnet-5` is wired; any other `claude-*` id is `404
+model_not_found`, the same refusal an unknown local id gets — no silent
+substitution to whichever Claude model happens to exist.
+
+**No fit verdict.** `fit_verdict` grades whether a model fits *this machine's*
+memory. A remote call never touches this machine's memory, so grading it would
+answer a question that was not asked. The response and `GET /v1/models` both
+carry `x_spacepilot.verdict = {"level": "remote"}` instead of one of the three
+local words, plus `x_spacepilot.provider = "anthropic"` so a client can tell
+the two backends apart without parsing the model id.
+
+**The key gates everything, including the listing.** `ANTHROPIC_API_KEY` is
+read from the environment at request time — never stored on the provider
+object, never logged, never placed in a response or error body. `GET
+/v1/models` lists `claude-sonnet-5` only when the key is present in this
+process's environment; an offline machine must not advertise a model it
+cannot serve. A `claude-sonnet-5` request with no key set is `503
+provider_unconfigured`, the OpenAI error shape, same as every other refusal on
+this surface.
+
+**Refusals are a stop reason, not a crash.** When the SDK reports
+`stop_reason == "refusal"`, the route does not return 200 with an apology in
+the content — it returns the same OpenAI error shape everything else on this
+surface uses, `type: "refusal"`, `code: "refusal"`, with the refusal category
+in the message when Anthropic supplied one. Streaming refusals land in-band,
+the same way a mid-stream driver failure does on the local path.
+
+**What gets recorded.** Every claude-sonnet-5 call — success or refusal —
+writes exactly one `Measurement`, the same contract as the local routes:
+`run_id`, `tokens_in`/`tokens_out` from `response.usage` (never estimated from
+characters), `metric: "tokens_per_second"`, `runtime_id: "anthropic"`. `value`
+is real: this machine timed its own round trip to Anthropic's API, so the
+number is measured even though the weights ran somewhere else.
+`system_id` names the machine that made the call, not a machine that ran
+anything — the join key AgentWorth needs to ask "what did testing on Sonnet
+cost" is the same run id either backend writes.
+
 ## Errors
 
 Every error body is `{"error": {"message": …, "type": …, "code": …}}`, the

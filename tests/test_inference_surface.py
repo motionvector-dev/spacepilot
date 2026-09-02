@@ -124,6 +124,10 @@ def test_cli_mcp_and_the_api_print_the_same_word(monkeypatch):
 def test_models_lists_text_and_embeddings_with_a_verdict_each(monkeypatch):
     import spacepilot.api.routes.inference as inference
 
+    # Deterministic regardless of whether this host happens to have
+    # ANTHROPIC_API_KEY set: the remote provider's own listing behaviour is
+    # covered by tests/test_anthropic_provider.py, not this one.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setattr(inference, "probe_local_device", _profile)
     body = client.get("/v1/models").json()
     assert body["object"] == "list"
