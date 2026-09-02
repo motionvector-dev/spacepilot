@@ -3,18 +3,10 @@ SpacePilot Sovereign Local Voice Engine (100% On-Device Apple Silicon)
 ======================================================================
 """
 
-import asyncio
-import time
 import logging
-import numpy as np
 from typing import AsyncGenerator, Callable, Optional
-import io
-import wave
-import mlx.core as mx
-from mlx_lm import load, generate
-from kokoro_onnx import Kokoro
-from faster_whisper import WhisperModel
-import soundfile as sf
+
+import numpy as np
 
 logger = logging.getLogger("spacepilot.local_voice")
 
@@ -39,8 +31,16 @@ class LocalVoiceEngine:
 
     async def initialize(self):
         """Pre-warms local weights into Apple Silicon Unified RAM."""
+        # mlx-lm arrives through `spacepilot runtimes install`, and
+        # faster-whisper and kokoro-onnx through the local-ml extra. Importing
+        # any of them at module level would make the CLI unusable on a machine
+        # that has not opted into them, instead of reporting them as absent.
+        from faster_whisper import WhisperModel
+        from kokoro_onnx import Kokoro
+        from mlx_lm import load
+
         logger.info("⚡ Pre-warming Sovereign Local Voice Pipeline...")
-        
+
         # 1. ASR
         # We'll use compute_type="float16" for Apple Silicon if supported, else auto.
         self.asr_model = WhisperModel(self.asr_model_name, device="cpu", compute_type="int8") 
@@ -66,6 +66,8 @@ class LocalVoiceEngine:
         return text.strip()
 
     def generate_llm(self, prompt: str) -> str:
+        from mlx_lm import generate
+
         messages = [{"role": "user", "content": prompt}]
         prompt_formatted = self.llm_tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         response = generate(self.llm_model, self.llm_tokenizer, prompt=prompt_formatted, max_tokens=100, verbose=False)

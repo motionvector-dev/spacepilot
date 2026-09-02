@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("test_local_voice")
 
-from spacepilot.pluto.drivers.local_voice_engine import LocalVoiceEngine
+from spacepilot.drivers.local_voice_engine import LocalVoiceEngine
 
 async def mock_audio_stream():
     rate = 16000
