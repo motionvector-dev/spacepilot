@@ -516,6 +516,7 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         case .modelUnavailable(let message):
             state = .idle
             lastSaid = "Could not answer: \(message)"
+            speak(lastSaid)
         }
     }
 
