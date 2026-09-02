@@ -36,6 +36,15 @@ trial, not a standard yet). Apple's reference checkouts are at
 is a cheap Gemini-Live prototype of the same idea; review it, rebuild from
 scratch if it fights the plan. Sources: `docs/design/VISION.md`.
 
+## SpaceBar is read-only, for now (Saurabh, 2026-09-03)
+
+The menu bar app may read from the daemon and ask a model for a reply. It
+must not change state: no downloads, installs, checkpoints, launches,
+terminates, training, or local writes beyond its own preferences. The
+allowlist lives in the app's daemon client; a new route is added there on
+purpose, never by accident. Lift this rule in writing when the voice loop has
+earned it.
+
 ## When Fable drives
 
 Be token efficient. Fable tokens are the rare, expensive ones: Fable plans,
