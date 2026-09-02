@@ -48,18 +48,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      # -n: fail immediately if sudo needs a password rather than blocking on
-      # a tty prompt the Actions log can't show. Without it a runner account
-      # missing a NOPASSWD sudoers entry hangs here silently until
-      # timeout-minutes kills the job — that's what happened on
-      # lenovo-spacepilot 2026-09-02 (19 min of no output, then "The
-      # operation was canceled"). If this now fails with "sudo: a password is
-      # required", the fix is a NOPASSWD sudoers entry on the runner host,
-      # not a workflow change.
-      - name: Install system packages
+      # No sudo here, ever. lenovo-spacepilot's runner account has no
+      # NOPASSWD sudoers entry, so `sudo apt-get ...` blocks on a tty
+      # password prompt the Actions log can't show — confirmed live on the
+      # host 2026-09-02 after it silently ate two job timeouts. ffmpeg and
+      # libsndfile1 are already installed on lenovo-spacepilot; this step
+      # only verifies that and fails with the exact commands to run by hand
+      # if either is ever missing.
+      - name: Verify system packages are present
         run: |
-          sudo -n apt-get update
-          sudo -n apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          missing=""
+          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
+          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
+            exit 1
+          fi
 
       # Install from the declared file, never a hand-typed list. Two PRs in a
       # row added a dependency, declared it correctly, and still went red here
@@ -90,10 +94,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install system packages
+      # See the pytest job's identical step above: no sudo here, ever —
+      # verified present, or fails with the exact command for Saurabh.
+      - name: Verify system packages are present
         run: |
-          sudo -n apt-get update
-          sudo -n apt-get install -y --no-install-recommends ffmpeg libsndfile1
+          missing=""
+          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
+          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
