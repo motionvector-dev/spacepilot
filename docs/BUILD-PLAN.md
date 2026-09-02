@@ -5,6 +5,28 @@
 file:line evidence · **Supersedes:** the SpacePilot Build Board artifact
 (2026-08-23, now stale on ~10 items — see Appendix B).
 
+**Revalidated 2026-09-02** against main `01027f4`, as part of the merge train that
+landed this doc. Two things changed underneath it since it was written:
+
+1. **`spacepilot/pluto` was flattened to `spacepilot/`** (#101). Every `pluto/`
+   path below is fixed in place to its current location.
+2. **The product pivoted**: local coding models and embeddings lead now; video
+   is a dock workload, not the near-term focus (`docs/design/VISION.md`,
+   `docs/design/CONCEPT.md`). That changes *priority*, not the honesty rule —
+   a route that fabricates success is still a bug regardless of whether video
+   is this quarter's focus. **PR #111 merged 2026-09-02**, landing an
+   OpenAI-compatible `/v1` surface with fit verdicts (`docs/design/INFERENCE-SURFACE.md`)
+   ahead of this plan's Phase 2 — read that doc and the shipped surface
+   before starting 2.1-2.3; some of Phase 2 may already be done or need
+   re-scoping to extend rather than duplicate it.
+
+**Spot-check against current main, not a re-run of the 12-agent audit:** Phase
+0.1-0.3 are done (marked below, with the commit that closed each). Phase
+0.4/0.5's cited lines were re-checked and still match current `web/*.js`
+exactly. Phases 1, 3, 4, 5, 6 keep their original file:line citations from the
+2026-08-25 audit — treat line numbers there as approximate and re-grep before
+acting, per the doc's own "evidence expires" standard.
+
 **How to use this doc:** it is a handoff. Each work item names its files, its
 acceptance test, and a token estimate. A fresh session can pick any item and act
 without re-deriving. Phases are ordered by what blocks the thesis; items inside a
@@ -21,7 +43,7 @@ exists today: **one ship, one modality, no ranking beyond localhost.**
 `spacepilot run image` works end-to-end (mflux on Metal, real measurements,
 honest refusals) and is the product's quality bar. Everything else is either
 absent (docks: zero code; providers: zero code; scheduler: a comment at
-`spacepilot/pluto/registry.py:115`) or actively fabricating success (the legacy
+`spacepilot/model_registry.py:115`) or actively fabricating success (the legacy
 video studio and half the cockpit). The repo's stated bar — *a surface that
 fabricates success is worse than one that is absent* — is enforced in the new
 half and violated wholesale in the old half.
@@ -42,39 +64,33 @@ half and violated wholesale in the old half.
 
 ## Phase 0 — Stop the lying (blocks everything; nothing honest can ship on top of fabrication)
 
-The seven MCP tools deleted in #67/#68 were symptoms. The disease is still
-mounted on the app and served to first-run users.
+The seven MCP tools deleted in #67/#68 were symptoms. Items 0.1-0.3 below are
+now **done** on main (verified 2026-09-02) — kept here as the record of what
+was wrong and why, since the doc is a handoff, not a live task board. 0.4 and
+0.5 are still open; both were re-checked against current `web/*` and match the
+cited lines exactly.
 
-**0.1 Delete or gate the fake video engines.** `spacepilot/engines/{ltx,wan,hunyuan}_engine.py`
-render an ffmpeg `testsrc` colour-bar pattern and return `status: "completed"`
-with fabricated inference parameters (ltx_engine.py:88-118 calls
-`_render_mock_video()` unconditionally; the `mock: bool` arg is never branched
-on). `/api/generate/multi-engine` (mounted at pluto/app.py:84) serves this as a
-real job. Same failure class as the deleted MCP tools, worse because it writes a
-playable file. **Do:** unmount the route → 501, gate the engines behind
-NotImplementedError, keep code commented for archaeology. Acceptance: route
-returns 501; `test_compute_endpoints_all_require_the_token` still passes;
-grep shows no reachable `_render_mock_video`. ~60k tokens.
+**0.1 DONE — fake video engines gated.** `spacepilot/api/routes/engines.py`'s
+`/api/generate/multi-engine` now refuses with a 501 and an explanation instead
+of queuing the old ffmpeg `testsrc` mock; the old body is preserved in git
+history at `e4b7910` per the route's own docstring. Originally:
+`spacepilot/engines/{ltx,wan,hunyuan}_engine.py` rendered a colour-bar pattern
+and returned `status: "completed"` with fabricated inference parameters — same
+failure class as the deleted MCP tools, worse because it wrote a playable file.
 
-**0.2 `/api/generate` mock fallback marks but doesn't refuse.** generate.py:280-329
-`_mock_gen` sets `is_mock: True` (line 284) — which nothing reads (grep: one
-write, zero reads) — then `status: "completed"`. UI shows a completed clip.
-**Do:** no GPU → job status `"failed"` with a reason, never a testsrc render.
-~30k tokens.
+**0.2 DONE — `/api/generate` mock fallback refuses.** `spacepilot/api/routes/generate.py`
+now sets `status: "failed"` with an explicit "no video execution route" error
+when no GPU worker is running, instead of the old `_mock_gen` path that wrote
+`is_mock: True` (read by nothing) and reported `"completed"`.
 
-**0.3 Retire the legacy AWS CLI half or make it honest.** Verbs
-`status/launch/deploy/ssh/logs/generate/sync/terminate` all return `None` (exit
-0 always). Two fabricate: `status` renders any AWS error as "No active GPU
-instance found" exit 0 (cli.py:232-257 catches everything → None) — a credential
-failure is indistinguishable from an empty account on the verb the docs call the
-free way to check a billing box; `sync` prints "Sync complete!" regardless of
-rsync's exit. `status` also prints a hardcoded "78 GB model into VRAM (~170s)"
-(cli.py:322) on a 48 GB-VRAM instance, and a hardcoded $0.75 rate (cli.py:55).
-**Decision needed (Saurabh):** these verbs become the *docks* surface in Phase 4,
-so the choice is (a) fix exit codes + error surfacing now and rebuild later, or
-(b) gate them 501-style now and rebuild once. Recommend (b): smaller, and the
-verbs are unusable today anyway (the AWS profile they need doesn't resolve).
-~50k tokens for (b), ~150k for (a).
+**0.3 DONE — legacy AWS CLI verbs retired.** `status/launch/deploy/generate/sync`
+now go through `_refuse_legacy_aws()` in `spacepilot/cli.py`, which exits 2 and
+says plainly that renting compute returns as the docks surface (Phase 4) and
+nothing was started or billed. `status`, `ssh`, `logs`, `terminate` stay live
+for a box that's already running. The fix already forward-references this doc
+by name (`spacepilot/cli.py`, the `_refuse_legacy_aws` docstring) — whoever
+landed it was already treating BUILD-PLAN.md as the Phase 4 pointer, which is
+one more reason to merge this doc rather than leave it orphaned as a PR.
 
 **0.4 Cockpit fabrications — the first-run page lies first.** All fixes are
 small; the pages themselves are Saurabh's in the design session, so **touch
@@ -116,7 +132,8 @@ Acceptance: `spacepilot <verb> --json | python -m json.tool` for each. ~90k toke
 fleet action None." exit 2 (cli.py:1384) — default to `list` like its siblings.
 `sweep` help names a path that doesn't exist (`registry/sweeps/`, actual:
 `spacepilot/registry/sweeps/`, cli.py:1972). `studio` silently writes
-`.pluto_config.json` from a read command (cli.py:604-651) — make the write
+`.spacepilot_config.json` from a read command (cli.py:604-651; `.pluto_config.json`
+is now only the legacy fallback name, read for back-compat) — make the write
 explicit or drop it. `runtimes list` says mflux "available" while `run image`
 uses it from its own env — teach runtimes.py about `mflux_bin_dir`. ~60k tokens.
 
@@ -135,6 +152,12 @@ the verb that produces the product's one real artifact — is documented nowhere
 **GATED ON SAURABH.** Anything on the money path — provider choice, keys, live
 prices, spend — happens only with him present. No agent starts P2 or P4
 unattended (his words, 2026-08-25: "we can't do money path in my absence").
+
+**PR #111 already merged** an OpenAI-compatible `/v1` surface with fit
+verdicts and coding models leading (`docs/design/INFERENCE-SURFACE.md`). Read
+it before starting — 2.1-2.3 below should extend that surface, not duplicate
+it; check whether the provider-registry schema (2.1) already has a home
+there before adding a second one.
 
 Decision (this session, confirmed direction from Saurabh): **do not hand-build N
 provider integrations — integrate a router.** Note `litellm>=1.98.0` is already
@@ -164,8 +187,8 @@ Money is loud: price shown before, actual after. ~100k tokens.
 
 ## Phase 3 — Scheduler v1 (the thesis's verb)
 
-The formula already written down (registry.py:115, citing a deleted doc — see
-5.2): `score = price + (cold ? load_seconds × value_of_latency : 0)`.
+The formula already written down (`spacepilot/model_registry.py:115`, citing a
+deleted doc — see 5.2): `score = price + (cold ? load_seconds × value_of_latency : 0)`.
 Today's nearest thing is `_candidate_rank` (execution.py:104): a 4-tuple sort
 with no price term, no warm/cold term, no cross-machine term.
 
@@ -200,10 +223,14 @@ budget anywhere** — add cumulative cost accounting before any dock can start.
   Fix the writer (`measure --model` wrote `model_id`), migrate the 4 files.
   ~40k tokens.
 - **5.2 Dangling doc references.** 20bf158 deleted docs/{INFERENCE,AWS,
-  PIPELINE-STATE,DECISION-INBOX}.md (archived at ~/code/motionvector/handoffs/)
-  but AGENTS.md:66-73 still tells every agent to read them, and registry.py:116
-  cites DECISION-INBOX as the scheduler-formula source. Point both at what
-  exists. ~25k tokens.
+  PIPELINE-STATE,DECISION-INBOX}.md (archived at ~/code/motionvector/handoffs/).
+  `docs/DECISION-INBOX.md` was recreated on 2026-09-02 (#108) — only AWS.md,
+  INFERENCE.md, and PIPELINE-STATE.md are still archived-only. AGENTS.md's
+  "Read these before asking" section still lists DECISION-INBOX.md as archived
+  (stale as of this revalidation — fix in the same pass as this item), and
+  `spacepilot/model_registry.py:116` still cites DECISION-INBOX as the
+  scheduler-formula source, which is accurate again now that the file exists.
+  ~20k tokens.
 - **5.3 Cross-validate runtimes↔models.** mlx-audio claims `runs: [musicgen,
   kokoro, bark]`; musicgen/bark aren't model ids; no loader check. Add the
   check + a test. ~30k tokens.
@@ -218,8 +245,15 @@ budget anywhere** — add cumulative cost accounting before any dock can start.
 ## Phase 6 — Cockpit structure (after Saurabh's design session)
 
 Owned decisions, not build items yet:
-- **React frontend fate.** PR #14: 75 files, 104 commits behind main, 6 related
-  open PRs (#14 #16 #23 #24 #27 #28). Rebase-or-close is a product call.
+- **React frontend fate — resolved differently than expected.** The React
+  migration (formerly PR #14) landed in main via #106 (SpaceBar v1) and #107
+  (cockpit v1), as the `ui/` tree. It is **not** what the app currently serves:
+  `spacepilot/app.py` mounts only `web/` (`StaticFiles` on `settings.web_dir`),
+  so the vanilla pages this doc's Phase 0.4/0.5 refer to
+  (onboarding.html, create.js, cockpit.js, sidebar.js) are still what a real
+  request hits. Whether `ui/` replaces `web/` as the served frontend, and when,
+  is still Saurabh's call — flagged for the docs-freshness sweep too, since
+  README.md's architecture section describes the old `web/`-only layout.
 - **Marketing copy** in home/create/oven/blueprint.html (SkyPilot arbitrage,
   Polar/x402) — Saurabh is redoing these in the design session. **No agent
   touches copy.**
@@ -243,7 +277,7 @@ Owned decisions, not build items yet:
 
 | Slice | Items | Est. tokens |
 | --- | --- | --- |
-| Truth (P0) | 0.1–0.5 | ~275k |
+| Truth (P0) | 0.4–0.5 remaining (0.1–0.3 done) | ~135k |
 | CLI polish (P1) | 1.1–1.5 | ~400k |
 | Providers (P2) | 2.1–2.3 | ~380k |
 | Scheduler (P3) | 3.1 | ~180k |
@@ -268,8 +302,11 @@ speech 1, text 1, vision 1. Measured speed exists for 5 of 42 variants
 - PR #40 (overnight sweep): **merged** 2026-08-23, board says open.
 - "Make the export see the measurement store": **fixed**; real gap is the
   stranded `kokoro-82m` keys (item 5.1).
-- Local checkout rename pluto→spacepilot: **done** (~/code/CLAUDE.md still
-  says otherwise; external references in .mvec-local also stale).
+- Local checkout rename pluto→spacepilot: **done**, and the package itself was
+  flattened from `spacepilot/pluto/` to `spacepilot/` on 2026-09-02 (#101).
+  `~/code/CLAUDE.md` still points at the old `pluto` checkout path pending a
+  worktree sweep noted in that file; external references in .mvec-local also
+  stale.
 - React frontend: 75 files (not 78), 104 commits behind (not 70), 6 PRs.
 - `~/Downloads/ltx-out` (the board's cited source for real LTX renders):
   **does not exist on this machine**; whether those runs survive anywhere is
