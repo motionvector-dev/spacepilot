@@ -25,7 +25,7 @@ MODEL = anthropic_provider.MODEL_ID
 
 def _profile():
     return DeviceProfile(
-        chip="Apple M1 Max", backend="metal",
+        chip="Test M1 Max", backend="metal",
         memory_total_bytes=32 * GIB, memory_free_bytes=30 * GIB,
         memory_unified=True, memory_limit_bytes=26_800_603_136,
         memory_limit_source="metal", disk_free_bytes=400 * GIB,
