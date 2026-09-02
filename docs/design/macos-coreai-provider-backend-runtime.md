@@ -1,5 +1,14 @@
 # Technical Specification: Core AI Provider Backend & Heterogeneous Runtime Engine
 
+> **Status, 2026-09-03: concept sketch, unverified.** The `coreaid` daemon, the
+> socket, the hot-swap and speculative-decoding figures below do not exist in
+> apple/coreai-models or anywhere checked. What that repo actually provides:
+> `.aimodel` exports for Qwen3, Phi, Mistral, Gemma and others via
+> `uv run coreai.llm.export`, and a Swift runtime, `CoreAILanguageModel`, used
+> through `FoundationModels.LanguageModelSession`. Current authority is
+> `INFERENCE-SURFACE.md`; the CoreAI rung lands Swift-side in SpaceBar first.
+
+
 - **Document ID**: `SP-DESIGN-044`
 - **Target Path**: `docs/design/macos-coreai-provider-backend-runtime.md`
 - **Status**: `PROPOSED / IMPLEMENTATION-READY`
