@@ -122,6 +122,11 @@ def _wire(monkeypatch, fake_client):
     import spacepilot.api.routes.inference as inference
 
     monkeypatch.setattr(inference, "probe_local_device", _profile)
+    # Never touch the real record store from a test: a System written here
+    # would join the corpus that test_exported_json_matches_the_registry
+    # compares against the shipped web/registry.json.
+    monkeypatch.setattr(ms, "write_system", lambda system, root=None: None)
+    monkeypatch.setattr(ms, "record", lambda **fields: None)
     monkeypatch.setattr(
         anthropic_provider, "default_provider",
         lambda: anthropic_provider.AnthropicProvider(client=fake_client),
@@ -325,11 +330,10 @@ def test_every_anthropic_call_writes_one_measurement(anthropic_key, monkeypatch)
     fake = _wire(monkeypatch, _FakeClient(response=_Message(input_tokens=7, output_tokens=13)))
 
     recorded = []
-    real_record = ms.record
 
     def _capture(**fields):
         recorded.append(fields)
-        return real_record(**fields)
+        return None
 
     monkeypatch.setattr(ms, "record", _capture)
 
