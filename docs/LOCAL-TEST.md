@@ -85,3 +85,19 @@ calls back on TCC's XPC queue, so that check fails and the process takes
 SIGTRAP before the handler's first line — the ten crash reports from
 2026-08-28. The callbacks now live in `nonisolated` methods; the gate scans the
 built binary and fails if one moves back.
+
+## Durable restarts (2026-09-02, later the same day)
+
+The daemon and the cockpit now run under mvec-local from the clean main
+worktree, so they survive agent sessions and reboots:
+
+```bash
+mvec-local stable start spacepilot --apply   # daemon, 127.0.0.1:8088, doppler-wrapped
+mvec-local stable start cockpit --apply      # React cockpit, http://127.0.0.1:5173/cockpit
+mvec-local status
+```
+
+After a merge to main: `mvec-local main sync spacepilot --apply`, then restart
+both. SpaceBar: from the clean main worktree,
+`~/code/.mvec-local/worktrees/main/spacepilot/native/SpaceBar/tools/make_app.sh`
+then the `open` line it prints.
