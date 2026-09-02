@@ -1,7 +1,8 @@
 # SpacePilot 🚀
 
 **Status**: Current
-**Verified**: 2026-08-25 via `python -m pytest tests/ -q` (682 passed, 3 skipped) and `gh pr list`
+**Verified**: 2026-09-02 via the `tests` CI run on main (771 passed, 4 skipped,
+run `33631068854`) and reading the tree directly.
 **Supersedes / Superseded by**: none
 
 > **"You decide what to run. SpacePilot decides how and where."**
@@ -63,14 +64,14 @@ description of what this repo does today.
 │     └── Hardware Probe: Auto-detects VRAM headroom & recommends models      │
 │                                                                             │
 │  2. Generative Model Modules (Polymorphic BaseVideoEngine Adapters)         │
-│     ├── LTX-Video 2.5: 13B DiT (Spatial % 32, 8k+1 frames)                  │
-│     ├── Wan2.1 (1.3B & 14B): 3D Causal VAE (Spatial % 16, 4k+1 frames)      │
-│     ├── HunyuanVideo: 13B dual-stream DiT cross-attention (720p/1080p)      │
+│     ├── LTX-Video 2.5: spec only — no inference runs, route refuses 501    │
+│     ├── Wan2.1 (1.3B & 14B): spec only — no inference runs, route refuses  │
+│     ├── HunyuanVideo: spec only — no inference runs, route refuses         │
 │     ├── Speech & VO: In-process Kokoro-82M ONNX with -16 LUFS sidechaining  │
 │     └── Narrative: In-process GGUF screenplay deconstruction & 3D vectors   │
 │                                                                             │
 │  3. Agentic Protocol & Tool Modules                                         │
-│     ├── FastMCP Tool Server (spacepilot/mcp_server.py): 12+ tools for AI     │
+│     ├── FastMCP Tool Server (spacepilot/mcp_server.py): 17 tools for AI     │
 │     ├── DocIR 2.0 Edit Protocol: Byte-exact, reversible patch operations   │
 │     └── WebSocket PTY Bridge: Live interactive shell & worker streaming    │
 │                                                                             │
@@ -114,11 +115,17 @@ Serves the Web UI and API on:
 
 ### Studio Pages:
 * **Create Studio**: `http://spacepilot.localhost:8088/create`
-* **Cockpit & Model Registry**: `http://spacepilot.localhost:8088/cockpit`
+* **Cockpit & Model Registry (legacy, vanilla JS)**: `http://spacepilot.localhost:8088/cockpit`
+  — this is what `spacepilot/app.py` actually mounts and serves today.
 * **Oven Swarm Kanban**: `http://spacepilot.localhost:8088/oven.html`
 * **Director NLE**: `http://spacepilot.localhost:8088/studio`
 * **Human documentation**: `http://spacepilot.localhost:8088/docs`
 * **MCP Streamable HTTP v1**: `http://spacepilot.localhost:8088/mcp/v1/`
+* **Cockpit v1 (React, `ui/`)**: not yet wired into `spacepilot/app.py`'s
+  static mount. Run separately as a Vite dev server —
+  `http://127.0.0.1:5173/cockpit` under `mvec-local` (`docs/LOCAL-TEST.md`).
+  Whether it replaces the legacy cockpit above, and when, is still an open
+  product call.
 
 ---
 
@@ -128,8 +135,8 @@ Every endpoint that spends compute or creates assets is gated by `X-SpacePilot-T
 
 | Route | Method | Auth | Purpose |
 | :--- | :--- | :--- | :--- |
-| `/api/generate` | `POST` | Yes | Queue LTX-Video generation run (Spot GPU or local mock). |
-| `/api/generate/multi-engine` | `POST` | Yes | Polymorphic generation on Wan2.1 (1.3B/14B), Hunyuan, or LTX-2.5. |
+| `/api/generate` | `POST` | Yes | Video generation. No local execution path exists; refuses with a failed job status unless a remote GPU worker is running. |
+| `/api/generate/multi-engine` | `POST` | Yes | Video generation across the three DiT engines. Refuses with 501 — none of them run inference; the mock test-pattern render this route used to serve was removed. |
 | `/api/audio/synthesize-local` | `POST` | Yes | In-process Kokoro TTS audio synthesis (-16 LUFS normalized). |
 | `/api/audio/mix-ducked` | `POST` | Yes | Voiceover & background music dynamic sidechain ducking. |
 | `/api/narrative/decompose-local` | `POST` | Yes | In-process GGUF screenplay deconstruction into 3D camera shots. |
@@ -157,15 +164,23 @@ clients that cannot use HTTP.
 
 ---
 
-## Test Suite (100% SLA)
+## Test Suite
+
+Local pytest needs the project interpreter (see `AGENTS.md`, Interpreter) —
+`python3` on the primary dev machine resolves to base conda, which lacks
+fastapi. CI on the self-hosted lenovo runner is the gate; the run on the
+commit this README was last checked against passed
+**771 tests, 4 skipped** (`gh run view <run-id>` on main for the current
+number — do not trust a hardcoded count here, it goes stale fast):
 
 ```bash
-/Users/saurabh/miniconda3/envs/local-ml-py311/bin/python -m pytest tests/ -v
+<project-python> -m pytest tests/ -v
 ```
 
-**682 passing tests**, 0 failed, 3 skipped (verified 2026-08-25). Covers:
+Covers:
 - Polymorphic DiT engine adapters (LTX, Wan 1.3B/14B, HunyuanVideo). Mock renders only —
-  every BaseVideoEngine path writes an ffmpeg test pattern; no real video runs here yet.
+  every BaseVideoEngine path used to write an ffmpeg test pattern; the route that served
+  it now refuses with 501 instead, and no real video generation runs here yet.
 - In-process Kokoro TTS and GGUF narrative drivers.
 - Device capability probing and safety headroom calculations.
 - FastMCP tool wrappers.
@@ -177,36 +192,50 @@ clients that cannot use HTTP.
 ## Directory Layout
 
 ```
-spacepilot/cli.py               CLI command router
-src/
-├── web_api.py               SpacePilot Studio FastAPI server & web UI router
-├── mcp_server.py                Native FastMCP tool server
-├── device_probe.py             Zero-dependency cross-platform hardware profiler
-├── model_recommender.py        Model catalog & dynamic fit scoring engine
-├── local_workers.py            Local in-process worker memory manager (LRU)
-├── engines/                    Polymorphic Video DiT Engine Subsystem
-│   ├── base.py                 BaseVideoEngine ABC & EngineSpec
-│   ├── ltx_engine.py           LTX-Video 2.5 adapter
-│   ├── wan_engine.py           Wan2.1 (1.3B & 14B) adapter
-│   ├── hunyuan_engine.py       HunyuanVideo 13B dual-stream adapter
+spacepilot/                   The package (flattened from spacepilot/pluto/, #101)
+├── cli.py                    CLI command router
+├── app.py                    FastAPI app factory — mounts web/ as the served frontend
+├── web_api.py                Studio entry point (python -m spacepilot.web_api)
+├── mcp_server.py              Native FastMCP tool server, 17 tools
+├── device_probe.py           Cross-platform hardware profiler
+├── model_recommender.py      Model catalog & dynamic fit scoring
+├── model_registry.py         Registry loader — variants, caveats, provenance
+├── measurements.py           Measurement corpus (LOG) reader/writer
+├── substrate.py               DirectLocal / DaemonClient wire-shaped dispatch
+├── local_workers.py          Local in-process worker memory manager (LRU)
+├── engines/                  Video DiT engine specs — none run inference yet
+│   ├── base.py                BaseVideoEngine ABC & EngineSpec
+│   ├── ltx_engine.py           LTX-Video 2.5 (spec only)
+│   ├── wan_engine.py           Wan2.1 1.3B/14B (spec only)
+│   ├── hunyuan_engine.py       HunyuanVideo (spec only)
 │   └── registry.py             Engine lookup & fallback registry
-├── drivers/                    In-Process Local Execution Drivers
-│   ├── base.py                 InferenceDriver ABC & DriverSpec
-│   ├── kokoro_driver.py        Kokoro TTS ONNX driver (-16 LUFS ducking)
-│   └── gguf_driver.py          GGUF screenplay deconstruction driver
-├── storyboard_decomposer.py    Screenplay-to-shot decomposition
-├── ltx_worker.py               Remote PyTorch resident worker (EC2/Cloud)
-└── api/routes/                  Modular FastAPI backend, live on main: 14 route
-                                 modules (assets, audio, billing, checkpoints,
-                                 compute, engines, generate, gpu, health, lora,
-                                 recipes, storyboard, views, __init__)
-web/                         Zero-build Obsidian UI
-├── index.html / app.js      Director NLE & Asset matrix
-├── create.html / create.js     Create Studio (Camera Compass, Dual Keyframe)
-├── cockpit.html / cockpit.js   Cockpit (Host Hardware HUD, Model Registry)
-├── oven.html                   Live 5-Lane ADLC Swarm Kanban Board
-└── app.css                  Obsidian design system
-infra/                          GPU startup scripts, IAM
-tests/                          Pytest integration test suite (682 tests)
-docs/                           Architecture blueprints, plans, and research
+├── drivers/                   In-process local execution drivers
+│   ├── mflux_driver.py         Image — mflux, own conda env, subprocess-only
+│   ├── mlx_lm_driver.py        Text — MLX-LM, the working `run text` route
+│   ├── whisper_cpp_driver.py   Transcribe — measured, working
+│   ├── kokoro_driver.py        Speech (TTS) — ONNX, working
+│   ├── mlx_embed_driver.py     Embeddings — MLX, `/v1/embeddings`
+│   └── gguf_driver.py          GGUF screenplay deconstruction
+├── daemon/                    Fleet daemon — UDS + Tailscale peers, Ed25519,
+│                               signed LOG gossip (identity.py, fleet.py, log.py)
+├── storyboard_decomposer.py   Screenplay-to-shot decomposition
+├── ltx_worker.py              Remote PyTorch resident worker (EC2/Cloud)
+└── api/routes/                 16 route modules: assets, audio, billing,
+                                checkpoints, compute, engines, generate, gpu,
+                                health, inference, lora, measurements, recipes,
+                                runtimes, storyboard, views
+ui/                           React 19 cockpit v1 / SpaceBar-web (landed #106/#107).
+                               Not wired into spacepilot/app.py's static mount —
+                               run separately via Vite, see docs/LOCAL-TEST.md.
+web/                          Zero-build UI actually served by spacepilot/app.py
+├── index.html / app.js       Director NLE & Asset matrix
+├── create.html / create.js    Create Studio
+├── cockpit.html / cockpit.js  Cockpit (legacy, vanilla JS — currently what's live)
+├── oven.html                  Kanban board
+└── app.css                   Design system
+native/SpaceBar/              macOS menu-bar app (Swift), see docs/LOCAL-TEST.md
+infra/                         GPU startup scripts, IAM
+tests/                         Pytest suite — 771 passed, 4 skipped on main as of
+                               CI run 33631068854 (2026-09-02); re-check before citing
+docs/                          Architecture blueprints, plans, and research
 ```
