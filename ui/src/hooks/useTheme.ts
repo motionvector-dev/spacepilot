@@ -31,26 +31,33 @@ function readPreference(): ThemePreference {
   return 'system';
 }
 
-/** DESIGN.md ships one palette and it is black, so dark is what "no answer"
- *  resolves to. The query asks for LIGHT rather than dark on purpose: a browser
- *  that reports no preference at all then lands on dark instead of light.
- *  ui/index.html runs the same test before first paint — keep the two in step. */
+/** The query asks for LIGHT rather than dark on purpose: a browser that
+ *  reports no preference at all lands on dark, matching the bare :root
+ *  fallback in tokens.css. ui/index.html runs the same test before first
+ *  paint — keep the two in step. */
 function systemIsDark(): boolean {
   return !window.matchMedia('(prefers-color-scheme: light)').matches;
 }
 
 /** Store the preference; apply the resolved value.
  *
- * These have to be separate. Tailwind's dark variant matches [data-theme="dark"]
- * exactly, so writing data-theme="system" — which is what the vanilla theme.js
- * does — leaves every dark: utility inert while the OS is in dark mode. The
- * attribute therefore always says light or dark, and "system" lives in storage.
+ * System is the default (Saurabh, 2026-09-02, PR 107): while the preference
+ * is "system", no data-theme attribute is stamped at all, and tokens.css's
+ * guarded `@media (prefers-color-scheme: light)` block decides the palette —
+ * the same mechanism the OS itself uses to notify a change, so no listener
+ * even has to redraw. The attribute is stamped only once the user picks
+ * Light or Dark explicitly, which is also what makes that choice win over a
+ * later OS change.
  */
 function apply(pref: ThemePreference) {
-  const resolved = pref === 'system' ? (systemIsDark() ? 'dark' : 'light') : pref;
-  document.documentElement.setAttribute('data-theme', resolved);
+  if (pref === 'system') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', pref);
+  }
   // The vanilla stylesheets key off body classes; keep them in step so the two
   // surfaces do not disagree if someone navigates between them.
+  const resolved = pref === 'system' ? (systemIsDark() ? 'dark' : 'light') : pref;
   document.body?.classList.toggle('light-theme', resolved === 'light');
   document.body?.classList.toggle('dark-theme', resolved === 'dark');
 }

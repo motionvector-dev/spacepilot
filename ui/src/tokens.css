@@ -144,10 +144,59 @@
 /* The light companion. DESIGN.md does not specify one, so these values are
    derived here: the same zinc ramp read the other way, with amber, emerald and
    rose darkened until each clears 4.5:1 on white — the DESIGN.md values are
-   tuned for black and go illegible on paper. It is reachable only by choosing
-   Light in the toggle; nothing falls back into it, and an OS in light mode
-   does not trigger it on its own.
-   OPEN: whether SpacePilot ships a light theme at all is Saurabh's call. */
+   tuned for black and go illegible on paper.
+   Saurabh's call (2026-09-02, PR 107): the cockpit follows the OS by default,
+   with a System/Light/Dark toggle for an explicit override. Bare :root above
+   stays the dark fallback for a browser that reports no preference at all;
+   the guarded media query just below switches to this palette when the OS
+   asks for light and nothing explicit overrides it; the selector below that
+   is what an explicit Light choice stamps. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --app-ground: #ffffff;
+    --surface: #fafafa;
+    --surface-hover: #f4f4f5;
+    --surface-raised: #f4f4f5;
+    --surface-raised-hover: #ececee;
+    --surface-inset: #ececee;
+    --surface-strong: #e4e4e7;
+    --surface-glass: rgba(250, 250, 250, 0.85);
+    --surface-glass-card: rgba(244, 244, 245, 0.9);
+
+    --border-100: rgba(9, 9, 11, 0.06);
+    --border-200: rgba(9, 9, 11, 0.06);
+    --border-300: rgba(9, 9, 11, 0.12);
+    --border-400: rgba(9, 9, 11, 0.20);
+    --border-500: rgba(9, 9, 11, 0.32);
+
+    --text-1000: #09090b;
+    --text-900: #3f3f46;
+    --text-700: #52525b;
+    --text-500: #71717a;
+    --text-300: #a1a1aa;
+    --text-inverse: #fafafa;
+
+    --accent: #b45309;
+    --accent-contrast: #ffffff;
+    --accent-soft: rgba(180, 83, 9, 0.10);
+    --accent-border: rgba(180, 83, 9, 0.30);
+    --verify: #047857;  --verify-soft: rgba(4, 120, 87, 0.10);
+    --danger: #be123c;  --danger-soft: rgba(190, 18, 60, 0.10);
+
+    --track-v2: #09090b;
+    --track-v1: #52525b;
+    --track-audio: #047857;
+    --track-playhead: #be123c;
+
+    --canvas-ground: #18181b;
+    --mark-ink: #09090b;
+    --mark-recessive: #a1a1aa;
+  }
+}
+
+/* An explicit Light choice restates the media-query palette, so choosing
+   Light while the OS is dark still wins. */
 :root[data-theme="light"], body.light-theme {
   color-scheme: light;
   --app-ground: #ffffff;

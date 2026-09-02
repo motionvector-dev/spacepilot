@@ -91,9 +91,11 @@
         });
       }
     </script>
-    <!-- Resolve the theme before first paint. Without this the document is
-         briefly attribute-less, which leaves every Tailwind dark: utility
-         inert for a frame even though the CSS variables are already dark. -->
+    <!-- Resolve the theme before first paint. System is the default (Saurabh,
+         2026-09-02, PR 107): only an explicit Light/Dark choice stamps
+         data-theme. Left unstamped, tokens.css's guarded
+         @media (prefers-color-scheme: light) block picks the palette, so
+         there is no attribute-less flash to guard against here either. -->
     <script>
       (function () {
         var p = "system";
@@ -103,10 +105,9 @@
             ? q
             : (localStorage.getItem("pluto-theme") || "system");
         } catch (e) {}
-        var resolved = p === "system"
-          ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
-          : p;
-        document.documentElement.setAttribute("data-theme", resolved);
+        if (p !== "system") {
+          document.documentElement.setAttribute("data-theme", p);
+        }
       })();
     </script>
   </head>
