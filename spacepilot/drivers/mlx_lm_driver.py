@@ -12,6 +12,7 @@ from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
 
 RESULT_PREFIX = "SPACEPILOT_RESULT "
+CHUNK_PREFIX = "SPACEPILOT_CHUNK "
 
 
 class MlxLmSubprocessError(RuntimeError):
@@ -85,6 +86,96 @@ class MlxLmDriver(InferenceDriver):
         snapshot, revision = resolved
         return True, f"ready — {Path(snapshot).name} at {revision[:12]} via mlx-lm"
 
+    def _command(
+        self, snapshot: str, out_path: str, max_tokens: int,
+        max_kv_size: int, temperature: float, stream: bool,
+        messages: Optional[list] = None,
+    ) -> list[str]:
+        cmd = [
+            self.python_bin, "-m", "spacepilot.drivers.mlx_lm_runner",
+            "--model", snapshot, "--output", out_path,
+            "--max-tokens", str(max_tokens), "--max-kv-size", str(max_kv_size),
+            "--temperature", str(temperature),
+        ]
+        if stream:
+            cmd.append("--stream")
+        if messages is not None:
+            cmd.append("--messages")
+        return cmd
+
+    @staticmethod
+    def _stdin_for(prompt: str, messages: Optional[list]) -> str:
+        if messages is None:
+            return prompt
+        return json.dumps({"messages": messages})
+
+    @staticmethod
+    def _offline_env() -> Dict[str, str]:
+        env = os.environ.copy()
+        env["HF_HUB_OFFLINE"] = "1"
+        env["TRANSFORMERS_OFFLINE"] = "1"
+        return env
+
+    def stream(
+        self,
+        prompt: str,
+        out_path: str,
+        max_tokens: int,
+        max_kv_size: int,
+        temperature: float,
+        variant_id: Optional[str] = None,
+        messages: Optional[list] = None,
+        **kwargs: Any,
+    ):
+        """Yield deltas as the runner produces them, then the final metadata.
+
+        Events are ``{"type": "chunk", "text": ...}`` and one closing
+        ``{"type": "result", "result": {...}}``. The metadata is the same
+        payload :meth:`infer` returns, so both paths record the same fields.
+        """
+        variant_id = variant_id or self.variant_id
+        resolved = self.asset_dir(variant_id)
+        if resolved is None:
+            raise MlxLmSubprocessError(
+                f"weights are not cached; run `spacepilot recipes download {variant_id}`")
+        snapshot, revision = resolved
+        cmd = self._command(snapshot, out_path, max_tokens, max_kv_size,
+                            temperature, stream=True, messages=messages)
+        try:
+            proc = subprocess.Popen(
+                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, text=True, bufsize=1,
+                env=self._offline_env(),
+            )
+        except OSError as exc:
+            raise MlxLmSubprocessError(f"could not start MLX-LM: {exc}") from exc
+        result = None
+        try:
+            proc.stdin.write(self._stdin_for(prompt, messages))
+            proc.stdin.close()
+            for line in proc.stdout:
+                line = line.rstrip("\n")
+                if line.startswith(CHUNK_PREFIX):
+                    yield {"type": "chunk", **json.loads(line[len(CHUNK_PREFIX):])}
+                elif line.startswith(RESULT_PREFIX):
+                    result = json.loads(line[len(RESULT_PREFIX):])
+        except json.JSONDecodeError as exc:
+            proc.kill()
+            raise MlxLmSubprocessError("MLX-LM streamed malformed metadata") from exc
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        code = proc.wait()
+        if code != 0:
+            tail = (proc.stderr.read() or "")[-3000:]
+            raise MlxLmSubprocessError(f"MLX-LM exited {code}: {tail}")
+        if result is None:
+            raise MlxLmSubprocessError("MLX-LM returned no structured result")
+        result["model_revision"] = revision
+        result["weights"] = Path(snapshot).name
+        result["command"] = cmd
+        yield {"type": "result", "result": result}
+
     def infer(
         self,
         prompt: str,
@@ -94,6 +185,7 @@ class MlxLmDriver(InferenceDriver):
         temperature: float,
         variant_id: Optional[str] = None,
         timeout: Optional[float] = None,
+        messages: Optional[list] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         variant_id = variant_id or self.variant_id
@@ -102,18 +194,13 @@ class MlxLmDriver(InferenceDriver):
             raise MlxLmSubprocessError(
                 f"weights are not cached; run `spacepilot recipes download {variant_id}`")
         snapshot, revision = resolved
-        cmd = [
-            self.python_bin, "-m", "spacepilot.drivers.mlx_lm_runner",
-            "--model", snapshot, "--output", out_path,
-            "--max-tokens", str(max_tokens), "--max-kv-size", str(max_kv_size),
-            "--temperature", str(temperature),
-        ]
-        env = os.environ.copy()
-        env["HF_HUB_OFFLINE"] = "1"
-        env["TRANSFORMERS_OFFLINE"] = "1"
+        cmd = self._command(snapshot, out_path, max_tokens, max_kv_size,
+                            temperature, stream=False, messages=messages)
+        env = self._offline_env()
         try:
             proc = subprocess.run(
-                cmd, input=prompt, capture_output=True, text=True,
+                cmd, input=self._stdin_for(prompt, messages),
+                capture_output=True, text=True,
                 timeout=timeout, env=env,
             )
         except subprocess.TimeoutExpired as exc:

@@ -49,7 +49,11 @@ REGISTRY_DIR = shipped_dir("models")
 # `speech` is text going in and audio coming out; `transcription` is the
 # other direction. They are different capabilities with different runtimes,
 # so they are different kinds rather than one "audio" bucket.
-KINDS = {"video", "image", "audio", "speech", "transcription", "text", "vision"}
+# `embedding` is text in, vector out. It is not `text`: nothing generates,
+# nothing streams, and the useful measurement is how fast a corpus is
+# consumed rather than how fast tokens come back.
+KINDS = {"video", "image", "audio", "speech", "transcription", "text", "vision",
+         "embedding"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}
 
 # How a number came to be here. Ordered weakest to strongest.

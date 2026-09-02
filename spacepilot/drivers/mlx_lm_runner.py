@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 RESULT_PREFIX = "SPACEPILOT_RESULT "
+CHUNK_PREFIX = "SPACEPILOT_CHUNK "
 
 
 def main(argv=None) -> int:
@@ -24,11 +25,24 @@ def main(argv=None) -> int:
     parser.add_argument("--max-tokens", required=True, type=int)
     parser.add_argument("--max-kv-size", required=True, type=int)
     parser.add_argument("--temperature", required=True, type=float)
+    parser.add_argument("--stream", action="store_true")
+    parser.add_argument("--messages", action="store_true")
     args = parser.parse_args(argv)
 
-    prompt = sys.stdin.read()
-    if not prompt.strip():
+    raw = sys.stdin.read()
+    if not raw.strip():
         raise ValueError("prompt on stdin cannot be empty")
+    # A chat request arrives as a real message list so the chat template sees
+    # the roles. Flattening it to one user turn would silently discard the
+    # system prompt, which is the part a coding agent depends on most.
+    messages = None
+    if args.messages:
+        messages = json.loads(raw)["messages"]
+        if not messages:
+            raise ValueError("messages cannot be empty")
+        prompt = messages[-1].get("content", "")
+    else:
+        prompt = raw
 
     from mlx_lm import load, stream_generate
     from mlx_lm.sample_utils import make_sampler
@@ -40,7 +54,7 @@ def main(argv=None) -> int:
 
     if tokenizer.has_chat_template:
         prompt = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}], tokenize=False,
+            messages or [{"role": "user", "content": prompt}], tokenize=False,
             add_generation_prompt=True,
         )
 
@@ -54,6 +68,11 @@ def main(argv=None) -> int:
     ):
         text_parts.append(response.text)
         last = response
+        if args.stream and response.text:
+            # Flushed per token: the parent forwards these as SSE, and a
+            # buffered pipe would turn real streaming into one late burst.
+            print(CHUNK_PREFIX + json.dumps({"text": response.text},
+                                            separators=(",", ":")), flush=True)
 
     text = "".join(text_parts)
     if not text.strip() or last is None:

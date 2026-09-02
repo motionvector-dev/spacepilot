@@ -72,8 +72,14 @@ path. Resolution:
 model id ──▶ registry variant ──▶ recipe ──▶ fit_verdict
                                      │
                                      ├─ mlx-lm driver   (metal, first choice)
-                                     └─ gguf driver     (fallback)
+                                     └─ gguf driver     (intended fallback, not wired)
 ```
+
+The gguf fallback is named because it is the plan, not because it exists.
+`spacepilot/drivers/gguf_driver.py` today is a screenplay decomposer with a
+fixed output shape, not a chat driver; wiring it to `/v1` is M3 work. Until
+then `/v1/models` marks every unwired variant `served: false` and the POST
+routes refuse it, rather than quietly answering with a model nobody asked for.
 
 - Unknown id → **404**, listing what `/v1/models` would have said.
 - Known id, `wont_fit` → **409**, body carries the verdict. Never a silent
@@ -93,8 +99,8 @@ fit_verdict(model_id: str, system: DeviceProfile) -> dict
 
 One function, in `spacepilot/verdict.py`. `/v1/models`, `spacepilot models`,
 and the MCP tool `spacepilot_recommend_models` all call it, so all three say the
-same words. Today they do not: the CLI prints `fits`/`tight`, the MCP tool
-prints "Optimal Local Execution", and the API prints nothing.
+same words. Before it, they did not: the CLI printed `fits`/`tight`, the MCP
+tool printed "Optimal Local Execution", and the API said nothing at all.
 
 | `assess()` says | `fit_verdict` level |
 | --- | --- |
@@ -160,8 +166,25 @@ Rules that bind:
 
 - No fabricated token counts, ever. `null` beats a guess.
 - A refusal says what would fix it: the download command, the smaller variant.
-- A failed run still records a `Measurement` with `status: "failed"`.
+- A failed run should record a `Measurement` with `status: "failed"`. It does
+  not yet — the routes raise and record nothing, so a crash is currently
+  invisible to the corpus. M3 closes that.
 - No silent fallback to another model, another machine, or a paid API.
+
+## What is installed here
+
+Checked 2026-09-02 on `local-ml-py311`, the repo interpreter:
+
+| package | version |
+| --- | --- |
+| `mlx.core` | 0.31.2 |
+| `mlx_lm` | 0.31.3 |
+| `coremltools` | 9.0 |
+| `llama_cpp` | 0.3.35 |
+| `mlx_embeddings` | not installed |
+
+CoreAI/CoreML is the next rung, not this one. `coremltools` being present is
+why M3 is credible, not evidence that anything runs through it — nothing does.
 
 ## Milestones
 
@@ -169,7 +192,7 @@ Rules that bind:
 | --- | --- | --- |
 | **M1** | `fit_verdict`, `/v1/models`, wired into CLI and MCP | one test asserts all three surfaces emit the same level string for the same variant |
 | **M2** | `/v1/chat/completions` (both modes), `/v1/embeddings`, Measurement fields | route-shape tests with mocked drivers; token-gate walk covers both POSTs; a recorded Measurement carries `run_id` and both token counts |
-| **M3** | CoreAI/CoreML as a second local runtime | `coremltools` 9.0 is installed on `local-ml-py311`; a converted model answers `/v1/chat/completions` with `runtime: "coreai"` |
+| **M3** | Second local runtime: gguf wired for chat, then CoreAI/CoreML | a gguf variant answers `/v1/chat/completions`; a converted model answers with `runtime: "coreai"` |
 | **M4** | Dock routing: `wont_fit` offers a rented box with a price | a 409 carries an estimate, and renting still needs an explicit yes |
 
 M1 and M2 ship in this PR. M3 and M4 do not.

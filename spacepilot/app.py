@@ -20,6 +20,7 @@ from spacepilot.api.routes import (
     recipes_router,
     runtimes_router,
     measurements_router,
+    inference_router,
     engines_router,
     storyboard_router,
     gpu_router,
@@ -120,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(recipes_router)
     app.include_router(runtimes_router)
     app.include_router(measurements_router)
+    app.include_router(inference_router)
     app.include_router(engines_router)
     app.include_router(storyboard_router)
     app.include_router(gpu_router)
