@@ -96,6 +96,19 @@ cached, a driver error) is read back in the daemon's own words.
 `--self-test <wav>` takes the same two flags, so the daemon path can be
 proven with no microphone in it — see `docs/LOCAL-TEST.md`.
 
+**Read-only, for now.** `DaemonClient` only ever sends the five requests in
+`DaemonRoute.allowed` — `GET /healthz`, `GET /api/compute/local-status`,
+`GET /api/token`, `GET /v1/models`, `POST /v1/chat/completions` — and checks
+every call against that list before it builds a request, not after. Nothing
+else is reachable from voice: no model download, no runtime install, no
+checkpoint create or restore, no dock launch or terminate, no LoRA train.
+The voice loop is still being trusted — a misheard word or a model that goes
+sideways should not be able to touch the machine or the fleet, only read it
+and ask a model to answer. This is the tier-1-only slice of the allowlist in
+"Voice to cockpit" below, made mechanical instead of just written down: the
+gate is in code (`DaemonRoute.allowed`, `DaemonClient.get`/`post`), not just
+in this paragraph.
+
 ## Voice to cockpit
 
 The daemon is FastAPI on `127.0.0.1:8088`. The token comes from

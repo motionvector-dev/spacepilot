@@ -170,6 +170,12 @@ struct DaemonBrain: Brain {
             return .modelUnavailable("daemon answered \(code)")
         case .decoding(let detail):
             return .modelUnavailable("daemon answered with something unexpected — \(detail)")
+        case .disallowed(let route):
+            // Should be unreachable — `DaemonBrain` only ever calls
+            // `client.models()` and `client.chatCompletion()`, both on
+            // `DaemonRoute.allowed`. Surfaced honestly rather than force-
+            // unwrapped, in case that ever stops being true.
+            return .modelUnavailable("refused — \(route) is not on SpaceBar's allowlist")
         }
     }
 }

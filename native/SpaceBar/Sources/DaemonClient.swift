@@ -64,6 +64,11 @@ enum DaemonError: Error, Equatable {
     /// `docs/design/INFERENCE-SURFACE.md` specifies. This is the daemon's
     /// own words, not a guess at why the call failed.
     case apiError(Int, String)
+    /// A call site asked for a method+path that is not in
+    /// `DaemonRoute.allowed`. This should never fire — it means a future
+    /// change added a `get`/`post` call without adding the route to the
+    /// allowlist first. See that type's header for why the gate exists.
+    case disallowed(String)
 
     var userFacing: String {
         switch self {
@@ -75,8 +80,36 @@ enum DaemonError: Error, Equatable {
             return "Answered with something unexpected"
         case .apiError(let status, let message):
             return "\(message) (\(status))"
+        case .disallowed(let route):
+            return "refused — \(route) is not on SpaceBar's allowlist"
         }
     }
+}
+
+/// The only requests SpaceBar is allowed to send to the daemon, checked
+/// before every `get`/`post` builds a request.
+///
+/// SpaceBar's voice loop is still being trusted — a misheard word or a
+/// model going sideways should never be able to reach a route that changes
+/// the machine or the fleet: no download, no runtime install, no checkpoint
+/// create or restore, no dock launch or terminate, no LoRA train. Voice can
+/// read, and voice can ask the model to answer; nothing else. This is a
+/// single list precisely so growing the surface later is a decision made
+/// here, not a side effect of a new call site somewhere else. See
+/// `docs/design/SPACEBAR.md`, "Brains — Read-only, for now".
+struct DaemonRoute: Hashable, Sendable {
+    let method: String
+    let path: String
+
+    static let allowed: Set<DaemonRoute> = [
+        DaemonRoute(method: "GET", path: "/healthz"),
+        DaemonRoute(method: "GET", path: "/api/compute/local-status"),
+        DaemonRoute(method: "GET", path: "/api/token"),
+        DaemonRoute(method: "GET", path: "/v1/models"),
+        DaemonRoute(method: "POST", path: "/v1/chat/completions"),
+    ]
+
+    var isAllowed: Bool { Self.allowed.contains(self) }
 }
 
 /// One text or embedding variant from `GET /v1/models`, decoded down to
@@ -233,6 +266,9 @@ actor DaemonClient {
     // MARK: - Transport
 
     private func get(_ path: String) async throws -> Data {
+        let route = DaemonRoute(method: "GET", path: path)
+        guard route.isAllowed else { throw DaemonError.disallowed("GET \(path)") }
+
         var request = URLRequest(url: Self.base.appendingPathComponent(path))
         request.httpMethod = "GET"
         // The daemon rejects a non-loopback Host header with 421. URLSession
@@ -258,6 +294,9 @@ actor DaemonClient {
     }
 
     private func post<Body: Encodable>(_ path: String, body: Body, token: String) async throws -> Data {
+        let route = DaemonRoute(method: "POST", path: path)
+        guard route.isAllowed else { throw DaemonError.disallowed("POST \(path)") }
+
         var request = URLRequest(url: Self.base.appendingPathComponent(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
