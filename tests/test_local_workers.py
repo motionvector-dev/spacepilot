@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Comprehensive unit and integration tests for Pluto in-process local execution drivers."""
+"""Comprehensive unit and integration tests for SpacePilot in-process local execution drivers."""
 
 import os
 import sys
@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "spacepilot"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "spacepilot"))
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 from spacepilot.drivers.kokoro_driver import KokoroDriver, VOICE_CATALOGUE

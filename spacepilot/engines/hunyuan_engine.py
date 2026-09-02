@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HunyuanVideo Engine Adapter for Pluto.
+"""HunyuanVideo Engine Adapter for SpacePilot.
 
 Implements the BaseVideoEngine interface for Tencent HunyuanVideo (13B Dual-Stream DiT).
 Features separate visual and text streams that interact via cross-attention,

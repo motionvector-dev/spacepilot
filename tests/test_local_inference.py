@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for Pluto Local GPU Inference capability probe and model recommender."""
+"""Tests for SpacePilot Local GPU Inference capability probe and model recommender."""
 
 import os
 import sys
@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
-sys.path.append(str(PLUTO_ROOT / "spacepilot"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "spacepilot"))
 
 from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
 from spacepilot.model_recommender import (
@@ -17,9 +17,9 @@ from spacepilot.model_recommender import (
     RECOMMENDED_MODEL_CATALOG,
     recommend_models_for_device,
     download_model_mock,
-    PLUTO_MODELS_CACHE,
+    MODELS_CACHE,
 )
-from spacepilot.pluto_mcp_server import (
+from spacepilot.mcp_server import (
     spacepilot_get_local_status,
     spacepilot_probe_hardware,
     spacepilot_recommend_models,

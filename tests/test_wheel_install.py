@@ -120,7 +120,7 @@ def test_the_wheel_exposes_only_spacepilot_commands(wheel):
         name = next(n for n in z.namelist() if n.endswith("entry_points.txt"))
         entry_points = z.read(name).decode()
     assert "spacepilot = spacepilot.cli:main" in entry_points
-    assert "spacepilot-mcp = spacepilot.pluto_mcp_server:main" in entry_points
+    assert "spacepilot-mcp = spacepilot.mcp_server:main" in entry_points
     assert "\npluto =" not in entry_points
 
 
@@ -155,7 +155,7 @@ def test_the_shipped_measurement_corpus_is_readable(install):
     """A fresh install sees the records that came with it, not an empty store."""
     proc = install.run(
         "python", "-c",
-        "from spacepilot.pluto.measurements import load_measurements;"
+        "from spacepilot.measurements import load_measurements;"
         "print(len(load_measurements()))")
     assert proc.returncode == 0, proc.stderr
     assert int(proc.stdout.strip()) > 0, "the shipped corpus read as empty"
@@ -251,7 +251,7 @@ def test_no_shipped_module_imports_something_undeclared(isolated_install):
     still breaks whoever imports it.
 
     It does NOT catch a lazily-imported one. `Pillow` sits inside functions in
-    `pluto/services/image_utils.py` and `pluto/api/routes/generate.py`, so every
+    `spacepilot/services/image_utils.py` and `spacepilot/api/routes/generate.py`, so every
     module here imports cleanly without it and this test stays green — which is
     exactly how Pillow reached a release undeclared.  Removing Pillow from
     pyproject.toml was verified to leave this test passing.

@@ -20,7 +20,7 @@ import numpy as np
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
-logger = logging.getLogger("pluto.drivers.kokoro")
+logger = logging.getLogger("spacepilot.drivers.kokoro")
 
 # 10 official Kokoro voice profiles
 VOICE_CATALOGUE: List[Dict[str, str]] = [
@@ -96,7 +96,7 @@ class KokoroDriver(InferenceDriver):
             self.resolved_revision = None
             return env_model, env_voices
 
-        from spacepilot.pluto.registry import registry
+        from spacepilot.model_registry import registry
 
         variant_id = "kokoro-82m-onnx" if self.driver_id == "kokoro" else self.driver_id
         variant = registry().variant(variant_id)

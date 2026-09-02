@@ -35,11 +35,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from spacepilot.device_probe import (  # noqa: E402
     MEMORY_RESERVE_FLOOR_BYTES, MEMORY_RESERVE_FRACTION,
 )
-from spacepilot.pluto.measurements import (  # noqa: E402
+from spacepilot.measurements import (  # noqa: E402
     load_measurements, load_systems, subject_id, summarise,
 )
-from spacepilot.pluto.registry import load_registry  # noqa: E402
-from spacepilot.pluto.services.compatibility import (  # noqa: E402
+from spacepilot.model_registry import load_registry  # noqa: E402
+from spacepilot.services.compatibility import (  # noqa: E402
     FOOTPRINT_BANDS, PERMISSIVE_LICENSES, TIGHT_THRESHOLD,
 )
 
@@ -53,7 +53,7 @@ def attach_measurements(models: list) -> int:
     """Fold the measurement store into the variants it describes.
 
     The public page used to carry only each variant's `speed:` block, which is
-    curated prose — cited, declared, or estimated. Runs recorded by `pluto
+    curated prose — cited, declared, or estimated. Runs recorded by `spacepilot
     measure` land in the measurement store instead (spacepilot.paths), keyed by system and
     metric, and nothing joined the two. So a variant could have a real timing
     on disk and still publish as having no speed data at all, which is what

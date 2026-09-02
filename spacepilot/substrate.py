@@ -15,7 +15,7 @@ from typing import Any, Callable, Mapping, Protocol
 
 import httpx
 
-from spacepilot.pluto.services.execution import (
+from spacepilot.services.execution import (
     LocalExecutionService,
     RunPlan,
     RunRequest,

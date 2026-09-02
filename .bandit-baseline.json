@@ -1,864 +1,2751 @@
 {
- "errors": [],
- "metrics": {
-  "_totals": {
-   "CONFIDENCE.HIGH": 79,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 79,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 11080,
-   "nosec": 0,
-   "skipped_tests": 2
-  },
-  "spacepilot/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 2,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/cli.py": {
-   "CONFIDENCE.HIGH": 19,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 19,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 922,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/device_probe.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 596,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/drivers/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 10,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/drivers/base.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 87,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/drivers/gguf_driver.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 228,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/drivers/kokoro_driver.py": {
-   "CONFIDENCE.HIGH": 1,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 206,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/drivers/mflux_driver.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 224,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 26,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/base.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 149,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/hunyuan_engine.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 141,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/ltx_engine.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 139,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/registry.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 79,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/engines/wan_engine.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 159,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/enhance_prompt.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 49,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/generate_music_templates.py": {
-   "CONFIDENCE.HIGH": 7,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 7,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 104,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/generate_video.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 149,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/local_workers.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 226,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/ltx_worker.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 305,
-   "nosec": 0,
-   "skipped_tests": 1
-  },
-  "spacepilot/model_recommender.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 161,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/paths.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 87,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 2,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 1,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/deps.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 26,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 31,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/assets.py": {
-   "CONFIDENCE.HIGH": 6,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 6,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 213,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/audio.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 324,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/billing.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 61,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/checkpoints.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 44,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/compute.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 62,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/engines.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 140,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/generate.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 571,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/gpu.py": {
-   "CONFIDENCE.HIGH": 7,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 7,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 442,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/health.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 39,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/lora.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 55,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/recipes.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 28,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/runtimes.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 115,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/storyboard.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 56,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/routes/views.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 55,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/api/security.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 89,
-   "nosec": 0,
-   "skipped_tests": 1
-  },
-  "spacepilot/pluto/app.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 75,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/core/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 3,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/core/config.py": {
-   "CONFIDENCE.HIGH": 2,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 2,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 72,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/core/http.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 25,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/core/utils.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 62,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/measurements.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 423,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/registry.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 324,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/runtimes.py": {
-   "CONFIDENCE.HIGH": 6,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 6,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 284,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/__init__.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 1,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/audio.py": {
-   "CONFIDENCE.HIGH": 1,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 125,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/checkpoint_sync.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 141,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/compatibility.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 139,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/generation.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 89,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/gpu_lifecycle.py": {
-   "CONFIDENCE.HIGH": 1,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 74,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/image_utils.py": {
-   "CONFIDENCE.HIGH": 1,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 170,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/lora.py": {
-   "CONFIDENCE.HIGH": 1,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 1,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 142,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/model_catalog.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 248,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/polar_billing.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 80,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/services/watchdog.py": {
-   "CONFIDENCE.HIGH": 2,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 2,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 53,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto/sweep.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 437,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/pluto_mcp_server.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 386,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/produce_welch_master_opus.py": {
-   "CONFIDENCE.HIGH": 7,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 7,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 447,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/skypilot_orchestrator.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 416,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/storyboard_decomposer.py": {
-   "CONFIDENCE.HIGH": 0,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 0,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 229,
-   "nosec": 0,
-   "skipped_tests": 0
-  },
-  "spacepilot/web_api.py": {
-   "CONFIDENCE.HIGH": 3,
-   "CONFIDENCE.LOW": 0,
-   "CONFIDENCE.MEDIUM": 0,
-   "CONFIDENCE.UNDEFINED": 0,
-   "SEVERITY.HIGH": 0,
-   "SEVERITY.LOW": 3,
-   "SEVERITY.MEDIUM": 0,
-   "SEVERITY.UNDEFINED": 0,
-   "loc": 232,
-   "nosec": 0,
-   "skipped_tests": 0
-  }
- },
- "results": []
+  "errors": [],
+  "generated_at": "2026-09-02T06:08:24Z",
+  "metrics": {
+    "_totals": {
+      "CONFIDENCE.HIGH": 76,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 76,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 17083,
+      "nosec": 0,
+      "skipped_tests": 3
+    },
+    "spacepilot/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 2,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 1,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/deps.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 40,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 33,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/assets.py": {
+      "CONFIDENCE.HIGH": 6,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 6,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 213,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/audio.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 324,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/billing.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 36,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/checkpoints.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 44,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/compute.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 64,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/engines.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 60,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/generate.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 537,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/gpu.py": {
+      "CONFIDENCE.HIGH": 7,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 7,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 387,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/health.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 39,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/lora.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 58,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/measurements.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 32,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/recipes.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 28,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/runtimes.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 115,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/storyboard.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 56,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/routes/views.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 55,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/api/security.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 89,
+      "nosec": 0,
+      "skipped_tests": 1
+    },
+    "spacepilot/app.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 112,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/cli.py": {
+      "CONFIDENCE.HIGH": 17,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 17,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 1828,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/core/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 3,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/core/config.py": {
+      "CONFIDENCE.HIGH": 2,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 91,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/core/http.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 25,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/core/utils.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 62,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 4,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/__main__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 19,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/api.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 236,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/fleet.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 424,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/identity.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 381,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/index.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 298,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/log.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 607,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/orders.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 637,
+      "nosec": 0,
+      "skipped_tests": 1
+    },
+    "spacepilot/daemon/peer_auth.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 271,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/picture.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 75,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/runtime.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 356,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/server.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 417,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/service.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 241,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/daemon/tailscale.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 134,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/device_probe.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 635,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 10,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/base.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 87,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/gguf_driver.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 209,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/kokoro_driver.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 207,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/mflux_driver.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 226,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/mlx_lm_driver.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 125,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/mlx_lm_runner.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 62,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/drivers/whisper_cpp_driver.py": {
+      "CONFIDENCE.HIGH": 2,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 167,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 26,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/base.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 132,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/hunyuan_engine.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 141,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/ltx_engine.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 139,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/registry.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 79,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/engines/wan_engine.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 159,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/generate_music_templates.py": {
+      "CONFIDENCE.HIGH": 7,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 7,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 104,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/local_workers.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 226,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/ltx_worker.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 305,
+      "nosec": 0,
+      "skipped_tests": 1
+    },
+    "spacepilot/mcp_server.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 294,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/measurements.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 473,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/model_recommender.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 176,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/model_registry.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 404,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/paths.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 365,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/runtimes.py": {
+      "CONFIDENCE.HIGH": 7,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 7,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 349,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 1,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/audio.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 117,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/audio_execution.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 357,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/checkpoint_sync.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 141,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/compatibility.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 139,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/corpus.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 87,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/execution.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 251,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/generation.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 89,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/gpu_lifecycle.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 86,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/image_utils.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 170,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/lora.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 146,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/model_catalog.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 278,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/polar_billing.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 88,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/provenance.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 102,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/text_execution.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 165,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/services/watchdog.py": {
+      "CONFIDENCE.HIGH": 2,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 53,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/silicon.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 214,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/storyboard_decomposer.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 229,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/substrate.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 137,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/sweep.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 437,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "spacepilot/web_api.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 262,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
+  "results": [
+    {
+      "code": "5 import uuid\n6 import subprocess\n7 from pathlib import Path\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 6,
+      "line_range": [
+        6
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "45                     seen_ids.add(asset_id)\n46         except Exception:\n47             pass\n48 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 46,
+      "line_range": [
+        46,
+        47
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "64             if not thumb.exists():\n65                 subprocess.run(\n66                     [\"ffmpeg\", \"-y\", \"-ss\", \"2.0\", \"-i\", str(mp4), \"-vframes\", \"1\", \"-q:v\", \"2\", str(thumb)],\n67                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL\n68                 )\n69 \n",
+      "col_offset": 16,
+      "end_col_offset": 17,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 65,
+      "line_range": [
+        65,
+        66,
+        67,
+        68
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "64             if not thumb.exists():\n65                 subprocess.run(\n66                     [\"ffmpeg\", \"-y\", \"-ss\", \"2.0\", \"-i\", str(mp4), \"-vframes\", \"1\", \"-q:v\", \"2\", str(thumb)],\n67                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL\n68                 )\n69 \n",
+      "col_offset": 16,
+      "end_col_offset": 17,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 65,
+      "line_range": [
+        65,
+        66,
+        67,
+        68
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "87             seen_ids.add(asset_id)\n88         except Exception:\n89             pass\n90 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 88,
+      "line_range": [
+        88,
+        89
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "168                     content = await upload_file.read()\n169             except Exception:\n170                 pass\n171 \n",
+      "col_offset": 12,
+      "end_col_offset": 20,
+      "filename": "spacepilot/api/routes/assets.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 169,
+      "line_range": [
+        169,
+        170
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "5 import asyncio\n6 import subprocess\n7 from pathlib import Path\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 6,
+      "line_range": [
+        6
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "132     try:\n133         subprocess.run(\n134             [\"rsync\", \"-avz\", \"-e\", f\"ssh -i {key} -o StrictHostKeyChecking=no\", f\"ubuntu@{ip}:/scratch/out/\", f\"{settings.outputs_dir}/\"],\n135             capture_output=True,\n136             text=True,\n137             timeout=120,\n138         )\n139         return {\"ok\": True, \"message\": \"Sync complete. All videos downloaded.\"}\n",
+      "col_offset": 8,
+      "end_col_offset": 9,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 133,
+      "line_range": [
+        133,
+        134,
+        135,
+        136,
+        137,
+        138
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "132     try:\n133         subprocess.run(\n134             [\"rsync\", \"-avz\", \"-e\", f\"ssh -i {key} -o StrictHostKeyChecking=no\", f\"ubuntu@{ip}:/scratch/out/\", f\"{settings.outputs_dir}/\"],\n135             capture_output=True,\n136             text=True,\n137             timeout=120,\n138         )\n139         return {\"ok\": True, \"message\": \"Sync complete. All videos downloaded.\"}\n",
+      "col_offset": 8,
+      "end_col_offset": 9,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 133,
+      "line_range": [
+        133,
+        134,
+        135,
+        136,
+        137,
+        138
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "337                         await websocket.send_bytes(data)\n338             except Exception:\n339                 pass\n340 \n",
+      "col_offset": 12,
+      "end_col_offset": 20,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 338,
+      "line_range": [
+        338,
+        339
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "359                         await process.stdin.drain()\n360             except Exception:\n361                 pass\n362 \n",
+      "col_offset": 12,
+      "end_col_offset": 20,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 360,
+      "line_range": [
+        360,
+        361
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "408     try:\n409         res = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)\n410         if res.returncode != 0:\n",
+      "col_offset": 14,
+      "end_col_offset": 81,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 409,
+      "line_range": [
+        409
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "462     try:\n463         res = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)\n464         if res.returncode != 0:\n",
+      "col_offset": 14,
+      "end_col_offset": 81,
+      "filename": "spacepilot/api/routes/gpu.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 463,
+      "line_range": [
+        463
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "15 import argparse\n16 import subprocess\n17 import tempfile\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 16,
+      "line_range": [
+        16
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "122         else:\n123             assert self._console is not None\n124             self._console.print(line, end=\"\\r\", markup=False)\n",
+      "col_offset": 12,
+      "end_col_offset": 44,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 123,
+      "line_range": [
+        123
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "127         if self.mode == \"live\":\n128             assert self._console is not None\n129             self._console.print()\n",
+      "col_offset": 12,
+      "end_col_offset": 44,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 128,
+      "line_range": [
+        128
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "222     if capture:\n223         res = subprocess.run(\n224             cmd, text=True, input=stdin_text, stdout=subprocess.PIPE,\n225             stderr=subprocess.PIPE, timeout=timeout,\n226         )\n227         if check and res.returncode != 0:\n",
+      "col_offset": 14,
+      "end_col_offset": 9,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 223,
+      "line_range": [
+        223,
+        224,
+        225,
+        226
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "229         return res.stdout.strip()\n230     return subprocess.run(cmd, check=check, text=True, input=stdin_text, timeout=timeout)\n231 \n",
+      "col_offset": 11,
+      "end_col_offset": 89,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 230,
+      "line_range": [
+        230
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "389     print(f\"Connecting to ubuntu@{ip}...\")\n390     return subprocess.run([\"ssh\", \"-i\", key, f\"ubuntu@{ip}\"]).returncode\n391 \n",
+      "col_offset": 11,
+      "end_col_offset": 61,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 390,
+      "line_range": [
+        390
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "389     print(f\"Connecting to ubuntu@{ip}...\")\n390     return subprocess.run([\"ssh\", \"-i\", key, f\"ubuntu@{ip}\"]).returncode\n391 \n",
+      "col_offset": 11,
+      "end_col_offset": 61,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 390,
+      "line_range": [
+        390
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "403     print(f\"Streaming worker logs from {ip} (Ctrl+C to stop)...\")\n404     return subprocess.run([\"ssh\", \"-i\", key, f\"ubuntu@{ip}\",\n405                     \"tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log\"]).returncode\n406 \n",
+      "col_offset": 11,
+      "end_col_offset": 97,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 404,
+      "line_range": [
+        404,
+        405
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "403     print(f\"Streaming worker logs from {ip} (Ctrl+C to stop)...\")\n404     return subprocess.run([\"ssh\", \"-i\", key, f\"ubuntu@{ip}\",\n405                     \"tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log\"]).returncode\n406 \n",
+      "col_offset": 11,
+      "end_col_offset": 97,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 404,
+      "line_range": [
+        404,
+        405
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "450         try:\n451             probe = subprocess.run(\n452                 [candidate, \"-c\", \"import fastapi, uvicorn\"],\n453                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,\n454             )\n455             if probe.returncode == 0:\n",
+      "col_offset": 20,
+      "end_col_offset": 13,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 451,
+      "line_range": [
+        451,
+        452,
+        453,
+        454
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "464                 return candidate\n465         except Exception:\n466             continue\n467     return None\n",
+      "col_offset": 8,
+      "end_col_offset": 20,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Continue detected.",
+      "line_number": 465,
+      "line_range": [
+        465,
+        466
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b112_try_except_continue.html",
+      "test_id": "B112",
+      "test_name": "try_except_continue"
+    },
+    {
+      "code": "487         webbrowser.open(f\"http://localhost:{port}\")\n488     return subprocess.run([python_bin, str(studio_script)], env={**os.environ, \"SPACEPILOT_STUDIO_PORT\": str(port)}).returncode\n489 \n",
+      "col_offset": 11,
+      "end_col_offset": 116,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 488,
+      "line_range": [
+        488
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "569     try:\n570         ffmpeg_res = subprocess.run([\"ffmpeg\", \"-version\"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)\n571         ffmpeg_ver = ffmpeg_res.stdout.split('\\n')[0].replace('ffmpeg version ', '').split(' ')[0]\n",
+      "col_offset": 21,
+      "end_col_offset": 130,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 570,
+      "line_range": [
+        570
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "569     try:\n570         ffmpeg_res = subprocess.run([\"ffmpeg\", \"-version\"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)\n571         ffmpeg_ver = ffmpeg_res.stdout.split('\\n')[0].replace('ffmpeg version ', '').split(' ')[0]\n",
+      "col_offset": 21,
+      "end_col_offset": 130,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 570,
+      "line_range": [
+        570
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "597     try:\n598         aws_res = subprocess.run([\"aws\", \"sts\", \"get-caller-identity\", \"--profile\", cfg.get(\"aws_profile\", \"default\")], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)\n599         aws_data = json.loads(aws_res.stdout)\n",
+      "col_offset": 18,
+      "end_col_offset": 190,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 598,
+      "line_range": [
+        598
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "597     try:\n598         aws_res = subprocess.run([\"aws\", \"sts\", \"get-caller-identity\", \"--profile\", cfg.get(\"aws_profile\", \"default\")], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)\n599         aws_data = json.loads(aws_res.stdout)\n",
+      "col_offset": 18,
+      "end_col_offset": 190,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 598,
+      "line_range": [
+        598
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "1814     started = time.perf_counter()\n1815     proc = subprocess.run(command)\n1816     wall = time.perf_counter() - started\n",
+      "col_offset": 11,
+      "end_col_offset": 34,
+      "filename": "spacepilot/cli.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 1815,
+      "line_range": [
+        1815
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "29                 return tok\n30         except Exception:\n31             pass\n32     token = secrets.token_hex(32)\n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/core/config.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 30,
+      "line_range": [
+        30,
+        31
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "35         token_file.chmod(0o600)\n36     except Exception:\n37         pass\n38     return token\n",
+      "col_offset": 4,
+      "end_col_offset": 12,
+      "filename": "spacepilot/core/config.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 36,
+      "line_range": [
+        36,
+        37
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "3 import json\n4 import subprocess\n5 from pathlib import Path\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/core/utils.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 4,
+      "line_range": [
+        4
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "12     try:\n13         return subprocess.run(\n14             [\"ffmpeg\", \"-y\", *args],\n15             capture_output=True,\n16             text=True,\n17             timeout=settings.ffmpeg_timeout_sec,\n18         )\n19     except subprocess.TimeoutExpired:\n",
+      "col_offset": 15,
+      "end_col_offset": 9,
+      "filename": "spacepilot/core/utils.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 13,
+      "line_range": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "12     try:\n13         return subprocess.run(\n14             [\"ffmpeg\", \"-y\", *args],\n15             capture_output=True,\n16             text=True,\n17             timeout=settings.ffmpeg_timeout_sec,\n18         )\n19     except subprocess.TimeoutExpired:\n",
+      "col_offset": 15,
+      "end_col_offset": 9,
+      "filename": "spacepilot/core/utils.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 13,
+      "line_range": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "302     lock_fd = _acquire_lock(lock_path)\n303     assert lock_fd is not None\n304     try:\n",
+      "col_offset": 4,
+      "end_col_offset": 30,
+      "filename": "spacepilot/daemon/identity.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 303,
+      "line_range": [
+        303
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "17 import shutil\n18 import subprocess\n19 from dataclasses import dataclass, field, asdict\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/device_probe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 18,
+      "line_range": [
+        18
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "77     try:\n78         out = subprocess.run(\n79             argv, capture_output=True, timeout=timeout, check=True\n80         ).stdout.decode(\"utf-8\", \"replace\").strip()\n81         return out or None\n",
+      "col_offset": 14,
+      "end_col_offset": 9,
+      "filename": "spacepilot/device_probe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 78,
+      "line_range": [
+        78,
+        79,
+        80
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "352                 profile.memory_limit_source = \"metal\"\n353         except Exception:\n354             pass  # torch absent or too old; the reserve heuristic covers it\n355 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/device_probe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 353,
+      "line_range": [
+        353,
+        354
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "14 import logging\n15 import subprocess\n16 from pathlib import Path\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/drivers/kokoro_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 15,
+      "line_range": [
+        15
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "22 import re\n23 import subprocess\n24 import threading\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/drivers/mflux_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 23,
+      "line_range": [
+        23
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "215         start = time.perf_counter()\n216         proc = subprocess.Popen(\n217             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,\n218             text=True, bufsize=1, env=run_env,\n219         )\n220 \n",
+      "col_offset": 15,
+      "end_col_offset": 9,
+      "filename": "spacepilot/drivers/mflux_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 216,
+      "line_range": [
+        216,
+        217,
+        218,
+        219
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "238         try:\n239             assert proc.stdout is not None\n240             for line in proc.stdout:\n",
+      "col_offset": 12,
+      "end_col_offset": 42,
+      "filename": "spacepilot/drivers/mflux_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 239,
+      "line_range": [
+        239
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "6 import os\n7 import subprocess\n8 from pathlib import Path\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/drivers/mlx_lm_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 7,
+      "line_range": [
+        7
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "63         try:\n64             proc = subprocess.run(\n65                 [self.python_bin, \"-c\", \"import mlx_lm\"],\n66                 capture_output=True, text=True, timeout=20,\n67             )\n68         except (OSError, subprocess.TimeoutExpired) as exc:\n",
+      "col_offset": 19,
+      "end_col_offset": 13,
+      "filename": "spacepilot/drivers/mlx_lm_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 64,
+      "line_range": [
+        64,
+        65,
+        66,
+        67
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "114         try:\n115             proc = subprocess.run(\n116                 cmd, input=prompt, capture_output=True, text=True,\n117                 timeout=timeout, env=env,\n118             )\n119         except subprocess.TimeoutExpired as exc:\n",
+      "col_offset": 19,
+      "end_col_offset": 13,
+      "filename": "spacepilot/drivers/mlx_lm_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 115,
+      "line_range": [
+        115,
+        116,
+        117,
+        118
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "13 import shutil\n14 import subprocess\n15 import time\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/drivers/whisper_cpp_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 14,
+      "line_range": [
+        14
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "164         try:\n165             proc = subprocess.run(\n166                 cmd, capture_output=True, text=True, timeout=timeout,\n167             )\n168         except subprocess.TimeoutExpired as exc:\n",
+      "col_offset": 19,
+      "end_col_offset": 13,
+      "filename": "spacepilot/drivers/whisper_cpp_driver.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 165,
+      "line_range": [
+        165,
+        166,
+        167
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "11 from typing import Dict, Any, List, Optional, Tuple\n12 import subprocess\n13 import uuid\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/engines/base.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 12,
+      "line_range": [
+        12
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "12 import math\n13 import subprocess\n14 import sys\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 13,
+      "line_range": [
+        13
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "54     base = f\"loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=11\"\n55     measure = subprocess.run(\n56         [\"ffmpeg\", \"-i\", str(out_raw), \"-af\", base + \":print_format=json\",\n57          \"-f\", \"null\", \"-\"],\n58         capture_output=True, text=True,\n59     ).stderr\n60     try:\n",
+      "col_offset": 14,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 55,
+      "line_range": [
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "54     base = f\"loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=11\"\n55     measure = subprocess.run(\n56         [\"ffmpeg\", \"-i\", str(out_raw), \"-af\", base + \":print_format=json\",\n57          \"-f\", \"null\", \"-\"],\n58         capture_output=True, text=True,\n59     ).stderr\n60     try:\n",
+      "col_offset": 14,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 55,
+      "line_range": [
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "71         af = base\n72     subprocess.run(\n73         [\"ffmpeg\", \"-y\", \"-v\", \"error\", \"-i\", str(out_raw),\n74          \"-af\", af, \"-ar\", \"44100\", str(out_norm)],\n75         check=True,\n76     )\n77 \n",
+      "col_offset": 4,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 72,
+      "line_range": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "71         af = base\n72     subprocess.run(\n73         [\"ffmpeg\", \"-y\", \"-v\", \"error\", \"-i\", str(out_raw),\n74          \"-af\", af, \"-ar\", \"44100\", str(out_norm)],\n75         check=True,\n76     )\n77 \n",
+      "col_offset": 4,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 72,
+      "line_range": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "79 def measure(path: Path) -> str:\n80     probe = subprocess.run(\n81         [\"ffmpeg\", \"-i\", str(path), \"-af\", \"volumedetect\", \"-f\", \"null\", \"-\"],\n82         capture_output=True, text=True,\n83     ).stderr\n84     return \" \".join(\n",
+      "col_offset": 12,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 80,
+      "line_range": [
+        80,
+        81,
+        82,
+        83
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "79 def measure(path: Path) -> str:\n80     probe = subprocess.run(\n81         [\"ffmpeg\", \"-i\", str(path), \"-af\", \"volumedetect\", \"-f\", \"null\", \"-\"],\n82         capture_output=True, text=True,\n83     ).stderr\n84     return \" \".join(\n",
+      "col_offset": 12,
+      "end_col_offset": 5,
+      "filename": "spacepilot/generate_music_templates.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 80,
+      "line_range": [
+        80,
+        81,
+        82,
+        83
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "470             ))\n471         except Exception:\n472             # Cache misses and incomplete snapshots are ordinary availability\n473             # states. The resolver is intentionally unable to repair them.\n474             continue\n475         files = concrete_snapshot_files(snapshot, patterns)\n",
+      "col_offset": 8,
+      "end_col_offset": 20,
+      "filename": "spacepilot/paths.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Continue detected.",
+      "line_number": 471,
+      "line_range": [
+        471,
+        472,
+        473,
+        474
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b112_try_except_continue.html",
+      "test_id": "B112",
+      "test_name": "try_except_continue"
+    },
+    {
+      "code": "17 import pathlib\n18 import subprocess\n19 import sys\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 18,
+      "line_range": [
+        18
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "183 \n184     out = subprocess.run(\n185         [py or interpreter(), \"-c\", \"import platform;print(platform.python_version())\"],\n186         capture_output=True, text=True,\n187     )\n188     ver = out.stdout.strip()\n",
+      "col_offset": 10,
+      "end_col_offset": 5,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 184,
+      "line_range": [
+        184,
+        185,
+        186,
+        187
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "263     if env_py.is_file():\n264         out = subprocess.run(\n265             [str(env_py), \"-c\", _version_probe(r)],\n266             capture_output=True, text=True, timeout=90,\n267         )\n268         if out.returncode == 0:\n",
+      "col_offset": 14,
+      "end_col_offset": 9,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 264,
+      "line_range": [
+        264,
+        265,
+        266,
+        267
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "300     probe = _version_probe(r)\n301     out = subprocess.run([py, \"-c\", probe], capture_output=True, text=True, timeout=90)\n302     if out.returncode == 0:\n",
+      "col_offset": 10,
+      "end_col_offset": 87,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 301,
+      "line_range": [
+        301
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "369         report = fh.name\n370     proc = subprocess.run(\n371         [py, \"-m\", \"pip\", \"install\", \"--dry-run\", \"--quiet\", \"--report\", report,\n372          *specs],\n373         capture_output=True, text=True, timeout=timeout,\n374     )\n375     if proc.returncode != 0:\n",
+      "col_offset": 11,
+      "end_col_offset": 5,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 370,
+      "line_range": [
+        370,
+        371,
+        372,
+        373,
+        374
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "393     )\n394     have_proc = subprocess.run([py, \"-c\", probe, json.dumps(names)],\n395                                capture_output=True, text=True, timeout=90)\n396     try:\n",
+      "col_offset": 16,
+      "end_col_offset": 74,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 394,
+      "line_range": [
+        394,
+        395
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "428 \n429     proc = subprocess.run(install_command(r, py), capture_output=True, text=True, timeout=timeout)\n430     if proc.returncode != 0:\n",
+      "col_offset": 11,
+      "end_col_offset": 98,
+      "filename": "spacepilot/runtimes.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 429,
+      "line_range": [
+        429
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "6 import uuid\n7 import subprocess\n8 import threading\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/services/audio.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 7,
+      "line_range": [
+        7
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "65             cost = round((uptime_min / 60.0) * cfg.get(\"spot_hourly_rate\", 0.75), 2)\n66         except Exception:\n67             pass\n68 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/services/gpu_lifecycle.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 66,
+      "line_range": [
+        66,
+        67
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "102             mime = fmt_map.get(fmt)\n103     except Exception:\n104         pass\n105 \n",
+      "col_offset": 4,
+      "end_col_offset": 12,
+      "filename": "spacepilot/services/image_utils.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 103,
+      "line_range": [
+        103,
+        104
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "115             job[\"current_step\"] = min(job[\"steps\"], job[\"current_step\"] + max(1, job[\"steps\"] // 5))\n116             loss = max(0.1, 1.0 - (job[\"current_step\"] / job[\"steps\"]) + random.uniform(-0.05, 0.05))\n117             job[\"loss_curve\"].append({\"step\": job[\"current_step\"], \"loss\": loss})\n",
+      "col_offset": 73,
+      "end_col_offset": 100,
+      "filename": "spacepilot/services/lora.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 116,
+      "line_range": [
+        116
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "22                         return True\n23             except Exception:\n24                 pass\n25     except Exception:\n",
+      "col_offset": 12,
+      "end_col_offset": 20,
+      "filename": "spacepilot/services/watchdog.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 23,
+      "line_range": [
+        23,
+        24
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "24                 pass\n25     except Exception:\n26         pass\n27     return False\n",
+      "col_offset": 4,
+      "end_col_offset": 12,
+      "filename": "spacepilot/services/watchdog.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 25,
+      "line_range": [
+        25,
+        26
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "23 import shutil\n24 import subprocess\n25 import sys\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "spacepilot/sweep.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 24,
+      "line_range": [
+        24
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "295         if self.enabled:\n296             self.proc = subprocess.Popen(\n297                 [\"caffeinate\", \"-i\", \"-w\", str(os.getpid())],\n298                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,\n299             )\n300             self.log(\"  caffeinate started \u2014 this Mac will not idle-sleep until the sweep ends\")\n",
+      "col_offset": 24,
+      "end_col_offset": 13,
+      "filename": "spacepilot/sweep.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 296,
+      "line_range": [
+        296,
+        297,
+        298,
+        299
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "295         if self.enabled:\n296             self.proc = subprocess.Popen(\n297                 [\"caffeinate\", \"-i\", \"-w\", str(os.getpid())],\n298                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,\n299             )\n300             self.log(\"  caffeinate started \u2014 this Mac will not idle-sleep until the sweep ends\")\n",
+      "col_offset": 24,
+      "end_col_offset": 13,
+      "filename": "spacepilot/sweep.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 296,
+      "line_range": [
+        296,
+        297,
+        298,
+        299
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "159             cost = round((uptime_min / 60.0) * cfg.get(\"spot_hourly_rate\", 0.75), 2)\n160         except Exception:\n161             pass\n162 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "spacepilot/web_api.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 160,
+      "line_range": [
+        160,
+        161
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "219                         return True\n220             except Exception:\n221                 pass\n222     except Exception:\n",
+      "col_offset": 12,
+      "end_col_offset": 20,
+      "filename": "spacepilot/web_api.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 220,
+      "line_range": [
+        220,
+        221
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "221                 pass\n222     except Exception:\n223         pass\n224     return False\n",
+      "col_offset": 4,
+      "end_col_offset": 12,
+      "filename": "spacepilot/web_api.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 222,
+      "line_range": [
+        222,
+        223
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    }
+  ]
 }

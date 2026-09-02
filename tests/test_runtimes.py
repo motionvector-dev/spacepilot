@@ -7,7 +7,7 @@ it would quietly change something else.
 
 import pytest
 
-from spacepilot.pluto.runtimes import (
+from spacepilot.runtimes import (
     BACKENDS, MODALITIES, Impact, RuntimeError_, load_runtimes, parse_runtime, runtimes,
 )
 
@@ -35,7 +35,7 @@ def test_pinned_versions_record_when_they_were_checked():
 
 def test_check_reports_a_reason_when_a_runtime_is_absent(monkeypatch):
     """Absence must carry the import error, not a bare False."""
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     r = runtimes()["mflux"]
     st = rt.check(r)
     if not st.installed:
@@ -49,7 +49,7 @@ def test_outdated_is_not_the_same_as_installed():
     A caller checking only `installed` would run against an API that may not
     exist in the version actually present.
     """
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     for r in runtimes().values():
         st = rt.check(r)
         if st.below_minimum:
@@ -61,7 +61,7 @@ def test_outdated_is_not_the_same_as_installed():
 
 def test_python_incompatibility_is_reported_rather_than_attempted():
     """stable-audio-tools pins itself below 3.11; this project runs 3.11."""
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     r = runtimes()["stable-audio-tools"]
     ok, note = rt.python_ok(r)
     if not ok:
@@ -81,7 +81,7 @@ def test_a_downgrade_counts_as_disruptive():
 
 def test_install_command_names_the_interpreter():
     """A runtime installed into some other Python is not installed here."""
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     argv = rt.install_command(runtimes()["mflux"], py="/tmp/fake-python")
     assert argv[0] == "/tmp/fake-python"
     assert argv[1:4] == ["-m", "pip", "install"]
@@ -90,7 +90,7 @@ def test_install_command_names_the_interpreter():
 
 def test_configured_interpreter_wins_over_the_calling_pipx_python(monkeypatch):
     """A pipx CLI must execute runtimes in the configured ML environment."""
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
 
     monkeypatch.delenv("SPACEPILOT_PYTHON", raising=False)
     monkeypatch.delenv("PLUTO_PYTHON", raising=False)
@@ -99,7 +99,7 @@ def test_configured_interpreter_wins_over_the_calling_pipx_python(monkeypatch):
 
 
 def test_mlx_lm_install_carries_the_known_good_transformers_constraint():
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
 
     runtime = runtimes()["mlx-lm"]
     assert runtime.install.constraints == ["transformers>=5.12.1,<5.13"]
@@ -138,7 +138,7 @@ def test_check_finds_a_runtime_installed_in_its_own_environment(tmp_path, monkey
     agree. The fake bin dir stands in for the conda env; /usr/bin/false stands
     in for an interpreter where the import fails.
     """
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     r = runtimes()["mflux"]
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -156,7 +156,7 @@ def test_check_finds_a_runtime_installed_in_its_own_environment(tmp_path, monkey
 
 def test_external_route_requires_the_binary_to_actually_exist(tmp_path, monkeypatch):
     """A configured bin dir with no entry point in it is still not installed."""
-    from spacepilot.pluto import runtimes as rt
+    from spacepilot import runtimes as rt
     r = runtimes()["mflux"]
     empty = tmp_path / "empty"
     empty.mkdir()

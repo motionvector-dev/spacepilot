@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-APP_JS = PLUTO_ROOT / "web" / "app.js"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+APP_JS = REPO_ROOT / "web" / "app.js"
 
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
 
@@ -76,7 +76,7 @@ def test_syntax_is_valid():
 def test_sidebar_format_time():
     """Verify the formatTime logic added to sidebar.js"""
     import re
-    sidebar = PLUTO_ROOT / "web" / "sidebar.js"
+    sidebar = REPO_ROOT / "web" / "sidebar.js"
     source = sidebar.read_text()
     match = re.search(r"^    function formatTime\(totalSeconds\) \{.*?^\s*\}", source, re.S | re.M)
     assert match, "formatTime() helper is missing from sidebar.js"
@@ -108,11 +108,11 @@ console.log('ok');
 
 
 def test_cockpit_syntax():
-    cockpit_js = PLUTO_ROOT / "web" / "cockpit.js"
+    cockpit_js = REPO_ROOT / "web" / "cockpit.js"
     result = subprocess.run([shutil.which("node"), "--check", str(cockpit_js)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 def test_create_js_syntax():
-    create_js = PLUTO_ROOT / "web" / "create.js"
+    create_js = REPO_ROOT / "web" / "create.js"
     result = subprocess.run([shutil.which("node"), "--check", str(create_js)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

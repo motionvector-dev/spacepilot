@@ -1,4 +1,4 @@
-"""Pluto Multi-Model DiT Video Engines.
+"""SpacePilot Multi-Model DiT Video Engines.
 
 Polymorphic adapters for LTX-Video 2.5, Wan2.1 1.3B/14B, and HunyuanVideo.
 """

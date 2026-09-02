@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from spacepilot.pluto.registry import load_registry, registry
-from spacepilot.pluto.runtimes import load_runtimes
+from spacepilot.model_registry import load_registry, registry
+from spacepilot.runtimes import load_runtimes
 
 NEW_FAMILY_FILES = [
     "qwen-image.yaml",
@@ -145,7 +145,7 @@ def test_mflux_runtime_serves_video_now_that_it_runs_seedvr2():
 
 
 def test_catalog_manager_picks_up_the_new_variants_without_a_second_copy():
-    from spacepilot.pluto.services.model_catalog import catalog_manager
+    from spacepilot.services.model_catalog import catalog_manager
     ids = {v.id for v in registry().variants}
     assert set(catalog_manager.recipes) == ids
     for variant_id in NEW_VARIANT_IDS:

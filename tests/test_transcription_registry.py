@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from spacepilot.pluto.registry import (
+from spacepilot.model_registry import (
     CAVEAT_CAPABILITIES,
     CAVEAT_PROVENANCES,
     CAVEAT_STATUSES,
@@ -13,7 +13,7 @@ from spacepilot.pluto.registry import (
     parse_model,
     registry,
 )
-from spacepilot.pluto.runtimes import runtimes
+from spacepilot.runtimes import runtimes
 
 ROOT = Path(__file__).resolve().parent.parent
 

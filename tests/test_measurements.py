@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from spacepilot.pluto.measurements import (
+from spacepilot.measurements import (
     Measurement,
     MeasurementError,
     System,
@@ -64,7 +64,7 @@ def test_fingerprint_does_not_leak_the_hostname(system):
 
 
 def test_fingerprint_keeps_historical_default_salt_permanently(monkeypatch):
-    import spacepilot.pluto.measurements as ms
+    import spacepilot.measurements as ms
     monkeypatch.delenv("SPACEPILOT_FINGERPRINT_SALT", raising=False)
     monkeypatch.delenv("PLUTO_FINGERPRINT_SALT", raising=False)
     monkeypatch.setattr(ms.platform, "node", lambda: "stable-host")
@@ -74,7 +74,7 @@ def test_fingerprint_keeps_historical_default_salt_permanently(monkeypatch):
 
 
 def test_fingerprint_legacy_salt_env_remains_a_permanent_fallback(monkeypatch):
-    import spacepilot.pluto.measurements as ms
+    import spacepilot.measurements as ms
     monkeypatch.delenv("SPACEPILOT_FINGERPRINT_SALT", raising=False)
     monkeypatch.setenv("PLUTO_FINGERPRINT_SALT", "legacy-deployment-salt")
     monkeypatch.setattr(ms.platform, "node", lambda: "stable-host")
@@ -210,7 +210,7 @@ def test_our_own_heavy_work_can_record_solo(monkeypatch):
     state and isolates the one thing under test: CPU attributed to our own
     tree (pid 1 here) must not count as contention, no matter how heavy.
     """
-    import spacepilot.pluto.measurements as ms
+    import spacepilot.measurements as ms
 
     monkeypatch.setattr(ms.psutil, "process_iter",
                          lambda *a, **k: _own_and_external(own_cpu=800.0, external_cpu=2.0))
@@ -229,7 +229,7 @@ def test_a_genuine_competitor_mid_run_still_reads_loaded(monkeypatch):
     matters — whether a busy pid is counted as "ours" — the same way the
     solo case above does.
     """
-    import spacepilot.pluto.measurements as ms
+    import spacepilot.measurements as ms
 
     monkeypatch.setattr(ms.psutil, "process_iter",
                          lambda *a, **k: _own_and_external(own_cpu=800.0, external_cpu=2.0))

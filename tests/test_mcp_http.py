@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from spacepilot.pluto.app import MCP_HTTP_PATH, create_app
+from spacepilot.app import MCP_HTTP_PATH, create_app
 
 
 @pytest.fixture

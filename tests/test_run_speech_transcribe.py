@@ -16,8 +16,8 @@ from spacepilot.device_probe import DeviceProfile, GIB
 from spacepilot.drivers.whisper_cpp_driver import (
     WhisperCppDriver, WhisperSubprocessError, audio_duration_seconds,
 )
-from spacepilot.pluto.measurements import Measurement
-from spacepilot.pluto.services.audio_execution import (
+from spacepilot.measurements import Measurement
+from spacepilot.services.audio_execution import (
     SPEECH_ROUTES,
     TRANSCRIBE_ROUTES,
     SpeechExecutionService,
@@ -25,7 +25,7 @@ from spacepilot.pluto.services.audio_execution import (
     TranscribeExecutionService,
     TranscribeRequest,
 )
-from spacepilot.pluto.services.execution import LocalExecutionError
+from spacepilot.services.execution import LocalExecutionError
 
 
 def _profile(*, backend="metal", memory_gb=32, free_gb=30):
@@ -361,7 +361,7 @@ def test_cli_speech_non_tty_never_executes_without_yes(tmp_path, capsys):
         "run_workload": "speech", "text": "hello", "voice": "af_heart",
         "output": str(tmp_path / "x.wav"), "yes": False,
     })()
-    with patch("spacepilot.pluto.services.audio_execution.SpeechExecutionService",
+    with patch("spacepilot.services.audio_execution.SpeechExecutionService",
                return_value=service), \
          patch.object(cli.sys, "stdin", StringIO("y\n")):
         assert cli.cmd_run(args, {}) == 1
@@ -376,7 +376,7 @@ def test_cli_transcribe_refuses_missing_audio_before_confirmation(tmp_path, caps
         "run_workload": "transcribe", "audio": str(tmp_path / "absent.wav"),
         "output": str(tmp_path / "x.txt"), "yes": True,
     })()
-    with patch("spacepilot.pluto.services.audio_execution.TranscribeExecutionService",
+    with patch("spacepilot.services.audio_execution.TranscribeExecutionService",
                return_value=service):
         assert cli.cmd_run(args, {}) == 1
     service.execute.assert_not_called()

@@ -2,9 +2,9 @@
 
 from fastapi.testclient import TestClient
 
-from spacepilot.pluto import measurements as ms
-from spacepilot.pluto.api.routes.measurements import router as measurements_router
-from spacepilot.pluto.services import corpus
+from spacepilot import measurements as ms
+from spacepilot.api.routes.measurements import router as measurements_router
+from spacepilot.services import corpus
 from spacepilot.web_api import app, require_token
 
 
@@ -79,7 +79,7 @@ def test_corrupt_measurements_are_a_503_not_a_plausible_empty_corpus(monkeypatch
 
 def test_mcp_corpus_tools_filter_exact_ids_and_preserve_caveats(monkeypatch):
     _fixture_corpus(monkeypatch)
-    from spacepilot.pluto_mcp_server import spacepilot_measurements, spacepilot_system_summary
+    from spacepilot.mcp_server import spacepilot_measurements, spacepilot_system_summary
 
     rows = spacepilot_measurements("distil-large-v3-ggml")["measurements"]
     assert len(rows) == 2
@@ -95,7 +95,7 @@ def test_mcp_corpus_tools_filter_exact_ids_and_preserve_caveats(monkeypatch):
 def test_mcp_check_is_a_read_only_probe_with_local_summary(monkeypatch):
     _fixture_corpus(monkeypatch)
     from spacepilot.device_probe import DeviceProfile
-    from spacepilot.pluto_mcp_server import spacepilot_check
+    from spacepilot.mcp_server import spacepilot_check
 
     profile = DeviceProfile(chip="Test Chip", backend="cpu", memory_total_bytes=8 * 1024 ** 3)
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", lambda: profile)
