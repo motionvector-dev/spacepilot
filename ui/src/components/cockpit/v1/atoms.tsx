@@ -80,9 +80,13 @@ export function Fact({
   const missing = value === null || value === undefined || value === '';
   return (
     <div className="flex items-baseline justify-between gap-4 py-[7px]">
-      <span className="text-[12px] text-ink-700">{label}</span>
+      <span className="shrink-0 text-[12px] text-ink-700">{label}</span>
       <span
-        className={`text-right text-[12px] ${mono ? 'font-mono' : ''} ${
+        // A long value (an interpreter path) truncates rather than wrapping —
+        // a wrapped path pushes every row below it out of alignment, and the
+        // full string is still one hover away.
+        title={missing ? undefined : String(value)}
+        className={`min-w-0 truncate text-right text-[12px] ${mono ? 'font-mono' : ''} ${
           missing ? 'italic text-ink-500' : 'text-ink'
         }`}
       >

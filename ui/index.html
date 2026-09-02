@@ -97,7 +97,12 @@
     <script>
       (function () {
         var p = "system";
-        try { p = localStorage.getItem("pluto-theme") || "system"; } catch (e) {}
+        try {
+          var q = new URLSearchParams(location.search).get("theme");
+          p = (q === "light" || q === "dark" || q === "system")
+            ? q
+            : (localStorage.getItem("pluto-theme") || "system");
+        } catch (e) {}
         var resolved = p === "system"
           ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
           : p;

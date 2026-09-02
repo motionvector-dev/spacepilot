@@ -6,10 +6,25 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 // still there on the other.
 const KEY = 'pluto-theme';
 
+function isPreference(v: string | null): v is ThemePreference {
+  return v === 'light' || v === 'dark' || v === 'system';
+}
+
+/** ?theme=light|dark|system wins over storage for this load.
+ *
+ * It is how a screenshot, a doc link, or a bug report pins the theme without
+ * touching the reader's own choice. index.html reads the same parameter before
+ * first paint. Anything else in the parameter is ignored, not guessed at. */
 function readPreference(): ThemePreference {
   try {
+    const q = new URLSearchParams(window.location.search).get('theme');
+    if (isPreference(q)) return q;
+  } catch {
+    /* a malformed query string is not worth failing over */
+  }
+  try {
     const v = localStorage.getItem(KEY);
-    if (v === 'light' || v === 'dark' || v === 'system') return v;
+    if (isPreference(v)) return v;
   } catch {
     /* private mode, or storage disabled */
   }
