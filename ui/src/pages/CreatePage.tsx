@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { CreateWizardHeader } from '../components/create/CreateWizardHeader';
 import { PromptScriptStep } from '../components/create/PromptScriptStep';
 import { ModelEngineStep } from '../components/create/ModelEngineStep';
@@ -74,8 +73,10 @@ const MAX_TRACKED_TAKES = 4;
 const RENDER_TIMEOUT_MS = 60_000;
 
 export default function CreatePage() {
-  const [searchParams] = useSearchParams();
-  const extendId = searchParams.get('extend_id');
+  // This app has no <Router>; App.tsx routes with pushState. useSearchParams()
+  // therefore threw on every load of this page and rendered nothing at all.
+  // One read of one parameter does not need a router.
+  const extendId = new URLSearchParams(window.location.search).get('extend_id');
 
   // 1. Prompt & Script State
   const [prompt, setPrompt] = useState(

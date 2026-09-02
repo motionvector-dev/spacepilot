@@ -126,6 +126,8 @@ Five things that are not built, each of which would earn a daily open.
 | Compute routes need `X-SpacePilot-Token`; the cockpit has no token flow, so every write button is a dead end | One token prompt, stored in memory, sent by the api client | ~60k |
 | `/api/compute/local-profile` and `/api/runtimes` take seconds — runtimes shells out per package | Cache the runtime probe with an explicit "re-check" button | ~50k |
 | No run history endpoint, so no run screen | Add `/api/runs`; the corpus already stores the rows | ~80k |
+| `/create` rendered nothing at all — `useSearchParams()` in an app with no `<Router>` | Fixed in this branch: one `URLSearchParams` read | done |
+| `/create` prints `VRAM: undefinedGB · Cold: ~undefineds` per engine, and lists engines `/api/engines` says are paper specs that refuse to run | Bind to the real fields, and mark unimplemented engines as such — this is the honesty rule broken on the busiest page | ~70k |
 | Fonts come from Google's CDN — wrong for a local-first app and impossible in Tauri | Self-host Plus Jakarta Sans and JetBrains Mono in `web/fonts/` | ~20k |
 | DESIGN.md declares no light palette; this branch derives one | Saurabh's call: keep it, or make SpacePilot dark-only and drop the toggle | ~15k either way |
 
