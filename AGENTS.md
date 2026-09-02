@@ -4,6 +4,50 @@ Cross-tool agent instructions. `CLAUDE.md` is a symlink to this file, so Claude
 Code, Codex, Cursor, Copilot, Antigravity and the rest all read the same rules.
 Edit this file, never the symlink.
 
+## What ships, and where it is going
+
+Read `docs/design/VISION.md` first; it holds the grand vision so nobody has to
+re-explain it. The short form:
+
+| surface | repo | license and money |
+| --- | --- | --- |
+| CLI + MCP server | this repo | open source |
+| web cockpit, Tauri wrapper later | this repo | open source |
+| macbar (SpaceBar menu bar app) | its own repo, to be created | free by default, paid tier later if the value earns $5/month |
+| spacepilot.dev | `../spacepilot-landing` | site |
+
+The idea: running AI should be easy, and free when your machine allows it.
+When it does not, provisioning a box (RunPod, Modal, an API provider) should be
+just as fast and no-nonsense. Start small; the empire is not day one.
+
+Next step for the product: agents take over from the CLI, so a human talks to
+SpacePilot in chat while the cockpit shows the data. Not ChatGPT for local AI,
+but that plus observability for your fleet, local and remote.
+
+macbar's headline feature is duplex voice, OpenAI-voice style, running locally
+when it can: Apple's on-device foundation model (about 3B, free), then
+CoreAI/CoreML for open models like Qwen, then a rented box. Free Apple models
+come through two doors and MCP fits both: the FoundationModels framework (the
+app calls the model, with Tools, so an MCP bridge is a Tool) and App Intents
+(Siri and Apple Intelligence understand the request and call macbar, no model
+call, no cost). The web cockpit adds WebMCP for browser agents (Chrome origin
+trial, not a standard yet). Apple's reference checkouts are at
+`~/code/unfoundbox/ml-ai/coreai-*` and `mlx-*`. The `../space-voice` checkout
+is a cheap Gemini-Live prototype of the same idea; review it, rebuild from
+scratch if it fights the plan. Sources: `docs/design/VISION.md`.
+
+## When Fable drives
+
+Be token efficient. Fable tokens are the rare, expensive ones: Fable plans,
+decides, and reviews; everything else goes to the fleet member whose
+specialisation fits (Sonnet for edits and browser work, Haiku for scans and
+lookups, Opus for adversarial review, agy Flash for vision and grunt work).
+
+A subagent's "not confirmed" survives into the reply as "not confirmed". The
+director never rounds it up to a verdict, and never rewrites a doc on the
+strength of one. (2026-09-02: an App Intents claim was called wrong on the
+basis of a page that never loaded.)
+
 ## Interpreter
 
 The repo carries no `.venv`, and bare `python3` is usually the wrong
@@ -63,10 +107,14 @@ Anything that assumes two concurrent workers is wrong until that quota moves.
 Repo docs were cleared for a rewrite on 2026-08-24 (commit 20bf158). What lives
 in the repo now:
 
+- **`docs/design/VISION.md`** — the grand vision, so nobody has to re-explain
+  it. Read this first.
 - **`docs/design/CONCEPT.md`** — the product thesis: ships / docks / providers,
-  the honesty rules, the three words. Read this first.
-- **`docs/BUILD-PLAN.md`** — ground truth of what works and the phased work
-  list, verified against main with file:line evidence.
+  the honesty rules, the three words. Read this second.
+- **`docs/LOCAL-SETUP.md`** — local dev environment setup.
+- **`docs/MCP-CLIENTS.md`** — MCP client configuration.
+- **`docs/design/RUNTIME-CAPSULES.md`** — runtime capsule design.
+- **`docs/design/HARDWARE-LANDSCAPE.md`** — hardware landscape survey.
 
 The old operational docs (AWS.md, INFERENCE.md, PIPELINE-STATE.md,
 DECISION-INBOX.md) are archived at `~/code/motionvector/handoffs/` — context
@@ -119,12 +167,10 @@ broken renders for weeks.
 
 ## Publishing
 
-Nothing goes to a public or third-party destination — GitHub issues, PRs, PR
-descriptions, gists, forums — without Saurabh doing it himself. Draft the text,
-hand over the exact command, and say what it exposes: which account it posts
-under, what it implies about the work, and that it cannot be retracted. "File
-it" approves the content, not the act.
+The cross-repo rule in `~/code/AGENTS.md` applies: this is a private repo, so
+push, open the PR, edit its body, and report the URL. Merging to main still
+needs a yes. Saurabh can narrow this for one session or task ("hand me the
+command", "park it") and that override lasts only for that session or task.
 
-Same shape for destructive commands: state the blast radius next to the command,
-not just the intent. A `find … -delete` handed over without its scope named
-removed 65 files.
+Destructive commands: state the blast radius next to the command, not just
+the intent, and confirm before running.
