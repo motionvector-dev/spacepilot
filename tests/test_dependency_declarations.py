@@ -43,6 +43,10 @@ DISTRIBUTION = {
 # describes, not a packaging bug. Keep this list short and justified.
 RUNTIME_MANAGED = {
     "llama_cpp",
+    # mlx arrives as mlx-lm's own dependency; the embedding runner needs
+    # mlx.core directly for the pooling arithmetic, in the same subprocess and
+    # under the same `spacepilot runtimes install mlx-lm`.
+    "mlx",
     "mlx_audio",
     "mlx_lm",
     "mlx_video",

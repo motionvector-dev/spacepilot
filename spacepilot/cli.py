@@ -850,6 +850,7 @@ def cmd_models(args, cfg=None) -> int:
         format_fact, format_local_speed, format_metric, local_speeds, primary_speed,
         speed_provenance,
     )
+    from spacepilot.verdict import level_for
 
     reg = registry()
     profile = probe_local_device()
@@ -867,7 +868,11 @@ def cmd_models(args, cfg=None) -> int:
         summary = local_speed(v)
         return {
             **v.to_dict(),
+            # `verdict` keeps the memory detail; `fit` is the word every
+            # surface prints, so the CLI, the MCP tool and /v1/models cannot
+            # drift into three vocabularies again.
             "verdict": asdict(verdict),
+            "fit": level_for(verdict),
             "speed_here": asdict(summary) if summary is not None else None,
         }
 
@@ -901,7 +906,7 @@ def cmd_models(args, cfg=None) -> int:
             here_reason = "fit assessment uses an unflown footprint"
         else:
             here_reason = verdict.reason
-        print(f"  here      {verdict.verdict} — {here_reason}")
+        print(f"  here      {level_for(verdict)} — {here_reason}")
         here = local_speed(v)
         print(f"  speed here {format_local_speed(here)}")
         if v.speed:
@@ -934,7 +939,7 @@ def cmd_models(args, cfg=None) -> int:
         return 0
     print(f"{profile.chip or 'this machine'} · {_gb(profile.accelerator_memory_bytes)} "
           f"· {_gb(usable)} available to models [{src}]\n")
-    print(f"  {'VERDICT':10s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE   CAVEATS")
+    print(f"  {'VERDICT':13s}{'MODEL':36s}DOWNLOAD / PROVENANCE                          SPEED HERE   CAVEATS")
 
     order = {"fits": 0, "tight": 1, "unknown": 2, "wont_fit": 3, "blocked": 4}
     rows = [(assess(catalog_manager.recipes[v.id], profile), v) for v in reg.variants]
@@ -945,7 +950,7 @@ def cmd_models(args, cfg=None) -> int:
         speed = format_local_speed(local_speed(v))
         lic = v.license.id + ("" if v.license.is_permissive else "  !")
         caveats = _caveat_summary(v)
-        print(f"  {verdict.verdict:10s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
+        print(f"  {level_for(verdict):13s}{v.id:36s}{download}   {speed}   {lic}   {caveats}")
     print("\n  `spacepilot models <id>` for detail.  ! marks a licence with restrictions.")
     print("  SPEED HERE is measured on this machine configuration. unflown means no local run is recorded.")
     _print_provider_rates(*_load_declared_provider_rates())

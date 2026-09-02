@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-28",
+ "generated": "2026-09-02",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -2109,6 +2109,76 @@
      "caveats": [],
      "compromised": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "qwen3-embedding",
+   "name": "Qwen3 Embedding",
+   "family": "qwen",
+   "kind": "embedding",
+   "summary": "Local text embeddings on Apple silicon through the MLX-LM route already installed for text.",
+   "homepage": "https://huggingface.co/mlx-community/Qwen3-Embedding-0.6B-8bit",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-embedding-0-6b-8bit",
+     "model_id": "qwen3-embedding",
+     "name": "Qwen3 Embedding 0.6B 8-bit (MLX)",
+     "kind": "embedding",
+     "family": "qwen",
+     "params": "0.6B",
+     "precision": "8bit",
+     "repo": "mlx-community/Qwen3-Embedding-0.6B-8bit",
+     "files": [
+      "added_tokens.json",
+      "config.json",
+      "merges.txt",
+      "model.safetensors",
+      "model.safetensors.index.json",
+      "special_tokens_map.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.json"
+     ],
+     "revision": "407ad2329cd30702720aafe83f74a1ba30fdfbca",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 649081744.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-02",
+      "note": "Sum of the nine inference files named above; excludes README, chat template, generation config and .gitattributes.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 664721604.0,
+      "source": "measured",
+      "checked": "2026-09-02",
+      "note": "MLX peak memory on Apple M1 Max embedding three sentences of at most ten tokens each, 8-bit weights. A floor for short inputs, not a ceiling: a long document raises activations, and this says nothing about batch.\n",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "config.json declares model_type qwen3, so mlx_lm.load() loads it as an ordinary Qwen3 causal model. The embedding is the final normed hidden state at the last token, L2 normalised \u2014 1024 dimensions. There is no separate embeddings package involved; mlx-embeddings is not installed here and is not a dependency.\n"
     }
    ]
   },

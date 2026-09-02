@@ -15,6 +15,7 @@ from .lora import router as lora_router
 from .recipes import router as recipes_router
 from .runtimes import router as runtimes_router
 from .measurements import router as measurements_router
+from .inference import router as inference_router
 
 __all__ = [
     "audio_router",
@@ -32,4 +33,5 @@ __all__ = [
     "recipes_router",
     "runtimes_router",
     "measurements_router",
+    "inference_router",
 ]

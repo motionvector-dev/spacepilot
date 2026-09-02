@@ -3,7 +3,7 @@ id: mlx-lm
 name: MLX-LM
 summary: Apple-silicon text generation using MLX and local Hugging Face snapshots.
 homepage: https://github.com/ml-explore/mlx-lm
-serves: [text]
+serves: [text, embedding]
 backends: [metal]
 license: MIT
 
@@ -21,6 +21,7 @@ verify:
 
 runs:
   - qwen3-8
+  - qwen3-embedding
 notes: >
   The first SpacePilot route is intentionally one-shot and bounded. It consumes
   only a pinned local snapshot, caps output and KV cache size, and does not

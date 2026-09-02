@@ -188,6 +188,15 @@ class Measurement:
     interpreter: Optional[str] = None
     peak_memory_bytes: Optional[int] = None
     wall_seconds: Optional[float] = None
+    # The join key. One uuid per served call, so a caller that holds an outcome
+    # (AgentWorth holds cost per outcome) can find the run that produced it
+    # without guessing from timestamps.
+    run_id: Optional[str] = None
+    # What the driver counted, not what anyone estimated. None means the driver
+    # could not count, and stays None: a token count derived from characters
+    # would read as a measurement while being arithmetic on a string.
+    tokens_in: Optional[int] = None
+    tokens_out: Optional[int] = None
     knobs: Dict[str, Any] = field(default_factory=dict)
     note: Optional[str] = None
     status: str = "ok"

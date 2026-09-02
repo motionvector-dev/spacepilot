@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -53,6 +54,13 @@ class TextRequest:
     max_tokens: int = MAX_SAFE_TOKENS
     max_kv_size: int = MAX_SAFE_KV_SIZE
     temperature: float = 0.0
+    # Supplied by a caller that already told someone else this id — the /v1
+    # routes do, so the response and the record name the same run. Minted here
+    # when absent.
+    run_id: Optional[str] = None
+    # A real chat turn list, when the caller has one. The CLI does not; it
+    # sends `prompt` and the runner wraps it as a single user message.
+    messages: Optional[tuple] = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +76,7 @@ class TextRunResult:
     generation_tokens: int
     peak_memory_gb: float
     measurement_path: Path
+    run_id: Optional[str] = None
 
 
 class TextExecutionService:
@@ -120,6 +129,42 @@ class TextExecutionService:
             raise LocalExecutionError("temperature must be 0.0..2.0")
 
     def execute(self, plan: TextRunPlan, request: TextRequest) -> TextRunResult:
+        candidate, output, before, contention_before = self._start(plan, request)
+        result = self.driver.infer(
+            prompt=request.prompt, out_path=str(output), variant_id=VARIANT_ID,
+            max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
+            temperature=request.temperature,
+            messages=list(request.messages) if request.messages else None,
+        )
+        return self._finish(plan, request, candidate, output, before,
+                            contention_before, result)
+
+    def execute_stream(self, plan: TextRunPlan, request: TextRequest):
+        """Generate incrementally, then record exactly what the run did.
+
+        Yields ``("chunk", text)`` for each delta the driver produces and
+        finally ``("result", TextRunResult)``. The text is real streaming from
+        the runner, not a completed answer cut into pieces — a caller timing
+        first-token latency would otherwise be measuring a lie.
+        """
+        candidate, output, before, contention_before = self._start(plan, request)
+        result = None
+        for event in self.driver.stream(
+            prompt=request.prompt, out_path=str(output), variant_id=VARIANT_ID,
+            max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
+            temperature=request.temperature,
+            messages=list(request.messages) if request.messages else None,
+        ):
+            if event.get("type") == "chunk":
+                yield "chunk", event.get("text", "")
+            elif event.get("type") == "result":
+                result = event.get("result")
+        if result is None:
+            raise LocalExecutionError("MLX-LM streamed no structured result")
+        yield "result", self._finish(plan, request, candidate, output, before,
+                                     contention_before, result)
+
+    def _start(self, plan: TextRunPlan, request: TextRequest):
         self._validate(request)
         if request.workload != plan.workload:
             raise LocalExecutionError("request workload does not match the plan")
@@ -129,12 +174,10 @@ class TextExecutionService:
         output = Path(request.output).expanduser().resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         before = output.stat() if output.is_file() else None
-        contention_before = self.contention_sampler()
-        result = self.driver.infer(
-            prompt=request.prompt, out_path=str(output), variant_id=VARIANT_ID,
-            max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
-            temperature=request.temperature,
-        )
+        return candidate, output, before, self.contention_sampler()
+
+    def _finish(self, plan, request, candidate, output, before,
+                contention_before, result) -> TextRunResult:
         contention_after = self.contention_sampler()
         if result.get("status") != "completed":
             raise LocalExecutionError("MLX-LM did not report completion")
@@ -153,6 +196,7 @@ class TextExecutionService:
             resolved_revision = None
         contention = "solo" if contention_before == contention_after == "solo" else (
             "unknown" if "unknown" in {contention_before, contention_after} else "loaded")
+        run_id = request.run_id or uuid.uuid4().hex
         self.system_writer(plan.system)
         measurement_path = self.measurement_recorder(
             system=plan.system, model_id=VARIANT_ID, variant_id=VARIANT_ID,
@@ -161,6 +205,9 @@ class TextExecutionService:
             quantisation=candidate.variant.precision,
             wall_seconds=float(result["wall_seconds"]),
             resolved_revision=resolved_revision,
+            run_id=run_id,
+            tokens_in=result["prompt_tokens"],
+            tokens_out=result["generation_tokens"],
             knobs={
                 "max_tokens": request.max_tokens,
                 "max_kv_size": request.max_kv_size,
@@ -177,11 +224,10 @@ class TextExecutionService:
             float(result["wall_seconds"]), float(result["load_seconds"]),
             float(result["generation_tps"]), result["prompt_tokens"],
             result["generation_tokens"], float(result["peak_memory_gb"]),
-            measurement_path,
+            measurement_path, run_id,
         )
 
 
 def default_text_output() -> Path:
-    import uuid
     from spacepilot.paths import outputs_dir
     return outputs_dir() / f"spacepilot-{uuid.uuid4().hex}.txt"

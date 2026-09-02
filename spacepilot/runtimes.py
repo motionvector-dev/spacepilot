@@ -33,7 +33,7 @@ RUNTIME_DIR = shipped_dir("runtimes")
 # user installs and a capability they ask for, so it is named rather than
 # folded into "audio".
 MODALITIES = {"video", "image", "audio", "speech", "transcription", "vad",
-              "text", "vision"}
+              "text", "vision", "embedding"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}
 METHODS = {"pip"}
 

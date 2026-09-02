@@ -1,0 +1,51 @@
+schema: 1
+id: qwen3-embedding
+name: Qwen3 Embedding
+family: qwen
+kind: embedding
+summary: Local text embeddings on Apple silicon through the MLX-LM route already installed for text.
+homepage: https://huggingface.co/mlx-community/Qwen3-Embedding-0.6B-8bit
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: qwen3-embedding-0-6b-8bit
+    name: Qwen3 Embedding 0.6B 8-bit (MLX)
+    params: 0.6B
+    precision: 8bit
+    repo: mlx-community/Qwen3-Embedding-0.6B-8bit
+    revision: 407ad2329cd30702720aafe83f74a1ba30fdfbca
+    files:
+      - added_tokens.json
+      - config.json
+      - merges.txt
+      - model.safetensors
+      - model.safetensors.index.json
+      - special_tokens_map.json
+      - tokenizer.json
+      - tokenizer_config.json
+      - vocab.json
+    backends: [metal]
+    download:
+      value: 649081744
+      source: huggingface-api
+      checked: "2026-09-02"
+      note: Sum of the nine inference files named above; excludes README, chat template, generation config and .gitattributes.
+    working_set:
+      value: 664721604
+      source: measured
+      checked: "2026-09-02"
+      note: >
+        MLX peak memory on Apple M1 Max embedding three sentences of at most
+        ten tokens each, 8-bit weights. A floor for short inputs, not a ceiling:
+        a long document raises activations, and this says nothing about batch.
+    notes: >
+      config.json declares model_type qwen3, so mlx_lm.load() loads it as an
+      ordinary Qwen3 causal model. The embedding is the final normed hidden
+      state at the last token, L2 normalised — 1024 dimensions. There is no
+      separate embeddings package involved; mlx-embeddings is not installed
+      here and is not a dependency.

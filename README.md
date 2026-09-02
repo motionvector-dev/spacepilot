@@ -4,9 +4,15 @@
 **Verified**: 2026-08-25 via `python -m pytest tests/ -q` (682 passed, 3 skipped) and `gh pr list`
 **Supersedes / Superseded by**: none
 
-> **"SpacePilot pilots your generative cinema."**
+> **"You decide what to run. SpacePilot decides how and where."**
 
-**SpacePilot** is the high-performance generative cinema workstation and compute toolkit for macOS Apple Silicon and Linux/CUDA. A modular studio web UI (`/create`, `/cockpit`, `/studio`, `/oven.html`), native FastMCP tool server, and CLI on the host machine are backed by polymorphic DiT generative engines (LTX-Video 2.5, Wan2.1, HunyuanVideo) and in-process local execution drivers.
+**SpacePilot** runs AI models on the machine in front of you and says honestly
+what fits before you download it. Local coding models and embeddings lead: a
+pinned MLX route on Apple Silicon, an OpenAI-compatible `/v1` surface, a fit
+verdict from the model registry, and a measurement written for every run.
+Speech, transcription and image follow. Work the machine cannot hold goes to a
+rented box. A CLI, a FastMCP tool server and a zero-build web UI (`/create`,
+`/cockpit`, `/studio`, `/oven.html`) are three windows onto one state.
 
 ---
 
@@ -19,17 +25,28 @@ installation; inference runtimes use separately configured interpreters.
 ```bash
 pipx install --force .                            # install or replace one CLI
 spacepilot probe                                  # what this machine can run
-spacepilot models                                 # which models run here
-spacepilot run image --prompt "a red lighthouse" --yes
+spacepilot models                                 # which models run here, with the fit verdict
+spacepilot run text --prompt "explain unified memory" --yes
 ```
 
 What works today:
 
-- **Image** on Apple Silicon, via mflux in its own conda env (`spacepilot runtimes check mflux` shows the route).
+- **Text** on Apple Silicon, via a pinned MLX-LM route (`spacepilot run text`, and `POST /v1/chat/completions`).
+- **Embeddings** on the same MLX route, 1024-dim, `POST /v1/embeddings` — in this PR.
 - **Speech and transcription** via the API (`spacepilot serve`).
+- **Image** on Apple Silicon, via mflux in its own conda env (`spacepilot runtimes check mflux` shows the route).
+
+The `/v1` surface, the shared fit verdict and the per-call measurement record
+are specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
+
+### Video
 
 What does not: **video**. The engines and routes exist, but every render is a
 mock — an ffmpeg test pattern, not a real model run.
+
+Video is a dock workload: it counts as real when it runs on a rented GPU end to
+end. The generative cinema workstation is the longer-term aim, not a
+description of what this repo does today.
 
 ---
 

@@ -58,11 +58,25 @@ def spacepilot_recommend_models() -> Dict[str, Any]:
     """Recommend task-based models (TTS, Storyboard, Video Diffusion) matched to host hardware.
     
     Returns:
-        Dict[str, Any]: Recommended models with fit scores, quantization levels, and local cache status.
+        Dict[str, Any]: Every registry variant graded by the shared fit verdict
+        (`runs_well`, `runs_slowly`, `wont_fit`, `unknown` — the same words
+        `spacepilot models` and `GET /v1/models` print), plus the older
+        task-based catalogue with quantisation and local cache status.
     """
     try:
+        from spacepilot.device_probe import probe_local_device
         from spacepilot.model_recommender import recommend_models_for_device
-        return {"status": "success", **recommend_models_for_device()}
+        from spacepilot.model_registry import registry
+        from spacepilot.verdict import fit_verdict
+
+        profile = probe_local_device()
+        models = [
+            {"model_id": v.id, "kind": v.kind, "name": v.name,
+             "verdict": fit_verdict(v.id, profile)}
+            for v in registry().variants
+        ]
+        return {"status": "success", "models": models,
+                **recommend_models_for_device(profile)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

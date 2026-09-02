@@ -46,6 +46,10 @@ GATED_POSTS = [
     ("/api/generate/multi-engine", {"prompt": "x", "engine_id": "wan-2.1-14b"}),
     ("/api/audio/synthesize-local", {"text": "test voiceover"}),
     ("/api/narrative/decompose-local", {"script": "astronaut on mars"}),
+    ("/v1/chat/completions",
+     {"model": "qwen3-8-27b-4bit",
+      "messages": [{"role": "user", "content": "x"}]}),
+    ("/v1/embeddings", {"model": "qwen3-embedding-0-6b-8bit", "input": "x"}),
 ]
 
 # POST routes that spend nothing and so need no token. All are pure local

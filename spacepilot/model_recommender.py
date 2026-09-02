@@ -5,6 +5,7 @@ from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
 from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
 from spacepilot.paths import model_recommender_cache_dir, model_recommender_cache_read_dirs
+from spacepilot.verdict import RUNS_SLOWLY, RUNS_WELL, UNKNOWN, WONT_FIT, UnknownModel, fit_verdict
 
 # Direct-import compatibility. The value is now canonical and all fallback
 # reads go through paths.py rather than embedding a second directory policy.
@@ -124,6 +125,34 @@ def downloaded_model_ids() -> List[str]:
     return values
 
 
+def _entry_verdict(entry: ModelEntry, profile: DeviceProfile,
+                   usable_bytes: Optional[int], usable_vram: float) -> Dict[str, Any]:
+    """The shared verdict words, for a catalogue entry.
+
+    A registry variant is graded by `fit_verdict` — the same call `/v1/models`
+    and `spacepilot models` make, so all three read identically. This
+    catalogue predates the registry and most of its entries are not variants;
+    those are graded here by the same arithmetic, into the same three words,
+    rather than into a fourth private vocabulary ("Optimal Local Execution").
+    """
+    try:
+        return fit_verdict(entry.model_id, profile)
+    except UnknownModel:
+        pass
+    if usable_bytes is None:
+        return {"level": UNKNOWN,
+                "reason": "this machine's accelerator memory has not been read",
+                "headroom_bytes": None}
+    headroom = int(usable_bytes - entry.recommended_vram_gb * GIB)
+    if usable_vram >= entry.recommended_vram_gb:
+        level, reason = RUNS_WELL, f"{usable_vram:.1f} GB available, {entry.recommended_vram_gb:.1f} GB recommended"
+    elif usable_vram >= entry.min_vram_gb:
+        level, reason = RUNS_SLOWLY, f"{usable_vram:.1f} GB available, below the {entry.recommended_vram_gb:.1f} GB recommended"
+    else:
+        level, reason = WONT_FIT, f"{usable_vram:.1f} GB available, {entry.min_vram_gb:.1f} GB is the minimum"
+    return {"level": level, "reason": reason, "headroom_bytes": headroom}
+
+
 def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict[str, Any]:
     """Evaluate device capability and produce task-based recommendations."""
     if profile is None:
@@ -167,6 +196,7 @@ def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict
             "fit_score": fit_score,
             "execution_route": route,
             "fit_label": fit_label,
+            "verdict": _entry_verdict(entry, profile, usable_bytes, usable_vram),
             "is_downloaded": is_downloaded,
             "download_url": entry.download_url,
             "description": entry.description,
