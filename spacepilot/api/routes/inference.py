@@ -275,7 +275,9 @@ def _chat_completions_anthropic(body: ChatCompletionRequest):
             messages=messages, max_tokens=max_tokens, temperature=body.temperature,
         )
     except anthropic_provider.AnthropicProviderError as exc:
-        raise _error(502, str(exc), "driver_error", "driver_failed", {"run_id": run_id})
+        raise _error(getattr(exc, "status", 502), str(exc), "driver_error",
+                     "rate_limited" if getattr(exc, "status", 502) == 429 else "driver_failed",
+                     {"run_id": run_id})
 
     _record_anthropic_measurement(system, run_id, result)
 

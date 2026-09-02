@@ -37,6 +37,29 @@ DEFAULT_MAX_TOKENS = 16000
 
 
 class AnthropicProviderError(RuntimeError):
+    """`status` is the HTTP status the route should answer with: 429 when
+    Anthropic rate-limited us, the upstream 4xx when the request was wrong,
+    502 for everything else."""
+
+    def __init__(self, message: str, status: int = 502) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+def _wrap(exc: Exception) -> "AnthropicProviderError":
+    try:
+        import anthropic
+    except Exception:  # SDK missing: nothing typed to match
+        return AnthropicProviderError(str(exc))
+    if isinstance(exc, anthropic.RateLimitError):
+        return AnthropicProviderError("rate limited by Anthropic; retry later", 429)
+    if isinstance(exc, anthropic.APIConnectionError):
+        return AnthropicProviderError(f"could not reach Anthropic: {exc}", 502)
+    if isinstance(exc, anthropic.APIStatusError):
+        code = getattr(exc, "status_code", 502) or 502
+        return AnthropicProviderError(str(exc), code if 400 <= code < 500 else 502)
+    return AnthropicProviderError(str(exc))
+
     """The Anthropic call could not be made or did not complete.
 
     The message is always built from the SDK's own exception text or an
@@ -125,16 +148,16 @@ class AnthropicProvider:
         omitting `thinking` on Sonnet 5 already runs it."""
         client = self._get_client()
         system, turns = _split_system(messages)
-        kwargs: Dict[str, Any] = dict(
-            model=MODEL_ID, max_tokens=max_tokens, temperature=temperature, messages=turns,
-        )
+        # `temperature` is accepted for OpenAI-shape compatibility and dropped:
+        # Sonnet 5 rejects sampling parameters with a 400.
+        kwargs: Dict[str, Any] = dict(model=MODEL_ID, max_tokens=max_tokens, messages=turns)
         if system:
             kwargs["system"] = system
         started = time.perf_counter()
         try:
             response = client.messages.create(**kwargs)
         except Exception as exc:  # the SDK's own exception; never the key
-            raise AnthropicProviderError(str(exc)) from exc
+            raise _wrap(exc) from exc
         return _to_result(response, time.perf_counter() - started)
 
     def stream_complete(
@@ -148,9 +171,9 @@ class AnthropicProvider:
         """
         client = self._get_client()
         system, turns = _split_system(messages)
-        kwargs: Dict[str, Any] = dict(
-            model=MODEL_ID, max_tokens=max_tokens, temperature=temperature, messages=turns,
-        )
+        # `temperature` is accepted for OpenAI-shape compatibility and dropped:
+        # Sonnet 5 rejects sampling parameters with a 400.
+        kwargs: Dict[str, Any] = dict(model=MODEL_ID, max_tokens=max_tokens, messages=turns)
         if system:
             kwargs["system"] = system
         started = time.perf_counter()
@@ -160,7 +183,7 @@ class AnthropicProvider:
                     yield "chunk", text
                 response = stream.get_final_message()
         except Exception as exc:
-            raise AnthropicProviderError(str(exc)) from exc
+            raise _wrap(exc) from exc
         yield "result", _to_result(response, time.perf_counter() - started)
 
 
