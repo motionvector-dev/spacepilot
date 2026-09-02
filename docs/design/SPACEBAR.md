@@ -50,6 +50,65 @@ No fleet view. `spacepilot_get_fleet_status` was deleted from the MCP server
 for returning a fixed ten-instance fleet that does not exist. SpaceBar shows
 one machine because there is one machine.
 
+## Brains
+
+Two implementations of one `Brain` protocol answer `Talk`. `AppleBrain`
+(`AppleFoundationModelManager`) is unchanged: `SystemLanguageModel.default`,
+on device, free. `DaemonBrain` sends the same system instructions and the
+same telemetry block to the daemon's `POST /v1/chat/completions` instead —
+`docs/design/INFERENCE-SURFACE.md` is the wire shape. Neither fabricates: a
+brain that cannot answer throws a `BrainError` and the popover says why,
+never a plausible-looking reply.
+
+**Choosing one.** Launch arguments win, then whatever was picked last
+session, then Apple:
+
+```
+SpaceBar --brain apple
+SpaceBar --brain daemon --model qwen3-8-27b-4bit
+SpaceBar --brain daemon                              # auto-picks a model
+```
+
+With `--brain daemon` and no `--model`, `DaemonBrain` asks `GET /v1/models`
+and takes the first variant that is both `kind: text` and `verdict.level:
+runs_well` **and** `served: true` — `runs_well` alone still lists variants
+with no wired route, which would 409 on every question. `--model
+claude-sonnet-5` works the same way as any other id: it has to be in the
+listing, which only happens when the daemon has `ANTHROPIC_API_KEY` set —
+see INFERENCE-SURFACE.md's "Remote providers".
+
+The choice persists in `UserDefaults`, and the Diagnostics disclosure carries
+a picker — three fixed choices (Apple Intelligence, daemon auto, daemon
+`claude-sonnet-5`) plus whatever is active right now, so an explicit
+`--model` still shows correctly even when it is not one of the three.
+Switching takes effect on the next question.
+
+**What each needs.** Apple: Apple Intelligence turned on; if it is off,
+`Talk` says so instead of thinking. Daemon: the daemon up on
+`127.0.0.1:8088` and, for a local model, its weights actually cached —
+`served: true` on `/v1/models` means the route is wired, not that the
+weights are downloaded. Three failure sentences, none of them invented: the
+daemon unreachable renders the existing `offline-daemon` state and says "I
+can't answer with the daemon brain"; a requested model not in the listing
+names the ones that are; anything else the daemon refuses with (weights not
+cached, a driver error) is read back in the daemon's own words.
+
+`--self-test <wav>` takes the same two flags, so the daemon path can be
+proven with no microphone in it — see `docs/LOCAL-TEST.md`.
+
+**Read-only, for now.** `DaemonClient` only ever sends the five requests in
+`DaemonRoute.allowed` — `GET /healthz`, `GET /api/compute/local-status`,
+`GET /api/token`, `GET /v1/models`, `POST /v1/chat/completions` — and checks
+every call against that list before it builds a request, not after. Nothing
+else is reachable from voice: no model download, no runtime install, no
+checkpoint create or restore, no dock launch or terminate, no LoRA train.
+The voice loop is still being trusted — a misheard word or a model that goes
+sideways should not be able to touch the machine or the fleet, only read it
+and ask a model to answer. This is the tier-1-only slice of the allowlist in
+"Voice to cockpit" below, made mechanical instead of just written down: the
+gate is in code (`DaemonRoute.allowed`, `DaemonClient.get`/`post`), not just
+in this paragraph.
+
 ## Voice to cockpit
 
 The daemon is FastAPI on `127.0.0.1:8088`. The token comes from

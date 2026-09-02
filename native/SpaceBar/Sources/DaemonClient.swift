@@ -59,6 +59,16 @@ enum DaemonError: Error, Equatable {
     /// It answered, but not with what we asked for.
     case badResponse(Int)
     case decoding(String)
+    /// A non-2xx from a `/v1` route, with the message the daemon gave —
+    /// `{"detail": {"error": {"message": ...}}}`, the OpenAI error shape
+    /// `docs/design/INFERENCE-SURFACE.md` specifies. This is the daemon's
+    /// own words, not a guess at why the call failed.
+    case apiError(Int, String)
+    /// A call site asked for a method+path that is not in
+    /// `DaemonRoute.allowed`. This should never fire — it means a future
+    /// change added a `get`/`post` call without adding the route to the
+    /// allowlist first. See that type's header for why the gate exists.
+    case disallowed(String)
 
     var userFacing: String {
         switch self {
@@ -68,8 +78,69 @@ enum DaemonError: Error, Equatable {
             return "Answered \(code)"
         case .decoding:
             return "Answered with something unexpected"
+        case .apiError(let status, let message):
+            return "\(message) (\(status))"
+        case .disallowed(let route):
+            return "refused — \(route) is not on SpaceBar's allowlist"
         }
     }
+}
+
+/// The only requests SpaceBar is allowed to send to the daemon, checked
+/// before every `get`/`post` builds a request.
+///
+/// SpaceBar's voice loop is still being trusted — a misheard word or a
+/// model going sideways should never be able to reach a route that changes
+/// the machine or the fleet: no download, no runtime install, no checkpoint
+/// create or restore, no dock launch or terminate, no LoRA train. Voice can
+/// read, and voice can ask the model to answer; nothing else. This is a
+/// single list precisely so growing the surface later is a decision made
+/// here, not a side effect of a new call site somewhere else. See
+/// `docs/design/SPACEBAR.md`, "Brains — Read-only, for now".
+struct DaemonRoute: Hashable, Sendable {
+    let method: String
+    let path: String
+
+    static let allowed: Set<DaemonRoute> = [
+        DaemonRoute(method: "GET", path: "/healthz"),
+        DaemonRoute(method: "GET", path: "/api/compute/local-status"),
+        DaemonRoute(method: "GET", path: "/api/token"),
+        DaemonRoute(method: "GET", path: "/v1/models"),
+        DaemonRoute(method: "POST", path: "/v1/chat/completions"),
+    ]
+
+    var isAllowed: Bool { Self.allowed.contains(self) }
+}
+
+/// One text or embedding variant from `GET /v1/models`, decoded down to
+/// what `DaemonBrain` needs to pick a default and validate an explicit
+/// choice. See `spacepilot/api/routes/inference.py::list_models`.
+struct DaemonModelInfo: Decodable, Sendable {
+    let id: String
+    let kind: String
+    let verdictLevel: String
+    let served: Bool
+
+    private enum RootKeys: String, CodingKey { case id, x_spacepilot }
+    private enum ExtKeys: String, CodingKey { case kind, verdict, served }
+    private enum VerdictKeys: String, CodingKey { case level }
+
+    init(from decoder: Decoder) throws {
+        let root = try decoder.container(keyedBy: RootKeys.self)
+        id = try root.decode(String.self, forKey: .id)
+        let ext = try root.nestedContainer(keyedBy: ExtKeys.self, forKey: .x_spacepilot)
+        kind = try ext.decode(String.self, forKey: .kind)
+        served = try ext.decode(Bool.self, forKey: .served)
+        let verdict = try ext.nestedContainer(keyedBy: VerdictKeys.self, forKey: .verdict)
+        verdictLevel = try verdict.decode(String.self, forKey: .level)
+    }
+}
+
+/// One turn in a `/v1/chat/completions` request — the OpenAI shape
+/// `spacepilot/api/routes/inference.py::Message` decodes.
+struct DaemonChatMessage: Encodable, Sendable {
+    let role: String
+    let content: String
 }
 
 /// Talks to the SpacePilot daemon over loopback HTTP.
@@ -80,6 +151,7 @@ actor DaemonClient {
     static let base = URL(string: "http://127.0.0.1:8088")!
 
     private let session: URLSession
+    private let chatSession: URLSession
     private var cachedToken: String?
 
     init() {
@@ -89,6 +161,14 @@ actor DaemonClient {
         config.timeoutIntervalForRequest = 2.0
         config.waitsForConnectivity = false
         self.session = URLSession(configuration: config)
+
+        let chatConfig = URLSessionConfiguration.ephemeral
+        // A chat completion can mean loading weights and decoding ~400
+        // tokens — the 2s health-check budget would abort a real answer
+        // before it ever printed a token.
+        chatConfig.timeoutIntervalForRequest = 120.0
+        chatConfig.waitsForConnectivity = false
+        self.chatSession = URLSession(configuration: chatConfig)
     }
 
     // MARK: - Read-only
@@ -108,6 +188,57 @@ actor DaemonClient {
         let data = try await get("/api/compute/local-status")
         do {
             return try JSONDecoder().decode(LocalStatus.self, from: data)
+        } catch {
+            throw DaemonError.decoding(String(describing: error))
+        }
+    }
+
+    /// Every local text and embedding variant, with its fit verdict. Open
+    /// route, no token — same tier as `localStatus()`.
+    func models() async throws -> [DaemonModelInfo] {
+        let data = try await get("/v1/models")
+        struct Response: Decodable { let data: [DaemonModelInfo] }
+        do {
+            return try JSONDecoder().decode(Response.self, from: data).data
+        } catch {
+            throw DaemonError.decoding(String(describing: error))
+        }
+    }
+
+    /// One non-streaming call to `/v1/chat/completions`. Returns just the
+    /// reply text — `DaemonBrain` is the only caller, and it only ever
+    /// needs the one string to speak.
+    func chatCompletion(
+        model: String,
+        messages: [DaemonChatMessage],
+        maxTokens: Int,
+        temperature: Double = 0.0
+    ) async throws -> String {
+        let authToken = try await token()
+        struct Body: Encodable {
+            let model: String
+            let messages: [DaemonChatMessage]
+            let max_tokens: Int
+            let temperature: Double
+            let stream: Bool
+        }
+        let body = Body(model: model, messages: messages, max_tokens: maxTokens,
+                        temperature: temperature, stream: false)
+        let data = try await post("/v1/chat/completions", body: body, token: authToken)
+
+        struct Choice: Decodable {
+            struct Msg: Decodable { let content: String }
+            let message: Msg
+        }
+        struct Response: Decodable { let choices: [Choice] }
+        do {
+            let decoded = try JSONDecoder().decode(Response.self, from: data)
+            guard let content = decoded.choices.first?.message.content else {
+                throw DaemonError.decoding("/v1/chat/completions: no choices")
+            }
+            return content
+        } catch let error as DaemonError {
+            throw error
         } catch {
             throw DaemonError.decoding(String(describing: error))
         }
@@ -135,6 +266,9 @@ actor DaemonClient {
     // MARK: - Transport
 
     private func get(_ path: String) async throws -> Data {
+        let route = DaemonRoute(method: "GET", path: path)
+        guard route.isAllowed else { throw DaemonError.disallowed("GET \(path)") }
+
         var request = URLRequest(url: Self.base.appendingPathComponent(path))
         request.httpMethod = "GET"
         // The daemon rejects a non-loopback Host header with 421. URLSession
@@ -157,5 +291,47 @@ actor DaemonClient {
             throw DaemonError.badResponse(http.statusCode)
         }
         return data
+    }
+
+    private func post<Body: Encodable>(_ path: String, body: Body, token: String) async throws -> Data {
+        let route = DaemonRoute(method: "POST", path: path)
+        guard route.isAllowed else { throw DaemonError.disallowed("POST \(path)") }
+
+        var request = URLRequest(url: Self.base.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(token, forHTTPHeaderField: "X-SpacePilot-Token")
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await chatSession.data(for: request)
+        } catch {
+            throw DaemonError.unreachable(error.localizedDescription)
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw DaemonError.badResponse(0)
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw DaemonError.apiError(http.statusCode, Self.errorMessage(from: data) ?? "answered \(http.statusCode)")
+        }
+        return data
+    }
+
+    /// Pulls the human-readable message out of the OpenAI error shape every
+    /// `/v1` refusal uses: `{"detail": {"error": {"message": ...}}}`. `nil`
+    /// when the body does not parse, so the caller falls back to the status
+    /// code rather than a guess.
+    private static func errorMessage(from data: Data) -> String? {
+        struct Body: Decodable {
+            struct Detail: Decodable {
+                struct Err: Decodable { let message: String }
+                let error: Err
+            }
+            let detail: Detail
+        }
+        return try? JSONDecoder().decode(Body.self, from: data).detail.error.message
     }
 }

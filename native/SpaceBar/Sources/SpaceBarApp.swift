@@ -128,6 +128,32 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     private let afmManager = AppleFoundationModelManager()
     private let client = DaemonClient()
 
+    /// Which brain answers `Talk`, and which daemon model if that is the
+    /// one chosen. `didSet` is how a picker change or a relaunch with
+    /// `--brain`/`--model` gets remembered — see `BrainSelection.persist`.
+    /// Not fired by the property's own initial value, so init needs no
+    /// special-casing here.
+    @Published var brainSelection: BrainSelection = BrainSelection.resolve() {
+        didSet { brainSelection.persist() }
+    }
+
+    /// The brain `answer()` reaches for right now. A computed property, not
+    /// a stored one, so switching `brainSelection` takes effect on the next
+    /// question with no extra plumbing — `afmManager` is still the one
+    /// long-lived instance, so its lazy `LanguageModelSession` still only
+    /// gets built once.
+    private var brain: any Brain {
+        switch brainSelection.kind {
+        case .apple:
+            return afmManager
+        case .daemon:
+            return DaemonBrain(client: client, requestedModel: brainSelection.daemonModel)
+        }
+    }
+
+    /// What the Diagnostics picker shows for the brain in play right now.
+    var brainLabel: String { brain.label }
+
     /// Where permission answers come from. `.system` in the app; stubbed in
     /// `--dry-run-voice`, which is how the denied and restricted paths get
     /// exercised without touching the microphone.
@@ -453,28 +479,44 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     }
 
     private func answer(_ text: String) async {
-        guard case .available = SystemLanguageModel.default.availability else {
-            state = .idle
-            lastSaid = "Apple Intelligence is off, so there is no on-device model to answer with."
-            speak(lastSaid)
-            return
-        }
-
         state = .thinking
         let snap = NativeTelemetry.capture()
         telemetry = snap
 
         do {
-            let response = try await afmManager.processInput(
-                userText: text,
-                telemetry: snap,
-                daemon: daemon
-            )
+            let response = try await brain.answer(userText: text, telemetry: snap, daemon: daemon)
             lastSaid = response
             speak(response)
+        } catch let error as BrainError {
+            handleBrainError(error)
         } catch {
             state = .idle
             lastSaid = "Could not answer: \(error.localizedDescription)"
+        }
+    }
+
+    /// One line per failure a person would actually want to hear — never a
+    /// fabricated reply. `.daemonOffline` reuses the same state
+    /// `refreshDaemon()` already renders for a dead heartbeat; this is the
+    /// same sentence, just reached from `Talk` instead of the poller.
+    private func handleBrainError(_ error: BrainError) {
+        switch error {
+        case .unavailable(let message):
+            state = .idle
+            lastSaid = message
+            speak(lastSaid)
+        case .daemonOffline(let reason):
+            state = .daemonOffline(reason: reason)
+            lastSaid = "SpacePilot's daemon isn't running, so I can't answer with the daemon brain."
+            speak(lastSaid)
+        case .modelNotListed:
+            state = .idle
+            lastSaid = error.userFacing
+            speak(lastSaid)
+        case .modelUnavailable(let message):
+            state = .idle
+            lastSaid = "Could not answer: \(message)"
+            speak(lastSaid)
         }
     }
 
@@ -874,6 +916,7 @@ struct SpaceBarPopoverView: View {
     private var diagnosticsBody: some View {
         let d = voice.diagnosticsSnapshot()
         return VStack(alignment: .leading, spacing: 3) {
+            brainRow
             diagRow("speech perm", d.speechPermission)
             diagRow("mic perm", d.microphonePermission)
             diagRow("recognizer", d.recognizerAvailable.map { $0 ? "available" : "unavailable" } ?? "no reading")
@@ -893,6 +936,39 @@ struct SpaceBarPopoverView: View {
             }
         }
         .padding(.top, 6)
+    }
+
+    /// The brain picker. Three fixed choices plus whatever is active right
+    /// now, so `--model` and a prior picker choice always show correctly
+    /// even when they are not one of the three. Switching takes effect on
+    /// the next question — `answer()` reads `voice.brainSelection` fresh
+    /// every time.
+    private var brainRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text("BRAIN")
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .kerning(0.4)
+                .foregroundStyle(Tokens.UI.ink4)
+                .frame(width: 78, alignment: .leading)
+            Menu {
+                Button("Apple Intelligence") {
+                    voice.brainSelection = BrainSelection(kind: .apple, daemonModel: voice.brainSelection.daemonModel)
+                }
+                Button("Daemon · auto") {
+                    voice.brainSelection = BrainSelection(kind: .daemon, daemonModel: nil)
+                }
+                Button("Daemon · claude-sonnet-5") {
+                    voice.brainSelection = BrainSelection(kind: .daemon, daemonModel: "claude-sonnet-5")
+                }
+            } label: {
+                Text(voice.brainLabel)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(Tokens.UI.ink2)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            Spacer(minLength: 0)
+        }
     }
 
     private func diagRow(_ key: String, _ value: String) -> some View {
@@ -950,5 +1026,17 @@ actor AppleFoundationModelManager {
         )
         let response = try await activeSession().respond(to: "\(block)\n\n\(userText)")
         return response.content
+    }
+}
+
+@available(macOS 15.0, *)
+extension AppleFoundationModelManager: Brain {
+    nonisolated var label: String { "Apple Intelligence" }
+
+    func answer(userText: String, telemetry: HardwareSnapshot, daemon: LocalStatus?) async throws -> String {
+        guard case .available = SystemLanguageModel.default.availability else {
+            throw BrainError.unavailable("Apple Intelligence is off, so there is no on-device model to answer with.")
+        }
+        return try await processInput(userText: userText, telemetry: telemetry, daemon: daemon)
     }
 }
