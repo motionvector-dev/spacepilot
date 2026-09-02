@@ -118,6 +118,24 @@ After a merge to main: `mvec-local main sync spacepilot --apply`, then restart
 both. SpaceBar: from the clean main worktree,
 `~/code/.mvec-local/worktrees/main/spacepilot/native/SpaceBar/tools/make_app.sh`
 
+## Choosing the brain
+
+`SpaceBar` and `--self-test` both take `--brain apple|daemon` and, for the
+daemon brain, `--model <id>`. Apple is the default and needs nothing beyond
+Apple Intelligence being on. The daemon brain needs the daemon up on
+`127.0.0.1:8088`:
+
+```bash
+open "$APP" --args --brain apple
+open "$APP" --args --brain daemon --model qwen3-8-27b-4bit
+```
+
+Omit `--model` and it auto-picks the first `runs_well`, served text model
+from `GET /v1/models`. The choice persists in `UserDefaults`, so a plain
+`open "$APP"` after either of the above remembers it; the Diagnostics
+disclosure has a picker for switching without a relaunch. See
+`docs/design/SPACEBAR.md`, "Brains".
+
 ## Testing against Claude instead of a local model
 
 `claude-sonnet-5` is a second backend behind `/v1/chat/completions` — see

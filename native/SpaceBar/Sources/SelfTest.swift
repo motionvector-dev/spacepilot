@@ -79,25 +79,31 @@ enum SelfTest {
         }
         report("transcribe", start: transcribeStart, ok: "\"\(transcript)\"")
 
-        // Stage 3 — the same model call `answer()` makes, minus the debounce.
-        guard case .available = SystemLanguageModel.default.availability else {
-            print("[model] FAIL — unavailable: \(SystemLanguageModel.default.availability)")
-            exit(1)
+        // Stage 3 — the same brain call `answer()` makes, minus the debounce.
+        // `--brain apple|daemon` (default apple) and `--model <id>` select
+        // it the same way `BrainSelection.resolve()` does for the app —
+        // this is what proves the daemon chain end to end with no
+        // microphone in the path.
+        let selection = BrainSelection.resolve()
+        let brain: any Brain
+        if selection.kind == .apple {
+            brain = AppleFoundationModelManager()
+        } else {
+            brain = DaemonBrain(client: DaemonClient(), requestedModel: selection.daemonModel)
         }
+        print("[brain] \(brain.label)")
+
         let modelStart = Date()
         let answer: String
         do {
-            let session = LanguageModelSession(instructions: SpacePilotInstructions.system)
-            let block = SpacePilotInstructions.telemetryBlock(
-                shipName: "no reading",
-                thermalState: NativeTelemetry.capture().thermal,
-                backend: "no reading",
-                headroom: "no reading",
-                loadedModels: [],
-                daemonReachable: false
+            answer = try await brain.answer(
+                userText: transcript,
+                telemetry: NativeTelemetry.capture(),
+                daemon: nil
             )
-            let response = try await session.respond(to: "\(block)\n\n\(transcript)")
-            answer = response.content
+        } catch let error as BrainError {
+            report("model", start: modelStart, failure: error.userFacing)
+            exit(1)
         } catch {
             report("model", start: modelStart, failure: error.localizedDescription)
             exit(1)
