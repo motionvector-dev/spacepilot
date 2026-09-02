@@ -4,7 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+
+    <!-- WebMCP origin trial. Lets a browser agent call this app's own tools via
+         document.modelContext instead of scraping the DOM.
+         Token: https://spacepilot.dev, subdomains included, expires 2026-11-17.
+         WebMCP ships by default in Chrome 157 (about 2026-11-03), two weeks
+         before this expires - delete the tag then, not before.
+         Localhost needs no token: use the chrome://flags WebMCP toggle. -->
+    <meta http-equiv="origin-trial" content="A+pFw2HscATqWjuugqtpYUiDp0jSBgp+jzwvAe397EVX6a3GnDXkWWw8Ti7ncujLfEcX4ulXGAYxvEl5ur2x7wUAAAB1eyJvcmlnaW4iOiJodHRwczovL3NwYWNlcGlsb3QuZGV2OjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE3OTQ4NzM2MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
+
     <!-- DESIGN.md typography: Plus Jakarta Sans + JetBrains Mono. Self-host these
          before the Tauri build; a local-first cockpit should not need a CDN to
          render its own type. -->
