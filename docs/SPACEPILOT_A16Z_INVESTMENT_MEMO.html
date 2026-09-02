@@ -87,7 +87,15 @@
                     <p class="text-zinc-500 dark:text-zinc-400 font-mono text-sm mt-1">CONFIDENTIAL // INVESTMENT THESIS // A16Z x SEQUOIA</p>
                 </div>
             </div>
-            
+
+            <!-- Honesty note (docs/design/CONCEPT.md's rules apply here too): this
+                 memo pitches the vision. Capability claims below are corrected as of
+                 2026-09-02 to match what is actually flown vs. planned. In short:
+                 video generation is a mocked test-pattern render today, not a
+                 working modality; there is no chat interface yet (in flight on
+                 another branch); and SpaceBar's duplex voice has not been tested by
+                 a human. See docs/BUILD-PLAN.md for the file:line detail. -->
+
             <!-- The Sovereign AI Odyssey Manifesto (The Poetry) -->
             <div class="aurora-border p-8 rounded-xl shadow-2xl relative overflow-hidden text-zinc-100 mb-4">
                 <div class="relative z-10 font-mono space-y-4">
@@ -101,9 +109,9 @@
                         You say <span class="text-cyan-300 font-bold font-mono">‘Space...’</span> and your machine awakens—opening the warp gates to infinite generative galaxies."
                     </blockquote>
                     <div class="flex flex-wrap gap-3 pt-2 text-xs text-zinc-300 border-t border-zinc-700/60">
-                        <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ 10 Native Modalities</span>
+                        <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ 4 Working Modalities Today (image, speech, transcribe, text) — video and vision are roadmap</span>
                         <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ 25.0 GB Allocatable UMA</span>
-                        <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ Sub-200ms Duplex Voice</span>
+                        <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ Duplex Voice — SpaceBar shipped, not yet tested by a human</span>
                         <span class="bg-zinc-800/80 px-2.5 py-1 rounded border border-zinc-700 font-mono">✦ $0.00 Sovereign Edge</span>
                     </div>
                 </div>
@@ -173,7 +181,7 @@
                     <!-- Top-Right: ★ THE GOLDEN QUADRANT ★ (SPACEPILOT) -->
                     <div class="flex flex-col items-end justify-start p-4">
                         <span class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded shadow-lg border border-blue-300 dark:border-blue-700 aurora-border animate-pulse font-bold">★ SpacePilot + SpaceBar</span>
-                        <span class="text-xs text-green-500 mt-1 font-semibold">100% Sovereign Edge + 10 Modalities ($0/hr)</span>
+                        <span class="text-xs text-green-500 mt-1 font-semibold">100% Sovereign Edge, 4 modalities working today ($0/hr) — video is mocked, more on the roadmap</span>
                     </div>
                     <!-- Bottom-Left: Thin Cloud API Wrappers (Clicky, Raycast AI) -->
                     <div class="flex flex-col items-start justify-end p-4">
@@ -188,7 +196,7 @@
                         <span class="text-xs text-zinc-400 mt-1">Local Text-Only (No Video/Music/Voice)</span>
                     </div>
                 </div>
-                <div class="absolute top-2 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-widest text-blue-500">▲ Full Multi-Modal (Video, Audio, Voice, Code, Image)</div>
+                <div class="absolute top-2 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-widest text-blue-500">▲ Multi-Modal Today (Image, Speech, Transcribe, Text) — Video mocked, Code and Vision on the roadmap</div>
                 <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-widest opacity-50">▼ Single Modality (Text Only)</div>
                 <div class="absolute top-1/2 right-2 -translate-y-1/2 text-xs font-bold uppercase tracking-widest text-green-500 rotate-90 transform origin-right">► 100% Sovereign Edge (Apple Silicon $0)</div>
                 <div class="absolute top-1/2 left-2 -translate-y-1/2 text-xs font-bold uppercase tracking-widest opacity-50 -rotate-90 transform origin-left">◄ Closed / Cloud API Toll</div>
@@ -238,17 +246,17 @@
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
                             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition">
                                 <td class="px-6 py-4 font-medium">Text Generation</td>
-                                <td class="px-6 py-4 text-green-500">Llama 3 8B (Q4) @ 85 tok/s</td>
+                                <td class="px-6 py-4 text-green-500">Qwen3-8B (4-bit, MLX, local) — tok/s not yet in the measurement corpus</td>
                                 <td class="px-6 py-4 text-zinc-500">GPT-4o API (Variable latency)</td>
                             </tr>
                             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition">
                                 <td class="px-6 py-4 font-medium">Vision (OCR/Analysis)</td>
-                                <td class="px-6 py-4 text-green-500">Moondream2 (Local Screen Read)</td>
+                                <td class="px-6 py-4 text-amber-500">Roadmap — no vision driver ships today</td>
                                 <td class="px-6 py-4 text-zinc-500">API Upload (Privacy risk)</td>
                             </tr>
                             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition">
                                 <td class="px-6 py-4 font-medium">Audio Processing</td>
-                                <td class="px-6 py-4 text-green-500">Whisper-v3-turbo @ Realtime x10</td>
+                                <td class="px-6 py-4 text-green-500">whisper-cpp, small.en, f16 — measured 2.4x realtime on an M1 Max (registry: apple-m1-max-32gb/whisper-small-en)</td>
                                 <td class="px-6 py-4 text-zinc-500">Network bound API</td>
                             </tr>
                         </tbody>

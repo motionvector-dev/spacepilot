@@ -1,7 +1,13 @@
 # SPACEPILOT MASTER TECHNICAL SPECIFICATION (2026)
 
 **Author:** Principal Systems Architect, SpacePilot  
-**Status:** IMPLEMENTATION-READY  
+**Status:** VISION DRAFT — an aspirational architecture sketch, not a build spec.
+Corrected 2026-09-02 to match `docs/design/CONCEPT.md`'s honesty rules: almost
+nothing below is implemented. Numbers (25GB AWS bound, 42°C thermal limit,
+24ms RTT, 85µs ANE latency, 0 RPM fan guarantee), the CLI surface in §4.1, and
+the MCP signatures in §4.2 are illustrative targets and proposed contracts,
+not measured facts or shipped interfaces — see `docs/BUILD-PLAN.md` and
+`spacepilot/mcp_server.py` for what actually exists today.  
 **Date:** August 28, 2026  
 
 ---
@@ -63,20 +69,36 @@ SpacePilot fundamentally relies on Apple Silicon's Unified Memory Architecture (
 *   **Execution Hardware:**
     *   Optimized strictly for `MLX` / `Metal` graphics dispatch and `CoreML` / `ANE` (Apple Neural Engine) for low-power continuous streams (e.g., wake words, transcription).
 
-### 3.2 The 10 Native Modalities Matrix
+### 3.2 The Target Modality Matrix (4 live today, 6 planned)
 
-SpacePilot multiplexes precisely 10 native intelligence modalities through its core router, enabling deterministic routing based on payload class.
+SpacePilot's target is 10 intelligence modalities through one router. As of
+2026-09-02, `spacepilot run` ships **image, speech, transcribe, and text**
+end-to-end with real measurements; the rest are roadmap, not routed today —
+in particular, **video** generation exists only as a mocked ffmpeg
+test-pattern render that now refuses with a 501 rather than pretending to
+complete (`spacepilot/api/routes/engines.py`), and **VLM/vision** has no
+driver in the tree.
 
-1.  **Voice**: Full-duplex conversational streams (`space-voice`).
-2.  **Transcribe**: ANE-bound, zero-latency streaming dictation.
-3.  **Speech**: High-fidelity TTS (Text-to-Speech) generation.
-4.  **Music**: Latent audio generation and audio bridging.
-5.  **Image**: Diffusion topologies (e.g., SD3, FLUX local variants).
-6.  **Video**: Spatial sequence generation.
-7.  **Upscaler**: Real-time SR (Super Resolution) via Metal.
-8.  **Code/LM**: Autoregressive code generation and agentic logic.
-9.  **VLM**: Vision-Language Model parsing (screen understanding).
-10. **Motion/Vello**: Kinematic / UI vector trajectory generation.
+1.  **Voice** *(planned)*: Full-duplex conversational streams (`space-voice`);
+    SpaceBar's voice path is built but has not been tested by a human yet.
+2.  **Transcribe** *(live)*: `spacepilot run transcribe`, whisper-cpp,
+    measured on-device.
+3.  **Speech** *(live)*: `spacepilot run speech`, Kokoro TTS, measured.
+4.  **Music** *(planned)*: latent audio generation and audio bridging.
+5.  **Image** *(live)*: `spacepilot run image`, mflux on Metal, measured —
+    the product's current quality bar.
+6.  **Video** *(planned, currently mocked and gated)*: spatial sequence
+    generation. No real inference path exists; the route that used to fake
+    completion now refuses with a 501.
+7.  **Upscaler** *(planned)*: real-time SR via Metal.
+8.  **Code/LM** *(partial — text works, "code" specifically doesn't yet)*:
+    `spacepilot run text` runs Qwen3-8B (4-bit, MLX) locally; there is no
+    separate code-generation route or agentic-logic layer yet. An
+    OpenAI-compatible `/v1` surface with coding models leading is in flight
+    on another branch (`feat/inference-surface`).
+9.  **VLM** *(planned)*: vision-language parsing / screen understanding — no
+    driver ships today.
+10. **Motion/Vello** *(planned)*: kinematic / UI vector trajectory generation.
 
 ### 3.3 The SpaceBar macOS Native HUD
 
@@ -125,6 +147,13 @@ Execution within the SpacePilot ecosystem is rigorously isolated.
 ---
 
 ## 4. MCP & CLI INTERFACES
+
+**Proposed, not current.** The real CLI (`spacepilot/cli.py`) and MCP server
+(`spacepilot/mcp_server.py`, 17 tools as of 2026-09-02) do not have the
+verbs, flags, or tool names below — `daemon start --max-aws`,
+`status matrix`, `route --modality`, and `spacepilot_caveat_lookup` are all
+proposed surface, not shipped. Run `spacepilot --help` or read
+`spacepilot/mcp_server.py` for the current interface.
 
 ### 4.1 CLI Specifications
 
