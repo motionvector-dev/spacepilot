@@ -40,6 +40,7 @@ dependencies = [
 local-ml = [
     "onnxruntime>=1.16.0",
     "kokoro-onnx>=0.3.0",
+    "faster-whisper>=1.0.0",
     "torch>=2.1.0",
     "scipy>=1.11.0",
 ]
