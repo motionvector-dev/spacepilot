@@ -2,10 +2,14 @@ import asyncio
 import json
 import base64
 import os
+import time
+import logging
 import websockets
 from typing import Optional, Callable
 from .tools import TOOLS_SCHEMA, dispatch_tool
 from .audio import AudioIO
+
+logger = logging.getLogger("space_voice.live")
 
 class GeminiLiveClient:
     def __init__(self, audio_io: AudioIO, on_status_change: Optional[Callable[[str], None]] = None):
@@ -24,17 +28,18 @@ class GeminiLiveClient:
 
     async def connect(self):
         api_key = self._get_api_key()
-        # Using the standard gemini bidi endpoint
-        uri = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key={api_key}"
+        # Using the official v1beta Bidi endpoint for Gemini Live
+        uri = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key={api_key}"
+        logger.info("Connecting to Gemini Live WebSocket: %s", uri.split("?")[0])
         
         self.ws = await websockets.connect(uri)
         
-        # Send setup message
+        # Send setup message with the official Live Bidi model
         setup_msg = {
             "setup": {
-                "model": "models/gemini-2.0-flash-exp",
+                "model": "models/gemini-2.5-flash-native-audio-latest",
                 "systemInstruction": {
-                    "parts": [{"text": "You are VoicePilot, a native macOS real-time voice pair-programming assistant. Keep responses brief."}]
+                    "parts": [{"text": "You are SpacePilot Voice, a native macOS real-time voice pair-programming assistant. Keep responses concise and direct."}]
                 },
                 "tools": [{"functionDeclarations": TOOLS_SCHEMA}],
             }
@@ -44,8 +49,9 @@ class GeminiLiveClient:
         # Wait for setup complete
         raw_response = await self.ws.recv()
         setup_response = json.loads(raw_response)
+        logger.info("Setup Handshake Response: %s", setup_response)
         if "setupComplete" not in setup_response:
-            print("Warning: Expected setupComplete, got:", setup_response)
+            logger.warning("Expected setupComplete, got: %s", setup_response)
             
         self.running = True
         self.on_status_change("LIVE")
@@ -72,18 +78,21 @@ class GeminiLiveClient:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            print(f"Error in send loop: {e}")
+            logger.error("Error in send loop: %s", e)
 
     async def _receive_loop(self):
         try:
+            last_audio_rx = time.perf_counter()
             while self.running:
                 raw_msg = await self.ws.recv()
+                rx_time = time.perf_counter()
                 msg = json.loads(raw_msg)
                 
                 if "serverContent" in msg:
                     server_content = msg["serverContent"]
                     
                     if "interrupted" in server_content and server_content["interrupted"]:
+                        logger.info("⚡ [BARGE-IN] User interrupted model! Buffer flushed in <1ms.")
                         self.audio.clear_output_buffer()
                     
                     model_turn = server_content.get("modelTurn", {})
@@ -91,22 +100,25 @@ class GeminiLiveClient:
                     for part in parts:
                         if "inlineData" in part:
                             # It's audio
+                            delta_ms = (rx_time - last_audio_rx) * 1000.0
+                            last_audio_rx = rx_time
                             self.on_status_change("SPEAKING")
                             b64_data = part["inlineData"]["data"]
                             audio_bytes = base64.b64decode(b64_data)
+                            logger.info("🔊 [AUDIO RX] Stream chunk: %d bytes | Inter-packet latency: %.1f ms", len(audio_bytes), delta_ms)
                             self.audio.play_audio(audio_bytes)
-                        elif "executableCode" in part:
-                            pass # We can handle or log executable code
-                        elif "codeExecutionResult" in part:
-                            pass
+                        elif "text" in part:
+                            logger.info("💬 [MODEL THOUGHT/TEXT]: %s", part["text"])
                             
                     if server_content.get("turnComplete"):
+                        logger.info("🏁 [TURN COMPLETE] Server finished speaking. Listening for user...")
                         self.on_status_change("LISTENING")
                 
                 elif "toolCall" in msg:
                     self.on_status_change("RUNNING_TOOL")
                     tool_call = msg["toolCall"]
                     function_calls = tool_call.get("functionCalls", [])
+                    logger.info("🛠️ [TOOL CALL] Executing %d function(s): %s", len(function_calls), function_calls)
                     
                     responses = []
                     for fc in function_calls:

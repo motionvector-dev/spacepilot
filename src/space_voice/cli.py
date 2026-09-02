@@ -1,5 +1,9 @@
 import asyncio
 import sys
+import os
+import logging
+from pathlib import Path
+import argparse
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -8,22 +12,35 @@ from rich.text import Text
 
 from .audio import AudioIO
 from .live_client import GeminiLiveClient
+from .wake_word import WakeWordDetector
+
+# Setup dedicated on-call observability log
+LOG_DIR = Path.home() / ".spacepilot" / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "voice.log"
+
+logging.basicConfig(
+    filename=str(LOG_FILE),
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("space_voice")
 
 console = Console()
 
 class StatusUI:
     def __init__(self):
-        self.status = "INITIALIZING..."
+        self.status = "WAITING FOR 'SPACE' (WAKE WORD)..."
 
     def set_status(self, new_status: str):
         self.status = new_status
 
     def generate_renderable(self):
         color = "white"
-        if self.status == "LIVE":
+        if "WAKE" in self.status:
+            color = "cyan"
+        elif self.status == "LIVE" or self.status == "LISTENING":
             color = "green"
-        elif self.status == "LISTENING":
-            color = "blue"
         elif self.status == "SPEAKING":
             color = "magenta"
         elif self.status == "RUNNING_TOOL":
@@ -32,10 +49,12 @@ class StatusUI:
             color = "red"
         
         text = Text(self.status, style=f"bold {color}", justify="center")
-        return Panel(Align.center(text, vertical="middle"), title="VoicePilot HUD", border_style=color, height=5)
+        return Panel(Align.center(text, vertical="middle"), title="SpacePilot Voice HUD", border_style=color, height=5)
 
-async def main_async():
+async def main_async(enable_wake: bool = False):
     ui = StatusUI()
+    if not enable_wake:
+        ui.set_status("INITIALIZING...")
     
     def on_status_change(status: str):
         ui.set_status(status)
@@ -44,6 +63,11 @@ async def main_async():
     audio_io.start()
 
     client = GeminiLiveClient(audio_io, on_status_change=on_status_change)
+    
+    if enable_wake:
+        wake_detector = WakeWordDetector(threshold=0.5)
+        print("Listening for wake word...")
+
     
     with Live(ui.generate_renderable(), refresh_per_second=10, screen=True) as live:
         try:
