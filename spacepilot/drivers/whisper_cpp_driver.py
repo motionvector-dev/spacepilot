@@ -86,7 +86,7 @@ class WhisperCppDriver(InferenceDriver):
         variant id — a measurement describing weights that never ran.
         """
         from spacepilot.paths import env_value, resolve
-        from spacepilot.pluto.registry import registry
+        from spacepilot.model_registry import registry
 
         variant_id = variant_id or self.variant_id
         variant = registry().variant(variant_id)

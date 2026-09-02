@@ -22,7 +22,7 @@ import numpy as np
 
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
-logger = logging.getLogger("pluto.drivers.kokoro")
+logger = logging.getLogger("spacepilot.drivers.kokoro")
 
 RESULT_PREFIX = "SPACEPILOT_RESULT "
 
@@ -66,7 +66,7 @@ class KokoroDriver(InferenceDriver):
             is_loaded=False,
         )
         super().__init__(spec)
-        from spacepilot.pluto.runtimes import interpreter
+        from spacepilot.runtimes import interpreter
 
         self.model_path = model_path
         self.voices_path = voices_path
@@ -108,7 +108,7 @@ class KokoroDriver(InferenceDriver):
             self.resolved_revision = None
             return env_model, env_voices
 
-        from spacepilot.pluto.registry import registry
+        from spacepilot.model_registry import registry
 
         variant_id = "kokoro-82m-onnx" if self.driver_id == "kokoro" else self.driver_id
         variant = registry().variant(variant_id)
@@ -276,7 +276,7 @@ class KokoroDriver(InferenceDriver):
             )
 
         if not out_path:
-            from spacepilot.pluto.services.audio_execution import default_speech_output
+            from spacepilot.services.audio_execution import default_speech_output
             dest_file = default_speech_output()
         else:
             dest_file = Path(out_path).expanduser().resolve()

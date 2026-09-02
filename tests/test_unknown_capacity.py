@@ -18,13 +18,13 @@ from pathlib import Path
 
 import pytest
 
-PLUTO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PLUTO_ROOT))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT))
 
 from spacepilot.device_probe import GIB, DeviceProfile, usable_memory_bytes
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 from spacepilot.local_workers import LocalWorkerManager
-from spacepilot.pluto.services.compatibility import assess
+from spacepilot.services.compatibility import assess
 
 
 def cpu_only_profile() -> DeviceProfile:

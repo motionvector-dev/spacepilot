@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Polymorphic Base Video Engine Architecture for Pluto.
+"""Polymorphic Base Video Engine Architecture for SpacePilot.
 
 Defines the EngineSpec dataclass and BaseVideoEngine abstract class
 for multi-model DiT adapters (LTX-Video 2.5, Wan2.1 1.3B/14B, HunyuanVideo).
@@ -15,7 +15,7 @@ import time
 import os
 import shutil
 
-from spacepilot.pluto.core.utils import allocate_output
+from spacepilot.core.utils import allocate_output
 
 
 def default_render_path(job_id: str) -> str:

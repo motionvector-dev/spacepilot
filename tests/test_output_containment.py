@@ -12,8 +12,8 @@ from pathlib import Path
 import pytest
 
 from spacepilot.engines import HunyuanVideoEngine, LTXVideoEngine, WanVideoEngine
-from spacepilot.pluto.core.config import get_settings
-from spacepilot.pluto.services.checkpoint_sync import CheckpointSyncEngine
+from spacepilot.core.config import get_settings
+from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
 
 ENGINES = [LTXVideoEngine, WanVideoEngine, HunyuanVideoEngine]
 
@@ -21,7 +21,7 @@ SOURCES = [
     "spacepilot/engines/ltx_engine.py",
     "spacepilot/engines/wan_engine.py",
     "spacepilot/engines/hunyuan_engine.py",
-    "spacepilot/pluto/services/checkpoint_sync.py",
+    "spacepilot/services/checkpoint_sync.py",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

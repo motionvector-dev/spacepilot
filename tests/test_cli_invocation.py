@@ -63,7 +63,7 @@ def test_a_failed_measure_leaves_no_system_record(monkeypatch):
 
     sys.path.insert(0, str(ROOT))
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     written = []
     monkeypatch.setattr(ms, "write_system", lambda s, root=None: written.append(s))
@@ -119,6 +119,6 @@ def test_no_model_variant_is_named_list():
     """`models list` reserves the word, so a variant called `list` would become
     unreachable by id."""
     sys.path.insert(0, str(ROOT))
-    from spacepilot.pluto.registry import registry
+    from spacepilot.model_registry import registry
 
     assert [v.id for v in registry().variants if v.id == "list"] == []

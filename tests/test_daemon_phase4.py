@@ -30,7 +30,7 @@ from spacepilot.daemon.server import (
     discover_tailnet_ipv4,
     run_daemon,
 )
-from spacepilot.pluto.services.execution import RunRequest, RunResult
+from spacepilot.services.execution import RunRequest, RunResult
 from spacepilot.substrate import DaemonClient, DirectLocal, SubstrateError
 
 

@@ -4,8 +4,8 @@ What used to live here asserted that a webhook and an x402 call granted credit.
 That behaviour is gone on purpose: `verify_x402_micropayment` credited the
 amount taken from the caller's own request body, so anyone holding the signing
 key could mint credit for itself. See the module docstrings in
-spacepilot/pluto/services/polar_billing.py and
-spacepilot/pluto/api/routes/billing.py.
+spacepilot/services/polar_billing.py and
+spacepilot/api/routes/billing.py.
 
 The tests that survive cover the parts that grant nothing — signature
 verification and `debit_usage` — plus the refusal itself.
@@ -19,9 +19,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from spacepilot.pluto.api.routes.billing import billing_router
-from spacepilot.pluto.services.polar_billing import PolarBillingManager, RATE_CARD
-from spacepilot.pluto.core.config import get_settings
+from spacepilot.api.routes.billing import billing_router
+from spacepilot.services.polar_billing import PolarBillingManager, RATE_CARD
+from spacepilot.core.config import get_settings
 
 app = FastAPI()
 app.include_router(billing_router)

@@ -40,7 +40,7 @@ def _orders(path):
 
 def test_models_renders_provider_rates_as_a_separate_on_paper_section(monkeypatch, tmp_path, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     orders_path = tmp_path / "fleet.yaml"
     _orders(orders_path)
@@ -64,7 +64,7 @@ def test_models_renders_provider_rates_as_a_separate_on_paper_section(monkeypatc
 
 def test_models_does_not_fabricate_provider_rows_without_orders_or_network(monkeypatch, tmp_path, capsys):
     import spacepilot.cli as cli
-    from spacepilot.pluto import measurements as ms
+    from spacepilot import measurements as ms
 
     monkeypatch.setattr(cli, "fleet_orders_path", lambda: tmp_path / "missing-fleet.yaml")
     monkeypatch.setattr("spacepilot.device_probe.probe_local_device", _profile)

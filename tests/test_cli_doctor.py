@@ -186,7 +186,7 @@ class TestCliDoctor(unittest.TestCase):
         # Verify parser handles --output, --stg, and --image-noise-scale without error
         parser = argparse.ArgumentParser()
         # Test cli argument parsing logic via sys.argv mock
-        with patch('sys.argv', ['pluto', 'generate', 'test prompt', '--output', '/tmp/test.mp4', '--stg', '0.8', '--image-noise-scale', '0.03']):
+        with patch('sys.argv', ['spacepilot', 'generate', 'test prompt', '--output', '/tmp/test.mp4', '--stg', '0.8', '--image-noise-scale', '0.03']):
             with patch('spacepilot.cli.cmd_generate') as mock_gen:
                 with patch('spacepilot.cli.get_instance_info') as mock_inst:
                     mock_inst.return_value = {"id": "i-123", "ip": "1.2.3.4", "state": "running"}

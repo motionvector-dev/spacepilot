@@ -29,7 +29,7 @@ class MlxLmDriver(InferenceDriver):
             driver_id=driver_id, task="text", backend="metal",
             resident_vram_gb=18.0, is_loaded=False,
         ))
-        from spacepilot.pluto.runtimes import interpreter
+        from spacepilot.runtimes import interpreter
         self.variant_id = variant_id
         self.python_bin = python_bin or interpreter()
         self.resolved_revision: Optional[str] = None
@@ -47,7 +47,7 @@ class MlxLmDriver(InferenceDriver):
 
     def asset_dir(self, variant_id: Optional[str] = None) -> Optional[tuple[str, str]]:
         from spacepilot.paths import resolve
-        from spacepilot.pluto.registry import registry
+        from spacepilot.model_registry import registry
 
         variant_id = variant_id or self.variant_id
         variant = registry().variant(variant_id)

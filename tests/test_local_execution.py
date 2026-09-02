@@ -10,9 +10,9 @@ import pytest
 from spacepilot import cli
 from spacepilot.device_probe import DeviceProfile, GIB
 from spacepilot.drivers.mflux_driver import MfluxDriver, MfluxSubprocessError
-from spacepilot.pluto.measurements import Measurement
-from spacepilot.pluto.registry import Caveat
-from spacepilot.pluto.services.execution import (
+from spacepilot.measurements import Measurement
+from spacepilot.model_registry import Caveat
+from spacepilot.services.execution import (
     IMAGE_ROUTES,
     LocalCandidate,
     LocalExecutionError,
@@ -249,7 +249,7 @@ def test_non_tty_never_executes_without_yes(tmp_path, capsys):
         "run_workload": "image", "prompt": "prompt", "output": str(tmp_path / "x.png"),
         "yes": False, "output_mode": "plain",
     })()
-    with patch("spacepilot.pluto.services.execution.LocalExecutionService", return_value=service), \
+    with patch("spacepilot.services.execution.LocalExecutionService", return_value=service), \
          patch.object(cli.sys, "stdin", StringIO("y\n")):
         assert cli.cmd_run(args, {}) == 1
     service.execute.assert_not_called()
@@ -267,7 +267,7 @@ def test_tty_eof_never_executes_without_yes(tmp_path, capsys):
         "run_workload": "image", "prompt": "prompt", "output": str(tmp_path / "x.png"),
         "yes": False, "output_mode": "live",
     })()
-    with patch("spacepilot.pluto.services.execution.LocalExecutionService", return_value=service), \
+    with patch("spacepilot.services.execution.LocalExecutionService", return_value=service), \
          patch.object(cli.sys, "stdin", TTY()), patch("builtins.input", side_effect=EOFError):
         assert cli.cmd_run(args, {}) == 1
     service.execute.assert_not_called()
@@ -285,7 +285,7 @@ def test_yes_executes_without_reading_stdin(tmp_path, capsys):
         "run_workload": "image", "prompt": "prompt", "output": str(tmp_path / "x.png"),
         "yes": True, "output_mode": "plain",
     })()
-    with patch("spacepilot.pluto.services.execution.LocalExecutionService", return_value=service):
+    with patch("spacepilot.services.execution.LocalExecutionService", return_value=service):
         assert cli.cmd_run(args, {}) == 0
     service.execute.assert_called_once()
     assert "completed   flux-schnell-4bit" in capsys.readouterr().out
