@@ -21,6 +21,7 @@ client = TestClient(app)
 AUTH = {"X-SpacePilot-Token": STUDIO_TOKEN}
 
 TEXT_MODEL = "qwen3-8-27b-4bit"
+MOE_MODEL = "qwen1-5-moe-a2-7b-chat-4bit"
 EMBED_MODEL = "qwen3-embedding-0-6b-8bit"
 
 
@@ -141,6 +142,19 @@ def test_models_lists_text_and_embeddings_with_a_verdict_each(monkeypatch):
         assert set(extra["verdict"]) == {"level", "reason", "headroom_bytes"}
     assert entries[EMBED_MODEL]["x_spacepilot"]["served"] is True
     assert entries[EMBED_MODEL]["x_spacepilot"]["runtime"] == "mlx-lm"
+
+
+def test_models_serves_every_mlx_lm_text_variant_not_just_the_default(monkeypatch):
+    """The daemon used to hardcode one text route; both variants list served now."""
+    import spacepilot.api.routes.inference as inference
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
+    for model_id in (TEXT_MODEL, MOE_MODEL):
+        extra = entries[model_id]["x_spacepilot"]
+        assert extra["served"] is True
+        assert extra["runtime"] == "mlx-lm"
 
 
 def test_models_is_open_because_it_spends_nothing():
@@ -282,6 +296,21 @@ def test_chat_completion_returns_the_openai_shape_plus_our_extensions(wired):
     assert extra["wall_seconds"] == 12.0
     assert extra["verdict"]["level"] in {"runs_well", "runs_slowly"}
     assert extra["run_id"] and body["id"].endswith(extra["run_id"])
+
+
+def test_chat_completion_serves_the_moe_variant_through_the_same_route(wired):
+    """Not just the default text model — every mlx-lm text variant answers."""
+    response = client.post("/v1/chat/completions", headers=AUTH, json={
+        "model": MOE_MODEL,
+        "messages": [{"role": "user", "content": "What is unified memory?"}],
+        "max_tokens": 64,
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["model"] == MOE_MODEL
+    assert body["x_spacepilot"]["runtime"] == "mlx-lm"
+    assert wired["text"].calls[0]["variant_id"] == MOE_MODEL
+    assert wired["recorded"][0]["variant_id"] == MOE_MODEL
 
 
 def test_the_whole_message_list_reaches_the_driver(wired):

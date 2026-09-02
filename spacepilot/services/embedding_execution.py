@@ -17,11 +17,17 @@ from typing import Callable, List, Optional
 from spacepilot.device_probe import DeviceProfile, probe_local_device
 from spacepilot import measurements as ms
 from spacepilot.model_registry import Variant, registry
+from spacepilot.routes import default_variant_id, served_variants
 from spacepilot.services.compatibility import Verdict, assess
 from spacepilot.services.execution import LocalExecutionError
 from spacepilot.services.model_catalog import catalog_manager
 
 
+# Deprecated: kept as an alias of the default served embedding variant for
+# one release, for any caller or test that still imports it directly. New
+# code should read `spacepilot.routes.served_variants("embedding")` (or pass
+# no `variant_id` to `EmbeddingExecutionService.plan`, which does the same
+# lookup).
 VARIANT_ID = "qwen3-embedding-0-6b-8bit"
 RUNTIME_ID = "mlx-lm"
 MAX_SAFE_TOKENS = 2048
@@ -92,14 +98,17 @@ class EmbeddingExecutionService:
         self.system_writer = system_writer or ms.write_system
         self.contention_sampler = contention_sampler or ms.sample_contention
 
-    def plan(self) -> EmbeddingRunPlan:
+    def plan(self, variant_id: Optional[str] = None) -> EmbeddingRunPlan:
+        resolved_variant_id = variant_id or default_variant_id("embedding")
+        if resolved_variant_id is None:
+            raise LocalExecutionError("no embedding variant is served locally")
         profile = self.profile_probe()
         system = ms.system_from_profile(profile)
-        variant = registry().variant(VARIANT_ID)
-        recipe = catalog_manager.recipes.get(VARIANT_ID)
+        variant = registry().variant(resolved_variant_id)
+        recipe = catalog_manager.recipes.get(resolved_variant_id)
         if variant is None or recipe is None:
-            raise LocalExecutionError(f"exact embedding route {VARIANT_ID!r} is absent")
-        ready, detail = self.driver.route_status(VARIANT_ID)
+            raise LocalExecutionError(f"exact embedding route {resolved_variant_id!r} is absent")
+        ready, detail = self.driver.route_status(resolved_variant_id)
         return EmbeddingRunPlan("embedding", system, (
             EmbeddingCandidate(variant, assess(recipe, profile), ready, detail),
         ))
@@ -120,12 +129,13 @@ class EmbeddingExecutionService:
         candidate = plan.selected
         if candidate is None:
             raise LocalExecutionError("no safe local route is available")
+        variant_id = candidate.variant.id
         output = Path(request.output).expanduser().resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         contention_before = self.contention_sampler()
         result = self.driver.infer(
             inputs=list(request.inputs), out_path=str(output),
-            variant_id=VARIANT_ID, max_tokens=request.max_tokens,
+            variant_id=variant_id, max_tokens=request.max_tokens,
         )
         contention_after = self.contention_sampler()
         if result.get("status") != "completed":
@@ -151,7 +161,7 @@ class EmbeddingExecutionService:
         wall_seconds = float(result["wall_seconds"])
         self.system_writer(plan.system)
         measurement_path = self.measurement_recorder(
-            system=plan.system, model_id=VARIANT_ID, variant_id=VARIANT_ID,
+            system=plan.system, model_id=variant_id, variant_id=variant_id,
             # Embedding consumes tokens rather than producing them, so the rate
             # is input tokens over wall time. Same metric name as generation
             # because it is the same unit; `tokens_out: 0` is what tells the two
@@ -172,7 +182,7 @@ class EmbeddingExecutionService:
             note="ordinary bounded spacepilot embedding success; vectors verified",
         )
         return EmbeddingRunResult(
-            "completed", VARIANT_ID, output, resolved_revision,
+            "completed", variant_id, output, resolved_revision,
             tuple(tuple(float(x) for x in v) for v in vectors),
             int(payload.get("dimensions") or len(vectors[0])),
             tokens_in, wall_seconds, float(result["load_seconds"]),
@@ -186,5 +196,5 @@ def default_embedding_output() -> Path:
 
 
 def embedding_variants() -> List[str]:
-    """Registry variants this route can serve. One, today."""
-    return [v.id for v in registry().variants if v.kind == "embedding"]
+    """Registry variants actually served locally. One, today."""
+    return [v.id for v in served_variants("embedding")]

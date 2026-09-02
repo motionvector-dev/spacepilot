@@ -136,6 +136,24 @@ from `GET /v1/models`. The choice persists in `UserDefaults`, so a plain
 disclosure has a picker for switching without a relaunch. See
 `docs/design/SPACEBAR.md`, "Brains".
 
+## Every mlx-lm text variant, not just the default
+
+`/v1/chat/completions` serves every text variant the mlx-lm runtime declares
+it runs (`spacepilot/registry/runtimes/mlx-lm.yaml`, `runs:`), not only
+`qwen3-8-27b-4bit`. `GET /v1/models` lists each one with `x_spacepilot.served:
+true`; this proves the smaller Qwen1.5 MoE variant answers the same route:
+
+```bash
+curl -sS http://127.0.0.1:8088/v1/chat/completions \
+  -H "X-SpacePilot-Token: $(cat .studio_token)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen1-5-moe-a2-7b-chat-4bit", "messages": [{"role": "user", "content": "Say hi in five words."}], "max_tokens": 20}'
+```
+
+`spacepilot run text --model qwen1-5-moe-a2-7b-chat-4bit --prompt "..." --yes`
+runs the same variant from the CLI; omit `--model` and it prints and uses the
+first served text variant instead.
+
 ## Testing against Claude instead of a local model
 
 `claude-sonnet-5` is a second backend behind `/v1/chat/completions` — see

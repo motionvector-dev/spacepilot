@@ -119,6 +119,44 @@ def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
     assert driver.calls[0]["max_kv_size"] == 2048
 
 
+def test_plan_serves_every_mlx_lm_text_variant_not_just_the_default(tmp_path):
+    """The daemon now serves every text variant mlx-lm declares it runs."""
+    recorded = {}
+    driver = _Driver()
+    service = _service(
+        tmp_path, driver=driver,
+        recorder=lambda **fields: recorded.update(fields) or tmp_path / "measurement.yaml",
+    )
+    from spacepilot.services.text_execution import TextRequest
+
+    plan = service.plan("text", variant_id="qwen1-5-moe-a2-7b-chat-4bit")
+    assert plan.selected is not None
+    assert plan.selected.variant.id == "qwen1-5-moe-a2-7b-chat-4bit"
+    result = service.execute(plan, TextRequest(
+        workload="text", prompt="What is a mixture of experts?",
+        output=tmp_path / "moe-answer.txt",
+        max_tokens=64, max_kv_size=1024, temperature=0.0,
+    ))
+    assert result.variant_id == "qwen1-5-moe-a2-7b-chat-4bit"
+    assert recorded["variant_id"] == "qwen1-5-moe-a2-7b-chat-4bit"
+    assert recorded["model_id"] == "qwen1-5-moe-a2-7b-chat-4bit"
+    assert driver.calls[0]["variant_id"] == "qwen1-5-moe-a2-7b-chat-4bit"
+
+
+def test_plan_with_no_variant_id_still_defaults_to_the_first_served_variant(tmp_path):
+    service = _service(tmp_path)
+    plan = service.plan("text")
+    assert plan.candidates[0].variant.id == "qwen3-8-27b-4bit"
+
+
+def test_plan_rejects_a_variant_the_registry_does_not_know(tmp_path):
+    from spacepilot.services.execution import LocalExecutionError
+
+    service = _service(tmp_path)
+    with pytest.raises(LocalExecutionError):
+        service.plan("text", variant_id="not-a-real-variant")
+
+
 @pytest.mark.parametrize("field,value", [
     ("max_tokens", 0), ("max_tokens", 257),
     ("max_kv_size", 0), ("max_kv_size", 4097),
@@ -206,6 +244,47 @@ def test_cli_parser_accepts_safe_text_defaults(tmp_path):
     assert args.max_tokens == 256
     assert args.max_kv_size == 4096
     assert args.temperature == 0.0
+    assert args.model is None
+
+
+def test_cli_parser_accepts_a_model_flag(tmp_path):
+    with patch("spacepilot.cli.cmd_run", return_value=0) as handler:
+        assert cli.main([
+            "run", "text", "--prompt", "hello", "--model",
+            "qwen1-5-moe-a2-7b-chat-4bit", "--yes",
+        ]) == 0
+    assert handler.call_args.args[0].model == "qwen1-5-moe-a2-7b-chat-4bit"
+
+
+def test_cli_run_text_model_flag_selects_the_requested_variant(tmp_path):
+    service = _service(tmp_path, driver=_Driver(ready=False))
+    plan_calls = []
+    real_plan = service.plan
+    service.plan = lambda workload, variant_id=None: (
+        plan_calls.append(variant_id) or real_plan(workload, variant_id=variant_id))
+    args = type("Args", (), {
+        "run_workload": "text", "prompt": "hello", "output": str(tmp_path / "x.txt"),
+        "model": "qwen1-5-moe-a2-7b-chat-4bit",
+        "max_tokens": 64, "max_kv_size": 1024, "temperature": 0.0, "yes": False,
+    })()
+    with patch("spacepilot.services.text_execution.TextExecutionService",
+               return_value=service):
+        assert cli.cmd_run(args, {}) == 1
+    assert plan_calls == ["qwen1-5-moe-a2-7b-chat-4bit"]
+
+
+def test_cli_run_text_defaults_to_and_prints_the_first_served_variant(tmp_path, capsys):
+    service = _service(tmp_path, driver=_Driver(ready=False))
+    args = type("Args", (), {
+        "run_workload": "text", "prompt": "hello", "output": str(tmp_path / "x.txt"),
+        "max_tokens": 64, "max_kv_size": 1024, "temperature": 0.0, "yes": False,
+    })()
+    with patch("spacepilot.services.text_execution.TextExecutionService",
+               return_value=service):
+        assert cli.cmd_run(args, {}) == 1
+    out = capsys.readouterr().out
+    assert "qwen3-8-27b-4bit" in out
+    assert "default" in out
 
 
 def test_cli_text_non_tty_never_executes_without_yes(tmp_path, capsys):
