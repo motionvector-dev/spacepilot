@@ -1,0 +1,168 @@
+/* SpacePilot components. Requires tokens.css.
+ *
+ * These are the recipes used on models.html and onboard-v2.html, lifted out so
+ * every page reaches for the same button rather than growing its own. Adopt a
+ * class instead of writing the rules again; if something here does not fit,
+ * change it here so every surface moves together.
+ */
+
+/* ------------------------------------------------------------------ type */
+.sp-h1 { font-size: var(--text-size-display); letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-medium); color: var(--text-1000); margin: 0 0 var(--space-3); }
+.sp-h2 { font-size: var(--text-size-xl); letter-spacing: -.01em;
+  font-weight: var(--weight-medium); color: var(--text-1000); margin: 0 0 var(--space-3); }
+.sp-label { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  text-transform: uppercase; letter-spacing: var(--tracking-mono-label);
+  color: var(--text-500); margin: 0 0 var(--space-3); }
+.sp-note { font-size: var(--text-size-sm); color: var(--text-500); line-height: 1.5;
+  border-left: var(--border-strong) solid var(--border-300); padding-left: var(--space-3); }
+.sp-mono { font-family: var(--font-mono); font-size: var(--text-size-sm);
+  letter-spacing: var(--tracking-meta); }
+
+/* --------------------------------------------------------------- buttons */
+/* One accent-filled button per view. Everything else demotes to .quiet so it
+   never competes with the single primary action. */
+.sp-btn { font: inherit; font-size: var(--text-size-md); font-weight: var(--weight-medium);
+  height: var(--h-control-primary); padding: 0 var(--space-5);
+  border-radius: var(--radius-2); border: var(--hairline) solid transparent;
+  background: var(--accent); color: var(--accent-contrast);
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; cursor: pointer;
+  transition: filter var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); }
+.sp-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.sp-btn:active:not(:disabled) { scale: var(--motion-press); }
+.sp-btn:disabled { background: var(--surface-strong); color: var(--text-300); cursor: not-allowed; }
+.sp-btn.quiet { background: transparent; border-color: var(--border-300); color: var(--text-700); }
+.sp-btn.quiet:hover:not(:disabled) { background: var(--surface-raised-hover);
+  color: var(--text-1000); filter: none; }
+.sp-btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.sp-btn.danger:hover:not(:disabled) { background: var(--danger-soft); filter: none; }
+.sp-btn.sm { height: var(--h-control); padding: 0 var(--space-3); font-size: var(--text-size-sm); }
+
+.sp-icon-btn { flex: none; width: var(--h-control); height: var(--h-control);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: var(--hairline) solid var(--border-200); border-radius: var(--radius-2);
+  background: var(--surface-inset); color: var(--text-700); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+.sp-icon-btn:hover:not(:disabled) { background: var(--surface-strong); color: var(--text-1000); }
+.sp-icon-btn:disabled { color: var(--text-300); cursor: not-allowed; }
+
+/* ------------------------------------------------------ surfaces & input */
+.sp-card { background: var(--surface-raised); border: var(--hairline) solid var(--border-200);
+  border-radius: var(--radius-3); padding: var(--space-5); }
+.sp-card.agent { border-left: 2px solid var(--agent); }
+
+.sp-input, .sp-select, .sp-textarea {
+  font: inherit; font-size: var(--text-size-chrome); color: var(--text-1000);
+  background: var(--surface-inset); border: var(--hairline) solid var(--border-200);
+  border-radius: var(--radius-2); padding: 0 var(--space-3); height: var(--h-control);
+  transition: border-color var(--motion-fast) var(--ease-out); }
+.sp-textarea { height: auto; padding: var(--space-3) var(--space-4); line-height: 1.5; resize: vertical; }
+.sp-input::placeholder, .sp-textarea::placeholder { color: var(--text-300); }
+.sp-input:focus-visible, .sp-textarea:focus-visible, .sp-select:focus-visible {
+  outline: none; border-color: var(--accent-border); box-shadow: var(--focus-ring); }
+.sp-input:disabled, .sp-select:disabled { color: var(--text-300); cursor: not-allowed; }
+
+/* --------------------------------------------------------- status & data */
+.sp-chip { display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 3px var(--space-3); border-radius: 999px;
+  border: var(--hairline) solid var(--border-200); background: var(--surface-raised);
+  font-size: var(--text-size-sm); color: var(--text-700); }
+
+/* Confidence is stated at the same size as the value it qualifies. A number
+   whose reliability is set in smaller type is a number pretending. */
+.sp-conf { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  letter-spacing: var(--tracking-meta); border-radius: 999px; padding: 2px var(--space-2);
+  border: var(--hairline) solid var(--border-300); color: var(--text-500); white-space: nowrap; }
+.sp-conf[data-c="high"] { color: var(--verify); border-color: var(--verify); }
+.sp-conf[data-c="medium"] { color: var(--text-900); border-color: var(--border-500); }
+.sp-conf[data-c="low"], .sp-conf[data-c="none"] { color: var(--text-500); border-style: dashed; }
+
+.sp-dot { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.sp-dot::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-300); }
+.sp-dot[data-s="ok"]::before { background: var(--verify); }
+.sp-dot[data-s="warn"]::before { background: var(--text-500);
+  box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 3px var(--text-500); }
+.sp-dot[data-s="error"]::before { background: var(--danger); }
+.sp-dot[data-s="off"]::before { background: transparent;
+  border: var(--border-strong) solid var(--text-300); }
+
+.sp-table { width: 100%; border-collapse: collapse; }
+.sp-table th { text-align: left; font-family: var(--font-mono); font-size: var(--text-size-meta);
+  text-transform: uppercase; letter-spacing: var(--tracking-mono-label);
+  font-weight: var(--weight-medium); color: var(--text-500);
+  padding: 0 var(--space-3) var(--space-2) 0;
+  border-bottom: var(--hairline) solid var(--border-300); white-space: nowrap; }
+.sp-table td { padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: var(--hairline) solid var(--border-100); vertical-align: top; }
+.sp-table .num { font-family: var(--font-mono); font-size: var(--text-size-sm);
+  letter-spacing: var(--tracking-meta); text-align: right; white-space: nowrap; }
+
+/* Key-value rows — the pattern used everywhere a table would be too much. */
+.sp-kv { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-4);
+  align-items: baseline; margin: 0; }
+.sp-kv dt { font-family: var(--font-mono); font-size: var(--text-size-meta);
+  text-transform: uppercase; letter-spacing: var(--tracking-mono-label); color: var(--text-500); }
+.sp-kv dd { margin: 0; color: var(--text-1000); }
+.sp-kv dd small { color: var(--text-500); font-size: var(--text-size-sm); }
+
+/* ---------------------------------------------------------- progress etc */
+/* scaleX, never width. width is not composited and judders under a render. */
+.sp-bar { height: 4px; border-radius: 999px; background: var(--surface-inset); overflow: hidden; }
+.sp-bar > span { display: block; height: 100%; background: var(--accent);
+  transform-origin: left center; transform: scaleX(var(--p, 0));
+  transition: transform var(--motion-base) linear; }
+
+.sp-spinner { width: 13px; height: 13px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border-500); border-top-color: var(--text-900);
+  animation: sp-spin var(--motion-loop-spin) linear infinite;
+  animation-play-state: var(--motion-loop-play); }
+@keyframes sp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the ring visible; drop only the rotation, so it still reads as busy. */
+  .sp-spinner { animation: none; border-top-color: var(--border-300); }
+}
+
+.sp-error { background: var(--danger-soft); border: var(--hairline) solid var(--danger);
+  border-radius: var(--radius-2); padding: var(--space-3) var(--space-4);
+  color: var(--text-1000); font-size: var(--text-size-sm); }
+
+/* ------------------------------------------------------------- entrances */
+/* Stagger caps at the fifth child; the sixth onward waits no longer, because
+   a list of thirty should not take a second and a half to arrive. */
+.sp-rise { animation: sp-rise var(--motion-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step)); }
+.sp-rise:nth-child(n + 6) { animation-delay: calc(5 * var(--stagger-step)); }
+@keyframes sp-rise {
+  from { opacity: 0; transform: translateY(var(--motion-rise-md)) scale(var(--motion-enter-scale)); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------------------------------------------------------------- dialog */
+/* Enters with rise and scale, leaves fast and in place. Never use confirm()
+   or alert() — a browser dialog says "127.0.0.1 says" above our content. */
+dialog.sp-sheet { padding: 0; border: none; background: transparent; color: inherit;
+  max-width: min(460px, calc(100vw - var(--space-6))); }
+dialog.sp-sheet::backdrop { background: rgba(0,0,0,.45); opacity: 0;
+  transition: opacity var(--motion-exit) var(--ease-out); }
+dialog.sp-sheet[open]::backdrop { opacity: 1;
+  transition: opacity var(--motion-slow) var(--ease-out); }
+@starting-style { dialog.sp-sheet[open]::backdrop { opacity: 0; } }
+dialog.sp-sheet .panel { background: var(--surface-raised);
+  border: var(--hairline) solid var(--border-200); border-radius: var(--radius-4);
+  padding: var(--space-5); box-shadow: var(--shadow-lg);
+  opacity: 1; transform: translateY(0) scale(1); transform-origin: center;
+  transition: opacity var(--motion-slow) var(--ease-out),
+              transform var(--motion-slow) var(--ease-out); }
+@starting-style { dialog.sp-sheet[open] .panel { opacity: 0;
+  transform: translateY(var(--motion-rise-lg)) scale(var(--motion-enter-scale)); } }
+dialog.sp-sheet[data-leaving="true"] .panel { opacity: 0; transform: translateY(0) scale(1);
+  transition: opacity var(--motion-exit) var(--ease-out); }
+dialog.sp-sheet[data-leaving="true"]::backdrop { opacity: 0; }
+dialog.sp-sheet .acts { display: flex; gap: var(--space-3); justify-content: flex-end;
+  margin-top: var(--space-5); }
+
+/* --------------------------------------------------------------- utility */
+.sp-row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+.sp-scroller { overflow-x: auto; }
