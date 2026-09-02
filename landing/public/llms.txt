@@ -1,0 +1,18 @@
+# SpacePilot
+
+> SpacePilot compiles intent into cinema.
+
+SpacePilot is a generative cinema runtime by the MotionVector program
+(motionvector.dev). It runs open-weight video and audio models directly on GPUs
+you control — local or cloud — and is directed through code, UI, or MCP tools,
+serving human directors and AI agents alike.
+
+## Status
+
+In private development. The public surface is this waitlist page:
+https://spacepilot.dev — join for early access. Runtime documentation is
+internal.
+
+## Related
+
+- MotionVector agentic video studio: https://motionvector.dev
