@@ -7,8 +7,9 @@ import wave
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("test_local_voice")
+logger = logging.getLogger("bench_local_voice")
 
+from spacepilot.core.config import get_settings
 from spacepilot.drivers.local_voice_engine import LocalVoiceEngine
 
 async def mock_audio_stream():
@@ -76,12 +77,15 @@ async def main():
         rtf = (t_tts_end - t_tts_start) / duration
         print(f"TTS RTF: {rtf:.3f}")
     
-    with wave.open("output.wav", "w") as w:
+    outputs_dir = get_settings().outputs_dir
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    out_path = outputs_dir / "bench_local_voice.wav"
+    with wave.open(str(out_path), "w") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(sr)
         w.writeframes((samples * 32767).astype(np.int16).tobytes())
-        print("Saved generated audio to output.wav")
+        print(f"Saved generated audio to {out_path}")
 
 if __name__ == "__main__":
     asyncio.run(main())
