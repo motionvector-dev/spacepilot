@@ -65,6 +65,23 @@ dry-run-voice: granted → Listening
 dry-run-voice: ok — 5 permission paths, no crash
 ```
 
+## Proving Talk works with no microphone
+
+```bash
+.build/SpaceBar.app/Contents/MacOS/SpaceBar --self-test path/to/clip.wav
+```
+
+Runs the same recogniser, on-device model, and synthesiser Talk uses — file
+input instead of a live mic tap — and times each stage. It still asks for
+Speech Recognition (the same TCC call Talk makes) but never touches
+`AVAudioEngine` or `AVCaptureDevice`, so a failure here is never a microphone
+or audio-device problem. Make a test clip with macOS's own TTS, no mic
+involved:
+
+```bash
+say -o clip.wav --data-format=LEI16@16000 "what can this mac run"
+```
+
 ## Screenshots of the seven states
 
 ```bash

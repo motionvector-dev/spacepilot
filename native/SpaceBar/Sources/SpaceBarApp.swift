@@ -18,6 +18,12 @@ enum SpaceBarMain {
             DryRunVoice.run()
             return
         }
+        if let wav = SelfTest.requestedPath() {
+            LaunchGuard.enforceOrExit()
+            Task { @MainActor in await SelfTest.run(wav: wav) }
+            RunLoop.main.run()
+            return
+        }
         LaunchGuard.enforceOrExit()
         SpaceBarApp.main()
     }
@@ -85,7 +91,13 @@ enum NativeTelemetry {
 // MARK: - Voice
 @MainActor
 final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDelegate, AVSpeechSynthesizerDelegate {
-    @Published var state: PopoverState = .idle
+    @Published var state: PopoverState = .idle {
+        didSet {
+            guard state != oldValue else { return }
+            recentTransitions.append((state, Date()))
+            if recentTransitions.count > 3 { recentTransitions.removeFirst(recentTransitions.count - 3) }
+        }
+    }
     @Published var lastHeard = ""
     @Published var lastSaid = ""
     @Published var telemetry: HardwareSnapshot = NativeTelemetry.capture()
@@ -95,6 +107,15 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     /// which the popover says out loud rather than filling in with zeros.
     @Published var daemon: LocalStatus?
     @Published var daemonError: String?
+
+    /// The most recent failure a person would need to see. Set by any path
+    /// that used to fail silently — a permission request that never answers
+    /// is the one this file exists to kill; see `startListening`.
+    @Published var lastError: String?
+
+    /// The last three state changes, oldest first. What "diagnostics" shows
+    /// instead of a live log — enough to see a stall without a console.
+    @Published var recentTransitions: [(state: PopoverState, at: Date)] = []
 
     private var audioEngine = AVAudioEngine()
     private var speechSynthesizer = AVSpeechSynthesizer()
@@ -207,17 +228,52 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     /// SIGTRAP this shape replaces. Denied and restricted both land in
     /// `no-mic-permission`; neither is a trap and neither is silent.
     func startListening() async {
-        let speech = await VoicePermissions.requestSpeech(permissions)
+        lastError = nil
+
+        // TCC's own answer to `requestAuthorization` can simply never arrive —
+        // confirmed on this machine: three of four real Talk presses on
+        // 2026-09-02 produced no prompt and no callback at all (see
+        // docs/design/SPACEBAR.md's "ad-hoc identity" note). Before this
+        // guard, that hang was invisible: the button said "Talk", the state
+        // never moved, and there was nothing to look at. 12s is generous for
+        // a system dialog a person answers; it is not generous enough to look
+        // like the app is thinking.
+        guard let speech = await withTimeout(seconds: 12, { await VoicePermissions.requestSpeech(self.permissions) }) else {
+            lastError = "Speech Recognition permission did not answer within 12s — TCC may have a stale grant for this build. See Diagnostics."
+            state = .needsPermission(.speechRecognition)
+            return
+        }
         guard speech == .authorized else {
             state = .needsPermission(.speechRecognition)
             return
         }
-        let granted = await VoicePermissions.requestMicrophone(permissions)
+        guard let granted = await withTimeout(seconds: 12, { await VoicePermissions.requestMicrophone(self.permissions) }) else {
+            lastError = "Microphone permission did not answer within 12s — TCC may have a stale grant for this build. See Diagnostics."
+            state = .needsPermission(.microphone)
+            return
+        }
         guard granted else {
             state = .needsPermission(.microphone)
             return
         }
         setupAudioGraph()
+    }
+
+    /// Races `operation` against a timer and returns whichever finishes
+    /// first. `operation` keeps running in the background if it loses — Swift
+    /// cannot cancel a TCC completion handler — but the caller stops waiting
+    /// on it, which is the difference between a hang and a stated failure.
+    private func withTimeout<T: Sendable>(seconds: Double, _ operation: @escaping @Sendable () async -> T) async -> T? {
+        await withTaskGroup(of: T?.self) { group in
+            group.addTask { Optional(await operation()) }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
     }
 
     func stopListening() {
@@ -440,6 +496,51 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             if case .speaking = self.state { self.state = .listening }
         }
     }
+
+    // MARK: - Diagnostics
+    //
+    // Every field here is read from the real API at the moment the popover
+    // asks, never cached and never guessed. "no reading" is a value, not an
+    // absence — see the honesty rule in docs/design/SPACEBAR.md.
+
+    func diagnosticsSnapshot() -> DiagnosticsSnapshot {
+        let recognizer = speechRecognizer
+        let inputDeviceName = AVCaptureDevice.default(for: .audio)?.localizedName
+        // `inputFormat(forBus:)` is safe to read without a tap installed —
+        // `setupAudioGraph` already does this unguarded. A sample rate of 0
+        // is what "no input device" looks like from here.
+        let format = audioEngine.inputNode.inputFormat(forBus: 0)
+
+        return DiagnosticsSnapshot(
+            speechPermission: String(describing: VoicePermissions.speechStatus(permissions)),
+            microphonePermission: String(describing: VoicePermissions.microphoneStatus(permissions)),
+            recognizerAvailable: recognizer?.isAvailable,
+            recognizerOnDevice: recognizer?.supportsOnDeviceRecognition,
+            inputDeviceName: inputDeviceName,
+            inputSampleRate: format.sampleRate > 0 ? format.sampleRate : nil,
+            audioEngineRunning: audioEngine.isRunning,
+            inputLevel: audioLevel,
+            modelAvailability: String(describing: SystemLanguageModel.default.availability),
+            lastError: lastError,
+            recentTransitions: recentTransitions
+        )
+    }
+}
+
+/// One read of everything the popover's Diagnostics disclosure shows. `nil`
+/// means the value could not be read, not that it is zero or off.
+struct DiagnosticsSnapshot {
+    let speechPermission: String
+    let microphonePermission: String
+    let recognizerAvailable: Bool?
+    let recognizerOnDevice: Bool?
+    let inputDeviceName: String?
+    let inputSampleRate: Double?
+    let audioEngineRunning: Bool
+    let inputLevel: Float
+    let modelAvailability: String
+    let lastError: String?
+    let recentTransitions: [(state: PopoverState, at: Date)]
 }
 
 // MARK: - Appearance
@@ -522,6 +623,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - Popover
 struct SpaceBarPopoverView: View {
     @ObservedObject var voice: VoiceDuplexManager
+    @State private var showDiagnostics = false
 
     private var state: PopoverState { voice.state }
 
@@ -532,6 +634,7 @@ struct SpaceBarPopoverView: View {
             transcript
             Spacer(minLength: 0)
             controls
+            diagnosticsDisclosure
         }
         .padding(16)
         .frame(width: 360)
@@ -746,6 +849,64 @@ struct SpaceBarPopoverView: View {
             .buttonStyle(.plain)
             .font(.system(size: 11))
             .foregroundStyle(Tokens.UI.ink3)
+        }
+    }
+
+    // MARK: Diagnostics — off by default, everything real when open
+    //
+    // Every row is read from the live API each time this redraws. "no
+    // reading" is what a value the API would not answer looks like — never a
+    // zero, never a guess. This exists because Talk failing used to look
+    // exactly like Talk succeeding: nothing moved, nothing was said, and
+    // there was nowhere to look. See VoiceDuplexManager.startListening.
+
+    private var diagnosticsDisclosure: some View {
+        DisclosureGroup(isExpanded: $showDiagnostics) {
+            diagnosticsBody
+        } label: {
+            Text("Diagnostics")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(Tokens.UI.ink4)
+        }
+        .tint(Tokens.UI.ink4)
+    }
+
+    private var diagnosticsBody: some View {
+        let d = voice.diagnosticsSnapshot()
+        return VStack(alignment: .leading, spacing: 3) {
+            diagRow("speech perm", d.speechPermission)
+            diagRow("mic perm", d.microphonePermission)
+            diagRow("recognizer", d.recognizerAvailable.map { $0 ? "available" : "unavailable" } ?? "no reading")
+            diagRow("on-device", d.recognizerOnDevice.map { $0 ? "yes" : "no" } ?? "no reading")
+            diagRow("input device", d.inputDeviceName ?? "no reading")
+            diagRow("sample rate", d.inputSampleRate.map { String(format: "%.0f Hz", $0) } ?? "no reading")
+            diagRow("audio engine", d.audioEngineRunning ? "running" : "stopped")
+            diagRow("input level", String(format: "%.2f", d.inputLevel))
+            diagRow("model", d.modelAvailability)
+            diagRow("last error", d.lastError ?? "none")
+            if d.recentTransitions.isEmpty {
+                diagRow("history", "no reading")
+            } else {
+                ForEach(Array(d.recentTransitions.enumerated()), id: \.offset) { _, entry in
+                    diagRow("→ \(entry.at.formatted(date: .omitted, time: .standard))", entry.state.headline)
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private func diagRow(_ key: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(key.uppercased())
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .kerning(0.4)
+                .foregroundStyle(Tokens.UI.ink4)
+                .frame(width: 78, alignment: .leading)
+            Text(value)
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(Tokens.UI.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
     }
 }
