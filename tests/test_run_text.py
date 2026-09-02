@@ -84,7 +84,7 @@ def test_registry_has_exact_pinned_qwen_route():
     # mlx-lm now carries the embedding route too — same runtime, same install,
     # a second modality. The text half of the pin is what this test guards.
     assert runtime.serves == ["text", "embedding"]
-    assert runtime.runs == ["qwen3-8", "qwen3-embedding"]
+    assert runtime.runs == ["qwen3-8", "qwen1-5-moe", "qwen3-embedding"]
 
 
 def test_uncached_weights_are_no_route_and_never_load(tmp_path):
