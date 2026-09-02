@@ -111,6 +111,8 @@ in the repo now:
   it. Read this first.
 - **`docs/design/CONCEPT.md`** — the product thesis: ships / docks / providers,
   the honesty rules, the three words. Read this second.
+- **`docs/design/INFERENCE-SURFACE.md`** — the `/v1` routes, the one fit verdict
+  every surface repeats, and what each call records.
 - **`docs/LOCAL-SETUP.md`** — local dev environment setup.
 - **`docs/MCP-CLIENTS.md`** — MCP client configuration.
 - **`docs/design/RUNTIME-CAPSULES.md`** — runtime capsule design.
