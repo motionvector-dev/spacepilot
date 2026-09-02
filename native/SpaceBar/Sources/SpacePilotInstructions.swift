@@ -49,19 +49,22 @@ enum SpacePilotInstructions {
     4. A suspended ship is asleep. Say "asleep, will queue" and wait.
     5. Use pilot cadence: short, factual, no filler.
 
+    6. If spacepilot=not running, say so and answer only from the thermal \
+    reading, which comes from this Mac directly.
+
     EXAMPLE EXCHANGE:
-    Telemetry: ship=macstudio, thermal=nominal, resident=4.5GB, headroom=20.5GB, jobs=0, dock=none
-    User: How's the fleet?
-    SpacePilot: macstudio · nominal · 20.5 GB headroom · no active jobs · no docks online.
+    Telemetry: ship=Apple M1 Max, thermal=Nominal, backend=mlx, headroom=20.5 GB usable, loaded=none, spacepilot=running
+    User: How's the machine?
+    SpacePilot: Apple M1 Max · nominal · mlx · 20.5 GB usable · nothing loaded.
+
+    EXAMPLE EXCHANGE:
+    Telemetry: ship=no reading, thermal=Nominal, backend=no reading, headroom=no reading, loaded=none, spacepilot=not running
+    User: How much headroom do I have?
+    SpacePilot: No reading — SpacePilot is not running. Thermals are nominal.
 
     EXAMPLE EXCHANGE:
     User: Spin up a dock for rendering.
     SpacePilot: Dock launch is $0.75/hour spot on g6e.2xlarge. Confirm to proceed.
-
-    EXAMPLE EXCHANGE:
-    Telemetry: ship=homelab, state=suspended, last_seen=2h ago
-    User: Run inference on homelab.
-    SpacePilot: homelab is asleep. Job will queue and start when it wakes.
     """
 
     // MARK: - Classifier Mode
@@ -104,21 +107,27 @@ enum SpacePilotInstructions {
     /// Formats a telemetry snapshot into a block the model can parrot back.
     /// This is injected into the user prompt, NOT into the instructions,
     /// so the model treats it as ground truth for this specific request.
+    ///
+    /// Callers pass "no reading" for anything they did not actually measure.
+    /// The earlier version of this call site passed `shipName: "m1max"`,
+    /// `activeJobs: 0` and `dockState: "none"` as literals, so the model
+    /// confidently reported a fleet nobody had asked about.
     static func telemetryBlock(
         shipName: String,
         thermalState: String,
-        residentGB: Double,
-        headroomGB: Double,
-        activeJobs: Int,
-        dockState: String
+        backend: String,
+        headroom: String,
+        loadedModels: [String],
+        daemonReachable: Bool
     ) -> String {
+        let loaded = loadedModels.isEmpty ? "none" : loadedModels.joined(separator: "/")
         return """
         Telemetry: ship=\(shipName), \
         thermal=\(thermalState), \
-        resident=\(String(format: "%.1f", residentGB))GB, \
-        headroom=\(String(format: "%.1f", headroomGB))GB, \
-        jobs=\(activeJobs), \
-        dock=\(dockState)
+        backend=\(backend), \
+        headroom=\(headroom), \
+        loaded=\(loaded), \
+        spacepilot=\(daemonReachable ? "running" : "not running")
         """
     }
 }

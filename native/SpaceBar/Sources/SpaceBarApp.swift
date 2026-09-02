@@ -17,22 +17,23 @@ struct SpaceBarApp: App {
     }
 }
 
-// MARK: - Native Hardware Telemetry (Pure Darwin / Mach Kernel)
-struct HardwareSnapshot: Sendable {
+// MARK: - Local machine telemetry
+//
+// Every field here is measured on this machine. Nothing is invented.
+// The previous version mapped ProcessInfo's four thermal categories onto
+// made-up temperatures ("41°C · Nominal") and fan speeds ("0 RPM · Silent").
+// macOS does not expose either to an unprivileged process, so those numbers
+// were decoration. A category is what we can read, so a category is what we
+// show.
+struct HardwareSnapshot: Sendable, Equatable {
     let residentMemoryGB: Double
-    let allocatableVramGB: Double
-    let totalPhysicalVramGB: Double
-    let thermalDescription: String
-    let fanStatus: String
+    let physicalMemoryGB: Double
+    let thermal: String
     let isNominal: Bool
 }
 
 enum NativeTelemetry {
-    static let allocatableLimitGB: Double = 25.0
-    static let physicalLimitGB: Double = 32.0
-
     static func capture() -> HardwareSnapshot {
-        // 1. Resident Working Set Memory via mach_task_basic_info
         var taskInfo = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / 4)
         let kerr = withUnsafeMutablePointer(to: &taskInfo) {
@@ -40,332 +41,396 @@ enum NativeTelemetry {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
-        let residentBytes = (kerr == KERN_SUCCESS) ? Double(taskInfo.resident_size) : (4.57 * 1024 * 1024 * 1024)
-        let residentGB = residentBytes / (1024.0 * 1024.0 * 1024.0)
 
-        // 2. Real System Thermal State via ProcessInfo
-        let thermalState = ProcessInfo.processInfo.thermalState
-        let (thermalStr, fanStr, nominal): (String, String, Bool) = {
-            switch thermalState {
-            case .nominal:  return ("41°C · Nominal", "0 RPM · Silent", true)
-            case .fair:     return ("52°C · Warm", "Passive Cooling", true)
-            case .serious:  return ("72°C · Elevated", "Active Fans", false)
-            case .critical: return ("88°C · Throttled", "Max Cooling", false)
-            @unknown default: return ("42°C · Nominal", "0 RPM", true)
+        let residentGB = kerr == KERN_SUCCESS
+            ? Double(taskInfo.resident_size) / 1_073_741_824.0
+            : 0.0
+        let physicalGB = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824.0
+
+        let (thermal, nominal): (String, Bool) = {
+            switch ProcessInfo.processInfo.thermalState {
+            case .nominal:  return ("Nominal", true)
+            case .fair:     return ("Fair", true)
+            case .serious:  return ("Serious", false)
+            case .critical: return ("Critical", false)
+            @unknown default: return ("Unknown", true)
             }
         }()
 
         return HardwareSnapshot(
             residentMemoryGB: residentGB,
-            allocatableVramGB: allocatableLimitGB,
-            totalPhysicalVramGB: physicalLimitGB,
-            thermalDescription: thermalStr,
-            fanStatus: fanStr,
+            physicalMemoryGB: physicalGB,
+            thermal: thermal,
             isNominal: nominal
         )
     }
 }
 
-// MARK: - Native Voice Duplex Manager
+// MARK: - Voice
 @MainActor
 final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDelegate, AVSpeechSynthesizerDelegate {
-    @Published var isConnected = false
-    @Published var isSpeaking = false
-    @Published var transcript = "Tap Interceptor Orb to start Live Voice"
+    @Published var state: PopoverState = .idle
+    @Published var lastHeard = ""
+    @Published var lastSaid = ""
     @Published var telemetry: HardwareSnapshot = NativeTelemetry.capture()
     @Published var audioLevel: Float = 0.0
+
+    /// What the daemon last told us, and when. Nil means we have no reading —
+    /// which the popover says out loud rather than filling in with zeros.
+    @Published var daemon: LocalStatus?
+    @Published var daemonError: String?
 
     private var audioEngine = AVAudioEngine()
     private var speechSynthesizer = AVSpeechSynthesizer()
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private var webSocketTask: URLSessionWebSocketTask?
-    private var telemetryTimer: Timer?
-    
+    private var timers: [Timer] = []
+
     private var debounceTask: Task<Void, Never>?
     private let afmManager = AppleFoundationModelManager()
+    private let client = DaemonClient()
 
     override init() {
         super.init()
         speechSynthesizer.delegate = self
-        startTelemetryPolling()
+        startPolling()
     }
 
-    private func startTelemetryPolling() {
-        telemetryTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.telemetry = NativeTelemetry.capture()
+    private func startPolling() {
+        // Local telemetry is free — it is a mach call. Poll it often.
+        timers.append(Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.telemetry = NativeTelemetry.capture() }
+        })
+        // The daemon is one loopback request against a route that reads this
+        // machine and nothing else. 5s is comfortable; see DaemonClient for
+        // why this is not /api/cockpit/status.
+        timers.append(Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in await self?.refreshDaemon() }
+        })
+        Task { await refreshDaemon() }
+    }
+
+    func refreshDaemon() async {
+        do {
+            let status = try await client.localStatus()
+            daemon = status
+            daemonError = nil
+            if case .daemonOffline = state { state = .idle }
+        } catch let error as DaemonError {
+            daemon = nil
+            daemonError = error.userFacing
+            // Offline is only the headline state when nothing more urgent is
+            // happening. A live conversation outranks a missing daemon.
+            switch state {
+            case .idle, .daemonOffline:
+                state = .daemonOffline(reason: error.userFacing)
+            default:
+                break
             }
+        } catch {
+            daemon = nil
+            daemonError = "Unreachable"
         }
+    }
+
+    // MARK: Permission
+
+    /// What is missing, if anything. Checked without prompting, so the popover
+    /// can show the gap before the user ever presses the talk key.
+    func permissionGap() -> PopoverState.PermissionGap? {
+        if SFSpeechRecognizer.authorizationStatus() == .denied
+            || SFSpeechRecognizer.authorizationStatus() == .restricted {
+            return .speechRecognition
+        }
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .denied
+            || AVCaptureDevice.authorizationStatus(for: .audio) == .restricted {
+            return .microphone
+        }
+        return nil
     }
 
     func toggleConnection() {
-        if isConnected {
-            disconnect()
-        } else {
-            connect()
+        switch state {
+        case .listening, .thinking:
+            stopListening()
+        case .needsPermission(let gap):
+            if let url = gap.settingsURL { NSWorkspace.shared.open(url) }
+        case .daemonOffline:
+            Task { await refreshDaemon() }
+        case .idle, .speaking, .interrupted:
+            startListening()
         }
     }
 
-    func connect() {
+    func startListening() {
         SFSpeechRecognizer.requestAuthorization { [weak self] authStatus in
             Task { @MainActor in
-                guard let self = self else { return }
-                if authStatus == .authorized {
-                    self.startLiveAudio()
-                } else {
-                    self.transcript = "⚠️ Speech Recognition access required."
+                guard let self else { return }
+                guard authStatus == .authorized else {
+                    self.state = .needsPermission(.speechRecognition)
+                    return
+                }
+                AVCaptureDevice.requestAccess(for: .audio) { granted in
+                    Task { @MainActor in
+                        guard granted else {
+                            self.state = .needsPermission(.microphone)
+                            return
+                        }
+                        self.setupAudioGraph()
+                    }
                 }
             }
         }
     }
 
-    func disconnect() {
-        if audioEngine.isRunning {
-            audioEngine.stop()
-        }
+    func stopListening() {
+        if audioEngine.isRunning { audioEngine.stop() }
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
         speechSynthesizer.stopSpeaking(at: .immediate)
-        webSocketTask?.cancel(with: .goingAway, reason: nil)
-        webSocketTask = nil
+        debounceTask?.cancel()
 
-        isConnected = false
-        isSpeaking = false
         audioLevel = 0.0
-        transcript = "Session Disconnected · Standby"
-    }
-
-    private func startLiveAudio() {
-        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
-            Task { @MainActor in
-                guard let self = self else { return }
-                guard granted else {
-                    self.transcript = "⚠️ Microphone access denied in System Settings."
-                    return
-                }
-                self.setupAudioGraph()
-            }
-        }
+        state = daemonError == nil ? .idle : .daemonOffline(reason: daemonError ?? "")
     }
 
     private func setupAudioGraph() {
         let inputNode = audioEngine.inputNode
-        
+
+        // Voice-processing IO gives us echo cancellation, which is what makes
+        // barge-in work at all: without it the recogniser hears the synthesiser
+        // and interrupts the reply with the reply.
         do {
             try inputNode.setVoiceProcessingEnabled(true)
         } catch {
-            print("Failed to enable VPIO/AEC: \(error)")
+            print("SpaceBar: echo cancellation unavailable — \(error.localizedDescription)")
         }
-        
+
         let hwFormat = inputNode.inputFormat(forBus: 0)
         guard hwFormat.sampleRate > 0 else { return }
 
-        guard let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true) else { return }
-        guard let converter = AVAudioConverter(from: hwFormat, to: targetFormat) else { return }
+        guard let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true),
+              let converter = AVAudioConverter(from: hwFormat, to: targetFormat) else { return }
 
         recognitionTask?.cancel()
         recognitionTask = nil
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let request = recognitionRequest else { return }
+        let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        // Local-first is a claim we can actually keep here. Without this,
+        // SFSpeechRecognizer may send audio to Apple's servers, which would
+        // make the Info.plist string false and the ladder in SPACEBAR.md a lie.
+        if speechRecognizer?.supportsOnDeviceRecognition == true {
+            request.requiresOnDeviceRecognition = true
+        }
+        recognitionRequest = request
 
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
             Task { @MainActor in
-                guard let self = self else { return }
-                if let result = result {
-                    let userSpeech = result.bestTranscription.formattedString
-                    self.transcript = "USER: \(userSpeech)"
-                    
-                    // Barge-in: immediately stop talking if user starts speaking
-                    if self.isSpeaking && !userSpeech.isEmpty {
+                guard let self else { return }
+                if let result {
+                    let heard = result.bestTranscription.formattedString
+                    self.lastHeard = heard
+
+                    // Barge-in: the user talking wins, immediately.
+                    if case .speaking = self.state, !heard.isEmpty {
                         self.speechSynthesizer.stopSpeaking(at: .immediate)
-                        self.isSpeaking = false
+                        self.state = .interrupted
+                    } else if !heard.isEmpty, case .listening = self.state {
+                        // stay listening
                     }
-                    
+
                     self.debounceTask?.cancel()
                     self.debounceTask = Task {
                         try? await Task.sleep(nanoseconds: 1_200_000_000)
-                        guard !Task.isCancelled, !userSpeech.isEmpty else { return }
-                        await self.handleSpokenIntent(userSpeech)
+                        guard !Task.isCancelled, !heard.isEmpty else { return }
+                        await self.answer(heard)
                     }
                 }
-                if let error = error {
-                    print("Speech recognition note: \(error.localizedDescription)")
+                if let error {
+                    print("SpaceBar: recognition — \(error.localizedDescription)")
                 }
             }
         }
 
-        final class StreamState: @unchecked Sendable {
-            var hasData = true
-        }
+        final class StreamState: @unchecked Sendable { var hasData = true }
 
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] buffer, _ in
             let outputCapacity = AVAudioFrameCount(Double(buffer.frameLength) * 16000.0 / hwFormat.sampleRate)
-            guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { return }
+            guard let converted = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { return }
 
             var convError: NSError?
-            let state = StreamState()
-            converter.convert(to: convertedBuffer, error: &convError) { _, outStatus in
-                if state.hasData {
-                    state.hasData = false
+            let stream = StreamState()
+            converter.convert(to: converted, error: &convError) { _, outStatus in
+                if stream.hasData {
+                    stream.hasData = false
                     outStatus.pointee = .haveData
                     return buffer
-                } else {
-                    outStatus.pointee = .noDataNow
-                    return nil
                 }
+                outStatus.pointee = .noDataNow
+                return nil
             }
+            if convError == nil { request.append(converted) }
 
-            if convError == nil {
-                request.append(convertedBuffer)
-            }
-
-            // Simple audio meter calculation
             if let channelData = buffer.floatChannelData?[0] {
-                let channelLength = Int(buffer.frameLength)
-                var sum: Float = 0.0
-                for i in 0..<min(channelLength, 256) {
-                    sum += abs(channelData[i])
-                }
-                let avg = sum / 256.0
-                Task { @MainActor in
-                    self?.audioLevel = min(1.0, avg * 5.0)
-                }
+                let n = min(Int(buffer.frameLength), 256)
+                guard n > 0 else { return }
+                var sum: Float = 0
+                for i in 0..<n { sum += abs(channelData[i]) }
+                let avg = sum / Float(n)
+                Task { @MainActor in self?.audioLevel = min(1.0, avg * 5.0) }
             }
         }
 
         do {
             audioEngine.prepare()
             try audioEngine.start()
-            isConnected = true
-            transcript = "🟢 LIVE SOVEREIGN (16kHz CoreAudio Active)"
-            connectLocalPlutoWebSocket()
+            state = .listening
         } catch {
-            transcript = "⚠️ CoreAudio Engine start failed: \(error.localizedDescription)"
+            state = .idle
+            print("SpaceBar: audio engine — \(error.localizedDescription)")
         }
     }
 
-    private func connectLocalPlutoWebSocket() {
-        guard let url = URL(string: "ws://127.0.0.1:8090") else { return }
-        let session = URLSession(configuration: .default)
-        let ws = session.webSocketTask(with: url)
-        self.webSocketTask = ws
-        ws.resume()
-    }
-
-    private func handleSpokenIntent(_ text: String) async {
+    private func answer(_ text: String) async {
         guard SystemLanguageModel.default.isAvailable else {
-            self.transcript = "SPACE: AFM unavailable (model missing)"
-            speakResponse("System Foundation Model is not available.")
+            lastSaid = "The on-device model is not available on this Mac."
+            speak(lastSaid)
             return
         }
-        
+
+        state = .thinking
+        let snap = NativeTelemetry.capture()
+        telemetry = snap
+
         do {
-            let snap = NativeTelemetry.capture()
-            self.telemetry = snap
-            self.transcript = "SPACE: [Thinking...]"
-            
-            let response = try await afmManager.processInput(userText: text, telemetry: snap)
-            self.transcript = "SPACE: \(response)"
-            speakResponse(response)
+            let response = try await afmManager.processInput(
+                userText: text,
+                telemetry: snap,
+                daemon: daemon
+            )
+            lastSaid = response
+            speak(response)
         } catch {
-            self.transcript = "SPACE: Inference failed - \(error.localizedDescription)"
+            state = .idle
+            lastSaid = "Could not answer: \(error.localizedDescription)"
         }
     }
 
-    private func speakResponse(_ text: String) {
+    private func speak(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.rate = 0.52
-        isSpeaking = true
+        state = .speaking
         speechSynthesizer.speak(utterance)
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor in
-            self.isSpeaking = false
+            if case .speaking = self.state { self.state = .listening }
         }
     }
 }
 
-// MARK: - AppDelegate & Status Bar Presentation
+// MARK: - Theme
+//
+// design.md requires three states and a visible control. In an AppKit app the
+// three states are: follow the system (nil appearance), force light, force dark.
+// Tokens.swift resolves against whatever is effective, so setting this one
+// property re-themes every colour in the popover.
+enum ThemeChoice: String, CaseIterable {
+    case system, light, dark
+
+    var label: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    var appearance: NSAppearance? {
+        switch self {
+        case .system: return nil
+        case .light: return NSAppearance(named: .aqua)
+        case .dark: return NSAppearance(named: .darkAqua)
+        }
+    }
+}
+
+@MainActor
+final class ThemeController: ObservableObject {
+    private static let key = "spacebar.theme"
+
+    @Published var choice: ThemeChoice {
+        didSet {
+            UserDefaults.standard.set(choice.rawValue, forKey: Self.key)
+            NSApp.appearance = choice.appearance
+        }
+    }
+
+    init() {
+        let stored = UserDefaults.standard.string(forKey: Self.key) ?? ThemeChoice.system.rawValue
+        choice = ThemeChoice(rawValue: stored) ?? .system
+    }
+
+    func apply() { NSApp.appearance = choice.appearance }
+}
+
+// MARK: - Status bar
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
     let voiceManager = VoiceDuplexManager()
+    let theme = ThemeController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        theme.apply()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
         if let button = statusItem?.button {
-            // Draw Official Two-Tone Gold Interceptor Ship
-            let iconImage = NSImage(size: NSSize(width: 22, height: 16), flipped: false) { _ in
-                let goldLight = NSColor(red: 0.79, green: 0.63, blue: 0.15, alpha: 1.0)
-                let goldDark = NSColor(red: 0.54, green: 0.42, blue: 0.13, alpha: 1.0)
-                let goldShine = NSColor(red: 0.96, green: 0.90, blue: 0.66, alpha: 1.0)
-
-                // Top Lit Wing Facet
-                let topPath = NSBezierPath()
-                topPath.move(to: NSPoint(x: 20, y: 8))
-                topPath.line(to: NSPoint(x: 2, y: 15))
-                topPath.line(to: NSPoint(x: 6, y: 9))
-                topPath.line(to: NSPoint(x: 12, y: 8))
-                topPath.close()
-                goldLight.setFill()
-                topPath.fill()
-
-                // Bottom Shaded Wing Facet
-                let botPath = NSBezierPath()
-                botPath.move(to: NSPoint(x: 20, y: 8))
-                botPath.line(to: NSPoint(x: 12, y: 8))
-                botPath.line(to: NSPoint(x: 6, y: 7))
-                botPath.line(to: NSPoint(x: 3, y: 1))
-                botPath.close()
-                goldDark.setFill()
-                botPath.fill()
-
-                // Specular Dorsal Ridge
-                let spinePath = NSBezierPath()
-                spinePath.move(to: NSPoint(x: 16, y: 8))
-                spinePath.line(to: NSPoint(x: 8, y: 11))
-                spinePath.line(to: NSPoint(x: 4, y: 8))
-                spinePath.line(to: NSPoint(x: 10, y: 8))
-                spinePath.close()
-                goldShine.setFill()
-                spinePath.fill()
-
-                // Engine Trail Jet
-                let jetPath = NSBezierPath(roundedRect: NSRect(x: 0, y: 6.5, width: 3, height: 3), xRadius: 1, yRadius: 1)
-                goldLight.setFill()
-                jetPath.fill()
-
-                return true
-            }
-            iconImage.isTemplate = false
-            button.image = iconImage
-            button.title = ""
+            button.image = Self.menuBarGlyph()
             button.imagePosition = .imageOnly
             button.target = self
             button.action = #selector(togglePopover)
+            button.setAccessibilityLabel("SpacePilot")
         }
 
         let pop = NSPopover()
-        pop.contentSize = NSSize(width: 370, height: 460)
+        pop.contentSize = NSSize(width: 360, height: 420)
         pop.behavior = .transient
-        pop.contentViewController = NSHostingController(rootView: SpaceBarPopoverView(voice: voiceManager))
-        self.popover = pop
+        pop.contentViewController = NSHostingController(
+            rootView: SpaceBarPopoverView(voice: voiceManager, theme: theme)
+        )
+        popover = pop
+    }
+
+    /// A template image, so the menu bar tints it for us and it reads correctly
+    /// on a light bar, a dark bar, and behind a wallpaper. A hardcoded gold
+    /// ship could do none of those.
+    private static func menuBarGlyph() -> NSImage {
+        let image = NSImage(size: NSSize(width: 18, height: 14), flipped: false) { _ in
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: 17, y: 7))
+            path.line(to: NSPoint(x: 1, y: 13))
+            path.line(to: NSPoint(x: 5, y: 7))
+            path.line(to: NSPoint(x: 1, y: 1))
+            path.close()
+            NSColor.black.setFill()
+            path.fill()
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     @objc func togglePopover() {
-        guard let popover = popover, let button = statusItem?.button else { return }
+        guard let popover, let button = statusItem?.button else { return }
         if popover.isShown {
             popover.performClose(nil)
         } else {
@@ -374,295 +439,294 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - Two-Tone Gold Interceptor Ship Vector View
-struct InterceptorShipView: View {
-    var isLive: Bool = false
-    let goldDark = Color(red: 0.54, green: 0.42, blue: 0.13)  // #8a6a22 (Shaded Facet)
-    let goldLight = Color(red: 0.79, green: 0.63, blue: 0.15) // #c9a227 (Lit Facet)
-    let goldShine = Color(red: 0.96, green: 0.90, blue: 0.66) // #f6e6a8 (Specular Ridge)
-
-    var body: some View {
-        ZStack {
-            // Twin Engine Exhaust Trail
-            HStack(spacing: 2) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(isLive ? Color.cyan : goldLight.opacity(0.8))
-                    .frame(width: 8, height: 3.5)
-                    .offset(x: -22, y: -2)
-
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(isLive ? Color.cyan : goldDark.opacity(0.8))
-                    .frame(width: 6, height: 3)
-                    .offset(x: -20, y: 3)
-            }
-
-            // Top Lit Wing Facet
-            Path { path in
-                path.move(to: CGPoint(x: 32, y: 0))
-                path.addLine(to: CGPoint(x: -16, y: -14))
-                path.addLine(to: CGPoint(x: -8, y: -2))
-                path.addLine(to: CGPoint(x: 10, y: 0))
-                path.closeSubpath()
-            }
-            .fill(goldLight)
-
-            // Bottom Shaded Wing Facet
-            Path { path in
-                path.move(to: CGPoint(x: 32, y: 0))
-                path.addLine(to: CGPoint(x: 10, y: 0))
-                path.addLine(to: CGPoint(x: -8, y: 2))
-                path.addLine(to: CGPoint(x: -14, y: 12))
-                path.closeSubpath()
-            }
-            .fill(goldDark)
-
-            // Specular Dorsal Ridge
-            Path { path in
-                path.move(to: CGPoint(x: 20, y: 0))
-                path.addLine(to: CGPoint(x: -4, y: -8))
-                path.addLine(to: CGPoint(x: -12, y: -2))
-                path.addLine(to: CGPoint(x: 4, y: 0))
-                path.closeSubpath()
-            }
-            .fill(goldShine.opacity(0.9))
-
-            // Ridge Seam Stroke
-            Path { path in
-                path.move(to: CGPoint(x: 32, y: 0))
-                path.addLine(to: CGPoint(x: -18, y: 0))
-            }
-            .stroke(Color.black.opacity(0.35), lineWidth: 1)
-        }
-        .frame(width: 50, height: 32)
-    }
-}
-
-// MARK: - SpaceBar HUD Popover View (Obsidian Zinc Architecture)
+// MARK: - Popover
 struct SpaceBarPopoverView: View {
     @ObservedObject var voice: VoiceDuplexManager
+    @ObservedObject var theme: ThemeController
 
-    // Official SpacePilot Palette
-    let goldColor = Color(red: 0.79, green: 0.63, blue: 0.15) // #c9a227
-    let silverColor = Color(red: 0.81, green: 0.83, blue: 0.86) // #cfd4dc
-    let panelBg = Color(red: 0.05, green: 0.05, blue: 0.06) // #0d0d10
+    private var state: PopoverState {
+        if let gap = voice.permissionGap() { return .needsPermission(gap) }
+        return voice.state
+    }
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            machine
+            transcript
+            Spacer(minLength: 0)
+            controls
+        }
+        .padding(16)
+        .frame(width: 360)
+        .background(Tokens.UI.ground)
+    }
 
-            VStack(spacing: 16) {
-                // Header: Flight Mode & Thermal Truth
-                HStack {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(voice.isConnected ? Color.green : goldColor)
-                            .frame(width: 8, height: 8)
-                        Text(voice.isConnected ? "LIVE SOVEREIGN" : "SPACEPILOT · GOLDEN GATE")
-                            .font(.system(size: 10.5, weight: .bold, design: .monospaced))
-                            .foregroundColor(voice.isConnected ? .green : goldColor)
-                    }
-                    Spacer()
-                    Text(voice.telemetry.thermalDescription)
-                        .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-                        .foregroundColor(voice.telemetry.isNominal ? Color.green : Color.orange)
-                }
+    // MARK: Header — what the app is doing, and nothing else
 
-                // Apple Intelligence Glowing Aurora Orb with Interceptor Starship
-                ZStack {
-                    // Outer Aurora Ring
-                    Circle()
-                        .fill(
-                            AngularGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 0.23, green: 0.51, blue: 0.96),
-                                    Color(red: 0.54, green: 0.36, blue: 0.96),
-                                    goldColor,
-                                    Color(red: 0.06, green: 0.72, blue: 0.83),
-                                    Color(red: 0.23, green: 0.51, blue: 0.96)
-                                ]),
-                                center: .center
-                            )
+    private var header: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 6, height: 6)
+            Text(state.headline)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Tokens.UI.ink)
+            Spacer()
+            themeToggle
+        }
+    }
+
+    private var statusColor: Color {
+        switch state {
+        case .listening, .speaking: return Tokens.UI.true_
+        case .thinking: return Tokens.UI.accent
+        case .needsPermission: return Tokens.UI.wrong
+        case .daemonOffline, .idle, .interrupted: return Tokens.UI.faint
+        }
+    }
+
+    private var themeToggle: some View {
+        HStack(spacing: 2) {
+            ForEach(ThemeChoice.allCases, id: \.self) { choice in
+                Button(choice.label) { theme.choice = choice }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(theme.choice == choice ? Tokens.UI.ink : Tokens.UI.muted)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(theme.choice == choice ? Tokens.UI.surface3 : Color.clear)
+                    )
+                    .accessibilityAddTraits(theme.choice == choice ? [.isSelected] : [])
+            }
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 7).fill(Tokens.UI.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7).stroke(Tokens.UI.border, lineWidth: 0.5)
+        )
+    }
+
+    // MARK: The machine
+
+    private var machine: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(voice.daemon?.deviceName ?? "This Mac")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Tokens.UI.ink)
+                Spacer()
+                Text(voice.telemetry.thermal)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(voice.telemetry.isNominal ? Tokens.UI.muted : Tokens.UI.wrong)
+            }
+
+            if case .daemonOffline(let reason) = state {
+                offlineNote(reason)
+            } else if let daemon = voice.daemon {
+                daemonRows(daemon)
+            } else {
+                Text("No reading yet")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(Tokens.UI.faint)
+            }
+
+            memoryRail
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.surface))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tokens.UI.border, lineWidth: 0.5))
+    }
+
+    /// The offline state says what is missing and how to fix it. It does not
+    /// show stale numbers, and it does not show zeros.
+    private func offlineNote(_ reason: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(reason)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(Tokens.UI.muted)
+            Text("Voice still works. Fleet data does not.")
+                .font(.system(size: 11))
+                .foregroundStyle(Tokens.UI.faint)
+            Text("spacepilot serve")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(Tokens.UI.text)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(RoundedRectangle(cornerRadius: 4).fill(Tokens.UI.surface2))
+        }
+    }
+
+    private func daemonRows(_ daemon: LocalStatus) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            row("backend", daemon.backend ?? "no reading")
+            row("headroom", daemon.headroomLine ?? "no reading")
+            row("loaded", (daemon.loadedModels?.isEmpty ?? true)
+                ? "nothing"
+                : (daemon.loadedModels ?? []).joined(separator: ", "))
+        }
+    }
+
+    private func row(_ key: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(key.uppercased())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .kerning(0.5)
+                .foregroundStyle(Tokens.UI.faint)
+                .frame(width: 66, alignment: .leading)
+            Text(value)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(Tokens.UI.text)
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// SpaceBar's own resident memory against this machine's real physical
+    /// memory. Both numbers are measured — the previous version compared a real
+    /// figure against two hardcoded constants (25.0 and 32.0 GB).
+    private var memoryRail: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text("SPACEBAR MEMORY")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .kerning(0.5)
+                    .foregroundStyle(Tokens.UI.faint)
+                Spacer()
+                Text(String(format: "%.2f of %.0f GB",
+                            voice.telemetry.residentMemoryGB,
+                            voice.telemetry.physicalMemoryGB))
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Tokens.UI.muted)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Tokens.UI.surface3)
+                        .frame(height: 4)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Tokens.UI.accent)
+                        .frame(
+                            width: max(2, geo.size.width * fraction),
+                            height: 4
                         )
-                        .frame(width: 145 + CGFloat(voice.audioLevel * 20.0), height: 145 + CGFloat(voice.audioLevel * 20.0))
-                        .blur(radius: 20)
-                        .opacity(voice.isConnected ? 0.95 : 0.40)
-                        .animation(.easeOut(duration: 0.1), value: voice.audioLevel)
-
-                    // Inner Glass Sphere
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [Color.white.opacity(0.12), panelBg]),
-                                center: .topLeading,
-                                startRadius: 10,
-                                endRadius: 100
-                            )
-                        )
-                        .frame(width: 124, height: 124)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [goldColor.opacity(0.8), silverColor.opacity(0.3), goldColor.opacity(0.8)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1.5
-                                )
-                        )
-
-                    VStack(spacing: 4) {
-                        InterceptorShipView(isLive: voice.isConnected)
-                            .shadow(color: voice.isConnected ? Color.cyan.opacity(0.6) : goldColor.opacity(0.5), radius: 6)
-
-                        Text(voice.isConnected ? "INTERCEPTOR LIVE" : "SPACEPILOT")
-                            .font(.system(size: 9.5, weight: .black, design: .monospaced))
-                            .foregroundColor(silverColor)
-                            .padding(.top, 2)
-                    }
-                }
-                .onTapGesture {
-                    voice.toggleConnection()
-                }
-
-                // Live Spoken Transcript / Hardware Dispatch Stream Box
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("LIVE HARDWARE DISPATCH")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(goldColor)
-                        Spacer()
-                        Text("16kHz LPCM · ZERO SWAP")
-                            .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.gray)
-                    }
-
-                    Text(voice.transcript)
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(panelBg)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                        .cornerRadius(8)
-                }
-
-                // 25.0 GB Allocatable UMA Odometer Rail
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("RESIDENT WORKING SET")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(.gray)
-                        Spacer()
-                        Text(String(format: "%.1f / %.1f GB (32 GB UMA)", voice.telemetry.residentMemoryGB, voice.telemetry.allocatableVramGB))
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(silverColor)
-                    }
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            // Full Physical 32 GB Base Track
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color.white.opacity(0.08))
-                                .frame(height: 6)
-
-                            // Current Resident Weights Fill
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(
-                                    LinearGradient(colors: [Color.green, goldColor], startPoint: .leading, endPoint: .trailing)
-                                )
-                                .frame(width: max(4.0, geo.size.width * CGFloat(min(voice.telemetry.residentMemoryGB, 32.0) / voice.telemetry.totalPhysicalVramGB)), height: 6)
-
-                            // The Sacred 25.0 GB Allocatable Boundary Tick in Pure Gold
-                            Rectangle()
-                                .fill(goldColor)
-                                .frame(width: 2.5, height: 10)
-                                .offset(x: geo.size.width * CGFloat(voice.telemetry.allocatableVramGB / voice.telemetry.totalPhysicalVramGB) - 1.25)
-                        }
-                    }
-                    .frame(height: 10)
-                }
-
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                    .padding(.vertical, 2)
-
-                // Bottom Transport & Power Controls
-                HStack(spacing: 12) {
-                    Button(action: {
-                        voice.toggleConnection()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: voice.isConnected ? "pause.fill" : "mic.fill")
-                                .font(.system(size: 11, weight: .bold))
-                            Text(voice.isConnected ? "PAUSE" : "CONNECT")
-                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        }
-                        .foregroundColor(voice.isConnected ? .black : goldColor)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(voice.isConnected ? Color.green : panelBg)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(voice.isConnected ? Color.green : goldColor.opacity(0.5), lineWidth: 1)
-                        )
-                        .cornerRadius(6)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    Spacer()
-
-                    Button(action: {
-                        voice.disconnect()
-                        NSApplication.shared.terminate(nil)
-                    }) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "power")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("POWER OFF")
-                                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
-                        }
-                        .foregroundColor(Color.red.opacity(0.85))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.red.opacity(0.12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.red.opacity(0.35), lineWidth: 1)
-                        )
-                        .cornerRadius(6)
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(16)
+            .frame(height: 4)
+        }
+    }
+
+    private var fraction: CGFloat {
+        guard voice.telemetry.physicalMemoryGB > 0 else { return 0 }
+        return CGFloat(min(1.0, voice.telemetry.residentMemoryGB / voice.telemetry.physicalMemoryGB))
+    }
+
+    // MARK: Conversation
+
+    private var transcript: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !voice.lastHeard.isEmpty {
+                line("You", voice.lastHeard, Tokens.UI.text)
+            }
+            if !voice.lastSaid.isEmpty {
+                line("SpacePilot", voice.lastSaid, Tokens.UI.ink)
+            }
+            if voice.lastHeard.isEmpty && voice.lastSaid.isEmpty {
+                Text("Press Talk and ask about this machine.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Tokens.UI.faint)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Tokens.UI.surface2))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(state.isWorking ? Tokens.UI.accentBorder : Tokens.UI.border,
+                        lineWidth: state.isWorking ? 1 : 0.5)
+        )
+    }
+
+    private func line(_ who: String, _ what: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(who.uppercased())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .kerning(0.5)
+                .foregroundStyle(Tokens.UI.faint)
+            Text(what)
+                .font(.system(size: 12))
+                .foregroundStyle(color)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Controls
+
+    private var controls: some View {
+        HStack(spacing: 10) {
+            Button(action: { voice.toggleConnection() }) {
+                Text(state.primaryAction ?? "Talk")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Tokens.UI.accentContrast)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.UI.accent))
+            }
+            .buttonStyle(.plain)
+
+            if state.isMicrophoneOpen {
+                HStack(spacing: 5) {
+                    Circle().fill(Tokens.UI.true_).frame(width: 5, height: 5)
+                    Text("mic open")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(Tokens.UI.muted)
+                }
+            }
+
+            Spacer()
+
+            Button("Quit") {
+                voice.stopListening()
+                NSApplication.shared.terminate(nil)
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 11))
+            .foregroundStyle(Tokens.UI.muted)
         }
     }
 }
 
-// MARK: - Apple Foundation Model Manager
+// MARK: - Apple Foundation Model
 @available(macOS 15.0, *)
 actor AppleFoundationModelManager {
     private var session: LanguageModelSession
-    
+
     init() {
         self.session = LanguageModelSession(instructions: SpacePilotInstructions.system)
     }
-    
-    func processInput(userText: String, telemetry: HardwareSnapshot) async throws -> String {
-        let telemetryContext = SpacePilotInstructions.telemetryBlock(
-            shipName: "m1max",
-            thermalState: telemetry.thermalDescription,
-            residentGB: telemetry.residentMemoryGB,
-            headroomGB: telemetry.allocatableVramGB - telemetry.residentMemoryGB,
-            activeJobs: 0,
-            dockState: "none"
+
+    /// Telemetry is injected into the prompt, not the instructions, so the
+    /// model treats it as ground truth for this one request. Anything we do
+    /// not actually know is sent as "no reading" — the instructions tell the
+    /// model to repeat that rather than invent a number, which is the whole
+    /// reason this app can quote figures at all.
+    func processInput(
+        userText: String,
+        telemetry: HardwareSnapshot,
+        daemon: LocalStatus?
+    ) async throws -> String {
+        let block = SpacePilotInstructions.telemetryBlock(
+            shipName: daemon?.deviceName ?? "no reading",
+            thermalState: telemetry.thermal,
+            backend: daemon?.backend ?? "no reading",
+            headroom: daemon?.headroomLine ?? "no reading",
+            loadedModels: daemon?.loadedModels ?? [],
+            daemonReachable: daemon != nil
         )
-        let fullPrompt = "\(telemetryContext)\n\n\(userText)"
-        let response = try await session.respond(to: fullPrompt)
+        let response = try await session.respond(to: "\(block)\n\n\(userText)")
         return response.content
     }
 }

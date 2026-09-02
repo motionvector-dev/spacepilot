@@ -11,9 +11,9 @@
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>SpaceBar requires microphone access to enable real-time sovereign voice pair-programming on Apple Silicon.</string>
+    <string>SpaceBar listens while you are talking to it, so you can ask about your machines out loud.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>SpaceBar requires speech recognition to transcribe real-time voice locally on-device.</string>
+    <string>SpaceBar turns what you say into text so it can answer you. It asks macOS to do this on this Mac.</string>
     <key>LSUIElement</key>
     <true/>
 </dict>
