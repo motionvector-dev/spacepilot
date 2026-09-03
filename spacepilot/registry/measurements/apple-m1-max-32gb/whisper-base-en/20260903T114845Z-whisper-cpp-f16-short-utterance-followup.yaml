@@ -1,0 +1,33 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: whisper-base-en
+metric: realtime_factor
+value: 1.799
+contention: solo
+measured_on: '2026-09-03T11:48:45+00:00'
+variant_id: whisper-base-en
+runtime_id: whisper-cpp
+quantisation: f16
+backend: metal
+wall_seconds: 0.605
+knobs:
+  weights: ggml-base.en.bin
+  audio_seconds: 1.088
+note: >
+  A ~1s Kokoro-synthesized utterance ("Testing testing."), transcribed
+  twice against the same WhisperCppDriver instance to check for cold vs
+  warm reuse (requested follow-up to the base speechapi-spike
+  measurement). There is no warm state to report separately: whisper-cli
+  runs as a fresh subprocess per call and reloads ggml-base.en.bin from
+  disk every time, regardless of driver-instance reuse or call order —
+  call 1 wall_seconds=0.600, call 2=0.605, no step-function speedup like
+  Kokoro showed. This value is call 2. Through the real HTTP route
+  (POST /api/speech/transcribe, same clip) latency_ms was 775.8 then
+  659.5 — both numbers include the ffmpeg 16kHz-mono decode step this
+  driver-only figure does not. Transcript both times: "Testing testing."
+  (correct). A resident whisper.cpp session is possible in principle
+  (whisper-server exists on this Homebrew install and can stay loaded),
+  but wiring WhisperCppDriver to manage a persistent server process is a
+  real architecture change, not a quick fix alongside this spike — see
+  the PR body for the scoping note.
+status: ok

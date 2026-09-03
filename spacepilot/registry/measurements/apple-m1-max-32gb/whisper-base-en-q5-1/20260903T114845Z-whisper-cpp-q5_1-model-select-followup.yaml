@@ -1,0 +1,30 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: whisper-base-en-q5-1
+metric: realtime_factor
+value: 7.773
+contention: solo
+measured_on: '2026-09-03T11:48:45+00:00'
+variant_id: whisper-base-en-q5-1
+runtime_id: whisper-cpp
+quantisation: q5_1
+backend: metal
+wall_seconds: 0.634
+knobs:
+  weights: ggml-base.en-q5_1.bin
+  audio_seconds: 4.928
+note: >
+  First real measurement of this variant on this machine: weights were not
+  cached before this session (fetched from ggerganov/whisper.cpp, revision
+  5359861c739e955e79d9a303bcbc70fb988958b1). Driven by the new optional
+  `model` field on POST /api/speech/transcribe — a course-correction from
+  the original Moonshine ask, which turned out to need a whole new driver
+  (no moonshine.py exists, and the registry's ctranslate2 files need a
+  preprocessing recipe not yet verified against upstream). Same 12-word
+  clip as the whisper-base-en (f16) measurements in this directory:
+  wall_seconds 0.634 vs f16's ~0.60-0.63 (see the 12word-warm-check
+  measurement) — close on this short clip, transcript identical and
+  correct. Through the real HTTP route (model=whisper-base-en-q5-1),
+  latency_ms was 645.5 vs 769.3 for the default f16 model on the same clip
+  in the same run.
+status: ok

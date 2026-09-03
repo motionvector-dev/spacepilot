@@ -38,6 +38,28 @@ def _get_or_create_studio_token(root: Path) -> str:
     return token
 
 
+def _create_ephemeral_speech_token(root: Path) -> str:
+    """A fresh secret every process start — deliberately not persisted like
+    `studio_token`.
+
+    `/api/speech/*` are the two routes actually reachable from the
+    cross-origin demo pages named in `cors_origins` (motionvector.dev,
+    spacepilot.dev, the air-drums dev ports). `studio_token` also unlocks
+    the GPU shell websocket and every other compute route, so handing it to
+    anything CORS can reach was a standing local-RCE risk. This token opens
+    only `/api/speech/say` and `/api/speech/transcribe`, and regenerating it
+    on every daemon start bounds how long a leaked copy stays useful.
+    """
+    token = secrets.token_hex(32)
+    token_file = root / ".speech_token"
+    try:
+        token_file.write_text(token)
+        token_file.chmod(0o600)
+    except Exception:
+        pass
+    return token
+
+
 class Settings(BaseModel):
     """Consolidated SpacePilot Settings."""
 
@@ -53,6 +75,7 @@ class Settings(BaseModel):
     web_dir: Path = Field(default_factory=lambda: REPO_ROOT / "web")
 
     studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(REPO_ROOT))
+    speech_token: str = Field(default_factory=lambda: _create_ephemeral_speech_token(REPO_ROOT))
     local_worker_token: Optional[str] = Field(default_factory=lambda: os.environ.get("LOCAL_WORKER_TOKEN"))
 
     # Loopback by default. This server hands out a token that unlocks a shell

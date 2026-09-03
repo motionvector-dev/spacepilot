@@ -24,11 +24,28 @@ def get_token(request: Request):
     Loopback callers only. This is the key to every other gate on the server,
     including the shell websocket, so it stays unreachable even if someone
     widens the bind later or a proxy is put in front.
+
+    The IP check alone is not enough once `cors_origins` allows real remote
+    pages (motionvector.dev, spacepilot.dev, the air-drums demo): a browser
+    tab on any of those origins still connects from this machine's own
+    loopback address when it calls a `127.0.0.1` URL, so `is_loopback_client`
+    would pass for it too — CORSMiddleware is what would then decide whether
+    that page's JS is allowed to read the response. Checking Origin here,
+    independent of the general CORS allowlist, closes that: a page has to be
+    genuinely local (no Origin header, or a loopback/.localhost one) to get
+    the token at all, no matter what cors_origins otherwise permits for the
+    compute routes.
     """
-    from spacepilot.api.security import is_loopback_client
+    from spacepilot.api.security import is_loopback_client, is_local_hostname
 
     client = request.client.host if request.client else None
     if not is_loopback_client(client):
+        raise HTTPException(
+            status_code=403,
+            detail="The session token is issued to this machine only.",
+        )
+    origin = request.headers.get("origin")
+    if origin and not is_local_hostname(origin.split("://", 1)[-1]):
         raise HTTPException(
             status_code=403,
             detail="The session token is issued to this machine only.",

@@ -1,18 +1,23 @@
 """Audio generation and mixing routes."""
 
+import json
+import logging
 import os
+import re
 import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, Generator, List, Optional, Literal
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, File, HTTPException, BackgroundTasks, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, BackgroundTasks, UploadFile
+from fastapi.responses import StreamingResponse
 
 from spacepilot.core.config import get_settings
 from spacepilot.core.utils import run_ffmpeg, discard_partial, ffmpeg_error, write_meta
-from spacepilot.api.deps import require_token, update_activity
+from spacepilot.api.deps import require_token, require_speech_token, update_activity
 from spacepilot.drivers.kokoro_driver import KokoroDriver
+from spacepilot.local_workers import local_worker_manager
 from spacepilot.services.audio import (
     CLOUD_NOT_READY,
     mlx_generate_audio,
@@ -22,6 +27,23 @@ from spacepilot.services.audio import (
 )
 
 router = APIRouter(tags=["audio"])
+logger = logging.getLogger("spacepilot.api.audio")
+
+MAX_TRANSCRIBE_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB: generous for speech, not for abuse
+
+# A denylist, not an allowlist: real clients disagree on what audio gets
+# tagged as ("audio/webm", "audio/wav", but also plain "application/
+# octet-stream" from curl and plenty of generic multipart libraries, and
+# some encoders even tag audio-only webm as "video/webm"). ffmpeg will
+# reject genuinely unreadable content on its own; this only screens out
+# the unambiguous non-audio cases.
+REJECTED_TRANSCRIBE_CONTENT_TYPES = ("text/", "image/", "application/json", "application/pdf")
+
+# Every subprocess-backed driver call below passes this so a hung whisper-cli
+# or kokoro_runner.py can't block a worker thread forever. Generous relative
+# to real measured latencies (well under 1s on this machine) without being
+# so tight that a slower box's legitimate call gets killed mid-synthesis.
+SUBPROCESS_TIMEOUT_SEC = 120.0
 
 
 class MusicRequest(BaseModel):
@@ -339,7 +361,6 @@ def synthesize_local_audio_api(req: LocalSynthesizeAudioRequest, _: None = Depen
     meta_file = settings.outputs_dir / f"{job_id}.json"
 
     try:
-        from spacepilot.local_workers import local_worker_manager
         driver_res = local_worker_manager.dispatch(
             "voiceover",
             text=text,
@@ -347,6 +368,7 @@ def synthesize_local_audio_api(req: LocalSynthesizeAudioRequest, _: None = Depen
             speed=req.speed,
             out_path=out_wav,
             target_lufs=req.target_lufs,
+            timeout=SUBPROCESS_TIMEOUT_SEC,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Local voice synthesis failed: {str(e)}")
@@ -385,7 +407,15 @@ SPEECH_VOICE_MAP: Dict[str, str] = {
 }
 
 
-def transcribe_audio_file(input_path: Path, job_id: Optional[str] = None) -> Dict[str, Any]:
+TRANSCRIBE_MODEL_MAP: Dict[str, str] = {
+    "whisper": "whisper-base-en",
+    "whisper-base-en-q5-1": "whisper-base-en-q5-1",
+}
+
+
+def transcribe_audio_file(
+    input_path: Path, job_id: Optional[str] = None, model: str = "whisper",
+) -> Dict[str, Any]:
     """Decode any ffmpeg-readable audio file to 16kHz mono WAV, transcribe it
     with the local whisper.cpp driver, and report the real per-call wall time.
 
@@ -394,7 +424,22 @@ def transcribe_audio_file(input_path: Path, job_id: Optional[str] = None) -> Dic
     client and server share a filesystem) have one to hand. Whisper.cpp does
     not do real incremental streaming partials, so this returns the complete
     transcript only; there is no partial-results mode here.
+
+    `model` selects a whisper.cpp variant: "whisper" (default,
+    whisper-base-en, f16) or "whisper-base-en-q5-1" (same model, quantized —
+    smaller and faster, some accuracy tradeoff). Not Moonshine: no driver
+    for it exists anywhere in this codebase yet, and moonshine.yaml's
+    ctranslate2 weights need a preprocessing/inference recipe that has not
+    been verified against the real upstream code — wiring it here would mean
+    guessing at that recipe, which risks silently wrong transcripts. That is
+    real driver work, out of scope for this spike.
     """
+    variant_id = TRANSCRIBE_MODEL_MAP.get(model)
+    if variant_id is None:
+        raise ValueError(
+            f"model '{model}' is not one of {sorted(TRANSCRIBE_MODEL_MAP)}"
+        )
+
     settings = get_settings()
     job_id = job_id or f"stt_{uuid.uuid4().hex[:10]}"
     wav_path = settings.outputs_dir / f"{job_id}.wav"
@@ -406,10 +451,10 @@ def transcribe_audio_file(input_path: Path, job_id: Optional[str] = None) -> Dic
         discard_partial(wav_path)
         raise RuntimeError(f"could not decode uploaded audio: {ffmpeg_error(conv)}")
 
-    from spacepilot.local_workers import local_worker_manager
     try:
         driver_res = local_worker_manager.dispatch(
             "transcription", audio_path=str(wav_path), out_path=str(txt_path),
+            variant_id=variant_id, timeout=SUBPROCESS_TIMEOUT_SEC,
         )
         text = Path(driver_res["out_path"]).read_text().strip()
     finally:
@@ -424,6 +469,7 @@ def transcribe_audio_file(input_path: Path, job_id: Optional[str] = None) -> Dic
         "audio_seconds": driver_res.get("audio_seconds"),
         "weights": driver_res.get("weights"),
         "model_revision": driver_res.get("model_revision"),
+        "model": model,
     }
 
 
@@ -441,6 +487,16 @@ def say_text(
     disk (the same architecture as /api/audio/synthesize-local). That is not
     a stand-in for streaming, so the timing field is named for what it
     actually measures rather than "first byte" or similar.
+
+    `synthesis_ms` includes model load time on a cold call, same as it
+    always has — `resident_session` and `load_seconds` (from
+    KokoroDriver.infer(), see its docstring) surface that split honestly
+    instead of leaving "warm vs cold" as something a caller has to
+    infer from timing alone: `resident_session=True` and
+    `load_seconds=None` means this call reused an already-loaded ONNX
+    session; `load_seconds` being a real number means this call paid for
+    loading it (in-process on a cold start, or an isolated subprocess
+    entirely, per `resident_session`).
     """
     text = text.strip()
     if not text:
@@ -456,11 +512,10 @@ def say_text(
     job_id = f"say_{uuid.uuid4().hex[:10]}"
     out_wav = settings.outputs_dir / f"{job_id}.wav"
 
-    from spacepilot.local_workers import local_worker_manager
     start = time.perf_counter()
     driver_res = local_worker_manager.dispatch(
         "voiceover", text=text, voice=kokoro_voice, speed=speed,
-        out_path=out_wav, target_lufs=target_lufs,
+        out_path=out_wav, target_lufs=target_lufs, timeout=SUBPROCESS_TIMEOUT_SEC,
     )
     synthesis_ms = round((time.perf_counter() - start) * 1000, 1)
 
@@ -472,6 +527,8 @@ def say_text(
         "sample_rate": driver_res.get("sample_rate", 24000),
         "duration_sec": driver_res.get("duration_sec", 0.0),
         "synthesis_ms": synthesis_ms,
+        "load_seconds": driver_res.get("load_seconds"),
+        "resident_session": driver_res.get("resident_session"),
     }
 
 
@@ -489,23 +546,65 @@ def speech_voices_api():
 
 
 @router.post("/api/speech/transcribe")
-async def transcribe_speech_api(audio: UploadFile = File(...), _: None = Depends(require_token)):
+def transcribe_speech_api(
+    audio: UploadFile = File(...),
+    model: str = Form("whisper"),
+    _: None = Depends(require_speech_token),
+):
+    """Plain `def`, not `async def`, on purpose.
+
+    The body below is ffmpeg decode + a whisper-cli subprocess: ~0.6-0.8s of
+    blocking work. An `async def` route runs directly on the event loop, so
+    that blocked the whole daemon for every other request in flight for the
+    duration of each transcribe call. A sync route gets dispatched to
+    FastAPI's thread pool instead, which is what actually frees the loop.
+
+    `model`: "whisper" (default) or "whisper-base-en-q5-1" (quantized,
+    faster). See TRANSCRIBE_MODEL_MAP / transcribe_audio_file's docstring
+    for why Moonshine isn't one of the options here.
+    """
     update_activity()
     settings = get_settings()
-    raw = await audio.read()
+    content_type = (audio.content_type or "").lower()
+    if any(content_type.startswith(p) for p in REJECTED_TRANSCRIBE_CONTENT_TYPES):
+        raise HTTPException(
+            status_code=415, detail=f"unsupported content type: {content_type}")
+
+    raw = audio.file.read(MAX_TRANSCRIBE_UPLOAD_BYTES + 1)
     if not raw:
         raise HTTPException(status_code=400, detail="audio file is empty")
+    if len(raw) > MAX_TRANSCRIBE_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"audio file exceeds the {MAX_TRANSCRIBE_UPLOAD_BYTES} byte limit",
+        )
 
     job_id = f"stt_{uuid.uuid4().hex[:10]}"
     suffix = Path(audio.filename or "").suffix or ".webm"
     src_path = settings.outputs_dir / f"{job_id}_in{suffix}"
     src_path.write_bytes(raw)
     try:
-        return transcribe_audio_file(src_path, job_id=job_id)
-    except RuntimeError as e:
+        return transcribe_audio_file(src_path, job_id=job_id, model=model)
+    except ValueError as e:
+        # A bad `model` value only — short and safe to echo back as-is.
         raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        # Covers the ffmpeg-decode failure and WhisperSubprocessError, both of
+        # which can carry a full command line, weights path, or raw stderr —
+        # fine for a local CLI, not for a response body this daemon's CORS
+        # policy makes reachable from cross-origin demo pages. Full detail
+        # goes to the server log, keyed by job_id for correlation.
+        logger.error(f"[{job_id}] transcribe failed: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"transcription failed (ref {job_id}); see server log for detail",
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"transcription failed: {str(e)}")
+        logger.error(f"[{job_id}] transcribe failed unexpectedly: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"transcription failed (ref {job_id}); see server log for detail",
+        )
     finally:
         discard_partial(src_path)
 
@@ -515,14 +614,98 @@ class SpeechSayRequest(BaseModel):
     voice_id: str = Field("shannon", pattern=r"^[A-Za-z0-9_+.-]{1,64}$")
     speed: float = Field(1.0, ge=0.5, le=2.0)
     target_lufs: float = Field(-16.0, ge=-30.0, le=-6.0)
+    chunk: Optional[Literal["sentence"]] = Field(
+        None,
+        description=(
+            "Set to 'sentence' to get an SSE stream of one synthesized part "
+            "per sentence instead of a single JSON response. Sentence-level "
+            "chunking only — not true low-level audio streaming."
+        ),
+    )
+
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def split_into_sentences(text: str) -> List[str]:
+    """Split on sentence-ending punctuation followed by whitespace.
+
+    Deliberately simple: good enough to chunk TTS into playable parts, not a
+    linguistic sentence-boundary detector (abbreviations like "Dr." will
+    split early — acceptable for this use).
+    """
+    text = text.strip()
+    if not text:
+        return []
+    parts = [s.strip() for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
+    return parts or [text]
+
+
+def _sse(payload: Dict[str, Any]) -> str:
+    return "data: " + json.dumps(payload, separators=(",", ":")) + "\n\n"
+
+
+def _stream_say_sentences(req: SpeechSayRequest) -> Generator[str, None, None]:
+    """One `say_text` call per sentence, each part sent as it finishes.
+
+    Sentence-level chunking, not true incremental audio streaming: the
+    peer's contract only asked for the former. Emits one SSE event per
+    completed part, then a final event carrying the full `parts` list (the
+    shape a poll-style consumer would expect from one response), then a
+    `[DONE]` sentinel matching the SSE convention already used by
+    `/chat/completions` in `inference.py`.
+    """
+    sentences = split_into_sentences(req.text)
+    if not sentences:
+        yield _sse({"error": "text cannot be empty"})
+        yield "data: [DONE]\n\n"
+        return
+
+    parts: List[Dict[str, Any]] = []
+    for index, sentence in enumerate(sentences):
+        try:
+            result = say_text(sentence, req.voice_id, req.speed, req.target_lufs)
+        except ValueError as e:
+            yield _sse({"index": index, "sentence": sentence, "error": str(e)})
+            continue
+        except Exception as e:
+            ref = uuid.uuid4().hex[:10]
+            logger.error(f"[say-chunk:{ref}] sentence {index} failed: {e}")
+            yield _sse({
+                "index": index, "sentence": sentence,
+                "error": f"speech synthesis failed (ref {ref}); see server log for detail",
+            })
+            continue
+
+        part = {
+            "audio_url": result["audio_url"],
+            "duration_sec": result.get("duration_sec", 0.0),
+        }
+        parts.append(part)
+        yield _sse({"index": index, "sentence": sentence, **part})
+
+    yield _sse({"parts": parts})
+    yield "data: [DONE]\n\n"
 
 
 @router.post("/api/speech/say")
-def speech_say_api(req: SpeechSayRequest, _: None = Depends(require_token)):
+def speech_say_api(req: SpeechSayRequest, _: None = Depends(require_speech_token)):
     update_activity()
+    if req.chunk == "sentence":
+        return StreamingResponse(
+            _stream_say_sentences(req), media_type="text/event-stream",
+        )
     try:
         return say_text(req.text, req.voice_id, req.speed, req.target_lufs)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"speech synthesis failed: {str(e)}")
+        # KokoroSubprocessError can carry a full command line and up to 3000
+        # chars of raw stderr — not safe to echo to a response body this
+        # daemon's CORS policy makes reachable from cross-origin demo pages.
+        ref = uuid.uuid4().hex[:10]
+        logger.error(f"[say:{ref}] speech synthesis failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"speech synthesis failed (ref {ref}); see server log for detail",
+        )

@@ -1,0 +1,28 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: whisper-base-en
+metric: realtime_factor
+value: 8.2
+contention: solo
+measured_on: '2026-09-03T11:48:45+00:00'
+variant_id: whisper-base-en
+runtime_id: whisper-cpp
+quantisation: f16
+backend: metal
+wall_seconds: 0.601
+knobs:
+  weights: ggml-base.en.bin
+  audio_seconds: 4.928
+note: >
+  The same 12-word sentence used for the Kokoro warm-reuse follow-up
+  ("The local voice pipeline should keep the model warm across repeated
+  requests today."), transcribed 3x against the same WhisperCppDriver
+  instance: wall_seconds 0.629, 0.608, 0.601 (this file uses the third
+  call) — flat, no cold-vs-warm split, same conclusion as the ~1s
+  utterance measurement in this directory. Through the real HTTP route
+  (POST /api/speech/transcribe, same clip), latency_ms was 641.8 then
+  663.3 for two calls in a row — also flat, confirming the route-level
+  number already was steady-state, not cold-start-inflated, for
+  transcribe specifically (unlike /api/speech/say before its fix).
+  Transcript all 3 calls: exact match to the input text.
+status: ok

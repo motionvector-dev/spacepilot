@@ -13,6 +13,8 @@ except ImportError as exc:  # pragma: no cover - import guard
 
 from typing import Optional, Dict, Any, List
 
+from spacepilot.api.routes.audio import transcribe_audio_file, say_text
+
 mcp = MCPServer("SpacePilot")
 
 @mcp.tool()
@@ -371,7 +373,6 @@ def spacepilot_transcribe_speech(audio_path: str) -> Dict[str, Any]:
     """
     try:
         from pathlib import Path
-        from spacepilot.api.routes.audio import transcribe_audio_file
 
         path = Path(audio_path).expanduser()
         if not path.is_file():
@@ -382,7 +383,9 @@ def spacepilot_transcribe_speech(audio_path: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def spacepilot_say(text: str, voice_id: str = "shannon", speed: float = 1.0) -> Dict[str, Any]:
+def spacepilot_say(
+    text: str, voice_id: str = "shannon", speed: float = 1.0, target_lufs: float = -16.0,
+) -> Dict[str, Any]:
     """Synthesize speech locally with Kokoro TTS and write a WAV file.
 
     Args:
@@ -391,6 +394,8 @@ def spacepilot_say(text: str, voice_id: str = "shannon", speed: float = 1.0) -> 
             mapped to real Kokoro voices — see SPEECH_VOICE_MAP in
             api/routes/audio.py) or any raw Kokoro voice id. Defaults to "shannon".
         speed (float, optional): Playback speed, 0.5-2.0. Defaults to 1.0.
+        target_lufs (float, optional): Loudness normalization target.
+            Defaults to -16.0 — matches POST /api/speech/say's default.
 
     Returns:
         Dict[str, Any]: `audio_url` (server-relative — resolve it against this
@@ -399,9 +404,7 @@ def spacepilot_say(text: str, voice_id: str = "shannon", speed: float = 1.0) -> 
         complete WAV exists, no streaming.
     """
     try:
-        from spacepilot.api.routes.audio import say_text
-
-        return say_text(text, voice_id, speed)
+        return say_text(text, voice_id, speed, target_lufs)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

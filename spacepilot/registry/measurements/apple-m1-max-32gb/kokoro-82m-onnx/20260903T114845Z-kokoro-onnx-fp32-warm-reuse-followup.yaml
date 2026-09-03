@@ -1,0 +1,36 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: kokoro-82m-onnx
+metric: realtime_factor
+value: 3.792
+contention: solo
+measured_on: '2026-09-03T11:48:45+00:00'
+variant_id: kokoro-82m-onnx
+runtime_id: kokoro-onnx
+quantisation: fp32
+backend: metal
+wall_seconds: 1.3
+knobs:
+  voice: af_bella
+  speed: 1.0
+  lang: en-us
+  audio_seconds: 4.93
+note: >
+  Follow-up to the same-day speechapi-spike measurement in this directory,
+  which recorded 2.435s and noted "model already loaded" was misleading —
+  KokoroDriver.load() only ever verified weights+interpreter existed on
+  disk, then infer() still spawned a fresh subprocess (kokoro_runner.py)
+  that reconstructed the ONNX session from scratch on every single call.
+  kokoro-onnx is a top-level requirement meant to run in-process (see the
+  requirements.txt comment), so KokoroDriver.load() was changed to build
+  and keep a resident `kokoro_onnx.Kokoro(...)` session across calls,
+  falling back to the old per-call subprocess path only if kokoro_onnx
+  isn't importable in this process. Measured by calling
+  `KokoroDriver().infer()` 3x on the same instance with an unchanged
+  12-word sentence: call 1 (cold, building the session) = 2.524s; calls 2
+  and 3 (warm, session reused) = 1.30s each. This value/wall_seconds is
+  the warm number. Through the real HTTP route
+  (POST /api/speech/say, same text, voice_id "shannon"): cold = 2389.9ms
+  synthesis_ms end to end, warm = 1329.1ms then 1413.0ms — a ~1.7-1.8x
+  speedup from the fix, not a rounding difference.
+status: ok

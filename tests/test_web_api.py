@@ -22,6 +22,8 @@ sys.path.append(str(REPO_ROOT / "spacepilot"))
 import pytest
 from fastapi.testclient import TestClient
 from spacepilot.web_api import app, OUTPUTS_DIR, STUDIO_TOKEN, require_token
+from spacepilot.api.deps import require_speech_token
+from spacepilot.core.config import get_settings
 
 client = TestClient(app)
 
@@ -50,6 +52,8 @@ GATED_POSTS = [
      {"model": "qwen3-8-27b-4bit",
       "messages": [{"role": "user", "content": "x"}]}),
     ("/v1/embeddings", {"model": "qwen3-embedding-0-6b-8bit", "input": "x"}),
+    ("/api/speech/say", {"text": "x"}),
+    ("/api/speech/transcribe", {}),
 ]
 
 # POST routes that spend nothing and so need no token. All are pure local
@@ -67,11 +71,18 @@ UNGATED_BY_DESIGN = {
 
 
 def _requires_token(route) -> bool:
-    """True if require_token appears anywhere in the route's dependency tree."""
+    """True if require_token or require_speech_token appears anywhere in the
+    route's dependency tree.
+
+    require_speech_token is the narrower gate on /api/speech/say and
+    /api/speech/transcribe (a separate, ephemeral token — see
+    require_speech_token's docstring) — this walk must recognize it too, or
+    every route using it would read as ungated.
+    """
     stack = list(route.dependant.dependencies)
     while stack:
         dep = stack.pop()
-        if dep.call is require_token:
+        if dep.call is require_token or dep.call is require_speech_token:
             return True
         stack.extend(dep.dependencies)
     return False

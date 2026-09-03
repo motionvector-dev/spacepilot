@@ -73,6 +73,13 @@ class KokoroDriver(InferenceDriver):
         self.python_bin = python_bin or interpreter()
         self.resolved_revision: Optional[str] = None
         self._session: Any = None
+        # Set by load() only on the call that actually builds a session, and
+        # consumed (read once, reset to None) by the infer() call that
+        # follows it. Needed because LocalWorkerManager.dispatch() calls
+        # load() itself before infer() ever runs (see load_driver()), so
+        # infer() cannot tell "session just built" from "already resident"
+        # by looking at self._session alone.
+        self._last_load_seconds: Optional[float] = None
 
     @classmethod
     def get_voice_catalogue(cls) -> List[Dict[str, str]]:
@@ -145,19 +152,50 @@ class KokoroDriver(InferenceDriver):
         return True, f"kokoro-onnx importable in {self.python_bin}"
 
     def load(self) -> bool:
-        """Verify that weights and interpreter runtime are available."""
+        """Load a resident in-process ONNX session where possible.
+
+        kokoro-onnx is a top-level requirement ("runs in-process on the
+        Mac" per requirements.txt), so the API process normally has it
+        importable directly — no reason to pay a fresh subprocess spawn
+        plus model load on every `infer()` call when the session can just
+        stay resident here and be reused (see the `self._session is not
+        None` branch in `infer()`, which was already wired for this and
+        simply never had `_session` populated). Where the interpreter
+        running this process lacks kokoro_onnx (e.g. a stripped CI box),
+        fall back to the pre-existing subprocess-availability check so
+        that environment keeps working exactly as before, one call at a
+        time.
+        """
         try:
             m_path, v_path = self.asset_paths()
             if not m_path or not v_path:
                 self.spec.is_loaded = False
                 return False
-            ready, _ = self.runtime_ready()
-            self.spec.is_loaded = ready
-            return ready
         except Exception as e:
             logger.error(f"Failed to load KokoroDriver: {e}")
             self.spec.is_loaded = False
             return False
+
+        if self._session is not None:
+            self.spec.is_loaded = True
+            return True
+
+        try:
+            from kokoro_onnx import Kokoro
+            load_start = time.time()
+            self._session = Kokoro(m_path, v_path)
+            self._last_load_seconds = round(time.time() - load_start, 3)
+            self.spec.is_loaded = True
+            return True
+        except Exception as e:
+            logger.warning(
+                f"KokoroDriver in-process session unavailable ({e}); "
+                f"falling back to per-call subprocess synthesis"
+            )
+
+        ready, _ = self.runtime_ready()
+        self.spec.is_loaded = ready
+        return ready
 
     def unload(self) -> bool:
         """Mark Kokoro session as unloaded."""
@@ -233,6 +271,11 @@ class KokoroDriver(InferenceDriver):
 
         # In-process path if a session is actively loaded
         if self._session is not None:
+            # Consume: only the call whose load() actually built the session
+            # (whether load() was invoked just above or earlier by
+            # LocalWorkerManager.dispatch()) reports a real number here.
+            load_seconds = self._last_load_seconds
+            self._last_load_seconds = None
             raw_waveform, sample_rate = self._generate_raw_audio(text, voice, speed)
             normalized = self._normalize_loudness(raw_waveform, sample_rate, target_lufs)
             pcm_16bit = (normalized * 32767.0).astype(np.int16)
@@ -264,6 +307,8 @@ class KokoroDriver(InferenceDriver):
                 "duration_sec": duration_sec,
                 "target_lufs": target_lufs,
                 "elapsed_sec": elapsed_sec,
+                "load_seconds": load_seconds,
+                "resident_session": True,
                 "file_path": written_path,
             }
 
@@ -337,4 +382,10 @@ class KokoroDriver(InferenceDriver):
         result["model_revision"] = self.resolved_revision
         result["text"] = text
         result["command"] = cmd
+        # kokoro_runner.py already reports load_seconds (session construction)
+        # separately from total synthesis time; resident_session=False makes
+        # explicit that this call paid a fresh subprocess + model load, same
+        # as every other call on this fallback path — there is no warm state
+        # here the way there is for the in-process session path above.
+        result["resident_session"] = False
         return result

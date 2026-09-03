@@ -8,6 +8,7 @@ venv/
 outputs/
 scratch/
 .studio_token
+.speech_token
 .spacepilot_config.json
 .pluto_config.json
 

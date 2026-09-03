@@ -48,3 +48,30 @@ def require_token(
             detail="Missing or invalid X-SpacePilot-Token",
             headers={"WWW-Authenticate": "Token"},
         )
+
+
+def require_speech_token(
+    x_spacepilot_token: Optional[str] = Header(None, alias="X-SpacePilot-Token"),
+) -> None:
+    """Separate, narrower gate for `/api/speech/say` and
+    `/api/speech/transcribe` only.
+
+    These two routes are the ones actually reachable from the cross-origin
+    demo pages listed in `Settings.cors_origins` (motionvector.dev,
+    spacepilot.dev, the air-drums dev ports). `require_token`'s
+    `studio_token` also unlocks the GPU shell websocket and every other
+    compute route — handing that credential to anything CORS can reach was
+    a standing local-RCE risk, so these two routes check a distinct,
+    ephemeral `settings.speech_token` instead. Same header name as
+    `require_token` (`X-SpacePilot-Token`) so a consumer's request shape
+    does not change, only the value it must send.
+    """
+    settings = get_settings()
+    ok = bool(x_spacepilot_token) and secrets.compare_digest(
+        x_spacepilot_token, settings.speech_token)
+    if not ok:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid X-SpacePilot-Token",
+            headers={"WWW-Authenticate": "Token"},
+        )
