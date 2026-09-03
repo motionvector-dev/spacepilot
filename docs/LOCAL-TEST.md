@@ -68,7 +68,7 @@ dry-run-voice: ok — 5 permission paths, no crash
 ## Proving Talk works with no microphone
 
 ```bash
-.build/SpaceBar.app/Contents/MacOS/SpaceBar --self-test path/to/clip.wav
+.build/app.noindex/SpaceBar.app/Contents/MacOS/SpaceBar --self-test path/to/clip.wav
 ```
 
 Runs the same recogniser, on-device model, and synthesiser Talk uses — file
@@ -85,7 +85,7 @@ say -o clip.wav --data-format=LEI16@16000 "what can this mac run"
 ## Screenshots of the seven states
 
 ```bash
-.build/SpaceBar.app/Contents/MacOS/SpaceBar --snapshot /tmp/spacebar-shots
+.build/app.noindex/SpaceBar.app/Contents/MacOS/SpaceBar --snapshot /tmp/spacebar-shots
 ```
 
 Renders the real popover offscreen in every state, in both themes. No window

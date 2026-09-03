@@ -163,8 +163,8 @@ def get_cockpit_status():
     return {
         **base_status,
         "config": {
-            "region": cfg.get("region", "us-east-1"),
-            "instance_type": cfg.get("instance_type", "g6e.xlarge"),
+            "region": cfg.get("aws_region", "us-east-1"),
+            "instance_type": cfg.get("instance_type", "g6e.2xlarge"),
             "spot_hourly_rate": cfg.get("spot_hourly_rate", 0.75),
             "key_file": cfg.get("key_file"),
         },

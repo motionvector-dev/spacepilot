@@ -15,7 +15,15 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$HERE")"
 BUILD="$ROOT/.build"
-APP="$BUILD/SpaceBar.app"
+# A folder whose name ends in `.noindex` is skipped by Spotlight entirely —
+# the mechanism macOS has honored since 10.6 (Xcode's own ModuleCache.noindex
+# uses it). `.metadata_never_index` looks like the same idea but only ever
+# applied at a *volume* root, and even that stopped being honored in recent
+# macOS — verified against current sources before writing this, not assumed.
+# Every debug rebuild lands here, so Spotlight never sees a copy of
+# SpaceBar.app next to the real installed one.
+APP_CONTAINER="$BUILD/app.noindex"
+APP="$APP_CONTAINER/SpaceBar.app"
 PLIST="$ROOT/Info.plist"
 ENTITLEMENTS="$ROOT/SpaceBar.entitlements"
 
@@ -72,7 +80,7 @@ done
 
 # -------------------------------------------------------- 4. assemble it
 echo "==> assembling $APP"
-rm -rf "$APP"
+rm -rf "$APP_CONTAINER"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINARY" "$APP/Contents/MacOS/SpaceBar"
 cp "$PLIST" "$APP/Contents/Info.plist"
