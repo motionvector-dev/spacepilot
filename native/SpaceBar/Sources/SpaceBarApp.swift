@@ -117,6 +117,19 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     /// instead of a live log — enough to see a stall without a console.
     @Published var recentTransitions: [(state: PopoverState, at: Date)] = []
 
+    /// A hook for the menu bar icon's own animation (ShipIconController),
+    /// kept decoupled from this class's own state — this file never imports
+    /// that one. Nil until AppDelegate wires it after both are constructed.
+    /// Every call site below is one real signal this class can observe,
+    /// never a guess at what the icon should be doing.
+    var onShipSignal: ((ShipSignal) -> Void)?
+
+    /// Whether the daemon was reachable the last time `refreshDaemon()`
+    /// resolved. `nil` means not yet known — so the very first check, at
+    /// launch, still fires the matching `ShipSignal` exactly once, whichever
+    /// way it goes, instead of silently missing a cold-start offline state.
+    private var lastKnownReachable: Bool?
+
     private var audioEngine = AVAudioEngine()
     private var speechSynthesizer = AVSpeechSynthesizer()
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -192,6 +205,8 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             daemon = status
             daemonError = nil
             if case .daemonOffline = state { state = .idle }
+            if lastKnownReachable != true { onShipSignal?(.daemonRecovered) }
+            lastKnownReachable = true
         } catch let error as DaemonError {
             daemon = nil
             daemonError = error.userFacing
@@ -203,6 +218,8 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             default:
                 break
             }
+            if lastKnownReachable != false { onShipSignal?(.daemonWentOffline) }
+            lastKnownReachable = false
         } catch {
             daemon = nil
             daemonError = "Unreachable"
@@ -480,6 +497,7 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
 
     private func answer(_ text: String) async {
         state = .thinking
+        onShipSignal?(.chatStarted)
         let snap = NativeTelemetry.capture()
         telemetry = snap
 
@@ -487,11 +505,14 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             let response = try await brain.answer(userText: text, telemetry: snap, daemon: daemon)
             lastSaid = response
             speak(response)
+            onShipSignal?(.chatEnded(aborted: false))
         } catch let error as BrainError {
             handleBrainError(error)
+            onShipSignal?(.chatEnded(aborted: true))
         } catch {
             state = .idle
             lastSaid = "Could not answer: \(error.localizedDescription)"
+            onShipSignal?(.chatEnded(aborted: true))
         }
     }
 
@@ -602,6 +623,7 @@ enum Appearance {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
+    var shipIcon: ShipIconController?
     let voiceManager = VoiceDuplexManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -617,11 +639,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            button.image = Self.menuBarGlyph()
+            button.image = ShipGlyph.templateImage()
             button.imagePosition = .imageOnly
             button.target = self
             button.action = #selector(togglePopover)
             button.setAccessibilityLabel("SpacePilot")
+            shipIcon = ShipIconController(button: button)
+        }
+        voiceManager.onShipSignal = { [weak self] signal in
+            self?.shipIcon?.handle(signal)
         }
 
         let pop = NSPopover()
@@ -631,25 +657,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rootView: SpaceBarPopoverView(voice: voiceManager)
         )
         popover = pop
-    }
-
-    /// A template image, so the menu bar tints it for us and it reads correctly
-    /// on a light bar, a dark bar, and behind a wallpaper. A hardcoded gold
-    /// ship could do none of those.
-    private static func menuBarGlyph() -> NSImage {
-        let image = NSImage(size: NSSize(width: 18, height: 14), flipped: false) { _ in
-            let path = NSBezierPath()
-            path.move(to: NSPoint(x: 17, y: 7))
-            path.line(to: NSPoint(x: 1, y: 13))
-            path.line(to: NSPoint(x: 5, y: 7))
-            path.line(to: NSPoint(x: 1, y: 1))
-            path.close()
-            NSColor.black.setFill()
-            path.fill()
-            return true
-        }
-        image.isTemplate = true
-        return image
     }
 
     @objc func togglePopover() {

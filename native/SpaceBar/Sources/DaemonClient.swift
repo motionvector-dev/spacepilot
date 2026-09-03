@@ -107,9 +107,46 @@ struct DaemonRoute: Hashable, Sendable {
         DaemonRoute(method: "GET", path: "/api/token"),
         DaemonRoute(method: "GET", path: "/v1/models"),
         DaemonRoute(method: "POST", path: "/v1/chat/completions"),
+        // Bounded, single-flight cached server-side (gpu_lifecycle.get_cached_status,
+        // 2s TTL — health.py's /api/status has no require_token gate). Read-only-safe:
+        // it only ever reports GPU-box/worker state. The routes that actually start or
+        // stop billing (POST /api/gpu/launch, /api/gpu/terminate — gpu.py) are not on
+        // this allowlist and must never be added here; see AGENTS.md "Money and hardware".
+        DaemonRoute(method: "GET", path: "/api/status"),
     ]
 
-    var isAllowed: Bool { Self.allowed.contains(self) }
+    /// A route with exactly one dynamic path segment — `{recipe_id}` in the
+    /// real FastAPI route (recipes.py). Matched by prefix+suffix rather than
+    /// falling open to every `/api/compute/recipes/*` path, so the allowlist
+    /// still names the one shape it permits instead of a whole namespace.
+    static let allowedPatterns: [DaemonRoutePattern] = [
+        // GET .../recipes/{id}/progress: read-only-safe because it only
+        // observes a download job that POST .../recipes/{id}/download
+        // (never allowlisted — SpaceBar must never start a download itself)
+        // started elsewhere, e.g. the cockpit or the CLI. Requires a token
+        // server-side (recipes.py's require_token) even though it is a GET.
+        DaemonRoutePattern(method: "GET", prefix: "/api/compute/recipes/", suffix: "/progress"),
+    ]
+
+    var isAllowed: Bool {
+        if Self.allowed.contains(self) { return true }
+        return Self.allowedPatterns.contains { $0.matches(method: method, path: path) }
+    }
+}
+
+/// One allowlist entry with a single dynamic segment in the middle. Kept
+/// separate from the exact-match `DaemonRoute` set on purpose: growing this
+/// list is meant to stay rare and deliberate, same as the set above.
+struct DaemonRoutePattern: Sendable {
+    let method: String
+    let prefix: String
+    let suffix: String
+
+    func matches(method: String, path: String) -> Bool {
+        guard method == self.method, path.hasPrefix(prefix), path.hasSuffix(suffix) else { return false }
+        let middle = path.dropFirst(prefix.count).dropLast(suffix.count)
+        return !middle.isEmpty && !middle.contains("/")
+    }
 }
 
 /// One text or embedding variant from `GET /v1/models`, decoded down to
@@ -141,6 +178,33 @@ struct DaemonModelInfo: Decodable, Sendable {
 struct DaemonChatMessage: Encodable, Sendable {
     let role: String
     let content: String
+}
+
+/// One recipe's download job, from `GET .../recipes/{id}/progress` —
+/// `spacepilot/services/model_catalog.py::DownloadJob`. Only the fields
+/// ShipIconController needs to animate and to know when to stop polling;
+/// the route itself returns the whole job (bytes, local_path, error too).
+struct DownloadProgress: Decodable, Sendable {
+    let status: String
+    let progressPercent: Double?
+    let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case progressPercent = "progress_percent"
+        case error
+    }
+}
+
+/// GPU box status, from `GET /api/status` —
+/// `spacepilot/services/gpu_lifecycle.py::get_cached_status`. Only
+/// `gpu_online` is needed to detect a pending dispatch reaching "running".
+struct ComputeStatus: Decodable, Sendable {
+    let gpuOnline: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case gpuOnline = "gpu_online"
+    }
 }
 
 /// Talks to the SpacePilot daemon over loopback HTTP.
@@ -244,6 +308,34 @@ actor DaemonClient {
         }
     }
 
+    /// One recipe's download progress. Polled only while ShipIconController
+    /// believes a download is active — never on a fixed timer regardless of
+    /// state, see that type's "Downloading" section. This is the one GET
+    /// call that needs a token: `recipes.py`'s route is behind
+    /// `require_token` even though it is read-only.
+    func downloadProgress(recipeId: String) async throws -> DownloadProgress {
+        let authToken = try await token()
+        let data = try await get("/api/compute/recipes/\(recipeId)/progress", token: authToken)
+        do {
+            return try JSONDecoder().decode(DownloadProgress.self, from: data)
+        } catch {
+            throw DaemonError.decoding(String(describing: error))
+        }
+    }
+
+    /// GPU box + worker status. Cheap to poll — bounded and single-flight
+    /// cached server-side, 2s TTL. Read-only-safe: it only ever reports
+    /// state; the routes that start or stop billing are not on this
+    /// allowlist and never will be.
+    func computeStatus() async throws -> ComputeStatus {
+        let data = try await get("/api/status")
+        do {
+            return try JSONDecoder().decode(ComputeStatus.self, from: data)
+        } catch {
+            throw DaemonError.decoding(String(describing: error))
+        }
+    }
+
     // MARK: - The token
 
     /// The studio token, fetched once and kept in memory.
@@ -265,7 +357,7 @@ actor DaemonClient {
 
     // MARK: - Transport
 
-    private func get(_ path: String) async throws -> Data {
+    private func get(_ path: String, token: String? = nil) async throws -> Data {
         let route = DaemonRoute(method: "GET", path: path)
         guard route.isAllowed else { throw DaemonError.disallowed("GET \(path)") }
 
@@ -276,6 +368,9 @@ actor DaemonClient {
         // guard exists and that rewriting the base URL to a LAN address will
         // fail on purpose.
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        // Most GET routes here are open (no require_token gate). The recipe
+        // progress route is the one exception — see downloadProgress().
+        if let token { request.setValue(token, forHTTPHeaderField: "X-SpacePilot-Token") }
 
         let data: Data
         let response: URLResponse
