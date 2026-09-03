@@ -111,6 +111,14 @@ class Settings(BaseModel):
             "https://motionvector.dev",
             "https://spacepilot.dev",
         ]
+        # motionvector-d2's air-drums demo page, local dev server ports. Dev-only
+        # loopback ports for one consumer's build, not a standing SpacePilot
+        # need -- kept here anyway (rather than pushed to the env var) because
+        # they're loopback-only and this is still a spike branch optimizing
+        # for speed. Revisit if this list grows past one consumer's demo.
+        for _port in (8765, 8766, 8767, 8768):
+            origins.append(f"http://127.0.0.1:{_port}")
+            origins.append(f"http://localhost:{_port}")
         # The "Archie" air-drums demo (Chrome on-device Gemini Nano, calling
         # /api/speech/* from an https page) confirmed its real origin as
         # https://motionvector-air-drums.nandwana-saurabh619.chatgpt.site —
