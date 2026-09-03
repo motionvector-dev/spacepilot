@@ -219,7 +219,7 @@ final class ShipIconController {
         if aborted {
             wobbleAborted()
         } else {
-            playIdleBob()
+            settleToCurrentState()
         }
     }
 
