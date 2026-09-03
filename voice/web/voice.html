@@ -1,108 +1,412 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SpacePilot Voice Studio · Real-Time Duplex Voice</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.cdnfonts.com/css/geist-sans" rel="stylesheet">
-  <link href="https://fonts.cdnfonts.com/css/geist-mono" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Geist', -apple-system, sans-serif; }
-    pre, code, .font-mono { font-family: 'Geist Mono', monospace; }
+    :root {
+      --bg-root: #000000;
+      --bg-ground: #09090b;
+      --bg-panel: #111114;
+      --bg-card: #18181b;
+      --bg-raised: #222226;
+      --glass: rgba(17, 17, 20, 0.85);
+      --glass-card: rgba(24, 24, 27, 0.9);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-highlight: rgba(255, 255, 255, 0.22);
+      --border-focus: rgba(255, 255, 255, 0.35);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --text-dim: #52525b;
+      --text-inverse: #09090b;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
+      --shadow-glow-emerald: 0 0 24px rgba(16, 185, 129, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-root);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    ::selection { background: var(--emerald); color: var(--text-inverse); }
+
+    /* ------------------------------------------------------------------
+     * Compatibility utility classes.
+     * voice.html's inline <script> sets/replaces these exact class names
+     * directly (classList.add/remove and full className reassignment).
+     * The script is out of scope for this restyle, so these names must
+     * stay put — only their token mapping changed (was default Tailwind
+     * palette, now DESIGN.md tokens).
+     * ---------------------------------------------------------------- */
+    .font-mono { font-family: var(--font-mono); }
+    .font-bold { font-weight: 700; }
+    .transition { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease; }
+    .scale-105 { transform: scale(1.05); }
+    .border { border-width: 1px; border-style: solid; border-color: var(--border-medium); }
+    .rounded-lg { border-radius: 10px; }
+    .px-4 { padding-left: 16px; padding-right: 16px; }
+    .py-2 { padding-top: 8px; padding-bottom: 8px; }
+    .text-xs { font-size: 12px; line-height: 16px; }
+
+    .text-amber-400 { color: var(--amber); }
+    .text-emerald-400 { color: var(--emerald); }
+    .text-rose-400 { color: var(--rose); }
+    .text-zinc-500 { color: var(--text-muted); }
+    .text-zinc-400 { color: var(--text-secondary); }
+    .text-zinc-300 { color: var(--text-secondary); }
+    .text-zinc-200 { color: var(--text-primary); }
+    /* SpacePilot's tokens carry no cyan accent; the "speaking" state maps
+       onto emerald, the same hue the tokens already assign to the audio
+       track. */
+    .text-cyan-400 { color: var(--emerald); }
+    .border-cyan-400 { border-color: var(--emerald) !important; }
+
+    .bg-zinc-900 { background-color: var(--bg-card); }
+    .bg-zinc-900:hover { background-color: var(--bg-raised); }
+    .border-zinc-700 { border-color: var(--border-medium); }
+
+    .bg-rose-950 { background-color: rgba(244, 63, 94, 0.12); }
+    .border-rose-800 { border-color: rgba(244, 63, 94, 0.4); }
+    .text-rose-300 { color: color-mix(in srgb, var(--rose) 70%, white 30%); }
+
+    /* ------------------------------------------------------------------
+     * Page layout
+     * ---------------------------------------------------------------- */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+      flex-shrink: 0;
+    }
+
+    .brand-mark svg { width: 18px; height: 18px; color: var(--text-inverse); }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-live {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      background: var(--bg-card);
+      color: var(--emerald);
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .telemetry {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .telemetry-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-panel);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .telemetry-item.rtt,
+    .telemetry-item.aec { display: none; }
+
+    @media (min-width: 768px) {
+      .telemetry-item.rtt,
+      .telemetry-item.aec { display: flex; }
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--emerald);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+    }
+
+    .orb-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: auto 0;
+      padding: 32px 0;
+    }
+
+    .orb-click-target {
+      position: relative;
+      width: 224px;
+      height: 224px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
     @property --aur {
       syntax: '<angle>';
       initial-value: 0deg;
       inherits: false;
     }
-    @keyframes aurora-spin {
-      0% { --aur: 0deg; }
-      100% { --aur: 360deg; }
+
+    @keyframes orb-spin { 0% { --aur: 0deg; } 100% { --aur: 360deg; } }
+
+    .orb-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: conic-gradient(from var(--aur), var(--emerald), var(--bg-raised), var(--emerald));
+      animation: orb-spin 4s linear infinite;
+      opacity: 0.55;
+      filter: blur(24px);
+      transition: opacity 0.3s ease;
     }
-    .aurora-glow {
-      background: conic-gradient(from var(--aur), #3b82f6, #8b5cf6, #ec4899, #06b6d4, #3b82f6);
-      animation: aurora-spin 4s linear infinite;
+
+    .orb-core {
+      position: relative;
+      z-index: 1;
+      width: 176px;
+      height: 176px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 2px solid var(--border-medium);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s ease, transform 0.3s ease;
     }
-    .pulse-ring {
-      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+
+    .orb-core svg { width: 48px; height: 48px; color: var(--text-secondary); transition: color 0.2s ease; }
+
+    .orb-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-top: 10px;
     }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.15); opacity: 0.3; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+
+    .vu-track {
+      width: 256px;
+      height: 6px;
+      background: var(--bg-card);
+      border-radius: 999px;
+      margin-top: 32px;
+      overflow: hidden;
+    }
+
+    .vu-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--emerald);
+      transition: width 75ms linear;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .btn:hover { background: var(--bg-raised); border-color: var(--border-highlight); }
+
+    .transcript-box {
+      width: 100%;
+      background: var(--glass-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      max-height: 192px;
+      overflow-y: auto;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+      margin-top: 16px;
+    }
+
+    .transcript-box > div + div { margin-top: 8px; }
+
+    .transcript-empty { color: var(--text-muted); font-style: italic; }
+
+    .footer {
+      border-top: 1px solid var(--bg-card);
+      padding: 16px 24px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+<body>
 
   <!-- Header Navigation -->
-  <header class="border-b border-zinc-800/80 bg-zinc-900/40 backdrop-blur-xl px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-    <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-md">
-        <svg class="w-5 h-5 text-zinc-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 02-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
       </div>
       <div>
-        <h1 class="font-bold text-sm tracking-tight flex items-center gap-2">
-          SpacePilot Voice Studio <span class="text-xs font-mono px-2 py-0.5 bg-zinc-800 text-cyan-400 rounded-full border border-zinc-700">LIVE 2.5 AUDIO</span>
+        <h1 class="brand-title">
+          SpacePilot Voice Studio <span class="badge-live">LIVE 2.5 AUDIO</span>
         </h1>
       </div>
     </div>
 
     <!-- Telemetry Badges -->
-    <div class="flex items-center space-x-4 text-xs font-mono text-zinc-400">
-      <div class="flex items-center gap-1.5 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+    <div class="telemetry">
+      <div class="telemetry-item">
+        <span class="status-dot"></span>
         <span id="connStatus">DISCONNECTED</span>
       </div>
-      <div class="hidden md:flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
-        <span>RTT:</span> <strong id="rttDisplay" class="text-zinc-200">-- ms</strong>
+      <div class="telemetry-item rtt">
+        <span>RTT:</span> <strong id="rttDisplay" style="color: var(--text-primary);">-- ms</strong>
       </div>
-      <div class="hidden md:flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-md border border-zinc-800">
-        <span>AEC:</span> <strong class="text-emerald-400">ENABLED</strong>
+      <div class="telemetry-item aec">
+        <span>AEC:</span> <strong style="color: var(--emerald);">ENABLED</strong>
       </div>
     </div>
   </header>
 
   <!-- Main Voice Orb Stage -->
-  <main class="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full relative">
-    
+  <main class="main">
+
     <!-- Active Voice Orb Stage (Direct 1-Click Zero Auth) -->
-    <div id="orbStage" class="flex flex-col items-center justify-center my-auto py-8">
-      
+    <div id="orbStage" class="orb-stage">
+
       <!-- The Pulsing Glowing Orb -->
-      <div class="relative w-56 h-56 flex items-center justify-center cursor-pointer select-none" id="orbClickTarget">
-        <div id="orbRing" class="absolute inset-0 rounded-full aurora-glow opacity-60 blur-xl transition-all duration-300"></div>
-        <div id="orbCore" class="relative z-10 w-44 h-44 rounded-full bg-zinc-900 border-2 border-zinc-700/80 shadow-2xl flex flex-col items-center justify-center transition-all duration-300">
-          <svg id="micIcon" class="w-12 h-12 text-zinc-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 02-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-          <span id="orbStateLabel" class="text-xs font-mono font-bold tracking-widest text-zinc-400 mt-2 uppercase">Connecting...</span>
+      <div class="orb-click-target" id="orbClickTarget">
+        <div id="orbRing" class="orb-ring"></div>
+        <div id="orbCore" class="orb-core">
+          <svg id="micIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+          <span id="orbStateLabel" class="orb-label">Connecting...</span>
         </div>
       </div>
 
       <!-- Real-Time Decibel Volume Meter -->
-      <div class="w-64 h-1.5 bg-zinc-800 rounded-full mt-8 overflow-hidden">
-        <div id="vuMeter" class="h-full bg-cyan-400 w-0 transition-all duration-75"></div>
+      <div class="vu-track">
+        <div id="vuMeter" class="vu-fill"></div>
       </div>
 
       <!-- Controls -->
-      <div class="flex items-center gap-4 mt-6">
-        <button id="muteBtn" class="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-300 transition">
+      <div class="controls">
+        <button id="muteBtn" class="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-300 transition">
           🎤 Mic: ON
         </button>
-        <button id="interruptBtn" class="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono text-zinc-300 transition">
+        <button id="interruptBtn" class="btn">
           ⚡ Interrupt (Spacebar)
         </button>
       </div>
     </div>
 
     <!-- Live Transcript & Model Thought Stream -->
-    <div id="transcriptBox" class="w-full bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 font-mono text-xs max-h-48 overflow-y-auto space-y-2 shadow-inner mt-4">
-      <div class="text-zinc-500 italic">Conversations and live assistant responses stream here automatically...</div>
+    <div id="transcriptBox" class="transcript-box">
+      <div class="transcript-empty">Conversations and live assistant responses stream here automatically...</div>
     </div>
 
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-zinc-900 px-6 py-4 text-center text-xs font-mono text-zinc-600">
+  <footer class="footer">
     SpacePilot Native WebAudio Bridge · Key Injected via Doppler · 0% Telemetry
   </footer>
 
@@ -134,7 +438,7 @@
       connStatus.className = 'text-amber-400 font-mono';
 
       const uri = `ws://localhost:8090`;
-      
+
       try {
         ws = new WebSocket(uri);
 
@@ -220,7 +524,7 @@
       micProcessor.onaudioprocess = (e) => {
         if (isMuted || !isConnected || ws.readyState !== WebSocket.OPEN) return;
         const inputData = e.inputBuffer.getChannelData(0);
-        
+
         // VU Meter calculation
         let sum = 0;
         for (let i = 0; i < inputData.length; i++) sum += inputData[i] * inputData[i];
@@ -250,7 +554,7 @@
       const len = binaryString.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-      
+
       const int16Array = new Int16Array(bytes.buffer);
       const float32Array = new Float32Array(int16Array.length);
       for (let i = 0; i < int16Array.length; i++) {
@@ -284,7 +588,7 @@
     muteBtn.addEventListener('click', () => {
       isMuted = !isMuted;
       muteBtn.textContent = isMuted ? '🎤 Mic: MUTED' : '🎤 Mic: ON';
-      muteBtn.className = isMuted 
+      muteBtn.className = isMuted
         ? 'px-4 py-2 rounded-lg bg-rose-950 border border-rose-800 text-xs font-mono text-rose-300 transition'
         : 'px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-300 transition';
     });
