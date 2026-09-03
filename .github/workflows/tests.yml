@@ -37,7 +37,14 @@ concurrency:
 # a successful videotoolbox render, so the suite is portable, but anything that
 # starts depending on those encoders needs a macOS job instead.
 jobs:
+  # Solo-founder frugality call (2026-09-03): pytest and packaging only run on
+  # push, i.e. after a PR merges to main/dev — not on every PR update. A PR
+  # sitting open no longer depends on lenovo-spacepilot being online, and a
+  # red result here means "patch main forward", not "the PR was blocked".
+  # `security` still gates PRs directly below: it's free (ubuntu-latest) and
+  # fast (~30s), so there's no frugality reason to defer it too.
   pytest:
+    if: github.event_name == 'push'
     runs-on: [self-hosted, lenovo]
     timeout-minutes: 20
 
@@ -83,7 +90,9 @@ jobs:
   # exited 1 on a real install. Its own job because it builds a wheel and makes
   # a venv, and because a red here means "the release is broken", not "a test
   # is broken".
+  # Same push-only gate as pytest above, same reason.
   packaging:
+    if: github.event_name == 'push'
     runs-on: [self-hosted, lenovo]
     timeout-minutes: 15
 
