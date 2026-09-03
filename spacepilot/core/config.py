@@ -108,6 +108,7 @@ class Settings(BaseModel):
             "https://spacepilot.localhost",
             "http://pluto.localhost",
             "https://pluto.localhost",
+            "https://motionvector.dev",
         ]
         # The "Archie" air-drums demo (Chrome on-device Gemini Nano, calling
         # /api/speech/* from an https page) confirmed its real origin as
