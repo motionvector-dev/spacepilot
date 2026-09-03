@@ -48,7 +48,17 @@ final class ShipIconAnimator {
         startTime = CACurrentMediaTime()
         timer = Timer.scheduledTimer(withTimeInterval: Self.frameInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in
+            // `Timer` scheduled on `RunLoop.main` already fires on the main
+            // thread — the `Task { @MainActor in ... }` hop this used to
+            // wrap the body in was redundant, and worse: it let a tick that
+            // was already in flight when a state-changing call (e.g.
+            // `setOffline()`) ran synchronously on the main thread execute
+            // *after* it, silently overwriting the layer that call had just
+            // set. `assumeIsolated` asserts the actor context this closure
+            // is already running in without another suspension point, so
+            // ticks and state changes stay ordered the way they were
+            // scheduled. See finding #5.
+            MainActor.assumeIsolated {
                 let elapsed = CACurrentMediaTime() - self.startTime
                 if elapsed > maxDuration {
                     self.stopTimer()
@@ -75,7 +85,9 @@ final class ShipIconAnimator {
         startTime = CACurrentMediaTime()
         timer = Timer.scheduledTimer(withTimeInterval: Self.frameInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in
+            // See the matching comment in `startLoop` — same redundant hop,
+            // same fix.
+            MainActor.assumeIsolated {
                 let elapsed = CACurrentMediaTime() - self.startTime
                 if elapsed >= duration {
                     self.stop()
@@ -99,7 +111,9 @@ final class ShipIconAnimator {
         startTime = CACurrentMediaTime()
         timer = Timer.scheduledTimer(withTimeInterval: Self.frameInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in
+            // See the matching comment in `startLoop` — same redundant hop,
+            // same fix.
+            MainActor.assumeIsolated {
                 tick(CACurrentMediaTime() - self.startTime)
             }
         }
@@ -122,15 +136,53 @@ final class ShipIconAnimator {
     /// Sets the button layer's transform and opacity directly — no implicit
     /// animation, so the cost of one call is exactly one composited frame,
     /// which is what keeps the bounded-rate ticks above cheap.
+    ///
+    /// Recenters `anchorPoint` first on every call — see `recenterAnchorIfNeeded`
+    /// for why this has to happen here rather than once in `init`.
     func apply(translationX: CGFloat = 0, translationY: CGFloat = 0, rotationRadians: CGFloat = 0, opacity: Float = 1.0) {
         guard let layer = button?.layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        recenterAnchorIfNeeded(layer)
         var transform = CATransform3DIdentity
         transform = CATransform3DTranslate(transform, translationX, translationY, 0)
         transform = CATransform3DRotate(transform, rotationRadians, 0, 0, 1)
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
         layer.transform = transform
         layer.opacity = opacity
         CATransaction.commit()
+    }
+
+    /// Finding #6, empirically confirmed this session (not reasoned from
+    /// docs) with a standalone `NSStatusItem` probe outside this app: a
+    /// fresh `NSStatusBarButton`'s backing layer has `anchorPoint = (0, 0)`,
+    /// not the `(0.5, 0.5)` a plain `CALayer` defaults to — so
+    /// `CATransform3DRotate` (the abort wobble) pivots around the glyph's
+    /// bottom-left corner, producing a sideways swing rather than a rock in
+    /// place, exactly as flagged. The same probe also confirmed AppKit
+    /// resets `anchorPoint`, `position`, *and* `transform` back to their
+    /// view-derived defaults on its own layout passes (observed by forcing
+    /// one via `NSStatusItem.length` changes) — so a one-time fix in `init`
+    /// would not survive the app's lifetime. `opacity` was not reset by the
+    /// same probe, which is why `.offline`'s static dim doesn't need this
+    /// treatment.
+    ///
+    /// A dedicated sublayer (per the review's suggestion) would sidestep
+    /// AppKit's syncing entirely, but would also mean duplicating the
+    /// template-image glyph outside the button's own cell rendering, which
+    /// currently gets light/dark menu-bar tinting for free — a real
+    /// re-architecture, not a bug fix. Recentering here instead piggybacks
+    /// on the pattern this file already uses for `transform` itself: redo it
+    /// on every tick so an occasional AppKit reset self-heals within one
+    /// frame (~83ms at 12fps) instead of needing to survive indefinitely.
+    private func recenterAnchorIfNeeded(_ layer: CALayer) {
+        let centered = CGPoint(x: 0.5, y: 0.5)
+        guard layer.anchorPoint != centered else { return }
+        let size = layer.bounds.size
+        let old = layer.anchorPoint
+        layer.position = CGPoint(
+            x: layer.position.x + (centered.x - old.x) * size.width,
+            y: layer.position.y + (centered.y - old.y) * size.height
+        )
+        layer.anchorPoint = centered
     }
 }
