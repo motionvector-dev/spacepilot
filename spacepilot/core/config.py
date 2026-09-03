@@ -134,14 +134,17 @@ class Settings(BaseModel):
             "https://motionvector.dev",
             "https://spacepilot.dev",
         ]
-        # motionvector-d2's air-drums demo page, local dev server ports. Dev-only
-        # loopback ports for one consumer's build, not a standing SpacePilot
-        # need -- kept here anyway (rather than pushed to the env var) because
-        # they're loopback-only and this is still a spike branch optimizing
-        # for speed. Revisit if this list grows past one consumer's demo.
-        for _port in (8765, 8766, 8767, 8768):
-            origins.append(f"http://127.0.0.1:{_port}")
-            origins.append(f"http://localhost:{_port}")
+        # motionvector-d2's air-drums demo page, local dev server ports. A
+        # hardcoded 8765-8768 got refused the moment their dev server cycled
+        # to 8770 -- configurable now via SPACEPILOT_DEV_PORTS (comma-separated),
+        # defaulting to the original four so nothing changes if unset. Still
+        # loopback-only ports for one consumer's build, not a standing need.
+        dev_ports = env_value("SPACEPILOT_DEV_PORTS", "PLUTO_DEV_PORTS", default="8765,8766,8767,8768")
+        for _port_str in dev_ports.split(","):
+            _port_str = _port_str.strip()
+            if _port_str:
+                origins.append(f"http://127.0.0.1:{_port_str}")
+                origins.append(f"http://localhost:{_port_str}")
         # The "Archie" air-drums demo (Chrome on-device Gemini Nano, calling
         # /api/speech/* from an https page) confirmed its real origin as
         # https://motionvector-air-drums.nandwana-saurabh619.chatgpt.site —
