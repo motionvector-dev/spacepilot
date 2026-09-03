@@ -47,12 +47,18 @@ variants:
       note: weights plus a small activation margin; the ONNX build runs comfortably in well under a gigabyte
     speed:
       - device: Apple M1 Max 32GB
-        backend: cpu
+        backend: metal
         metric: realtime_factor
-        value: 1.167
+        value: 2.008
         source: measured
-        measured_on: "2026-08-25"
-        note: per-invocation via `spacepilot run speech` — 4.25s of speech in 3.6s
-          wall clock, model load included (each CLI run reloads the model). Warm
-          in-process synthesis measured 4.0x on 2026-08-23; both live in
-          measurements/apple-m1-max-32gb/kokoro-82m-onnx
+        measured_on: "2026-09-03"
+        note: >
+          Latest of several subprocess-invocation readings on this machine —
+          the corpus is append-only and this model file must quote the most
+          recent one (test_measured_speed_entries_match_the_corpus). This
+          reading: 4.89s of speech in 2.435s wall clock, driven from the new
+          POST /api/speech/say route's shared helper (shared-speech-api
+          spike), voice af_bella. Earlier readings: 1.167 on 2026-08-25 (4.25s
+          in 3.6s, voice af_heart) and a warm in-process 4.0x on 2026-08-23 —
+          realtime_factor varies with voice and text, not just warm-vs-cold.
+          All three live in measurements/apple-m1-max-32gb/kokoro-82m-onnx

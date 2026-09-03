@@ -99,7 +99,7 @@ class Settings(BaseModel):
     # CORS
     @property
     def cors_origins(self) -> list[str]:
-        return [
+        origins = [
             f"http://localhost:{self.port}",
             f"http://127.0.0.1:{self.port}",
             f"http://spacepilot.localhost:{self.port}",
@@ -108,7 +108,18 @@ class Settings(BaseModel):
             "https://spacepilot.localhost",
             "http://pluto.localhost",
             "https://pluto.localhost",
+            # NOT CONFIRMED: placeholder for the "Archie" air-drums demo (Chrome
+            # on-device Gemini Nano, calling this daemon's /api/speech/* routes
+            # from an https page). Nobody has told us the demo's real dev
+            # origin yet. Override with SPACEPILOT_EXTRA_CORS_ORIGINS
+            # (comma-separated) once it's known; whoever owns that demo should
+            # confirm it before this placeholder is trusted for anything real.
+            "https://archie-demo.localhost",
         ]
+        extra = env_value("SPACEPILOT_EXTRA_CORS_ORIGINS", "PLUTO_EXTRA_CORS_ORIGINS", default="")
+        if extra.strip():
+            origins.extend(o.strip() for o in extra.split(",") if o.strip())
+        return origins
 
 
 _settings_instance: Optional[Settings] = None

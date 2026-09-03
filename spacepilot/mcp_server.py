@@ -354,6 +354,59 @@ def spacepilot_measurements(variant_id: Optional[str] = None) -> dict:
 
 
 @mcp.tool()
+def spacepilot_transcribe_speech(audio_path: str) -> Dict[str, Any]:
+    """Transcribe a local audio file to text with the local whisper.cpp driver.
+
+    Args:
+        audio_path (str): Path to an audio file on this machine. MCP client
+            and server share a filesystem, so no bytes cross the tool call.
+            Any ffmpeg-readable format works; it is decoded to 16kHz mono WAV
+            before whisper-cli runs.
+
+    Returns:
+        Dict[str, Any]: The complete transcript and the real measured
+        `latency_ms` for this call. whisper.cpp does not do real incremental
+        streaming partials, so there is no partial-results mode here — this
+        always returns the whole transcript at once.
+    """
+    try:
+        from pathlib import Path
+        from spacepilot.api.routes.audio import transcribe_audio_file
+
+        path = Path(audio_path).expanduser()
+        if not path.is_file():
+            return {"status": "error", "message": f"no such file: {audio_path}"}
+        return transcribe_audio_file(path)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@mcp.tool()
+def spacepilot_say(text: str, voice_id: str = "shannon", speed: float = 1.0) -> Dict[str, Any]:
+    """Synthesize speech locally with Kokoro TTS and write a WAV file.
+
+    Args:
+        text (str): Text to speak.
+        voice_id (str, optional): "shannon" or "archie" (reserved logical ids
+            mapped to real Kokoro voices — see SPEECH_VOICE_MAP in
+            api/routes/audio.py) or any raw Kokoro voice id. Defaults to "shannon".
+        speed (float, optional): Playback speed, 0.5-2.0. Defaults to 1.0.
+
+    Returns:
+        Dict[str, Any]: `audio_url` (server-relative — resolve it against this
+        daemon's own base URL) and the real measured `synthesis_ms` for this
+        call. This is synchronous end to end: it returns only once the
+        complete WAV exists, no streaming.
+    """
+    try:
+        from spacepilot.api.routes.audio import say_text
+
+        return say_text(text, voice_id, speed)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@mcp.tool()
 def spacepilot_system_summary(system_id: Optional[str] = None) -> dict:
     """Return flown two-stream summaries with associated capability caveats."""
     from spacepilot.services.corpus import CorpusReadError, summary_payload

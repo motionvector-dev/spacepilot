@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "fastapi>=0.100.0,<1.0",
-    "starlette>=0.37",  # imported directly by spacepilot/api/security.py, not only via fastapi
+    "starlette>=0.52",  # imported directly by spacepilot/api/security.py; also needs CORSMiddleware(allow_private_network=...)
     "uvicorn>=0.22.0",
     "python-multipart>=0.0.9",  # fastapi upload parsing, imported by spacepilot/api/routes/assets.py
     "pydantic>=2.0",

@@ -18,6 +18,7 @@ from spacepilot.device_probe import (
 from spacepilot.drivers.base import InferenceDriver, DriverSpec
 from spacepilot.drivers.kokoro_driver import KokoroDriver
 from spacepilot.drivers.gguf_driver import GGUFDriver
+from spacepilot.drivers.whisper_cpp_driver import WhisperCppDriver
 
 logger = logging.getLogger("spacepilot.local_workers")
 
@@ -75,6 +76,8 @@ class LocalWorkerManager:
             "qwen2.5-3b-instruct-gguf": GGUFDriver,
             "deepseek-r1-distill-qwen-7b-gguf": GGUFDriver,
             "gguf": GGUFDriver,
+            "whisper-cpp": WhisperCppDriver,
+            "whisper": WhisperCppDriver,
         }
 
         # Task mapping to default driver_id
@@ -84,6 +87,9 @@ class LocalWorkerManager:
             "storyboard": "qwen2.5-3b-instruct-gguf",
             "narrative": "qwen2.5-3b-instruct-gguf",
             "script": "qwen2.5-3b-instruct-gguf",
+            "transcription": "whisper-cpp",
+            "stt": "whisper-cpp",
+            "speech_to_text": "whisper-cpp",
         }
 
         self._active_drivers: Dict[str, InferenceDriver] = {}

@@ -101,12 +101,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # refused before any CORS header is computed for it.
     app.add_middleware(LocalOnlyMiddleware, enabled=settings.local_only)
 
-    # CORS Middleware
+    # CORS Middleware. allow_private_network answers Chrome's Private Network
+    # Access preflight (an https page calling this loopback server needs
+    # Access-Control-Allow-Private-Network: true on the OPTIONS response) —
+    # native to starlette>=0.52's CORSMiddleware, confirmed by reading the
+    # installed starlette source rather than assumed.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
+        allow_private_network=True,
     )
 
     # Custom Validation Error Handler (Avoids echoing unparseable inf/nan values)

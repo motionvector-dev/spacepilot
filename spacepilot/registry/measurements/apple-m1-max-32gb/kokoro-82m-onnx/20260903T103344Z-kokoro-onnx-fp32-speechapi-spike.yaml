@@ -1,0 +1,25 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: kokoro-82m-onnx
+metric: realtime_factor
+value: 2.008
+contention: solo
+measured_on: '2026-09-03T10:33:44+00:00'
+variant_id: kokoro-82m-onnx
+runtime_id: kokoro-onnx
+quantisation: fp32
+backend: metal
+wall_seconds: 2.435
+knobs:
+  voice: af_bella
+  speed: 1.0
+  lang: en-us
+  audio_seconds: 4.89
+note: >
+  Driven from the new POST /api/speech/say route (shared-speech-api spike):
+  kokoro_driver.infer() called directly with voice_id "shannon" (mapped to
+  the real Kokoro voice af_bella). wall_seconds is KokoroDriver's own
+  elapsed_sec, model already loaded. The route's own synthesis_ms (includes
+  driver load-check overhead and dispatch) measured 2480.3 ms end to end for
+  a different, shorter text via the actual HTTP endpoint.
+status: ok

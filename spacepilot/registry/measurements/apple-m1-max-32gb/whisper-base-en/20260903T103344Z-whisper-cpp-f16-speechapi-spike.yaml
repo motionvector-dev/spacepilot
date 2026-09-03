@@ -1,0 +1,23 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: whisper-base-en
+metric: realtime_factor
+value: 3.732
+contention: solo
+measured_on: '2026-09-03T10:33:44+00:00'
+variant_id: whisper-base-en
+runtime_id: whisper-cpp
+quantisation: f16
+backend: metal
+wall_seconds: 0.583
+knobs:
+  weights: ggml-base.en.bin
+  audio_seconds: 2.176
+note: >
+  Driven from the new POST /api/speech/transcribe route (shared-speech-api
+  spike): whisper_cpp_driver.infer() called directly against a 2.176s
+  Kokoro-synthesized WAV, transcript verified word-for-word correct.
+  wall_seconds is the whisper-cli subprocess only; the route's own
+  latency_ms also includes the ffmpeg 16kHz-mono decode step and measured
+  1599.0 ms end to end for this same clip.
+status: ok

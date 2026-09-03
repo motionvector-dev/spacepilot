@@ -1462,12 +1462,12 @@
      "speed": [
       {
        "device": "Apple M1 Max 32GB",
-       "backend": "cpu",
+       "backend": "metal",
        "metric": "realtime_factor",
-       "value": 1.167,
+       "value": 2.008,
        "source": "measured",
-       "measured_on": "2026-08-25",
-       "note": "per-invocation via `spacepilot run speech` \u2014 4.25s of speech in 3.6s wall clock, model load included (each CLI run reloads the model). Warm in-process synthesis measured 4.0x on 2026-08-23; both live in measurements/apple-m1-max-32gb/kokoro-82m-onnx"
+       "measured_on": "2026-09-03",
+       "note": "Latest of several subprocess-invocation readings on this machine \u2014 the corpus is append-only and this model file must quote the most recent one (test_measured_speed_entries_match_the_corpus). This reading: 4.89s of speech in 2.435s wall clock, driven from the new POST /api/speech/say route's shared helper (shared-speech-api spike), voice af_bella. Earlier readings: 1.167 on 2026-08-25 (4.25s in 3.6s, voice af_heart) and a warm in-process 4.0x on 2026-08-23 \u2014 realtime_factor varies with voice and text, not just warm-vs-cold. All three live in measurements/apple-m1-max-32gb/kokoro-82m-onnx\n"
       }
      ],
      "caveats": [],
@@ -1478,10 +1478,10 @@
        "system_id": "apple-m1-max-32gb",
        "model_id": "kokoro-82m-onnx",
        "metric": "realtime_factor",
-       "solo_median": 1.2082032991529204,
-       "solo_samples": 3,
-       "observed_median": 1.1877325202163944,
-       "observed_samples": 4,
+       "solo_median": 1.6081016495764602,
+       "solo_samples": 4,
+       "observed_median": 1.2082032991529204,
+       "observed_samples": 5,
        "failed_samples": 0
       },
       {
@@ -3050,7 +3050,19 @@
      ],
      "caveats": [],
      "compromised": [],
-     "notes": null
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "whisper-base-en",
+       "metric": "realtime_factor",
+       "solo_median": 3.732,
+       "solo_samples": 1,
+       "observed_median": 3.732,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
     },
     {
      "id": "whisper-base-en-q5-1",

@@ -9,7 +9,7 @@
 # pluto/api/security.py and pluto/api/routes/assets.py import them directly, so
 # they are ours to declare rather than fastapi's to keep.
 fastapi>=0.100.0
-starlette>=0.37
+starlette>=0.52  # CORSMiddleware(allow_private_network=...) landed here; api/app.py depends on it
 uvicorn>=0.22.0
 python-multipart>=0.0.9
 pydantic>=2.0
