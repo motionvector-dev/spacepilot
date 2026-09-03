@@ -475,6 +475,19 @@ def say_text(
     }
 
 
+@router.get("/api/speech/voices")
+def speech_voices_api():
+    """What you can pass as voice_id to /api/speech/say: every real Kokoro
+    voice id, plus the two reserved logical aliases layered on top. Read-only
+    and unauthenticated on purpose — it spends no compute, and a consumer
+    should not need to read this file's source to discover what's available.
+    """
+    return {
+        "voices": KokoroDriver.get_voice_catalogue(),
+        "aliases": dict(SPEECH_VOICE_MAP),
+    }
+
+
 @router.post("/api/speech/transcribe")
 async def transcribe_speech_api(audio: UploadFile = File(...), _: None = Depends(require_token)):
     update_activity()
