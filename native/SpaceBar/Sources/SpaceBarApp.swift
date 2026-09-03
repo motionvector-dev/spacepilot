@@ -156,13 +156,6 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
 
     private func setupAudioGraph() {
         let inputNode = audioEngine.inputNode
-        
-        do {
-            try inputNode.setVoiceProcessingEnabled(true)
-        } catch {
-            print("Failed to enable VPIO/AEC: \(error)")
-        }
-        
         let hwFormat = inputNode.inputFormat(forBus: 0)
         guard hwFormat.sampleRate > 0 else { return }
 
@@ -181,22 +174,25 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
                 if let result = result {
                     let userSpeech = result.bestTranscription.formattedString
                     self.transcript = "USER: \(userSpeech)"
+                    self.logger.info("USER (partial): \(userSpeech)")
                     
                     // Barge-in: immediately stop talking if user starts speaking
                     if self.isSpeaking && !userSpeech.isEmpty {
                         self.speechSynthesizer.stopSpeaking(at: .immediate)
                         self.isSpeaking = false
+                        self.logger.info(">> BARGE-IN DETECTED: Stopped TTS")
                     }
                     
                     self.debounceTask?.cancel()
                     self.debounceTask = Task {
                         try? await Task.sleep(nanoseconds: 1_200_000_000)
                         guard !Task.isCancelled, !userSpeech.isEmpty else { return }
+                        self.logger.info("USER (final): \(userSpeech)")
                         await self.handleSpokenIntent(userSpeech)
                     }
                 }
                 if let error = error {
-                    print("Speech recognition note: \(error.localizedDescription)")
+                    self.logger.error("Speech recognition note: \(error.localizedDescription)")
                 }
             }
         }
@@ -242,6 +238,8 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
         }
 
         do {
+            // CRITICAL FIX: Enable VPIO only after the graph (tap) is fully configured, before prepare()
+            try inputNode.setVoiceProcessingEnabled(true)
             audioEngine.prepare()
             try audioEngine.start()
             isConnected = true
@@ -263,6 +261,7 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
     private func handleSpokenIntent(_ text: String) async {
         guard SystemLanguageModel.default.isAvailable else {
             self.transcript = "SPACE: AFM unavailable (model missing)"
+            self.logger.info("\(self.transcript)")
             speakResponse("System Foundation Model is not available.")
             return
         }
@@ -271,12 +270,18 @@ final class VoiceDuplexManager: NSObject, ObservableObject, SFSpeechRecognizerDe
             let snap = NativeTelemetry.capture()
             self.telemetry = snap
             self.transcript = "SPACE: [Thinking...]"
+            self.logger.info("\(self.transcript)")
             
+            let startTime = CFAbsoluteTimeGetCurrent()
             let response = try await afmManager.processInput(userText: text, telemetry: snap)
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            
             self.transcript = "SPACE: \(response)"
+            self.logger.info("AFM RESPONSE (\(String(format: "%.2f", elapsed))s): \(response)")
             speakResponse(response)
         } catch {
             self.transcript = "SPACE: Inference failed - \(error.localizedDescription)"
+            self.logger.error("\(self.transcript)")
         }
     }
 
@@ -644,15 +649,18 @@ struct SpaceBarPopoverView: View {
 }
 
 // MARK: - Apple Foundation Model Manager
-@available(macOS 15.0, *)
+@available(macOS 26.0, *)
 actor AppleFoundationModelManager {
-    private var session: LanguageModelSession
+    private var session: LanguageModelSession?
     
     init() {
-        self.session = LanguageModelSession(instructions: SpacePilotInstructions.system)
     }
     
     func processInput(userText: String, telemetry: HardwareSnapshot) async throws -> String {
+        if session == nil {
+            session = LanguageModelSession(instructions: SpacePilotInstructions.system)
+        }
+        
         let telemetryContext = SpacePilotInstructions.telemetryBlock(
             shipName: "m1max",
             thermalState: telemetry.thermalDescription,
@@ -662,7 +670,12 @@ actor AppleFoundationModelManager {
             dockState: "none"
         )
         let fullPrompt = "\(telemetryContext)\n\n\(userText)"
-        let response = try await session.respond(to: fullPrompt)
+        
+        guard let activeSession = session else {
+            return "Session failed to initialize."
+        }
+        
+        let response = try await activeSession.respond(to: fullPrompt)
         return response.content
     }
 }
