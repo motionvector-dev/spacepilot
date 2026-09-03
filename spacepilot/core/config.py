@@ -108,14 +108,13 @@ class Settings(BaseModel):
             "https://spacepilot.localhost",
             "http://pluto.localhost",
             "https://pluto.localhost",
-            # NOT CONFIRMED: placeholder for the "Archie" air-drums demo (Chrome
-            # on-device Gemini Nano, calling this daemon's /api/speech/* routes
-            # from an https page). Nobody has told us the demo's real dev
-            # origin yet. Override with SPACEPILOT_EXTRA_CORS_ORIGINS
-            # (comma-separated) once it's known; whoever owns that demo should
-            # confirm it before this placeholder is trusted for anything real.
-            "https://archie-demo.localhost",
         ]
+        # The "Archie" air-drums demo (Chrome on-device Gemini Nano, calling
+        # /api/speech/* from an https page) confirmed its real origin as
+        # https://motionvector-air-drums.nandwana-saurabh619.chatgpt.site —
+        # deliberately not hardcoded here: one consumer's domain doesn't
+        # belong baked into SpacePilot's own source. Set it via
+        # SPACEPILOT_EXTRA_CORS_ORIGINS when running the daemon for that demo.
         extra = env_value("SPACEPILOT_EXTRA_CORS_ORIGINS", "PLUTO_EXTRA_CORS_ORIGINS", default="")
         if extra.strip():
             origins.extend(o.strip() for o in extra.split(",") if o.strip())
