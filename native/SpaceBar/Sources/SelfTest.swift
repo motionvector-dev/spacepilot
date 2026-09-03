@@ -2,7 +2,7 @@
 // Prove the recogniser, the model, and the synthesiser work — with no
 // microphone and no AVCaptureDevice permission in the path at all.
 //
-//   .build/SpaceBar.app/Contents/MacOS/SpaceBar --self-test <wav>
+//   .build/app.noindex/SpaceBar.app/Contents/MacOS/SpaceBar --self-test <wav>
 //
 // Why this exists: 2026-09-02, Talk did nothing visible and nothing audible.
 // The mic is one gate among four (Speech Recognition permission, the

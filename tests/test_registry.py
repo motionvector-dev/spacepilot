@@ -116,6 +116,43 @@ def test_catalog_is_a_view_over_the_registry():
     assert set(catalog_manager.recipes) == {v.id for v in registry().variants}
 
 
+def test_a_measurement_under_a_shipped_system_id_is_caught_not_silent():
+    """The mechanism behind conftest's autouse `_no_shipped_system_id_pollution`.
+
+    A Measurement written through the *default* store (no explicit root=,
+    no monkeypatched MEASUREMENTS_DIR) under a real machine's id merges with
+    that machine's real, shipped records the moment anything calls
+    load_measurements()/load_systems() with no root — exactly what
+    test_exported_json_matches_the_registry's subprocess does. Catching it
+    here, at the test that caused it, beats a mystery diff turning up in
+    that comparison on some unrelated later run.
+    """
+    import shutil
+
+    import spacepilot.measurements as ms
+    from conftest import shipped_id_collisions
+
+    shipped_ids = {p.stem for p in ms.SHIPPED_SYSTEMS_DIR.glob("*.yaml")}
+    assert shipped_ids, "need at least one shipped system id to test against"
+    real_id = sorted(shipped_ids)[0]
+
+    assert shipped_id_collisions() == [], "the default store should start clean"
+
+    system = ms.System(id=real_id, backend="metal")
+    path = ms.record(
+        system=system, model_id=registry().variants[0].id,
+        metric="tokens_per_second", value=1.0, contention="solo",
+    )
+    try:
+        assert shipped_id_collisions() == [real_id], (
+            "recording under a shipped system id through the default store "
+            "should have been flagged as a collision"
+        )
+    finally:
+        shutil.rmtree(path.parents[1])  # MEASUREMENTS_DIR / real_id
+    assert shipped_id_collisions() == [], "cleanup should leave the store clean again"
+
+
 def test_exported_json_matches_the_registry(tmp_path):
     """spacepilot/web/registry.json is what the public page reads.
 

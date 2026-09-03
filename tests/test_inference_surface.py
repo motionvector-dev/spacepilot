@@ -628,7 +628,10 @@ def test_the_response_and_the_record_name_the_same_run(wired):
 
 
 def test_the_new_measurement_fields_survive_a_write_and_a_read(tmp_path):
-    system = ms.System(id="apple-m1-max-32gb", backend="metal")
+    # A fake id on purpose, not "apple-m1-max-32gb": this already writes under
+    # an explicit root=tmp_path, but a real-looking id here is a landmine for
+    # whoever next simplifies this test and drops that root=.
+    system = ms.System(id="spacepilot-test-fixture", backend="metal")
     path = ms.record(
         system=system, model_id=TEXT_MODEL, variant_id=TEXT_MODEL,
         metric="tokens_per_second", value=6.5, contention="solo",
