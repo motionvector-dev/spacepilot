@@ -195,7 +195,8 @@ class TextExecutionService:
             raise LocalExecutionError("MLX-LM produced no non-empty text artifact")
         if before is not None and output.stat() == before:
             raise LocalExecutionError("MLX-LM did not produce a new text artifact")
-        numeric = ("wall_seconds", "load_seconds", "generation_tps", "peak_memory_gb")
+        numeric = ("wall_seconds", "load_seconds", "generation_tps", "prompt_tps",
+                   "peak_memory_gb")
         if any(not isinstance(result.get(key), (int, float)) or result[key] <= 0 for key in numeric):
             raise LocalExecutionError("MLX-LM completed without complete measured run metadata")
         for key in ("prompt_tokens", "generation_tokens"):
@@ -212,6 +213,30 @@ class TextExecutionService:
         measurement_path = self.measurement_recorder(
             system=plan.system, model_id=variant_id, variant_id=variant_id,
             metric="tokens_per_second", value=float(result["generation_tps"]),
+            contention=contention, runtime_id=RUNTIME_ID,
+            quantisation=candidate.variant.precision,
+            wall_seconds=float(result["wall_seconds"]),
+            resolved_revision=resolved_revision,
+            run_id=run_id,
+            tokens_in=result["prompt_tokens"],
+            tokens_out=result["generation_tokens"],
+            knobs={
+                "max_tokens": request.max_tokens,
+                "max_kv_size": request.max_kv_size,
+                "temperature": request.temperature,
+                "prompt_tokens": result["prompt_tokens"],
+                "generation_tokens": result["generation_tokens"],
+                "load_seconds": float(result["load_seconds"]),
+                "peak_memory_gb": float(result["peak_memory_gb"]),
+            },
+            note="ordinary bounded spacepilot run text success; text artifact verified",
+        )
+        # A second row, same run_id: prefill and decode are different phases
+        # with different costs (see /v1/chat/completions dry_run), and each
+        # needs its own median rather than being averaged into one number.
+        self.measurement_recorder(
+            system=plan.system, model_id=variant_id, variant_id=variant_id,
+            metric="prompt_tokens_per_second", value=float(result["prompt_tps"]),
             contention=contention, runtime_id=RUNTIME_ID,
             quantisation=candidate.variant.precision,
             wall_seconds=float(result["wall_seconds"]),
