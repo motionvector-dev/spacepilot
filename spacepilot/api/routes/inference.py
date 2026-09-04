@@ -34,6 +34,10 @@ router = APIRouter(prefix="/v1", tags=["inference"])
 # there.
 SERVED_KINDS = {"text", "embedding"}
 
+PRICING_UNDECIDED_REASON = (
+    "pricing policy for external callers is not decided yet; see docs/DECISION-INBOX.md"
+)
+
 
 def _error(status: int, message: str, kind: str, code: str,
            extra: Optional[Dict[str, Any]] = None) -> HTTPException:
@@ -119,12 +123,11 @@ def list_models():
                 "served": True,
                 "license": "proprietary",
                 "estimate": {
-                    "tokens_per_second": None,
+                    "decode_tokens_per_second": None,
                     "sample_count": 0,
                     "cost_usd": None,
-                    "source": None,
-                    "reason": "pricing policy for external callers is not decided yet; "
-                              "see docs/DECISION-INBOX.md",
+                    "source": "policy_undecided",
+                    "reason": PRICING_UNDECIDED_REASON,
                 },
             },
         })
@@ -137,6 +140,15 @@ class Message(BaseModel):
     content: str
 
 
+class ChatCompletionExtras(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # A caller that refuses to run without a pre-run estimate sends the exact
+    # body it intends to run, plus this flag, and gets the estimate instead of
+    # a generation. Same route, same shape, no separate endpoint to keep in
+    # sync with the real one.
+    dry_run: bool = False
+
+
 class ChatCompletionRequest(BaseModel):
     # Unknown fields are refused rather than dropped: a caller that sends
     # `top_p` and gets a 200 will believe it took effect.
@@ -146,6 +158,7 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: int = 256
     temperature: float = 0.0
     stream: bool = False
+    x_spacepilot: Optional[ChatCompletionExtras] = None
 
 
 class EmbeddingsRequest(BaseModel):
@@ -201,6 +214,72 @@ def _plan_text(model_id: str, verdict):
         raise _error(409, f"{model_id} is not runnable here: {detail}",
                      "insufficient_capacity", "no_route", {"verdict": verdict})
     return service, plan
+
+
+def _local_dry_run_estimate(prompt_tokens: Optional[int], max_tokens: int,
+                            system_id: str, model_id: str) -> Dict[str, Any]:
+    """The number a caller can actually refuse a run on.
+
+    `/v1/models`' `decode_tokens_per_second` is a per-model constant; total
+    seconds is not, because prefill time scales with the prompt this specific
+    call sends. So this counts the real prompt with the real tokenizer (no
+    weights loaded) and reads both medians fresh, rather than asking a caller
+    to guess prompt length or carry a tokenizer of their own.
+    """
+    from spacepilot.services import corpus
+
+    base = {"max_completion_tokens": max_tokens, "cost_usd": 0.0,
+            "model": model_id, "system": system_id}
+    if prompt_tokens is None:
+        return {**base, "prompt_tokens": None, "seconds": None,
+                "source": "unmeasured", "sample_count": 0,
+                "reason": "weights are not cached locally yet"}
+    records = corpus._load_measurements()
+    prefill = ms.summarise(records, system_id, model_id, "prompt_tokens_per_second")
+    decode = ms.summarise(records, system_id, model_id, "tokens_per_second")
+    prefill_tps = prefill.solo_median or prefill.observed_median
+    decode_tps = decode.solo_median or decode.observed_median
+    if not prefill_tps or not decode_tps:
+        return {**base, "prompt_tokens": prompt_tokens, "seconds": None,
+                "source": "unmeasured", "sample_count": 0,
+                "reason": corpus.UNMEASURED_REASON}
+    sample_count = min(prefill.solo_samples or prefill.observed_samples,
+                       decode.solo_samples or decode.observed_samples)
+    seconds = prompt_tokens / prefill_tps + max_tokens / decode_tps
+    return {**base, "prompt_tokens": prompt_tokens, "seconds": seconds,
+            "source": "measured", "sample_count": sample_count, "reason": None}
+
+
+def _dry_run_local(model_id: str, body: ChatCompletionRequest, profile) -> Dict[str, Any]:
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+
+    system = ms.system_from_profile(profile)
+    driver = MlxLmDriver(variant_id=model_id)
+    messages = [m.model_dump() for m in body.messages]
+    prompt_tokens = driver.count_prompt_tokens(messages, variant_id=model_id)
+    estimate = _local_dry_run_estimate(prompt_tokens, body.max_tokens, system.id, model_id)
+    return {
+        "id": f"chatcmpl-dryrun-{uuid.uuid4().hex}",
+        "object": "chat.completion.dry_run",
+        "model": model_id,
+        "x_spacepilot": {"estimate": estimate},
+    }
+
+
+def _dry_run_remote(body: ChatCompletionRequest) -> Dict[str, Any]:
+    from spacepilot.services import anthropic_provider
+
+    return {
+        "id": f"chatcmpl-dryrun-{uuid.uuid4().hex}",
+        "object": "chat.completion.dry_run",
+        "model": anthropic_provider.MODEL_ID,
+        "x_spacepilot": {"estimate": {
+            "prompt_tokens": None, "max_completion_tokens": body.max_tokens,
+            "seconds": None, "cost_usd": None, "model": anthropic_provider.MODEL_ID,
+            "system": None, "source": "policy_undecided", "sample_count": 0,
+            "reason": PRICING_UNDECIDED_REASON,
+        }},
+    }
 
 
 def _anthropic_extensions(system_id, run_id, tokens_in, tokens_out, wall_seconds) -> Dict[str, Any]:
@@ -262,6 +341,8 @@ def _chat_completions_anthropic(body: ChatCompletionRequest):
     if not anthropic_provider.api_key_present():
         raise _error(503, "ANTHROPIC_API_KEY is not set on this machine",
                      "unavailable_error", "provider_unconfigured")
+    if body.x_spacepilot and body.x_spacepilot.dry_run:
+        return _dry_run_remote(body)
 
     profile = probe_local_device()
     system = ms.system_from_profile(profile)
@@ -375,6 +456,8 @@ def chat_completions(body: ChatCompletionRequest, _: None = Depends(require_toke
 
     profile = probe_local_device()
     model_id, verdict = _resolve(body.model, profile)
+    if body.x_spacepilot and body.x_spacepilot.dry_run:
+        return _dry_run_local(model_id, body, profile)
     service, plan = _plan_text(model_id, verdict)
 
     run_id = uuid.uuid4().hex

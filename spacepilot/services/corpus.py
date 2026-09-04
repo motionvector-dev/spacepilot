@@ -99,37 +99,41 @@ def summary_payload(system_id: Optional[str] = None) -> dict:
     return {"summaries": summaries}
 
 
-def throughput_estimate(records: List[ms.Measurement], system_id: str, variant_id: str) -> dict:
-    """A pre-run estimate a caller can refuse to proceed without.
+UNMEASURED_REASON = "no measurements recorded yet for this system"
 
-    `tokens_per_second` is a median of `record` calls that actually happened —
-    never derived, never guessed. A caller multiplies it by their own
-    `max_tokens` to get seconds; that multiplication is theirs to own, not a
-    number we invent on their behalf.
+# What `source` means, so "unmeasured" and "policy_undecided" are never
+# collapsed into the same bare `null` a caller has to guess at. Both refuse a
+# run, but for different reasons a person reads differently: one clears the
+# next time this model runs anywhere, the other clears only when Saurabh
+# decides who pays for an external caller's inference (docs/DECISION-INBOX.md).
+SOURCES = {"measured", "unmeasured", "policy_undecided"}
+
+
+def throughput_estimate(records: List[ms.Measurement], system_id: str, variant_id: str) -> dict:
+    """The model-selection card: a decode-speed median, not a per-request estimate.
+
+    `decode_tokens_per_second` is a median of `record` calls that actually
+    happened — never derived, never guessed. It says nothing about prompt
+    processing time, which depends on the request; see `/v1/chat/completions`
+    `dry_run` for the number a caller can actually refuse a run on.
     """
     summary = ms.summarise(records, system_id, variant_id, "tokens_per_second")
-    if summary.solo_samples:
+    samples = summary.solo_samples or summary.observed_samples
+    if samples:
+        median = summary.solo_median if summary.solo_samples else summary.observed_median
         return {
-            "tokens_per_second": summary.solo_median,
-            "sample_count": summary.solo_samples,
-            "cost_usd": 0.0,
-            "source": "measured",
-            "reason": None,
-        }
-    if summary.observed_samples:
-        return {
-            "tokens_per_second": summary.observed_median,
-            "sample_count": summary.observed_samples,
+            "decode_tokens_per_second": median,
+            "sample_count": samples,
             "cost_usd": 0.0,
             "source": "measured",
             "reason": None,
         }
     return {
-        "tokens_per_second": None,
+        "decode_tokens_per_second": None,
         "sample_count": 0,
         "cost_usd": 0.0,
-        "source": None,
-        "reason": "no measurements recorded yet for this system",
+        "source": "unmeasured",
+        "reason": UNMEASURED_REASON,
     }
 
 

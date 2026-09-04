@@ -190,13 +190,13 @@ def test_models_estimate_uses_measured_tokens_per_second_when_available(monkeypa
     monkeypatch.setattr(corpus.ms, "load_measurements", lambda: records)
     entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
     assert entries[TEXT_MODEL]["x_spacepilot"]["estimate"] == {
-        "tokens_per_second": 42.0, "sample_count": 1, "cost_usd": 0.0,
+        "decode_tokens_per_second": 42.0, "sample_count": 1, "cost_usd": 0.0,
         "source": "measured", "reason": None,
     }
 
 
-def test_models_estimate_is_null_with_a_reason_when_nothing_measured_yet(monkeypatch):
-    """A caller that refuses to run on a null estimate should refuse here."""
+def test_models_estimate_is_unmeasured_with_a_reason_when_nothing_recorded_yet(monkeypatch):
+    """A caller that refuses to run on anything but 'measured' should refuse here."""
     import spacepilot.api.routes.inference as inference
     from spacepilot.services import corpus
 
@@ -205,8 +205,8 @@ def test_models_estimate_is_null_with_a_reason_when_nothing_measured_yet(monkeyp
     monkeypatch.setattr(corpus.ms, "load_measurements", list)
     entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
     assert entries[TEXT_MODEL]["x_spacepilot"]["estimate"] == {
-        "tokens_per_second": None, "sample_count": 0, "cost_usd": 0.0,
-        "source": None, "reason": "no measurements recorded yet for this system",
+        "decode_tokens_per_second": None, "sample_count": 0, "cost_usd": 0.0,
+        "source": "unmeasured", "reason": "no measurements recorded yet for this system",
     }
 
 
@@ -214,7 +214,9 @@ def test_remote_model_estimate_defers_the_pricing_decision(monkeypatch):
     """Local runs are free; what an external caller pays for Claude is not decided.
 
     This must never quietly become 0.0 — that would tell a caller Claude calls
-    are free, which is exactly the unresolved DECISION-INBOX question.
+    are free, which is exactly the unresolved DECISION-INBOX question. And it
+    must never read as "unmeasured" — that would say "run it once and this
+    clears," when the real blocker is a policy decision, not a missing sample.
     """
     import spacepilot.api.routes.inference as inference
     from spacepilot.services import anthropic_provider, corpus
@@ -225,8 +227,116 @@ def test_remote_model_estimate_defers_the_pricing_decision(monkeypatch):
     entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
     estimate = entries[anthropic_provider.MODEL_ID]["x_spacepilot"]["estimate"]
     assert estimate["cost_usd"] is None
-    assert estimate["tokens_per_second"] is None
+    assert estimate["decode_tokens_per_second"] is None
+    assert estimate["source"] == "policy_undecided"
     assert "DECISION-INBOX" in estimate["reason"]
+
+
+# ------------------------------------------------------- dry_run pre-run estimate
+
+def test_dry_run_local_counts_real_prompt_tokens_and_uses_both_medians(monkeypatch):
+    """archie's actual ask: seconds a caller can refuse a run on, from one call."""
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import corpus
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    system_id = ms.system_from_profile(_profile()).id
+    records = [
+        ms.Measurement(
+            schema=1, system_id=system_id, model_id=TEXT_MODEL, variant_id=TEXT_MODEL,
+            metric="prompt_tokens_per_second", value=1000.0, contention="solo",
+            measured_on="2026-09-01T00:00:00+00:00",
+        ),
+        ms.Measurement(
+            schema=1, system_id=system_id, model_id=TEXT_MODEL, variant_id=TEXT_MODEL,
+            metric="tokens_per_second", value=50.0, contention="solo",
+            measured_on="2026-09-01T00:00:00+00:00",
+        ),
+    ]
+    monkeypatch.setattr(corpus.ms, "load_measurements", lambda: records)
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+    monkeypatch.setattr(MlxLmDriver, "count_prompt_tokens", lambda self, messages, variant_id=None: 1000)
+
+    body = {"model": TEXT_MODEL, "messages": [{"role": "user", "content": "hi"}],
+            "max_tokens": 100, "x_spacepilot": {"dry_run": True}}
+    response = client.post("/v1/chat/completions", json=body, headers=AUTH)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["object"] == "chat.completion.dry_run"
+    estimate = payload["x_spacepilot"]["estimate"]
+    assert estimate["prompt_tokens"] == 1000
+    assert estimate["max_completion_tokens"] == 100
+    # 1000 prompt tokens / 1000 tps + 100 max tokens / 50 tps = 1 + 2 = 3
+    assert estimate["seconds"] == pytest.approx(3.0)
+    assert estimate["cost_usd"] == 0.0
+    assert estimate["source"] == "measured"
+    assert estimate["sample_count"] == 1
+
+
+def test_dry_run_local_is_unmeasured_when_weights_are_not_cached(monkeypatch):
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import corpus
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    monkeypatch.setattr(corpus.ms, "load_measurements", list)
+    monkeypatch.setattr(MlxLmDriver, "count_prompt_tokens", lambda self, messages, variant_id=None: None)
+
+    body = {"model": TEXT_MODEL, "messages": [{"role": "user", "content": "hi"}],
+            "x_spacepilot": {"dry_run": True}}
+    estimate = client.post("/v1/chat/completions", json=body, headers=AUTH
+                           ).json()["x_spacepilot"]["estimate"]
+    assert estimate["prompt_tokens"] is None
+    assert estimate["seconds"] is None
+    assert estimate["source"] == "unmeasured"
+    assert estimate["reason"] == "weights are not cached locally yet"
+
+
+def test_dry_run_spends_no_generation_no_measurement_is_recorded(monkeypatch):
+    """A caller pricing out a call before running it must not itself cost anything."""
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import corpus
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    monkeypatch.setattr(corpus.ms, "load_measurements", list)
+    monkeypatch.setattr(MlxLmDriver, "count_prompt_tokens", lambda self, messages, variant_id=None: 10)
+    recorded = []
+    monkeypatch.setattr(corpus.ms, "record", lambda **kw: recorded.append(kw))
+
+    body = {"model": TEXT_MODEL, "messages": [{"role": "user", "content": "hi"}],
+            "x_spacepilot": {"dry_run": True}}
+    client.post("/v1/chat/completions", json=body, headers=AUTH)
+    assert recorded == []
+
+
+def test_dry_run_remote_refuses_on_policy_not_measurement(monkeypatch):
+    """Claude's dry run must never imply 'run it once and it clears' — it can't."""
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import anthropic_provider
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-not-a-real-key")
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+
+    body = {"model": anthropic_provider.MODEL_ID,
+            "messages": [{"role": "user", "content": "hi"}],
+            "x_spacepilot": {"dry_run": True}}
+    payload = client.post("/v1/chat/completions", json=body, headers=AUTH).json()
+    estimate = payload["x_spacepilot"]["estimate"]
+    assert estimate["source"] == "policy_undecided"
+    assert estimate["cost_usd"] is None
+    assert estimate["seconds"] is None
+    assert "DECISION-INBOX" in estimate["reason"]
+
+
+def test_an_unknown_dry_run_field_is_refused_rather_than_ignored():
+    body = {"model": TEXT_MODEL, "messages": [{"role": "user", "content": "hi"}],
+            "x_spacepilot": {"dry_run": True, "top_p": 0.9}}
+    response = client.post("/v1/chat/completions", json=body, headers=AUTH)
+    assert response.status_code == 422
 
 
 # ------------------------------------------------------------ chat and embed
@@ -496,10 +606,14 @@ def test_every_served_call_records_run_id_and_both_token_counts(wired):
     client.post("/v1/embeddings", headers=AUTH, json={
         "model": EMBED_MODEL, "input": "hi",
     })
-    assert len(wired["recorded"]) == 2
-    chat, embed = wired["recorded"]
-    assert chat["metric"] == "tokens_per_second"
-    assert chat["run_id"] and chat["tokens_in"] == 12 and chat["tokens_out"] == 24
+    # Two rows per chat completion now: decode speed and prefill speed are
+    # different phases with different costs, so each gets its own median.
+    assert len(wired["recorded"]) == 3
+    chat_decode, chat_prefill, embed = wired["recorded"]
+    assert chat_decode["metric"] == "tokens_per_second"
+    assert chat_decode["run_id"] and chat_decode["tokens_in"] == 12 and chat_decode["tokens_out"] == 24
+    assert chat_prefill["metric"] == "prompt_tokens_per_second"
+    assert chat_prefill["run_id"] == chat_decode["run_id"]
     assert embed["metric"] == "tokens_per_second"
     # Embedding consumes tokens and produces none. Zero, not null: the driver
     # counted, and the answer was zero.

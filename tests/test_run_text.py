@@ -95,11 +95,11 @@ def test_uncached_weights_are_no_route_and_never_load(tmp_path):
 
 
 def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
-    recorded = {}
+    calls = []
     driver = _Driver()
     service = _service(
         tmp_path, driver=driver,
-        recorder=lambda **fields: recorded.update(fields) or tmp_path / "measurement.yaml",
+        recorder=lambda **fields: calls.append(fields) or tmp_path / "measurement.yaml",
     )
     from spacepilot.services.text_execution import TextRequest
 
@@ -111,11 +111,15 @@ def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
     ))
     assert output.read_text().startswith("A real")
     assert result.generation_tps == pytest.approx(6.5)
-    assert recorded["variant_id"] == "qwen3-8-27b-4bit"
-    assert recorded["runtime_id"] == "mlx-lm"
-    assert recorded["metric"] == "tokens_per_second"
-    assert recorded["knobs"]["max_tokens"] == 128
-    assert recorded["knobs"]["max_kv_size"] == 2048
+    # Two rows, same run: decode speed and prefill speed are different phases.
+    decode, prefill = calls
+    assert decode["variant_id"] == "qwen3-8-27b-4bit"
+    assert decode["runtime_id"] == "mlx-lm"
+    assert decode["metric"] == "tokens_per_second"
+    assert decode["knobs"]["max_tokens"] == 128
+    assert decode["knobs"]["max_kv_size"] == 2048
+    assert prefill["metric"] == "prompt_tokens_per_second"
+    assert prefill["run_id"] == decode["run_id"]
     assert driver.calls[0]["max_kv_size"] == 2048
 
 

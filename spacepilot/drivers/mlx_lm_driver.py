@@ -73,6 +73,33 @@ class MlxLmDriver(InferenceDriver):
             return False, f"mlx-lm is unavailable in {self.python_bin}: {detail}"
         return True, f"mlx-lm importable in {self.python_bin}"
 
+    def count_prompt_tokens(
+        self, messages: list, variant_id: Optional[str] = None,
+    ) -> Optional[int]:
+        """Real prompt token count, tokenizer only — no weights loaded.
+
+        `mlx_lm.tokenizer_utils.load` reads only `tokenizer.json` and
+        `tokenizer_config.json` out of the cached snapshot; it never touches
+        the weight shards a real `infer()` loads. Cheap enough to call before
+        deciding whether a run is worth starting at all. Builds the prompt
+        the same way `mlx_lm_runner.py` does, so the count matches what a
+        real call would actually send.
+        """
+        variant_id = variant_id or self.variant_id
+        resolved = self.asset_dir(variant_id)
+        if resolved is None:
+            return None
+        snapshot, _revision = resolved
+        from mlx_lm.tokenizer_utils import load as load_tokenizer
+
+        tokenizer = load_tokenizer(Path(snapshot))
+        if tokenizer.has_chat_template:
+            prompt = tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True)
+        else:
+            prompt = messages[-1].get("content", "") if messages else ""
+        return len(tokenizer.encode(prompt))
+
     def route_status(self, variant_id: Optional[str] = None) -> tuple[bool, str]:
         variant_id = variant_id or self.variant_id
         ready, detail = self.runtime_ready()
