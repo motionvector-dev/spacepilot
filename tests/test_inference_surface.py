@@ -172,6 +172,63 @@ def test_a_variant_with_no_wired_route_says_so_rather_than_hiding(monkeypatch):
     assert unwired["runtime"] is None
 
 
+def test_models_estimate_uses_measured_tokens_per_second_when_available(monkeypatch):
+    """AgentWorth's archie refuses to run without a pre-run estimate; this is it."""
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import corpus
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    system_id = ms.system_from_profile(_profile()).id
+    records = [
+        ms.Measurement(
+            schema=1, system_id=system_id, model_id=TEXT_MODEL, variant_id=TEXT_MODEL,
+            metric="tokens_per_second", value=42.0, contention="solo",
+            measured_on="2026-09-01T00:00:00+00:00",
+        ),
+    ]
+    monkeypatch.setattr(corpus.ms, "load_measurements", lambda: records)
+    entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
+    assert entries[TEXT_MODEL]["x_spacepilot"]["estimate"] == {
+        "tokens_per_second": 42.0, "sample_count": 1, "cost_usd": 0.0,
+        "source": "measured", "reason": None,
+    }
+
+
+def test_models_estimate_is_null_with_a_reason_when_nothing_measured_yet(monkeypatch):
+    """A caller that refuses to run on a null estimate should refuse here."""
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import corpus
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    monkeypatch.setattr(corpus.ms, "load_measurements", list)
+    entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
+    assert entries[TEXT_MODEL]["x_spacepilot"]["estimate"] == {
+        "tokens_per_second": None, "sample_count": 0, "cost_usd": 0.0,
+        "source": None, "reason": "no measurements recorded yet for this system",
+    }
+
+
+def test_remote_model_estimate_defers_the_pricing_decision(monkeypatch):
+    """Local runs are free; what an external caller pays for Claude is not decided.
+
+    This must never quietly become 0.0 — that would tell a caller Claude calls
+    are free, which is exactly the unresolved DECISION-INBOX question.
+    """
+    import spacepilot.api.routes.inference as inference
+    from spacepilot.services import anthropic_provider, corpus
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-not-a-real-key")
+    monkeypatch.setattr(inference, "probe_local_device", _profile)
+    monkeypatch.setattr(corpus.ms, "load_measurements", list)
+    entries = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
+    estimate = entries[anthropic_provider.MODEL_ID]["x_spacepilot"]["estimate"]
+    assert estimate["cost_usd"] is None
+    assert estimate["tokens_per_second"] is None
+    assert "DECISION-INBOX" in estimate["reason"]
+
+
 # ------------------------------------------------------------ chat and embed
 
 class _TextDriver:

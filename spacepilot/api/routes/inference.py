@@ -80,10 +80,11 @@ def list_models():
     on this machine, so there is nothing local to grade); `level` is
     `"remote"` instead of one of the three local words.
     """
-    from spacepilot.services import anthropic_provider
+    from spacepilot.services import anthropic_provider, corpus
 
     profile = probe_local_device()
     system_id = ms.system_from_profile(profile).id
+    records = corpus._load_measurements()
     data = []
     for variant_id, variant in sorted(_served_variants().items()):
         route = _route_for(variant_id)
@@ -99,6 +100,7 @@ def list_models():
                 "revision": variant.revision,
                 "served": route is not None,
                 "license": variant.license.id,
+                "estimate": corpus.throughput_estimate(records, system_id, variant_id),
             },
         })
     if anthropic_provider.api_key_present():
@@ -116,6 +118,14 @@ def list_models():
                 "revision": None,
                 "served": True,
                 "license": "proprietary",
+                "estimate": {
+                    "tokens_per_second": None,
+                    "sample_count": 0,
+                    "cost_usd": None,
+                    "source": None,
+                    "reason": "pricing policy for external callers is not decided yet; "
+                              "see docs/DECISION-INBOX.md",
+                },
             },
         })
     return {"object": "list", "data": data}

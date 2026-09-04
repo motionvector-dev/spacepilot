@@ -99,6 +99,40 @@ def summary_payload(system_id: Optional[str] = None) -> dict:
     return {"summaries": summaries}
 
 
+def throughput_estimate(records: List[ms.Measurement], system_id: str, variant_id: str) -> dict:
+    """A pre-run estimate a caller can refuse to proceed without.
+
+    `tokens_per_second` is a median of `record` calls that actually happened —
+    never derived, never guessed. A caller multiplies it by their own
+    `max_tokens` to get seconds; that multiplication is theirs to own, not a
+    number we invent on their behalf.
+    """
+    summary = ms.summarise(records, system_id, variant_id, "tokens_per_second")
+    if summary.solo_samples:
+        return {
+            "tokens_per_second": summary.solo_median,
+            "sample_count": summary.solo_samples,
+            "cost_usd": 0.0,
+            "source": "measured",
+            "reason": None,
+        }
+    if summary.observed_samples:
+        return {
+            "tokens_per_second": summary.observed_median,
+            "sample_count": summary.observed_samples,
+            "cost_usd": 0.0,
+            "source": "measured",
+            "reason": None,
+        }
+    return {
+        "tokens_per_second": None,
+        "sample_count": 0,
+        "cost_usd": 0.0,
+        "source": None,
+        "reason": "no measurements recorded yet for this system",
+    }
+
+
 def check_payload() -> dict:
     """The local machine's probe record and any corpus summaries for its class."""
     from spacepilot.device_probe import probe_local_device
