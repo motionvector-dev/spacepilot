@@ -220,6 +220,92 @@
    ]
   },
   {
+   "id": "deepseek-v4-flash",
+   "name": "DeepSeek V4-Flash",
+   "family": "deepseek",
+   "kind": "text",
+   "summary": "Sparse MoE text model, 256 routed experts with 6 active per token (deepseek_v4, hidden_size 4096, 43 layers); 284B total params, roughly 13B active per forward pass.",
+   "homepage": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/LICENSE",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "deepseek-v4-flash-2bit-dq",
+     "model_id": "deepseek-v4-flash",
+     "name": "DeepSeek V4-Flash 2-bit dynamic-quant (MLX)",
+     "kind": "text",
+     "family": "deepseek",
+     "params": "284B-A13B",
+     "precision": "2bit-dq",
+     "repo": "mlx-community/DeepSeek-V4-Flash-2bit-DQ",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00019.safetensors",
+      "model-00002-of-00019.safetensors",
+      "model-00003-of-00019.safetensors",
+      "model-00004-of-00019.safetensors",
+      "model-00005-of-00019.safetensors",
+      "model-00006-of-00019.safetensors",
+      "model-00007-of-00019.safetensors",
+      "model-00008-of-00019.safetensors",
+      "model-00009-of-00019.safetensors",
+      "model-00010-of-00019.safetensors",
+      "model-00011-of-00019.safetensors",
+      "model-00012-of-00019.safetensors",
+      "model-00013-of-00019.safetensors",
+      "model-00014-of-00019.safetensors",
+      "model-00015-of-00019.safetensors",
+      "model-00016-of-00019.safetensors",
+      "model-00017-of-00019.safetensors",
+      "model-00018-of-00019.safetensors",
+      "model-00019-of-00019.safetensors",
+      "model.safetensors.index.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "722bf559b7de93575b2320973cf2002e05bfe6c9",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 96531101948.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": "Sum of the 24 text-inference files named above; excludes README and .gitattributes.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 115837322338.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "89.91 GiB (96,531,101,948 bytes) cached payload plus a provisional 20% allowance for router/expert-swap overhead, KV cache, and activations on this MoE (deepseek_v4, 256 routed experts, 6 active per token, 43 layers); unflown, not a measured peak or hard limit. At this footprint the variant does not fit an M1 Max (max 64GB unified memory) \u2014 it targets a 128GB+ Apple Silicon machine or a rented CUDA box; no such measurement exists yet.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/LICENSE",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "MoE sub-expert routing means only ~13B of the 284B total parameters activate per token, but the full 256-expert weight set must still reside in memory for MLX's dense expert layout \u2014 the 2-bit dynamic quant above is the smallest MLX conversion found on the Hub, not a proof it fits any machine on hand."
+    }
+   ]
+  },
+  {
    "id": "distil-whisper",
    "name": "Distil-Whisper",
    "family": "distil-whisper",
@@ -1223,6 +1309,82 @@
    ]
   },
   {
+   "id": "gemma4-31b",
+   "name": "Gemma 4 31B",
+   "family": "gemma",
+   "kind": "text",
+   "summary": "Dense 30.7B instruction-tuned multimodal model (text+image in, text out), 256K context, thinking mode.",
+   "homepage": "https://huggingface.co/google/gemma-4-31B-it",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://ai.google.dev/gemma/docs/gemma_4_license",
+    "restrictions": [
+     "the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "gemma4-31b-it-4bit",
+     "model_id": "gemma4-31b",
+     "name": "Gemma 4 31B Instruct 4-bit (MLX)",
+     "kind": "text",
+     "family": "gemma",
+     "params": "31B",
+     "precision": "4bit",
+     "repo": "mlx-community/gemma-4-31B-it-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors",
+      "model.safetensors.index.json",
+      "processor_config.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "696d436c404745a59f30e4939a658162b0a9e57f",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 18444419448.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": "Sum of the 11 text/vision-inference files named above; excludes README and .gitattributes.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 22133303338.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "17.18 GiB (18,444,419,448 bytes) 4-bit cached payload plus a provisional 20% allowance for KV cache, activations, and runtime overhead (dense gemma4, no MoE routing on this variant); unflown, not a measured peak or hard limit.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://ai.google.dev/gemma/docs/gemma_4_license",
+      "restrictions": [
+       "the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Google DeepMind's Gemma Scope interpretability tooling (JumpReLU sparse autoencoders trained on Gemma residual streams) is published as a separate research artifact, not bundled with these inference weights; using it for activation steering is a downstream integration, not a property this registry entry can claim on its own."
+    }
+   ]
+  },
+  {
    "id": "hunyuan-video",
    "name": "HunyuanVideo",
    "family": "tencent",
@@ -2177,6 +2339,81 @@
      "caveats": [],
      "compromised": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "qwen3-6-27b",
+   "name": "Qwen3.6 27B",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Dense 27B text-and-vision model, 262,144-token context, thinking mode, multimodal (text/image/video) input.",
+   "homepage": "https://huggingface.co/Qwen/Qwen3.6-27B",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-6-27b-4bit",
+     "model_id": "qwen3-6-27b",
+     "name": "Qwen3.6 27B 4-bit (MLX)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "27B",
+     "precision": "4bit",
+     "repo": "mlx-community/Qwen3.6-27B-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "configuration.json",
+      "generation_config.json",
+      "model-00001-of-00003.safetensors",
+      "model-00002-of-00003.safetensors",
+      "model-00003-of-00003.safetensors",
+      "model.safetensors.index.json",
+      "preprocessor_config.json",
+      "processor_config.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "video_preprocessor_config.json",
+      "vocab.json"
+     ],
+     "revision": "c000ac2c2057d94be3fa931000c31723aac53282",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 16081487798.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": "Sum of the 13 text/vision-inference files named above; excludes README and .gitattributes.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 19297785358.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "14.98 GiB (16,081,487,798 bytes) 4-bit cached payload plus a provisional 20% allowance for KV cache, activations, and runtime overhead (dense qwen3_5, no MoE routing); unflown, not a measured peak or hard limit.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "The model card documents a dense architecture with rotary position handling extended to its multimodal (video) inputs \u2014 this file does not claim more than that; no separately documented \"spatial coordinate embedding\" primitive was found beyond the base attention mechanism."
     }
    ]
   },

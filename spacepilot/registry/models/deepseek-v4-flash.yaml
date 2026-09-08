@@ -1,0 +1,58 @@
+schema: 1
+id: deepseek-v4-flash
+name: DeepSeek V4-Flash
+family: deepseek
+kind: text
+summary: Sparse MoE text model, 256 routed experts with 6 active per token (deepseek_v4, hidden_size 4096, 43 layers); 284B total params, roughly 13B active per forward pass.
+homepage: https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/LICENSE
+
+variants:
+  - id: deepseek-v4-flash-2bit-dq
+    name: DeepSeek V4-Flash 2-bit dynamic-quant (MLX)
+    params: 284B-A13B
+    precision: 2bit-dq
+    repo: mlx-community/DeepSeek-V4-Flash-2bit-DQ
+    revision: 722bf559b7de93575b2320973cf2002e05bfe6c9
+    files:
+      - chat_template.jinja
+      - config.json
+      - generation_config.json
+      - model-00001-of-00019.safetensors
+      - model-00002-of-00019.safetensors
+      - model-00003-of-00019.safetensors
+      - model-00004-of-00019.safetensors
+      - model-00005-of-00019.safetensors
+      - model-00006-of-00019.safetensors
+      - model-00007-of-00019.safetensors
+      - model-00008-of-00019.safetensors
+      - model-00009-of-00019.safetensors
+      - model-00010-of-00019.safetensors
+      - model-00011-of-00019.safetensors
+      - model-00012-of-00019.safetensors
+      - model-00013-of-00019.safetensors
+      - model-00014-of-00019.safetensors
+      - model-00015-of-00019.safetensors
+      - model-00016-of-00019.safetensors
+      - model-00017-of-00019.safetensors
+      - model-00018-of-00019.safetensors
+      - model-00019-of-00019.safetensors
+      - model.safetensors.index.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 96531101948
+      source: huggingface-api
+      checked: "2026-09-08"
+      note: Sum of the 24 text-inference files named above; excludes README and .gitattributes.
+    working_set:
+      value: 115837322338
+      source: estimated
+      note: 89.91 GiB (96,531,101,948 bytes) cached payload plus a provisional 20% allowance for router/expert-swap overhead, KV cache, and activations on this MoE (deepseek_v4, 256 routed experts, 6 active per token, 43 layers); unflown, not a measured peak or hard limit. At this footprint the variant does not fit an M1 Max (max 64GB unified memory) — it targets a 128GB+ Apple Silicon machine or a rented CUDA box; no such measurement exists yet.
+    notes: MoE sub-expert routing means only ~13B of the 284B total parameters activate per token, but the full 256-expert weight set must still reside in memory for MLX's dense expert layout — the 2-bit dynamic quant above is the smallest MLX conversion found on the Hub, not a proof it fits any machine on hand.
