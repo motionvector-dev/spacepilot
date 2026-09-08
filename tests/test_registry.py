@@ -93,6 +93,23 @@ def test_unknown_backend_is_rejected():
         parse_model(bad, "bad.yaml")
 
 
+def test_widened_fleet_models_are_pinned():
+    """The four models added to widen the fleet must carry a real, resolvable SHA.
+
+    An unpinned entry here would describe weights that can silently move under
+    it — exactly the failure this schema's `revision` field exists to catch.
+    """
+    reg = load_registry()
+    expected = {"deepseek-v4-flash", "qwen3-6-27b", "gemma4-31b"}
+    assert expected <= set(reg.models), "expected models missing from the registry"
+    for v in reg.variants:
+        if v.model_id in expected:
+            assert v.is_pinned, f"{v.id}: unpinned — needs a revision SHA"
+            assert v.revision.lower() not in (
+                "main", "master", "head", "latest", "default",
+            ), f"{v.id}: revision looks like a moving ref, not a pin"
+
+
 def test_catalog_is_a_view_over_the_registry():
     """No second copy of the model list anywhere in the codebase."""
     from spacepilot.services.model_catalog import catalog_manager

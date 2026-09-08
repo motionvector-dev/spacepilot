@@ -56,6 +56,28 @@ def test_list_recipes_endpoint(client, auth_headers):
     assert distil["caveats"][0]["provenance"] == "declared"
 
 
+def test_widened_fleet_recipes_are_listed(client, auth_headers):
+    """deepseek-v4-flash, qwen3-6-27b and gemma4-31b must surface through the
+    same recipe list every other registered model does — no second catalog."""
+    res = client.get("/api/compute/recipes", headers=auth_headers)
+    assert res.status_code == 200
+    by_id = {r["recipe_id"]: r for r in res.json()}
+
+    deepseek = by_id["deepseek-v4-flash-2bit-dq"]
+    assert deepseek["hf_repo"] == "mlx-community/DeepSeek-V4-Flash-2bit-DQ"
+    assert "metal" in deepseek["backends"]
+
+    qwen = by_id["qwen3-6-27b-4bit"]
+    assert qwen["hf_repo"] == "mlx-community/Qwen3.6-27B-4bit"
+    assert qwen["license"] == "apache-2.0"
+
+    gemma = by_id["gemma4-31b-it-4bit"]
+    assert gemma["hf_repo"] == "mlx-community/gemma-4-31B-it-4bit"
+    # Gemma's Apache grant incorporates a prohibited-use policy by reference,
+    # so the registry carries a restriction note even though the id is apache-2.0.
+    assert gemma["license_note"], "expected the prohibited-use restriction to surface"
+
+
 def test_compatibility_report_carries_registry_caveats(client):
     res = client.get("/api/compute/compatibility")
     assert res.status_code == 200

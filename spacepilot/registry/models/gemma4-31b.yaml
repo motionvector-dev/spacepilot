@@ -1,0 +1,46 @@
+schema: 1
+id: gemma4-31b
+name: Gemma 4 31B
+family: gemma
+kind: text
+summary: Dense 30.7B instruction-tuned multimodal model (text+image in, text out), 256K context, thinking mode.
+homepage: https://huggingface.co/google/gemma-4-31B-it
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://ai.google.dev/gemma/docs/gemma_4_license
+  restrictions:
+    - the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release
+
+variants:
+  - id: gemma4-31b-it-4bit
+    name: Gemma 4 31B Instruct 4-bit (MLX)
+    params: 31B
+    precision: 4bit
+    repo: mlx-community/gemma-4-31B-it-4bit
+    revision: 696d436c404745a59f30e4939a658162b0a9e57f
+    files:
+      - chat_template.jinja
+      - config.json
+      - generation_config.json
+      - model-00001-of-00004.safetensors
+      - model-00002-of-00004.safetensors
+      - model-00003-of-00004.safetensors
+      - model-00004-of-00004.safetensors
+      - model.safetensors.index.json
+      - processor_config.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 18444419448
+      source: huggingface-api
+      checked: "2026-09-08"
+      note: Sum of the 11 text/vision-inference files named above; excludes README and .gitattributes.
+    working_set:
+      value: 22133303338
+      source: estimated
+      note: 17.18 GiB (18,444,419,448 bytes) 4-bit cached payload plus a provisional 20% allowance for KV cache, activations, and runtime overhead (dense gemma4, no MoE routing on this variant); unflown, not a measured peak or hard limit.
+    notes: Google DeepMind's Gemma Scope interpretability tooling (JumpReLU sparse autoencoders trained on Gemma residual streams) is published as a separate research artifact, not bundled with these inference weights; using it for activation steering is a downstream integration, not a property this registry entry can claim on its own.

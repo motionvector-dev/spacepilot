@@ -1,0 +1,57 @@
+schema: 1
+id: muse-glimmer-coreai
+name: Muse Glimmer 30B (CoreAI)
+family: muse
+kind: text
+summary: >
+  Meta's 30B-parameter on-device agentic language model optimized for Apple Silicon
+  via Apple's CoreAI runtime with DFlash speculative decoding (K=4 drafter),
+  ANE/GPU heterogeneous dispatch, and Meta ATEM XML tool calling / reasoning streaming.
+homepage: https://huggingface.co/meta-models/Muse-Glimmer-30B
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: muse-glimmer-30b-dflash-k4
+    name: Muse Glimmer 30B (4-bit, DFlash K=4 Drafter)
+    params: 29.6B
+    precision: 4bit
+    repo: meta-models/Muse-Glimmer-30B
+    revision: a4e59da52a7bc87ae7251dd5545c0dd437c44b68
+    backends: [metal]
+    download:
+      value: 59581829216
+      source: huggingface-api
+      checked: "2026-09-08"
+      note: >
+        55.49 GiB (59,581,829,216 bytes) upstream checkpoint download from Hugging Face
+        meta-models/Muse-Glimmer-30B at pinned commit SHA a4e59da52a7b before local 4-bit
+        quantization (~15.2 GB) and pairing with 5-layer DFlash speculative drafter
+        from meta-models/Muse-Glimmer-30B-assistant.
+    working_set:
+      value: 19864223744
+      source: estimated
+      note: >
+        18.5 GiB estimated peak unified memory working set on Apple Silicon: ~15.0 GiB
+        fused 4-bit weights, ring KV cache, 5-layer DFlash drafter hidden state buffers
+        across target layers [1, 13, 25, 37, 49], and short-context agent scratchpad.
+    notes: >
+      DFlash speculative decoding drafter with two-phase inference:
+      1. inject_kv writes target encoder features into the ring KV cache via per-layer
+         Wk/Wv projections.
+      2. draft executes bidirectional attention over injected context and mask tokens,
+         producing K=4 token predictions in a single forward pass.
+      Performance: Acceptance rate at K=4 is 64% (~1.85x generation speedup), verified
+      against HF MuseGlimmerAssistantModel at all 24 sub-layer checkpoints.
+      Heterogeneous Dispatch: Partitions the 5-layer sliding-window drafter to Apple
+      Neural Engine (ANE, 2-5W low power) and target causal transformer layers to Metal
+      GPU without memory copying over unified memory.
+      Agentic Tool Calling: Supports Meta ATEM XML protocol (to=self for reasoning_content,
+      to=<tool> with <atem:function_calls> for function invocation, to=user for visible content)
+      exposed over llm-server OpenAI-compatible SSE streaming endpoint.
+      Memory Fit: Fits comfortably on Apple Silicon unified memory configurations >= 24GB
+      (runs_well on 36GB / 48GB / 64GB+ unified memory).
