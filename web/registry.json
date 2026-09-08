@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-03",
+ "generated": "2026-09-08",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -1705,6 +1705,154 @@
      "caveats": [],
      "compromised": [],
      "notes": "FP8 has no Metal path and fails rather than falling back, so this is CUDA on Ada or newer. Reported independently at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen\n"
+    }
+   ]
+  },
+  {
+   "id": "minicpm5-2b",
+   "name": "MiniCPM5 2B",
+   "family": "openbmb",
+   "kind": "text",
+   "summary": "Edge-oriented 2B dense model with deep-thinking SFT and RL+OPD distillation, running natively on Apple Silicon.",
+   "homepage": "https://github.com/OpenBMB/MiniCPM",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "minicpm5-2b-bf16",
+     "model_id": "minicpm5-2b",
+     "name": "MiniCPM5 2B BF16",
+     "kind": "text",
+     "family": "openbmb",
+     "params": "2.52B",
+     "precision": "bf16",
+     "repo": "openbmb/MiniCPM5-2B",
+     "files": null,
+     "revision": "3497c460c89e00520c3cfa2e73f49ab7647f1177",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 5033557096.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 5494538240.0,
+      "source": "measured",
+      "checked": "2026-09-08",
+      "note": "Measured peak memory during MLX inference run on Apple M1 Max 32GB (5.117 GB).",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 32GB",
+       "backend": "metal",
+       "metric": "tokens_per_second",
+       "value": 33.3,
+       "source": "measured",
+       "measured_on": "2026-09-08",
+       "note": "Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 10.76 tps cold."
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "minicpm5-2b-bf16",
+       "metric": "tokens_per_second",
+       "solo_median": 33.299,
+       "solo_samples": 1,
+       "observed_median": 33.299,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
+    },
+    {
+     "id": "minicpm5-2b-mlx-4bit",
+     "model_id": "minicpm5-2b",
+     "name": "MiniCPM5 2B 4-bit (MLX)",
+     "kind": "text",
+     "family": "openbmb",
+     "params": "2.52B",
+     "precision": "4bit",
+     "repo": "openbmb/MiniCPM5-2B-MLX",
+     "files": null,
+     "revision": "e7289deb8bbce9d0284f38073c6117916337d008",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 1416035216.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1695462400.0,
+      "source": "measured",
+      "checked": "2026-09-08",
+      "note": "Measured peak memory during MLX inference run on Apple M1 Max 32GB (1.579 GB).",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 32GB",
+       "backend": "metal",
+       "metric": "tokens_per_second",
+       "value": 123.88,
+       "source": "measured",
+       "measured_on": "2026-09-08",
+       "note": "Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 30.5 tps cold, 60.3 tps warm."
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "minicpm5-2b-mlx-4bit",
+       "metric": "tokens_per_second",
+       "solo_median": 123.878,
+       "solo_samples": 1,
+       "observed_median": 123.878,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
     }
    ]
   },

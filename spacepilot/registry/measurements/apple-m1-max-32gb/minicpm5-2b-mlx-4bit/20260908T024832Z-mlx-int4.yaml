@@ -1,0 +1,14 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: minicpm5-2b-mlx-4bit
+metric: tokens_per_second
+value: 123.878
+contention: solo
+measured_on: '2026-09-08T02:48:32+00:00'
+variant_id: minicpm5-2b-mlx-4bit
+runtime_id: mlx
+quantisation: int4
+backend: metal
+interpreter: local-ml-py311
+note: 512 generation tokens via mlx_lm on Apple M1 Max 32GB; peak memory 1.579 GB; prompt prefill 30.5 tps cold.
+status: ok
