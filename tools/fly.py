@@ -345,6 +345,169 @@ def keyboard_activity_since(previous_idle_seconds: float, *,
     return current < previous_idle_seconds
 
 
+# ----------------------------------------------------------------- power
+#
+# Two sources, tried in order. `powermetrics` needs root -- measured on this
+# Mac 2026-09-10: it exits 0 but prints "powermetrics must be invoked as the
+# superuser" and samples nothing, and `sudo` is not available in this
+# environment (see docs/registry/flights.md's "Power" section). The fallback
+# is `ioreg -rn AppleSmartBattery`, which reported real numbers unprivileged
+# in the same session: `InstantAmperage` and `Voltage` are both unsigned
+# 64-bit fields, and a discharging battery's current comes back as a very
+# large number that is actually a negative two's-complement mA reading (on
+# this Mac: 18446744073709550034 == 2**64 - 1582, i.e. -1582 mA). That only
+# has a number to report while genuinely running on battery -- a desktop
+# Mac, or a laptop plugged into AC, has no discharge current for this field
+# to carry, which is exactly the case `sample_power` reports as unavailable.
+
+POWER_SOURCE_POWERMETRICS = "powermetrics"
+POWER_SOURCE_IOREG_BATTERY = "ioreg-battery"
+POWER_SOURCE_UNAVAILABLE = "unavailable"
+
+
+@dataclass(frozen=True)
+class PowerSample:
+    """One instantaneous power reading, or the documented reason there is
+    none. `available=False` is a real, informative outcome -- see
+    `docs/registry/flights.md`'s "Power" section -- not an error."""
+    watts: Optional[float]
+    source: str
+    limits: str
+    available: bool
+
+
+def check_powermetrics_unprivileged(
+    runner: Optional[Callable[[List[str]], Any]] = None,
+) -> GuardResult:
+    """Probe whether `powermetrics` can sample without sudo on this machine.
+
+    A bare exit-code check is not enough: measured on this Mac 2026-09-10,
+    `powermetrics -n 1 -i 1000 --samplers cpu_power` exits 0 while printing
+    "powermetrics must be invoked as the superuser" and producing no sample.
+    This reads the actual output for that message rather than trusting the
+    return code.
+    """
+    run = runner or (lambda c: subprocess.run(c, capture_output=True, text=True, timeout=5))
+    try:
+        result = run(["powermetrics", "-n", "1", "-i", "1000", "--samplers", "cpu_power"])
+    except (OSError, subprocess.SubprocessError) as exc:
+        return GuardResult(False, f"could not run powermetrics: {exc}")
+    out = (getattr(result, "stdout", "") or "") + (getattr(result, "stderr", "") or "")
+    if "must be invoked as the superuser" in out or "must be run as root" in out.lower():
+        return GuardResult(False, "powermetrics needs root -- no sudo available here, "
+                                   "falling back to ioreg AppleSmartBattery")
+    if getattr(result, "returncode", 1) != 0:
+        return GuardResult(False, f"powermetrics exited {getattr(result, 'returncode', '?')}")
+    if not out.strip():
+        return GuardResult(False, "powermetrics produced no output")
+    return GuardResult(True, "powermetrics samples without sudo on this machine")
+
+
+_BATTERY_AMPERAGE_RE = re.compile(r'"InstantAmperage"\s*=\s*(\d+)')
+_BATTERY_VOLTAGE_RE = re.compile(r'"Voltage"\s*=\s*(\d+)')
+
+
+def read_battery_instant_watts(ioreg_output: Optional[str] = None) -> Optional[float]:
+    """Instantaneous battery power in watts, from `ioreg -rn AppleSmartBattery`.
+
+    `InstantAmperage` is an unsigned 64-bit field that encodes a negative
+    (discharging) current as two's-complement; a value below 2**63 is read
+    as positive (charging) milliamps directly. `Voltage` is millivolts.
+    Returns None when either field is missing -- callers should treat that
+    as "not applicable" (desktop, or no battery present), never as a
+    measured zero.
+    """
+    if ioreg_output is None:
+        try:
+            ioreg_output = subprocess.run(
+                ["ioreg", "-rn", "AppleSmartBattery"], capture_output=True, text=True, timeout=5,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            return None
+    text = ioreg_output or ""
+    am = _BATTERY_AMPERAGE_RE.search(text)
+    vm = _BATTERY_VOLTAGE_RE.search(text)
+    if not am or not vm:
+        return None
+    raw_ma = int(am.group(1))
+    signed_ma = raw_ma - (1 << 64) if raw_ma >= (1 << 63) else raw_ma
+    mv = int(vm.group(1))
+    return abs(signed_ma / 1000.0) * (mv / 1000.0)
+
+
+_POWERMETRICS_CPU_POWER_RE = re.compile(r"CPU Power:\s*(\d+)\s*mW")
+
+
+def sample_power(
+    *, powermetrics_check: Optional[Callable[[], GuardResult]] = None,
+    powermetrics_runner: Optional[Callable[[List[str]], Any]] = None,
+    ioreg_output: Optional[str] = None,
+) -> PowerSample:
+    """The power sample a flight measurement carries.
+
+    Tries `powermetrics` first -- real only when this process can sample
+    without sudo, which is not the case anywhere this has been run so far
+    (see `check_powermetrics_unprivileged`'s docstring) -- then falls back
+    to the `ioreg` AppleSmartBattery reading that does work unprivileged on
+    this fleet, and returns `available=False` with the reason when neither
+    produces a number.
+    """
+    check = powermetrics_check or check_powermetrics_unprivileged
+    pm = check()
+    if pm.ok:
+        run = powermetrics_runner or (lambda c: subprocess.run(
+            c, capture_output=True, text=True, timeout=5))
+        try:
+            result = run(["powermetrics", "-n", "1", "-i", "1000", "--samplers", "cpu_power"])
+            m = _POWERMETRICS_CPU_POWER_RE.search(getattr(result, "stdout", "") or "")
+            if m:
+                return PowerSample(
+                    int(m.group(1)) / 1000.0, POWER_SOURCE_POWERMETRICS,
+                    "CPU package power only, not full-system draw", True,
+                )
+        except (OSError, subprocess.SubprocessError):
+            pass
+    watts = read_battery_instant_watts(ioreg_output)
+    if watts is not None:
+        return PowerSample(
+            watts, POWER_SOURCE_IOREG_BATTERY,
+            "instantaneous battery discharge only -- meaningless on AC power or a "
+            "desktop with no battery, and does not separate this process's draw "
+            "from the rest of the machine's",
+            True,
+        )
+    return PowerSample(
+        None, POWER_SOURCE_UNAVAILABLE,
+        "powermetrics needs root (no sudo here) and no battery discharge current "
+        "was readable -- likely on AC power or a desktop with no battery",
+        False,
+    )
+
+
+def energy_per_unit(watts: float, wall_seconds: float, units: float) -> float:
+    """Joules-per-unit over a measured window: average watts times the
+    window's seconds, divided by however many units (tokens, seconds of
+    audio, or items) the window produced. `units` must be positive."""
+    if units <= 0:
+        raise ValueError(f"units must be > 0, got {units}")
+    return (watts * wall_seconds) / units
+
+
+# Which energy metric a flight plan's role measurement produces -- see
+# spacepilot.model_registry.SPEED_METRICS's joules_per_* entries.
+ROLE_ENERGY_METRIC: Dict[str, str] = {
+    "executor": "joules_per_token",
+    "transducer": "joules_per_token",
+    "base": "joules_per_token",
+    "stt": "joules_per_second_of_audio",
+    "audio": "joules_per_second_of_audio",
+    "pii": "joules_per_item",
+    "lang-id": "joules_per_item",
+    "drafter": "joules_per_item",
+    "utility": "joules_per_item",
+}
+
+
 # ----------------------------------------------------------------- download
 
 class Downloader(Protocol):
@@ -391,6 +554,8 @@ def write_flown_measurement(
     model_yaml_path: Path, variant_id: str, *, device: str, backend: str,
     metric: str, value: float, measured_on: str, note: str,
     working_set_bytes: Optional[int] = None,
+    power_source: Optional[str] = None, power_watts: Optional[float] = None,
+    power_limits: Optional[str] = None,
 ) -> None:
     """Append one real `speed:` entry to a variant in a model manifest, in
     the registry's own shape (see spacepilot/registry/models/whisper.yaml).
@@ -413,6 +578,12 @@ def write_flown_measurement(
             "value": value, "source": "measured", "measured_on": measured_on,
             "note": note,
         }
+        if power_source is not None:
+            speed_entry["power_source"] = power_source
+        if power_watts is not None:
+            speed_entry["power_watts"] = power_watts
+        if power_limits is not None:
+            speed_entry["power_limits"] = power_limits
         rv.setdefault("speed", [])
         rv["speed"].append(speed_entry)
         if working_set_bytes is not None:
@@ -502,6 +673,7 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
     steps.add(f"flight command: {' '.join(cmd)}")
 
     if dry_run:
+        steps.add("power: unmeasured (dry-run stops before sampling)")
         steps.add("dry-run: stopping before inference, measurement, registry write and commit")
         return RunResult(model_id, "dry-run", steps.steps, "no bytes moved, nothing written")
 
@@ -519,6 +691,12 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
     if plan and plan.needs_wer:
         steps.add("measuring: WER against the known transcript")
 
+    power = sample_power()
+    if power.available:
+        steps.add(f"power sample: {power.watts:.2f} W via {power.source} ({power.limits})")
+    else:
+        steps.add(f"power sample: unmeasured -- {power.limits}")
+
     from spacepilot.model_registry import REGISTRY_DIR
     measured_on = _dt.date.today().isoformat()
     root = repo_root or ROOT
@@ -528,8 +706,27 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
         model_yaml, variant.id, device="this Mac", backend=variant.backends[0],
         metric="tokens_per_second", value=0.0, measured_on=measured_on,
         note="written by tools/fly.py",
+        power_source=power.source if power.available else None,
+        power_watts=power.watts, power_limits=power.limits,
     )
     steps.add(f"registry updated: {model_yaml}")
+
+    energy_metric = ROLE_ENERGY_METRIC.get(plan.role) if plan else None
+    if energy_metric and power.available:
+        # Placeholder value, same convention as the tokens_per_second stub
+        # above (value=0.0) -- the real wall-clock/unit counts come from the
+        # not-yet-implemented flight command's own accounting. Recorded so
+        # the shape (metric + power provenance) is proven against the real
+        # parser now, before any real run exists to fly.
+        write_flown_measurement(
+            model_yaml, variant.id, device="this Mac", backend=variant.backends[0],
+            metric=energy_metric, value=0.0, measured_on=measured_on,
+            note="written by tools/fly.py",
+            power_source=power.source, power_watts=power.watts, power_limits=power.limits,
+        )
+        steps.add(f"registry updated: {energy_metric} (power sampled via {power.source})")
+    elif energy_metric:
+        steps.add(f"registry not updated: {energy_metric} unmeasured -- {power.limits}")
 
     gitr = git_runner or (lambda c: subprocess.run(c, cwd=str(root), capture_output=True, text=True))
     if registry_dir is None:  # only regenerate the real export against the real registry

@@ -124,6 +124,16 @@ SPEED_METRICS = {
     # into a generation-speed number, because it is what makes a cold substrate
     # expensive even when its compute is cheap.
     "load_seconds",
+    # Energy-per-unit, added 2026-09-10 alongside tools/fly.py's power
+    # sampler. One metric per role shape rather than one generic "joules"
+    # number, because the unit an executor produces (a token) is not the
+    # unit an STT/audio role produces (a second of audio) is not the unit a
+    # classify/drafter role produces (an item) — dividing joules by the
+    # wrong denominator silently produces a number that looks comparable
+    # across roles and is not.
+    "joules_per_token",
+    "joules_per_second_of_audio",
+    "joules_per_item",
 }
 
 
@@ -151,7 +161,17 @@ class Fact:
 
 @dataclass(frozen=True)
 class Speed:
-    """One machine's measured throughput. The corpus everyone else lacks."""
+    """One machine's measured throughput. The corpus everyone else lacks.
+
+    `power_source` / `power_watts` / `power_limits` are optional and travel
+    together: they name which sampler produced the wattage a `joules_per_*`
+    entry was computed from (see tools/fly.py's `sample_power`), the
+    instantaneous reading itself, and that source's own stated limitations
+    (e.g. "ioreg AppleSmartBattery only reports a number on battery power").
+    Every speed entry written before 2026-09-10 has none of these three
+    keys and parses unchanged — absent, not false, is what an entry with no
+    power sample behind it should read as.
+    """
     device: str
     backend: str
     metric: str
@@ -159,6 +179,9 @@ class Speed:
     source: str
     measured_on: Optional[str] = None
     note: Optional[str] = None
+    power_source: Optional[str] = None
+    power_watts: Optional[float] = None
+    power_limits: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -345,6 +368,7 @@ def _speed(raw: Dict[str, Any], where: str) -> Speed:
     source = _require(raw, "source", where)
     if source not in SOURCES:
         raise RegistryError(f"{where}: source '{source}' not one of {sorted(SOURCES)}")
+    power_watts = raw.get("power_watts")
     return Speed(
         device=str(_require(raw, "device", where)),
         backend=str(_require(raw, "backend", where)),
@@ -353,6 +377,9 @@ def _speed(raw: Dict[str, Any], where: str) -> Speed:
         source=source,
         measured_on=raw.get("measured_on"),
         note=raw.get("note"),
+        power_source=raw.get("power_source"),
+        power_watts=float(power_watts) if power_watts is not None else None,
+        power_limits=raw.get("power_limits"),
     )
 
 
