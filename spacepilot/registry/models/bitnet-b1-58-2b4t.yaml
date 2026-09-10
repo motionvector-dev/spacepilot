@@ -1,0 +1,112 @@
+schema: 1
+id: bitnet-b1-58-2b4t
+name: BitNet b1.58 2B4T
+family: bitnet
+kind: text
+summary: >
+  Microsoft Research's native 1-bit LLM at 2B scale: ternary {-1, 0, +1}
+  weights and 8-bit activations, trained from scratch with the quantization
+  scheme (not post-training quantized) on 4T tokens. The model card is
+  explicit that the standard `transformers` path gives none of the claimed
+  efficiency -- the packed weights only pay off under `bitnet.cpp`'s
+  BitLinear kernels. Two variants registered here: the packed safetensors
+  repo (source weights) and the official GGUF (`bitnet.cpp` CPU inference).
+homepage: https://huggingface.co/microsoft/bitnet-b1.58-2B-4T
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://opensource.org/license/mit
+
+variants:
+  - id: bitnet-b1-58-2b4t-packed
+    name: BitNet b1.58 2B4T (packed 1.58-bit weights)
+    params: ~2B
+    precision: ternary (1.58-bit, W1.58A8)
+    repo: microsoft/bitnet-b1.58-2B-4T
+    revision: 04c3b9ad9361b824064a1f25ea60a8be9599b127
+    backends: [cpu, cuda]
+    download:
+      value: 1187777736
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        Whole repo at the pinned commit: the packed ternary
+        model.safetensors (1,178,623,988 bytes) plus tokenizer and config
+        files. Hub API listed no GGUF sibling in this repo -- the GGUF
+        build is a separate repo, registered as this model's other variant.
+    working_set:
+      value: 429496729
+      source: declared
+      checked: "2026-09-10"
+      note: >
+        Model card's own comparison table states "Memory (Non-emb): 0.4GB"
+        for BitNet b1.58 2B under bitnet.cpp -- a publisher claim, not a
+        SpacePilot measurement. The same table claims 29ms CPU decode
+        latency and 0.028J estimated energy per generation, both declared,
+        not measured here.
+    speed: []
+    notes: >
+      Official inference code: https://github.com/microsoft/BitNet
+      (bitnet.cpp), MIT licence, commit 0b341e582afbf9e1011f24744b554c96a3477eb5
+      on main checked 2026-09-10 (that repo's README documents CPU kernels for
+      x86/ARM plus a GPU kernel added 2026-05-20; NPU support is listed as
+      "coming next", not shipped). Runtime recipe: bitnet.cpp (recipe
+      pending) -- this checkout's runtime-recipe schema
+      (spacepilot/registry/runtimes/) is owned by another worktree lane
+      right now, so no recipe file was added here; see the report for the
+      pinned bitnet.cpp commit.
+
+      Model card, verbatim warning (checked 2026-09-10): "Please do NOT
+      expect performance efficiency gains (in terms of speed, latency, or
+      energy consumption) when using this model with the standard
+      transformers library, even with the required fork ... For achieving
+      the efficiency benefits demonstrated in the technical paper, you MUST
+      use the dedicated C++ implementation: bitnet.cpp." So this
+      `-packed` variant is the source-of-truth weights; the GGUF variant
+      below is the one bitnet.cpp actually reads efficiently.
+
+      Card claims a 54.19 average across ARC-Challenge/Easy, OpenbookQA,
+      BoolQ, HellaSwag, PIQA, WinoGrande, CommonsenseQA, TruthfulQA,
+      TriviaQA, MMLU, HumanEval+, GSM8K, MATH-500, IFEval and MT-bench
+      against similarly-sized full-precision open models (Qwen2.5-1.5B's
+      55.23 is the only one that beats it) -- declared by the publisher,
+      not reproduced by SpacePilot.
+
+      Status: unflown. Executor-candidate role for the router bench and the
+      L2R typed tasks, per the ternary/1.58-bit registration brief
+      (2026-09-10).
+
+  - id: bitnet-b1-58-2b4t-gguf-i2s
+    name: BitNet b1.58 2B4T (GGUF, I2_S)
+    params: ~2B
+    precision: ternary (1.58-bit, GGUF I2_S)
+    repo: microsoft/bitnet-b1.58-2B-4T-gguf
+    revision: a1f2f1c765812aa8af3f6eda4a313707064bba15
+    files: ["ggml-model-i2_s.gguf"]
+    backends: [cpu]
+    download:
+      value: 1187801280
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: single-file GGUF weights at the pinned commit, I2_S quantization.
+    working_set:
+      value: 429496729
+      source: declared
+      checked: "2026-09-10"
+      note: >
+        Same publisher figure as the packed variant's working set -- the
+        model card does not give a separate number for the GGUF build.
+    speed: []
+    notes: >
+      The repo the model card names for `bitnet.cpp` CPU inference
+      specifically ("Contains the model weights in GGUF format, compatible
+      with the bitnet.cpp library for CPU inference"). Same MIT licence.
+      Runtime: bitnet.cpp (recipe pending) -- see the packed variant's notes
+      above for the pinned bitnet.cpp commit and why no recipe file was
+      added in this pass.
+
+      Status: unflown. Executor-candidate role for the router bench and the
+      L2R typed tasks, per the ternary/1.58-bit registration brief
+      (2026-09-10).

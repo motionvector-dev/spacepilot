@@ -35,6 +35,52 @@ shape (`source: measured`), nothing else touched. `--push` pushes; nothing
 pushes on its own, and `fly.py` never opens the PR -- read the log, then
 open it by hand.
 
+## Power
+
+Every real flight now brackets its run with a power sample and records it
+alongside tok/s and peak memory, producing joules per generated token for
+executor/transducer/base roles, joules per second of audio for STT/audio
+roles, and joules per classified item for pii/lang-id/drafter/utility roles
+(`tools/fly.py`'s `ROLE_ENERGY_METRIC`, `spacepilot.model_registry.
+SPEED_METRICS`'s three `joules_per_*` entries).
+
+Two sources, tried in order, both probed on this Mac 2026-09-10:
+
+- **`powermetrics`** needs root. Measured directly: `powermetrics -n 1 -i
+  1000 --samplers cpu_power` exits 0 but prints "powermetrics must be
+  invoked as the superuser" and samples nothing. `sudo` is not available in
+  this environment, so this source is not usable here today --
+  `check_powermetrics_unprivileged` reads the output text (not just the
+  exit code) so a future machine where it genuinely works unprivileged
+  (root, or an entitled/setuid build) takes this branch automatically.
+- **`ioreg -rn AppleSmartBattery`** worked unprivileged in the same
+  session. `InstantAmperage` and `Voltage` are both unsigned 64-bit fields;
+  a discharging battery's current comes back as two's-complement (measured
+  here: `18446744073709550034` == `2**64 - 1582`, i.e. -1582 mA at 11441
+  mV, ~18.1 W). This only has a number while genuinely running on battery
+  -- a desktop Mac, or a laptop on AC power, has no discharge current for
+  this field to report.
+
+**On this Mac, right now: `ioreg-battery` is the working unprivileged
+source, `powermetrics` is not.** `sample_power()` (`tools/fly.py`) tries
+powermetrics first and falls back automatically; when neither source has a
+number (AC power, or a desktop with no battery) it returns
+`available=False` with the reason, and the flight's power fields are
+written as unmeasured rather than a fabricated zero.
+
+**Limits, stated plainly**: the `ioreg-battery` reading is instantaneous
+system-wide battery draw, not this process's own draw -- it cannot
+separate the flight's power from whatever else is running, and it says
+nothing on AC power. `powermetrics`'s CPU-package number (when available)
+is CPU power only, not full-system. Every `joules_per_*` speed entry
+carries `power_source` and `power_limits` alongside the number so a reader
+sees which source produced it and what that source cannot see (see
+`spacepilot.model_registry.Speed`).
+
+A dry run (`fly.py run <model-id>`, the default) stops before sampling
+anything and says so in its own step log: `power: unmeasured (dry-run
+stops before sampling)`.
+
 ## Runtime gaps
 `fly.py plan` marks any entry `BLOCKED` when its runtime is not installed,
 naming the fix (`spacepilot runtimes install <id>`) where one exists. CoreAI

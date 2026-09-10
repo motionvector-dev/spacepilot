@@ -94,6 +94,111 @@
    ]
   },
   {
+   "id": "bitnet-b1-58-2b4t",
+   "name": "BitNet b1.58 2B4T",
+   "family": "bitnet",
+   "kind": "text",
+   "summary": "Microsoft Research's native 1-bit LLM at 2B scale: ternary {-1, 0, +1} weights and 8-bit activations, trained from scratch with the quantization scheme (not post-training quantized) on 4T tokens. The model card is explicit that the standard `transformers` path gives none of the claimed efficiency -- the packed weights only pay off under `bitnet.cpp`'s BitLinear kernels. Two variants registered here: the packed safetensors repo (source weights) and the official GGUF (`bitnet.cpp` CPU inference).\n",
+   "homepage": "https://huggingface.co/microsoft/bitnet-b1.58-2B-4T",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://opensource.org/license/mit",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "bitnet-b1-58-2b4t-packed",
+     "model_id": "bitnet-b1-58-2b4t",
+     "name": "BitNet b1.58 2B4T (packed 1.58-bit weights)",
+     "kind": "text",
+     "family": "bitnet",
+     "params": "~2B",
+     "precision": "ternary (1.58-bit, W1.58A8)",
+     "repo": "microsoft/bitnet-b1.58-2B-4T",
+     "files": null,
+     "revision": "04c3b9ad9361b824064a1f25ea60a8be9599b127",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "cuda"
+     ],
+     "download": {
+      "value": 1187777736.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Whole repo at the pinned commit: the packed ternary model.safetensors (1,178,623,988 bytes) plus tokenizer and config files. Hub API listed no GGUF sibling in this repo -- the GGUF build is a separate repo, registered as this model's other variant.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 429496729.0,
+      "source": "declared",
+      "checked": "2026-09-10",
+      "note": "Model card's own comparison table states \"Memory (Non-emb): 0.4GB\" for BitNet b1.58 2B under bitnet.cpp -- a publisher claim, not a SpacePilot measurement. The same table claims 29ms CPU decode latency and 0.028J estimated energy per generation, both declared, not measured here.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Official inference code: https://github.com/microsoft/BitNet (bitnet.cpp), MIT licence, commit 0b341e582afbf9e1011f24744b554c96a3477eb5 on main checked 2026-09-10 (that repo's README documents CPU kernels for x86/ARM plus a GPU kernel added 2026-05-20; NPU support is listed as \"coming next\", not shipped). Runtime recipe: bitnet.cpp (recipe pending) -- this checkout's runtime-recipe schema (spacepilot/registry/runtimes/) is owned by another worktree lane right now, so no recipe file was added here; see the report for the pinned bitnet.cpp commit.\nModel card, verbatim warning (checked 2026-09-10): \"Please do NOT expect performance efficiency gains (in terms of speed, latency, or energy consumption) when using this model with the standard transformers library, even with the required fork ... For achieving the efficiency benefits demonstrated in the technical paper, you MUST use the dedicated C++ implementation: bitnet.cpp.\" So this `-packed` variant is the source-of-truth weights; the GGUF variant below is the one bitnet.cpp actually reads efficiently.\nCard claims a 54.19 average across ARC-Challenge/Easy, OpenbookQA, BoolQ, HellaSwag, PIQA, WinoGrande, CommonsenseQA, TruthfulQA, TriviaQA, MMLU, HumanEval+, GSM8K, MATH-500, IFEval and MT-bench against similarly-sized full-precision open models (Qwen2.5-1.5B's 55.23 is the only one that beats it) -- declared by the publisher, not reproduced by SpacePilot.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+    },
+    {
+     "id": "bitnet-b1-58-2b4t-gguf-i2s",
+     "model_id": "bitnet-b1-58-2b4t",
+     "name": "BitNet b1.58 2B4T (GGUF, I2_S)",
+     "kind": "text",
+     "family": "bitnet",
+     "params": "~2B",
+     "precision": "ternary (1.58-bit, GGUF I2_S)",
+     "repo": "microsoft/bitnet-b1.58-2B-4T-gguf",
+     "files": [
+      "ggml-model-i2_s.gguf"
+     ],
+     "revision": "a1f2f1c765812aa8af3f6eda4a313707064bba15",
+     "is_pinned": true,
+     "backends": [
+      "cpu"
+     ],
+     "download": {
+      "value": 1187801280.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "single-file GGUF weights at the pinned commit, I2_S quantization.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 429496729.0,
+      "source": "declared",
+      "checked": "2026-09-10",
+      "note": "Same publisher figure as the packed variant's working set -- the model card does not give a separate number for the GGUF build.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://opensource.org/license/mit",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "The repo the model card names for `bitnet.cpp` CPU inference specifically (\"Contains the model weights in GGUF format, compatible with the bitnet.cpp library for CPU inference\"). Same MIT licence. Runtime: bitnet.cpp (recipe pending) -- see the packed variant's notes above for the pinned bitnet.cpp commit and why no recipe file was added in this pass.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+    }
+   ]
+  },
+  {
    "id": "boogu",
    "name": "Boogu Image",
    "family": "boogu",
@@ -2622,7 +2727,10 @@
        "value": 1.167,
        "source": "measured",
        "measured_on": "2026-08-25",
-       "note": "per-invocation via `spacepilot run speech` \u2014 4.25s of speech in 3.6s wall clock, model load included (each CLI run reloads the model). Warm in-process synthesis measured 4.0x on 2026-08-23; both live in measurements/apple-m1-max-32gb/kokoro-82m-onnx"
+       "note": "per-invocation via `spacepilot run speech` \u2014 4.25s of speech in 3.6s wall clock, model load included (each CLI run reloads the model). Warm in-process synthesis measured 4.0x on 2026-08-23; both live in measurements/apple-m1-max-32gb/kokoro-82m-onnx",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -2797,7 +2905,10 @@
        "value": 2.7,
        "source": "declared",
        "measured_on": "2026-08-22",
-       "note": "121 frames at 512x512 in 11 seconds, reported at https://huggingface.co/Lightricks/LTX-Video/discussions/6 and converted at the model card's 30 FPS. The source does not say which checkpoint or precision was used, so this may not be this exact variant \u2014 treat it as the speed class of a small LTX model on a 4090, not as this row's number.\n"
+       "note": "121 frames at 512x512 in 11 seconds, reported at https://huggingface.co/Lightricks/LTX-Video/discussions/6 and converted at the model card's 30 FPS. The source does not say which checkpoint or precision was used, so this may not be this exact variant \u2014 treat it as the speed class of a small LTX model on a 4090, not as this row's number.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -2854,7 +2965,10 @@
        "value": 43.6,
        "source": "declared",
        "measured_on": "2026-08-22",
-       "note": "88 frames at 1216x704 in 2 minutes 8 seconds without CPU offloading, reported at https://github.com/Lightricks/LTX-Video/issues/166 and converted at the model card's 30 FPS. The report says \"13B model\" without stating distilled or fp8, and the card is a modified 48 GB 4090, so this is an upper bound for a 13B LTX rather than this variant's figure.\n"
+       "note": "88 frames at 1216x704 in 2 minutes 8 seconds without CPU offloading, reported at https://github.com/Lightricks/LTX-Video/issues/166 and converted at the model card's 30 FPS. The report says \"13B model\" without stating distilled or fp8, and the card is a modified 48 GB 4090, so this is an upper bound for a 13B LTX rather than this variant's figure.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -4140,6 +4254,138 @@
    ]
   },
   {
+   "id": "ternary-bonsai-8b",
+   "name": "Ternary Bonsai 8B",
+   "family": "bonsai",
+   "kind": "text",
+   "summary": "Prism ML's ternary (1.58-bit) requant of Qwen3-8B: every weight in {-1, 0, +1} with a per-128-weight FP16 group scale (GGUF Q2_0 g128, 2.125 bits/ weight effective). Publisher-measured against same-size full-precision models on identical EvalScope/vLLM infrastructure -- see `notes` for the numbers and their important caveat: Q2_0 for ternary weights is not yet in mainline `llama.cpp`, only in Prism ML's own fork.\n",
+   "homepage": "https://huggingface.co/prism-ml/Ternary-Bonsai-8B-gguf",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "ternary-bonsai-8b-unpacked",
+     "model_id": "ternary-bonsai-8b",
+     "name": "Ternary Bonsai 8B (unpacked safetensors)",
+     "kind": "text",
+     "family": "bonsai",
+     "params": "8.19B (~6.95B non-embedding)",
+     "precision": "ternary (1.58-bit, unpacked bf16-scale safetensors)",
+     "repo": "prism-ml/Ternary-Bonsai-8B-unpacked",
+     "files": null,
+     "revision": "ac20f03fc62e872399218b659c8e949dfca05769",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 16393073214.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Whole repo at the pinned commit -- four safetensors shards (~15.3 GiB total) plus tokenizer/config. This is the unquantized ternary-value representation (one float per weight, not yet bit-packed); the GGUF variant below is the packed 2.03 GiB deployment artifact.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 17587891322.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as download size plus ~7.5% for KV cache and runtime buffers at a short context, the same multiplier convention used elsewhere in this registry for an unquantized checkpoint. No publisher figure exists for this specific unpacked artifact -- the publisher's own memory numbers (see the GGUF variant) are for the packed Q2_0 build, not this one.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Base model: Qwen/Qwen3-8B (Apache-2.0), requantized ternary by Prism ML. This is the unpacked/base_model repo the GGUF variant below quantizes from -- registered separately because it is the weight source the SpacePilot MLX build path (mlx-2bit sibling repo, not registered here) or a from-scratch GGUF re-conversion would start from, not something meant to be deployed directly. Runtime: PrismML-Eng/llama.cpp (recipe pending) -- see the GGUF variant's notes below.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+    },
+    {
+     "id": "ternary-bonsai-8b-gguf-q2-0",
+     "model_id": "ternary-bonsai-8b",
+     "name": "Ternary Bonsai 8B (GGUF Q2_0, g128)",
+     "kind": "text",
+     "family": "bonsai",
+     "params": "8.19B (~6.95B non-embedding)",
+     "precision": "ternary (1.58-bit, GGUF Q2_0 g128)",
+     "repo": "prism-ml/Ternary-Bonsai-8B-gguf",
+     "files": [
+      "Ternary-Bonsai-8B-Q2_0.gguf"
+     ],
+     "revision": "c2aefbeb4b24469cd11579c3384b990404c17a30",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 2182184672.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "The single recommended Q2_0 g128 file at the pinned commit (2.03 GiB). The same repo also ships an F16 baseline (16.38 GB, for re-quantization) and a PQ2_0/Q2_0_g64 variant not registered here.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 2182184672.0,
+      "source": "declared",
+      "checked": "2026-09-10",
+      "note": "Model card's own memory table: \"GGUF Q2_0 g128: 2.03 GiB (2.18 GB)\" against a 16.38 GB FP16 baseline, a 7.5x reduction -- publisher claim, not a SpacePilot measurement of resident memory during a run.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M4 Pro 48GB",
+       "backend": "metal",
+       "metric": "tokens_per_second",
+       "value": 76.0,
+       "source": "declared",
+       "measured_on": "2026-09-10",
+       "note": "Publisher's own throughput table (llama.cpp, Apple M4 Pro 48 GB, TG128 decode, `-ngl 99 -fa 1`, requires Prism ML's llama.cpp fork for Q2_0 support -- not mainline). Declared by the publisher's own README, not run on SpacePilot's fleet; kept as a `speed` entry because the registry schema requires a `source`, and this one is honestly `declared` rather than `measured`.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
+      }
+     ],
+     "caveats": [
+      {
+       "capability": "audio.transcription",
+       "status": "absent",
+       "detail": "Text-only chat model; no audio path. Listed for completeness against this registry's caveat taxonomy, not because anyone claimed otherwise.",
+       "provenance": "declared",
+       "metric": null,
+       "method": null,
+       "is_safe": false
+      }
+     ],
+     "compromised": [
+      "audio.transcription"
+     ],
+     "notes": "Quantization: GGUF Q2_0 g128, each weight {-1, 0, +1} with one shared FP16 scale per 128-weight group -- 34 bytes/block, 2.125 bits/weight effective (the Q2_0 4th code point, +2*scale, is reserved and unused for ternary weights). Kernel note from the model card, verbatim (checked 2026-09-10): \"Q2_0 is not yet in mainline llama.cpp. Use our fork at PrismML-Eng/llama.cpp (prism branch, default) which adds Q2_0 support for CPU (NEON/generic) and Metal.\" So `backends: [cpu, metal]` here describes the fork's support, not mainline llama.cpp's -- a plain mainline build will not read this file's quantization correctly. The Hub listing also tags this repo `cuda`, but the Q2_0 kernel README quoted above only documents CPU and Metal support -- `backends` here follows the README over the tag, so CUDA is left out rather than asserted on a tag alone.\nPublisher-measured accuracy (checked 2026-09-10, EvalScope v1.4.2 + vLLM 0.15.1 on one H100, \"identical infrastructure, generation parameters, and scoring\" across all rows, all models 6B-9B params): avg 75.5 (MMLU-R 72.6, MuSR 56.2, GSM8K 91, HumanEval+ 77.4, IFEval 81.8, BFCL 73.9) at 2.18 GB, second only to full-precision Qwen3-8B's 79.3 at 16.38 GB among the models in that table, and ahead of RNJ 8B, Ministral3 8B and Olmo 3 7B (all full-precision, all larger on disk). All of the above is the publisher's own eval run, not reproduced by SpacePilot -- the point of flying this variant is exactly to check it.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+    }
+   ]
+  },
+  {
    "id": "wan-2-1",
    "name": "Wan 2.1",
    "family": "wan",
@@ -4201,7 +4447,10 @@
        "value": 48.0,
        "source": "declared",
        "measured_on": "2026-08-22",
-       "note": "About 4 minutes for a 5-second 480p clip, stated on the official model card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B without quantisation or other optimisation. Not measured by us.\n"
+       "note": "About 4 minutes for a 5-second 480p clip, stated on the official model card at https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B without quantisation or other optimisation. Not measured by us.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -4314,7 +4563,10 @@
        "value": 2460.0,
        "source": "declared",
        "measured_on": "2026-08-22",
-       "note": "82 minutes for a 2-second clip in GGUF, reported at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen \u2014 third-party, on twice the memory of a 32 GB machine. Not measured by us. Treat as the order of magnitude, not the number.\n"
+       "note": "82 minutes for a 2-second clip in GGUF, reported at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen \u2014 third-party, on twice the memory of a 32 GB machine. Not measured by us. Treat as the order of magnitude, not the number.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -4388,7 +4640,10 @@
        "value": 8.4,
        "source": "measured",
        "measured_on": "2026-08-23",
-       "note": "180s of speech, greedy decode, median of 3, CPU only. This is a floor, not a ceiling \u2014 the machine is a 2015 two-core laptop with no GPU.\n"
+       "note": "180s of speech, greedy decode, median of 3, CPU only. This is a floor, not a ceiling \u2014 the machine is a 2015 two-core laptop with no GPU.\n",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       },
       {
        "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
@@ -4397,7 +4652,10 @@
        "value": 6.48,
        "source": "measured",
        "measured_on": "2026-08-23",
-       "note": "same clip and machine, beam search with 5 beams"
+       "note": "same clip and machine, beam search with 5 beams",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],
@@ -4499,7 +4757,10 @@
        "value": 2.41,
        "source": "measured",
        "measured_on": "2026-08-23",
-       "note": "180s of speech, greedy decode, median of 3, CPU only"
+       "note": "180s of speech, greedy decode, median of 3, CPU only",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       },
       {
        "device": "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz",
@@ -4508,7 +4769,10 @@
        "value": 1.88,
        "source": "measured",
        "measured_on": "2026-08-23",
-       "note": "same clip and machine, beam search with 5 beams"
+       "note": "same clip and machine, beam search with 5 beams",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
       }
      ],
      "caveats": [],

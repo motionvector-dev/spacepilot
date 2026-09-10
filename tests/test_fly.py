@@ -289,3 +289,152 @@ def test_queue_stops_at_the_time_budget():
     )
     assert calls["n"] == 1
     assert len(outcomes) == 1
+
+
+# ------------------------------------------------------------- power sampler
+#
+# `sudo` is not available in this environment (see the brief that added this
+# section). Measured directly on this Mac, 2026-09-10: `powermetrics -n 1
+# -i 1000 --samplers cpu_power` exits 0 but prints "powermetrics must be
+# invoked as the superuser" and samples nothing -- so `check_powermetrics_
+# unprivileged` has to read the *text*, not just the exit code, and the real
+# fallback path is `ioreg -rn AppleSmartBattery`'s `InstantAmperage` /
+# `Voltage` fields, which worked unprivileged in the same session (a
+# two's-complement mA current times mV, giving instantaneous watts while on
+# battery). Every test below injects fake subprocess text; none of them
+# shells out for real.
+
+def test_check_powermetrics_unprivileged_reads_the_superuser_message_as_not_ok():
+    class FakeResult:
+        returncode = 0
+        stdout = "powermetrics must be invoked as the superuser\n"
+        stderr = ""
+
+    result = fly.check_powermetrics_unprivileged(runner=lambda cmd: FakeResult())
+    assert result.ok is False
+    assert "root" in result.reason or "superuser" in result.reason.lower() or "sudo" in result.reason.lower()
+
+
+def test_check_powermetrics_unprivileged_accepts_a_real_sample():
+    class FakeResult:
+        returncode = 0
+        stdout = "*** Sampled system activity ***\nCPU Power: 1234 mW\n"
+        stderr = ""
+
+    result = fly.check_powermetrics_unprivileged(runner=lambda cmd: FakeResult())
+    assert result.ok is True
+
+
+def test_check_powermetrics_unprivileged_handles_a_missing_binary():
+    def raises(cmd):
+        raise FileNotFoundError("no powermetrics")
+
+    result = fly.check_powermetrics_unprivileged(runner=raises)
+    assert result.ok is False
+
+
+# Real `ioreg -rn AppleSmartBattery` output captured on this Mac, 2026-09-10,
+# while discharging on battery: InstantAmperage as an unsigned 64-bit field
+# carrying -1582 mA (18446744073709550034 == 2**64 - 1582) at 11441 mV.
+REAL_IOREG_BATTERY_SAMPLE = '''
++-o AppleSmartBattery  <class AppleSmartBattery, id 0x100000aa9>
+  | {
+  |   "ExternalConnected" = No
+  |   "Voltage" = 11441
+  |   "InstantAmperage" = 18446744073709550034
+  |   "Amperage" = 18446744073709550034
+  | }
+'''
+
+
+def test_read_battery_instant_watts_parses_the_twos_complement_discharge_current():
+    watts = fly.read_battery_instant_watts(REAL_IOREG_BATTERY_SAMPLE)
+    # 1.582 A * 11.441 V ~= 18.10 W
+    assert watts == pytest.approx(18.099, abs=0.01)
+
+
+def test_read_battery_instant_watts_returns_none_when_fields_are_missing():
+    assert fly.read_battery_instant_watts("no useful fields here\n") is None
+
+
+def test_read_battery_instant_watts_handles_positive_charging_current():
+    sample = '"Voltage" = 12000\n"InstantAmperage" = 500\n'
+    assert fly.read_battery_instant_watts(sample) == pytest.approx(6.0)
+
+
+def test_sample_power_falls_back_to_ioreg_when_powermetrics_needs_root():
+    sample = fly.sample_power(
+        powermetrics_check=lambda: fly.GuardResult(False, "needs root"),
+        ioreg_output=REAL_IOREG_BATTERY_SAMPLE,
+    )
+    assert sample.available is True
+    assert sample.source == fly.POWER_SOURCE_IOREG_BATTERY
+    assert sample.watts == pytest.approx(18.099, abs=0.01)
+    assert sample.limits  # non-empty: callers must be told this source's limits
+
+
+def test_sample_power_reports_unavailable_when_neither_source_has_a_number():
+    sample = fly.sample_power(
+        powermetrics_check=lambda: fly.GuardResult(False, "needs root"),
+        ioreg_output="no battery fields here\n",
+    )
+    assert sample.available is False
+    assert sample.watts is None
+    assert sample.source == fly.POWER_SOURCE_UNAVAILABLE
+
+
+def test_energy_per_unit_computes_joules_per_unit():
+    # 10 W for 5 s over 100 tokens = 0.5 J / token
+    assert fly.energy_per_unit(10.0, 5.0, 100.0) == pytest.approx(0.5)
+
+
+def test_energy_per_unit_rejects_zero_or_negative_units():
+    with pytest.raises(ValueError):
+        fly.energy_per_unit(10.0, 5.0, 0.0)
+    with pytest.raises(ValueError):
+        fly.energy_per_unit(10.0, 5.0, -1.0)
+
+
+def test_role_energy_metric_covers_every_flight_plan_role():
+    roles = {p.role for p in fly.FLIGHT_PLANS.values()}
+    missing = roles - set(fly.ROLE_ENERGY_METRIC)
+    assert not missing, f"roles with no energy metric mapping: {missing}"
+
+
+def test_dry_run_reports_power_as_unmeasured():
+    """A dry run stops before sampling anything -- the step log has to say
+    so explicitly rather than silently omitting the power line."""
+    result = fly.fly_run(
+        "edge0-8b-a1b-preview-4bit",
+        dry_run=True,
+        downloader=fly.DryRunDownloader(),
+        disk_check=lambda download_bytes: fly.GuardResult(True, "plenty free"),
+        power_check=lambda: fly.GuardResult(True, "Now drawing from 'AC Power'"),
+    )
+    joined = "\n".join(result.steps)
+    assert "unmeasured" in joined.lower()
+
+
+def test_write_flown_measurement_carries_power_provenance(tmp_path):
+    from spacepilot.model_registry import parse_model
+
+    src = Path("spacepilot/registry/models/edge0-8b-a1b.yaml")
+    dst = tmp_path / "edge0-8b-a1b.yaml"
+    dst.write_text(src.read_text())
+
+    fly.write_flown_measurement(
+        dst, "edge0-8b-a1b-preview-4bit",
+        device="this Mac", backend="metal", metric="joules_per_token",
+        value=0.031, measured_on="2026-09-10", note="power sample",
+        power_source=fly.POWER_SOURCE_IOREG_BATTERY, power_watts=18.1,
+        power_limits="instantaneous battery discharge only",
+    )
+
+    raw = yaml.safe_load(dst.read_text())
+    model = parse_model(raw, "edge0-8b-a1b.yaml")
+    variant = next(v for v in model.variants if v.id == "edge0-8b-a1b-preview-4bit")
+    entry = next(s for s in variant.speed if s.metric == "joules_per_token")
+    assert entry.value == pytest.approx(0.031)
+    assert entry.power_source == fly.POWER_SOURCE_IOREG_BATTERY
+    assert entry.power_watts == pytest.approx(18.1)
+    assert "battery" in entry.power_limits
