@@ -1,0 +1,66 @@
+schema: 1
+id: edge0-35b-a3b-preview
+name: Edge0 35B-A3B (preview)
+family: edge0
+kind: text
+summary: >
+  35B-total / ~3B-active MoE preview from the Edge0 runtime: SSD expert
+  streaming keeps the active set under ~3 GiB resident, a trained prerouter
+  overlaps expert loads with the forward pass, and a Recover-LoRA adapter
+  claws back most of the loss the frozen int4 base takes from quantization.
+  Built on Qwen3.5-MoE 35B-A3B.
+homepage: https://huggingface.co/Edge0/Edge0-35B-A3B-preview
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: edge0-35b-a3b-preview-4bit
+    name: Edge0 35B-A3B Preview (4-bit, SSD expert streaming)
+    params: 35B (A3B)
+    precision: 4bit
+    repo: Edge0/Edge0-35B-A3B-preview
+    revision: 1ff9f4478890faec0368c5463b621d1036d5b518
+    backends: [metal]
+    download:
+      value: 21147842560
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        ~19.7 GiB (21,147,842,560 bytes) upstream checkpoint on the Hugging Face
+        Hub at pinned commit 1ff9f447: four 4-bit safetensors shards for the base
+        Qwen3.5-MoE 35B-A3B weights plus the lora_edge0_35b.safetensors
+        Recover-LoRA adapter and the prerouter_edge0_35b.safetensors routing head.
+    working_set:
+      value: 3221225472
+      source: declared
+      checked: "2026-09-10"
+      note: >
+        Edge0's own claim: SSD expert streaming keeps only the active expert set
+        resident, "under 3 GiB" peak, independent of the 35B total parameter
+        count -- this is a runtime working set, not the on-disk checkpoint size.
+    speed: []
+    notes: >
+      Edge0 runtime source: https://github.com/Edge0-AI/edge0 (Apache-2.0). SSD
+      Expert Offload streams expert weights from storage on demand, so peak
+      memory is bounded by the active set rather than total parameter count.
+      Prerouter: a trained head predicts expert routing one step ahead so expert
+      loads overlap the forward pass instead of stalling it, claimed up to +59%
+      decode throughput. Recover-LoRA: the int4 base is frozen and LoRA adapters
+      are trained by distillation from the FP teacher, recovering most of the
+      quantization loss at 4-bit. Claimed (Edge0 model card, checked 2026-09-10):
+      15 tok/s decode, 140 tok/s prompt fill. MLX backend targets Apple Silicon
+      only today; CUDA is on the Edge0 roadmap, not shipped.
+
+      Limitations note, verbatim from the Edge0-35B-A3B-preview model card
+      (checked 2026-09-10): "Agent capability: this preview release is not yet
+      optimized for agentic tasks -- tool use, multi-step planning, and
+      long-horizon autonomy are currently weak." The card adds that "the full
+      release will substantially strengthen agent capability."
+
+      Status: unflown. No speed entries recorded -- nobody has run this on a
+      SpacePilot-probed machine yet; the tok/s and load-seconds figures above
+      are the publisher's own numbers, not a measurement made here.
