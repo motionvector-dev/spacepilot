@@ -186,8 +186,10 @@ a running cost — `$0.42`, ticking, next to the clock. Click it: the only
 button is Terminate, with the total so far. One g6e forgotten overnight is $6,
 more than a year of the subscription. It pays for itself the first time.
 
-**2. Hold to talk.** No wake word, no always-listening. Hold a chord anywhere
-on the Mac, talk, release. The mic dot is driven by the audio graph, so "is it
+**2. Hold to talk.** SpaceBar holds to talk by choice, not for lack of a wake
+word: the voice daemon has an on-device one (`voice/src/space_voice/wake_word.py`,
+openWakeWord ONNX) for hands-free surfaces such as the live show. Hold a chord
+anywhere on the Mac, talk, release. The mic dot is driven by the audio graph, so "is it
 listening" is answerable by looking. Every Mac voice assistant today is either
 always on or needs you to say something out loud in an office.
 
