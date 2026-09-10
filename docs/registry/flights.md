@@ -38,5 +38,42 @@ open it by hand.
 ## Runtime gaps
 `fly.py plan` marks any entry `BLOCKED` when its runtime is not installed,
 naming the fix (`spacepilot runtimes install <id>`) where one exists. CoreAI
-and Desert Ant Labs have no runtime registered in this repo yet, so those
-entries stay blocked with no fix command until one is added.
+(muse-glimmer) has no runtime registered in this repo yet, so it stays
+blocked with no fix command.
+
+## Runtimes: edge0 and desert-ant
+Registered 2026-09-10 (`spacepilot/registry/runtimes/edge0.yaml`,
+`spacepilot/registry/runtimes/desert-ant.yaml`):
+
+- **edge0** -- pip, from git, pinned to a commit SHA on Edge0-AI/edge0 (no
+  PyPI release exists): `pip install "edge0 @
+  git+https://github.com/Edge0-AI/edge0.git@fbab5f8c08e843e204c0fc6ae18b89a154c652cf"`.
+  Runs `edge0-35b-a3b-preview` and `edge0-8b-a1b-preview` -- plain `mlx-lm`
+  cannot run an Edge0 checkpoint correctly (no SSD expert streaming, no
+  prerouter, no Recover-LoRA), which is what the earlier `mlx-lm`-routed
+  manifests got wrong. Pins `mlx-lm==0.31.0` exactly, which downgrades this
+  registry's own `mlx-lm>=0.31.3` runtime if installed into the same
+  interpreter -- give edge0 its own environment, the way `mflux` already
+  gets one, rather than installing both into the shared one. `spacepilot
+  runtimes install edge0` will show the downgrade and refuse `--yes` alone;
+  needs `--allow-downgrade` in a shared env, or install elsewhere.
+- **desert-ant** -- a new `script` install method (not pip): the CLI
+  (Desert-Ant-Labs/desert-ant-cli, MIT) is a Swift binary, released as a
+  signed tarball, with no PyPI or npm package at all. Installed from the
+  pinned `v0.1.1` release's `install.sh`, verified by shelling out to
+  `desertant --version`, never imported. Runs nine of the twelve registered
+  Desert Ant manifests (voz, clear, ear, uhm, redact, title, clips, emo,
+  gist); align and shapes are excluded by the CLI itself (see the recipe's
+  notes) and tongue has no CLI adapter at all -- all three stay `BLOCKED`
+  with no fix, on purpose, not stubbed. None of the twelve needs an account
+  or an API key.
+
+## Arm a flight night, today
+As of 2026-09-10, with `mlx-lm`, `whisper-cpp`, and `desert-ant` installed
+(edge0 deliberately left uninstalled here -- see above), the flyable set is:
+`qwen1-5-moe-a2-7b-chat-4bit`, `qwen3-5-35b-a3b-base-bf16`,
+`distil-large-v3-ggml`, and the nine wired Desert Ant variants
+(`desert-ant-{voz,clear,ear,uhm,redact,title,clips,emo,gist}-1`).
+    caffeinate -s python tools/fly.py queue --max-minutes 240 --while-idle
+`fly.py plan` is the live source of truth -- read it before arming, it
+reflects whatever is actually installed on the machine you run it on.

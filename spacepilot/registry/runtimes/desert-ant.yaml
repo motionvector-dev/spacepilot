@@ -1,0 +1,79 @@
+schema: 1
+id: desert-ant
+name: Desert Ant CLI
+summary: >
+  Official terminal client for Desert Ant Labs' on-device models: transcribe,
+  cut clips, clean up audio, redact PII, and more, all running locally.
+  Distributed as a signed Swift binary, not a Python or JS package -- there is
+  no pip install for this one.
+homepage: https://github.com/Desert-Ant-Labs/desert-ant-cli
+serves: [transcription, audio, text]
+backends: [cpu, metal]
+license: MIT
+
+install:
+  method: script
+  package: desertant
+  script_url: "https://raw.githubusercontent.com/Desert-Ant-Labs/desert-ant-cli/v0.1.1/install.sh"
+  checked: "2026-09-10"
+
+verify:
+  binary: desertant
+
+runs:
+  - desert-ant-voz
+  - desert-ant-clear
+  - desert-ant-ear
+  - desert-ant-uhm
+  - desert-ant-redact
+  - desert-ant-title
+  - desert-ant-clips
+  - desert-ant-emo
+  - desert-ant-gist
+notes: >
+  The CLI (repo: Desert-Ant-Labs/desert-ant-cli, MIT) is Swift, not Python or
+  JS -- confirmed from the repo's own `.github`/README ("Swift macOS | Linux"
+  badge) and its source tree (`Sources/DesertAntCLI/...`). There is no PyPI
+  or npm package to point `spacepilot.runtimes`' pip-only install path at, so
+  this recipe pins the official install script instead: `install.sh` at the
+  `v0.1.1` release tag (not `main`), which downloads the matching release
+  tarball, verifies it against that release's published `checksums.txt`, and
+  symlinks `desertant`/`da` into `~/.local/bin`. Re-pin only after checking
+  the next release's tag and re-running `desertant --version` here.
+
+  No API key, no account, no login: the CLI's own docs say plainly "no
+  server, no API key, and no session" -- every command is one local process.
+  None of the twelve registered Desert Ant models needs an account to run,
+  so none is marked `needs-account`.
+
+  Command per model (all read `--json` for machine output; `da` is the short
+  alias for `desertant`):
+    - desert-ant-voz    (STT)     `desertant voz <file.wav>`
+    - desert-ant-clear  (audio)   `desertant clear <file.wav>`
+    - desert-ant-uhm    (audio)   `desertant uhm <file.wav>`
+    - desert-ant-ear    (audio)   `desertant ear <file.wav>`   (spoken-language ID)
+    - desert-ant-redact (PII)     `desertant redact "<text>"`
+    - desert-ant-title  (drafter) `desertant title "<text>"`
+    - desert-ant-clips  (utility) `desertant clips <file.mp4>`
+    - desert-ant-emo    (utility) `desertant emo "<text>"`
+    - desert-ant-gist   (utility) `desertant gist "<text>"`
+  `voz`, `uhm`, and `title` need Apple silicon (CoreML/MLX); the rest run on
+  macOS and Linux.
+
+  Three of the twelve registered manifests are NOT wired to this runtime,
+  on purpose, and stay `BLOCKED` in `fly.py plan` rather than being stubbed:
+    - desert-ant-align and desert-ant-shapes are excluded by the CLI itself
+      -- verified directly in `Sources/DesertAntCLI/Run/Registry.swift`'s
+      `Runners.excluded` map: align "refines Apple SpeechAnalyzer
+      timestamps; voz already times every word", shapes "takes stroke
+      points, a job for the SDK" (not the CLI).
+    - desert-ant-tongue has no adapter in the CLI at all -- no
+      `Sources/DesertAntCLI/Run/Adapters/TongueRunner.swift`, no mention in
+      `Registry.swift`, and no reference anywhere in the repo tree
+      (checked 2026-09-10 against the `main` branch tree). This is an
+      undocumented gap, not an announced exclusion like align/shapes: the
+      desertant.com model page for Tongue exists and the model registry
+      entry is real, but the terminal client does not ship a way to run it.
+      Flying it would need either an upstream CLI release that adds a
+      Tongue adapter, or a separate ONNX Runtime driver against the raw
+      Hugging Face weights -- out of scope for this recipe.

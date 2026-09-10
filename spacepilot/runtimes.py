@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -35,7 +36,13 @@ RUNTIME_DIR = shipped_dir("runtimes")
 MODALITIES = {"video", "image", "audio", "speech", "transcription", "vad",
               "text", "vision", "embedding"}
 BACKENDS = {"metal", "cuda", "rocm", "cpu"}
-METHODS = {"pip"}
+# "pip" installs into this project's interpreter, the way every runtime so
+# far has. "script" runs a pinned install script and verifies by shelling
+# out to the resulting binary's own --version -- for a runtime that ships
+# no Python package at all, like a Swift or Go CLI distributed as a release
+# tarball. Nothing here means "trust the installer" any more than pip does:
+# check() still proves the binary runs, it just cannot prove it by import.
+METHODS = {"pip", "script"}
 
 
 class RuntimeError_(ValueError):
@@ -49,6 +56,15 @@ class Install:
     min_version: Optional[str] = None
     checked: Optional[str] = None
     constraints: List[str] = field(default_factory=list)
+    # The real pip install target, when it differs from `package` -- a git
+    # checkout pinned to a commit SHA (`edge0 @ git+https://...@<sha>`),
+    # for example. `package` stays the plain distribution name so version
+    # lookups (importlib.metadata.version) still resolve correctly; `source`
+    # is what actually gets passed to pip. method == "pip" only.
+    source: Optional[str] = None
+    # The pinned install script URL. method == "script" only -- e.g. a
+    # release-tagged `install.sh` from the runtime's own repo, never `main`.
+    script_url: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -64,7 +80,11 @@ class Runtime:
     backends: List[str]
     license: str
     install: Install
-    verify_import: str
+    # Exactly one of these is set, matching install.method: `verify_import`
+    # for "pip" (a module this interpreter can import), `verify_binary` for
+    # "script" (a CLI name resolved on PATH and run with --version).
+    verify_import: Optional[str] = None
+    verify_binary: Optional[str] = None
     python_requires: Optional[str] = None
     runs: List[str] = field(default_factory=list)
     notes: Optional[str] = None
@@ -100,8 +120,18 @@ def parse_runtime(raw: Dict[str, Any], where: str) -> Runtime:
     if method not in METHODS:
         raise RuntimeError_(f"{where}.install: method '{method}' not one of {sorted(METHODS)}")
 
+    if method == "script":
+        script_url = str(_req(inst, "script_url", f"{where}.install"))
+    else:
+        script_url = inst.get("script_url")
+
     verify = _req(raw, "verify", where)
-    imp = _req(verify, "import", f"{where}.verify")
+    if method == "script":
+        verify_binary = str(_req(verify, "binary", f"{where}.verify"))
+        verify_import = None
+    else:
+        verify_import = str(_req(verify, "import", f"{where}.verify"))
+        verify_binary = verify.get("binary")
 
     return Runtime(
         id=str(_req(raw, "id", where)),
@@ -117,8 +147,11 @@ def parse_runtime(raw: Dict[str, Any], where: str) -> Runtime:
             min_version=inst.get("min_version"),
             checked=inst.get("checked"),
             constraints=list(inst.get("constraints") or []),
+            source=inst.get("source"),
+            script_url=script_url,
         ),
-        verify_import=str(imp),
+        verify_import=verify_import,
+        verify_binary=verify_binary,
         python_requires=raw.get("python_requires"),
         runs=list(raw.get("runs") or []),
         notes=(raw.get("notes") or "").strip() or None,
@@ -284,6 +317,42 @@ def _external_status(r: Runtime, path: str) -> Status:
     )
 
 
+def _script_bin_env(r: Runtime) -> str:
+    """Env var naming an explicit path to a script-installed runtime's
+    binary -- the injection point tests use, mirroring `SPACEPILOT_MFLUX_BIN`
+    for the pip-external route."""
+    return f"SPACEPILOT_{r.id.upper().replace('-', '_')}_BIN"
+
+
+def _check_script(r: Runtime, *, which_fn=None) -> Status:
+    """Verify a script-installed runtime by shelling out to its own binary.
+
+    There is no interpreter to import into, so "installed" here means: the
+    named binary resolves (an explicit override env var first, then PATH)
+    and it runs `--version` without dying. That is the same honesty bar
+    `check()` holds pip runtimes to -- a binary that resolves and then
+    segfaults is not installed either.
+    """
+    which_fn = which_fn or shutil.which
+    binary = r.verify_binary or r.install.package
+    override = os.environ.get(_script_bin_env(r))
+    path = override or which_fn(binary)
+    if not path or not os.path.isfile(path) or not os.access(path, os.X_OK):
+        return Status(r.id, False, None,
+                      f"'{binary}' not found on PATH -- {r.install.script_url or 'no install script registered'}",
+                      wanted_version=r.install.min_version, external=True)
+    out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=30)
+    if out.returncode != 0:
+        err = (out.stderr or out.stdout or "").strip().splitlines()
+        reason = err[-1] if err else f"{binary} --version exited {out.returncode}"
+        return Status(r.id, False, None, reason,
+                      wanted_version=r.install.min_version, external=True, external_path=path)
+    text = (out.stdout or out.stderr or "").strip()
+    version = (text.splitlines()[0] if text else "unknown")
+    return Status(r.id, True, version, wanted_version=r.install.min_version,
+                  external=True, external_path=path)
+
+
 def check(r: Runtime, py: Optional[str] = None,
           cfg: Optional[Dict[str, Any]] = None) -> Status:
     """Import it in the real interpreter and report the version it actually has.
@@ -293,7 +362,12 @@ def check(r: Runtime, py: Optional[str] = None,
     missing system library, a partially written install. A runtime that lives
     in its own environment (see `external_binary`) counts as installed when
     its CLI resolves, because that is the route the drivers actually run.
+    A "script" runtime never had a Python package to import in the first
+    place, so it is checked by `_check_script` instead.
     """
+    if r.install.method == "script":
+        return _check_script(r)
+
     py = py or interpreter(cfg)
     compatible, note = python_ok(r, py)
 
@@ -351,8 +425,12 @@ class Impact:
 
 
 def _install_specs(r: Runtime) -> List[str]:
-    spec = r.install.package
-    if r.install.min_version:
+    # `source` (a pinned git checkout, say) is the real pip target; `package`
+    # stays the plain distribution name so version lookups keep working.
+    # A version floor makes no sense appended to a URL, so it is skipped
+    # whenever a source is set -- the pin already is the version.
+    spec = r.install.source or r.install.package
+    if r.install.min_version and not r.install.source:
         spec = f"{spec}>={r.install.min_version}"
     return [spec, *r.install.constraints]
 
@@ -361,6 +439,15 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
     """Resolve the install without performing it, and diff against what is here."""
     import json
     import tempfile
+
+    if r.install.method == "script":
+        # A script install never touches this project's Python environment --
+        # there is nothing for pip to resolve and nothing to downgrade. An
+        # empty, non-error Impact is the true answer, not a dodge: the caller
+        # (`spacepilot runtimes install`) treats `error` as fatal and refuses
+        # to proceed, so reporting "no changes here" is what lets a real
+        # install happen at all for this method.
+        return Impact()
 
     py = py or interpreter()
     specs = _install_specs(r)
@@ -415,11 +502,22 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
 def install_command(r: Runtime, py: Optional[str] = None) -> List[str]:
     """The exact argv that would run. Callers show this before running it."""
+    if r.install.method == "script":
+        return ["sh", "-c", f"curl -fsSL {r.install.script_url} | sh"]
     return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
 
 
 def install(r: Runtime, py: Optional[str] = None, timeout: int = 900) -> Status:
     """Install, then verify by importing. The install is not the evidence."""
+    if r.install.method == "script":
+        proc = subprocess.run(install_command(r), capture_output=True, text=True, timeout=timeout)
+        if proc.returncode != 0:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+            return Status(r.id, False, None,
+                          tail[-1] if tail else f"install script exited {proc.returncode}",
+                          external=True)
+        return check(r)
+
     py = py or interpreter()
     compatible, note = python_ok(r, py)
     if not compatible:
