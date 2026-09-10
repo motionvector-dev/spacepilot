@@ -102,6 +102,11 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
         "muse-glimmer-coreai", "executor", None, "text", needs_gate3=True),
     "qwen1-5-moe": FlightPlan(
         "qwen1-5-moe", "transducer", "mlx-lm", "text"),
+    # bitnet-b1-58-2b4t: spacepilot/registry/runtimes/bitnet-cpp.yaml runs
+    # its GGUF variant through bitnet.cpp's llama-cli, the only path that
+    # reads its BitLinear kernels correctly -- plain llama-cpp-python cannot.
+    "bitnet-b1-58-2b4t": FlightPlan(
+        "bitnet-b1-58-2b4t", "executor", "bitnet-cpp", "text", needs_gate3=True),
     # Desert Ant Labs' models run through the `desertant` CLI --
     # spacepilot/registry/runtimes/desert-ant.yaml. Three of the twelve
     # registered manifests stay unwired (runtime_id None, still BLOCKED) on

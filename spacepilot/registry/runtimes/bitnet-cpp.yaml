@@ -1,0 +1,71 @@
+schema: 1
+id: bitnet-cpp
+name: bitnet.cpp
+summary: >
+  Microsoft's official inference engine for native 1-bit LLMs: the BitLinear
+  CPU kernels the BitNet model card says are required for any of its claimed
+  efficiency -- the standard `transformers` path gives none of it. Ships as a
+  source tree (git clone --recursive, CMake build) with no PyPI wheel, the
+  same shape as llama.cpp itself.
+homepage: https://github.com/microsoft/BitNet
+serves: [text]
+backends: [cpu]
+license: MIT
+
+install:
+  method: script
+  package: bitnet-cpp
+  script_url: "https://raw.githubusercontent.com/motionvector-dev/spacepilot/83e179de6f282126619d9c317e3ac29c50b3e41d/tools/install-bitnet-cpp.sh"
+  checked: "2026-09-10"
+
+verify:
+  binary: bitnet-cli
+
+runs:
+  - bitnet-b1-58-2b4t
+
+notes: >
+  Pinned to microsoft/BitNet commit 0b341e582afbf9e1011f24744b554c96a3477eb5
+  on `main`, checked 2026-09-10. `backends` here is `[cpu]` only: the README
+  documents CPU kernels (x86/ARM) for this GGUF/llama-cli path, plus a
+  separate GPU kernel (custom CUDA, added 2026-05-20, confirmed against
+  `gpu/README.md` at the pinned commit) that reads a different checkpoint
+  format entirely (`.pt` via its own `convert_checkpoint.py`, not GGUF) --
+  that path is not wired to anything in this registry and is out of scope
+  here. No Metal backend is documented anywhere in this repo.
+
+  There is no PyPI wheel and no upstream install.sh -- confirmed against the
+  tree at the pinned commit: no setup.py, no pyproject.toml, only a
+  CMakeLists.txt. The upstream sequence, straight from README.md's
+  "Build from source" section at this commit:
+    git clone --recursive https://github.com/microsoft/BitNet.git
+    conda create -n bitnet-cpp python=3.10 && conda activate bitnet-cpp
+    pip install -r requirements.txt
+    python setup_env.py --model-dir <dir-with-a-gguf> -q i2_s
+  `setup_env.py`'s own `compile()` step always runs a full CMake build of
+  the bundled `3rdparty/llama.cpp` fork (`-DLLAMA_BUILD_TOOLS=ON
+  -DLLAMA_BUILD_EXAMPLES=ON -DLLAMA_BUILD_COMMON=ON -DLLAMA_BUILD_SERVER=ON`)
+  unconditionally -- there is no flag to skip it even when the GGUF already
+  exists and only the binary is wanted. Not a small or quick build, and not
+  something this pass ran on a MacBook -- `tools/install-bitnet-cpp.sh` in
+  this repo (pinned to the same commit, POSIX sh) carries the real sequence
+  for whichever build host runs it for real, and this recipe's `script_url`
+  points at that file the same way `desert-ant`'s points at its own
+  upstream install.sh -- the difference is BitNet has none of its own to
+  point at, so this one is ours.
+
+  Run command for a 128-token generation from a GGUF path -- `run_inference.py`
+  defaults `-n`/`--n-predict` to 128, confirmed against its own argparse
+  defaults at the pinned commit, so this is the plain invocation, not one
+  needing an explicit `-n 128`:
+    python run_inference.py -m <path-to-ggml-model-i2_s.gguf> -p "<prompt>"
+  That wrapper shells out to `./build/bin/llama-cli -m <gguf> -n 128 -t
+  <threads> -p "<prompt>" -ngl 0 -c <ctx> --temp <temp>` (confirmed by
+  reading `run_inference.py` itself at the pinned commit) -- the direct
+  `llama-cli` form is what `bitnet-cli` (this recipe's verify binary, a
+  symlink the install script creates) actually runs for a one-shot,
+  non-interactive flight.
+
+  Status: build not attempted this pass -- `spacepilot runtimes check
+  bitnet-cpp` reports the binary missing until a build host runs
+  `tools/install-bitnet-cpp.sh` for real.
