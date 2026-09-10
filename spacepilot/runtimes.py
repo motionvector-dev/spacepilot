@@ -65,6 +65,16 @@ class Install:
     # The pinned install script URL. method == "script" only -- e.g. a
     # release-tagged `install.sh` from the runtime's own repo, never `main`.
     script_url: Optional[str] = None
+    # method == "pip" only. Installs into a dedicated venv under
+    # `spacepilot.paths.runtime_env_dir(id)` instead of this project's shared
+    # interpreter -- for a runtime whose own pins would otherwise downgrade a
+    # package another runtime here needs (edge0 pins `mlx-lm==0.31.0`
+    # exactly; this registry's own mlx-lm recipe asks for `>=0.31.3`). mflux
+    # runs the same way in spirit but predates this flag -- it is reached
+    # through a hand-managed conda env via `_EXTERNAL_ENTRY_POINT` instead;
+    # `isolated` is the flag for a runtime this project creates and manages
+    # itself.
+    isolated: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -149,6 +159,7 @@ def parse_runtime(raw: Dict[str, Any], where: str) -> Runtime:
             constraints=list(inst.get("constraints") or []),
             source=inst.get("source"),
             script_url=script_url,
+            isolated=bool(inst.get("isolated", False)),
         ),
         verify_import=verify_import,
         verify_binary=verify_binary,
@@ -276,6 +287,93 @@ def external_binary(r: Runtime, cfg: Optional[Dict[str, Any]] = None) -> Optiona
     return None
 
 
+def isolated_env_dir(r: Runtime) -> Path:
+    """Where a `install.isolated` runtime's own venv lives."""
+    from spacepilot.paths import runtime_env_dir
+    return runtime_env_dir(r.id)
+
+
+def isolated_python(r: Runtime) -> Path:
+    """The isolated venv's own interpreter."""
+    return isolated_env_dir(r) / "bin" / "python"
+
+
+def isolated_bin(r: Runtime, name: Optional[str] = None) -> Path:
+    """One console-script entry point inside the isolated venv.
+
+    Defaults to `install.package` -- right for edge0 (`pip install edge0`
+    places an `edge0` entry point), wrong for any future isolated runtime
+    whose CLI name differs from its distribution name, so callers with a
+    different entry point pass `name` explicitly.
+    """
+    return isolated_env_dir(r) / "bin" / (name or r.install.package)
+
+
+def _check_isolated(r: Runtime) -> Status:
+    """Verify an `install.isolated` runtime inside its own venv.
+
+    Never touches this project's interpreter -- there is nothing to import
+    here on purpose, the same way an external mflux check never imports
+    mflux into the calling process. A venv that has not been created yet is
+    reported as not-installed with the fix (`spacepilot runtimes install
+    <id>`), not as an error.
+    """
+    env_dir = isolated_env_dir(r)
+    env_py = isolated_python(r)
+    if not env_py.is_file():
+        return Status(r.id, False, None,
+                      f"no isolated environment yet at {env_dir} -- "
+                      f"run `spacepilot runtimes install {r.id}`",
+                      wanted_version=r.install.min_version, external=True)
+    out = subprocess.run([str(env_py), "-c", _version_probe(r)],
+                          capture_output=True, text=True, timeout=90)
+    if out.returncode != 0:
+        err = (out.stderr or "").strip().splitlines()
+        reason = err[-1] if err else "import failed with no message"
+        return Status(r.id, False, None, reason, wanted_version=r.install.min_version,
+                      interpreter=str(env_py), external=True, external_path=str(env_py))
+    version = out.stdout.strip() or "unknown"
+    below = False
+    if r.install.min_version and version != "unknown":
+        try:
+            from packaging.version import Version
+            below = Version(version) < Version(r.install.min_version)
+        except Exception:
+            below = False
+    return Status(r.id, True, version,
+                  reason=(f"{version} is older than the {r.install.min_version} this "
+                          f"registry was checked against") if below else None,
+                  below_minimum=below, wanted_version=r.install.min_version,
+                  interpreter=str(env_py), external=True, external_path=str(env_py))
+
+
+def _install_isolated(r: Runtime, timeout: int = 900) -> Status:
+    """Create the venv if it does not exist yet, then pip install into it.
+
+    Idempotent: an existing venv is reused so a re-run only updates the pin,
+    it does not rebuild the environment from scratch every time.
+    """
+    env_dir = isolated_env_dir(r)
+    env_py = isolated_python(r)
+    if not env_py.is_file():
+        env_dir.parent.mkdir(parents=True, exist_ok=True)
+        proc = subprocess.run([sys.executable, "-m", "venv", str(env_dir)],
+                               capture_output=True, text=True, timeout=timeout)
+        if proc.returncode != 0:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+            return Status(r.id, False, None,
+                          tail[-1] if tail else f"venv creation exited {proc.returncode}",
+                          external=True)
+
+    proc = subprocess.run(install_command(r), capture_output=True, text=True, timeout=timeout)
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        return Status(r.id, False, None,
+                      tail[-1] if tail else f"pip exited {proc.returncode}",
+                      external=True, external_path=str(env_py))
+    return check(r)
+
+
 def _version_probe(r: Runtime) -> str:
     # mflux imports cleanly but carries no __version__, so fall back to the
     # installed distribution's metadata before settling for "unknown".
@@ -367,6 +465,8 @@ def check(r: Runtime, py: Optional[str] = None,
     """
     if r.install.method == "script":
         return _check_script(r)
+    if r.install.isolated:
+        return _check_isolated(r)
 
     py = py or interpreter(cfg)
     compatible, note = python_ok(r, py)
@@ -448,6 +548,11 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
         # to proceed, so reporting "no changes here" is what lets a real
         # install happen at all for this method.
         return Impact()
+    if r.install.isolated:
+        # Same reasoning as the script method: an isolated install resolves
+        # into its own fresh venv, never this project's interpreter, so there
+        # is nothing here for a downgrade to threaten.
+        return Impact()
 
     py = py or interpreter()
     specs = _install_specs(r)
@@ -504,6 +609,12 @@ def install_command(r: Runtime, py: Optional[str] = None) -> List[str]:
     """The exact argv that would run. Callers show this before running it."""
     if r.install.method == "script":
         return ["sh", "-c", f"curl -fsSL {r.install.script_url} | sh"]
+    if r.install.isolated:
+        # Always the isolated venv's own interpreter -- an explicit `py`
+        # never overrides it, the whole point of `isolated` is that this
+        # runtime is never installed into whatever interpreter the caller
+        # names.
+        return [str(isolated_python(r)), "-m", "pip", "install", *_install_specs(r)]
     return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
 
 
@@ -517,6 +628,8 @@ def install(r: Runtime, py: Optional[str] = None, timeout: int = 900) -> Status:
                           tail[-1] if tail else f"install script exited {proc.returncode}",
                           external=True)
         return check(r)
+    if r.install.isolated:
+        return _install_isolated(r, timeout=timeout)
 
     py = py or interpreter()
     compatible, note = python_ok(r, py)

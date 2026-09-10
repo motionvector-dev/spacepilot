@@ -135,6 +135,31 @@ def user_data_read_dirs() -> List[Path]:
     return out
 
 
+RUNTIME_ENVS_DIR_ENV = "SPACEPILOT_RUNTIME_ENVS_DIR"
+
+
+def runtime_envs_root() -> Path:
+    """Root for SpacePilot-managed isolated runtime environments.
+
+    A runtime whose own pins would fight this project's shared interpreter
+    (edge0 pins `mlx-lm==0.31.0` exactly; this project's own `mlx-lm` recipe
+    asks for `>=0.31.3`) gets its own venv here instead, one directory per
+    runtime id, created by `spacepilot runtimes install <id>` -- see
+    `Install.isolated` in `spacepilot/runtimes.py`. Lives under
+    `user_data_dir()`, not the checkout: a venv is a machine-local build
+    artifact, never something to commit or ship.
+    """
+    override = env_value(RUNTIME_ENVS_DIR_ENV, default="").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return user_data_dir() / "runtime-envs"
+
+
+def runtime_env_dir(runtime_id: str) -> Path:
+    """Where one runtime's isolated environment lives."""
+    return runtime_envs_root() / runtime_id
+
+
 def user_cache_dir() -> Path:
     """Canonical per-user cache root for SpacePilot-owned transient data."""
     xdg = os.environ.get("XDG_CACHE_HOME", "").strip()
