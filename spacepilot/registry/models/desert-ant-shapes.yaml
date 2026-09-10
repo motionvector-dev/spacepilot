@@ -1,0 +1,56 @@
+schema: 1
+id: desert-ant-shapes
+name: Desert Ant Shapes (Desert Ant Labs)
+family: desert-ant
+kind: vision
+summary: >
+  Pen-stroke-to-perfect-shape correction (PencilKit-style input), image classification over strokes, CoreML+TFLite.
+homepage: https://huggingface.co/desert-ant-labs/shapes
+
+license:
+  id: desert-ant-labs-source-available-1.0
+  spdx: null
+  open_source: false
+  url: https://license.desertant.com/1.0
+  restrictions:
+    - free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly
+    - accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach
+    - cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed
+    - may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model
+    - crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence
+
+variants:
+  - id: desert-ant-shapes-1
+    name: Desert Ant Shapes
+    repo: desert-ant-labs/shapes
+    revision: 614a3350be91fa98c70943f4e9a792609443660e
+    backends: [cpu, metal]
+    download:
+      value: 1711261
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        Summed file size of the desert-ant-labs/shapes repo at pinned commit 614a3350
+        from the Hugging Face Hub API.
+    working_set:
+      value: 2566891
+      source: estimated
+      checked: "2026-09-10"
+      note: >
+        Estimated as 1.5x the on-disk checkpoint size to allow for a loaded
+        runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight
+        pages); unflown, not a measured peak. These are small specialist
+        models, so this is a coarse multiplier rather than an architecture-
+        specific derivation.
+    speed: []
+    notes: >
+      Desert Ant Labs launch claim (checked 2026-09-10, from
+      https://desertant.com/models/ and the launch post): rough sketch, perfect shape.
+      Input is pen/stylus stroke data (PencilKit-tagged), not a photo -- classified as `vision` here since it reads a drawn image rather than generating one.
+      Licence is source-available (desert-ant-labs-source-available-1.0), not
+      OSI open source -- free under 100k monthly active devices per platform,
+      see restrictions above. SDK targets: Swift (desertant.com/swift/),
+      Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at
+      https://github.com/Desert-Ant-Labs/desert-ant-cli.
+      Role in the duplex loop: utility. Status: unflown -- no speed entries
+      recorded, nobody has run this on a SpacePilot-probed machine yet.

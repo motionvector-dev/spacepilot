@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-08",
+ "generated": "2026-09-10",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -306,6 +306,879 @@
    ]
   },
   {
+   "id": "desert-ant-align",
+   "name": "Desert Ant Align (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "transcription",
+   "summary": "Forced word-alignment / timestamp refinement for an existing transcript, CoreML, two-stage coarse+fine.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/align",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-align-1",
+     "model_id": "desert-ant-align",
+     "name": "Desert Ant Align",
+     "kind": "transcription",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/align",
+     "files": null,
+     "revision": "1d2ca13920339ff9bb9b61232237e3c4dc00fa9a",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 678497.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/align repo at pinned commit 1d2ca139 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1017745.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): accurate word timestamps for any transcript. Two-stage CoreML pipeline (align_coarse.mlmodelc, align_fine.mlmodelc) plus a calibrator and mel filterbank -- refines timestamps rather than transcribing from scratch, so it pairs with Voz or any other STT output. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: STT. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-clear",
+   "name": "Desert Ant Clear (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "audio",
+   "summary": "On-device speech enhancement / studio-sound denoising and dereverberation, two presets (natural, studio), CoreML+ONNX+TFLite.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/clear",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-clear-1",
+     "model_id": "desert-ant-clear",
+     "name": "Desert Ant Clear",
+     "kind": "audio",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/clear",
+     "files": null,
+     "revision": "16be4d516113853a2100fbb295c32186b2a05606",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 356855856.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/clear repo at pinned commit 16be4d51 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 535283784.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): studio sound with no cloud bill -- a laptop mic in a room with traffic outside comes out close-miked; processes 5 minutes of audio in 1 second on the blog's reference 9 MB single-preset build. This repo carries both the 'natural' and 'clear-studio' presets across CoreML (.aimodel + .mlmodelc), ONNX and TFLite exports, which is why the summed repo size is larger than the ~9 MB single-preset figure the launch blog post quotes. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: audio. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-clips",
+   "name": "Desert Ant Clips (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "Text-ranking model for selecting video short/highlight clips from a transcript, CoreML+TFLite, includes an encoder checkpoint.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/clips",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-clips-1",
+     "model_id": "desert-ant-clips",
+     "name": "Desert Ant Clips",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/clips",
+     "files": null,
+     "revision": "e7e6f31a9dc2793025d884a5cb51a299507b1430",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 2273591990.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/clips repo at pinned commit e7e6f31a from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 3410387985.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): create video shorts and highlights. Largest of the 12 stable models by a wide margin -- ships a full encoder checkpoint (model.safetensors) alongside scorer/selector TFLite and CoreML exports. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: utility. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-ear",
+   "name": "Desert Ant Ear (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "audio",
+   "summary": "Spoken-language identification from ~30 seconds of audio, CoreML+TFLite.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/ear",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-ear-1",
+     "model_id": "desert-ant-ear",
+     "name": "Desert Ant Ear",
+     "kind": "audio",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/ear",
+     "files": null,
+     "revision": "557fcde24e585cdaba69c6bcc24a6ad23f9064cd",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 36966496.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/ear repo at pinned commit 557fcde2 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 55449744.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): detect language based on 30 seconds of audio. Complements Tongue (text-based, 3-word language ID) with an audio-based identifier for when no transcript exists yet. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: audio. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-emo",
+   "name": "Desert Ant Emo (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "Emoji suggestion from text as you type, text-classification, CoreML+TFLite, 12+ languages.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/emo",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-emo-1",
+     "model_id": "desert-ant-emo",
+     "name": "Desert Ant Emo",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/emo",
+     "files": null,
+     "revision": "c763267702203e596bece624bc128a00b9f119ac",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 15736551.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/emo repo at pinned commit c7632677 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 23604826.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): suggest emoji faster than you can type.\nLicence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: utility. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-gist",
+   "name": "Desert Ant Gist (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "Topic and tag generation for posts and articles, multi-label text classification against a fixed taxonomy, TFLite+CoreML.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/gist",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-gist-1",
+     "model_id": "desert-ant-gist",
+     "name": "Desert Ant Gist",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/gist",
+     "files": null,
+     "revision": "57d8f9b8b1dc74dcd97e324036f7b46eec1e40b1",
+     "is_pinned": true,
+     "backends": [
+      "cpu"
+     ],
+     "download": {
+      "value": 119337608.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/gist repo at pinned commit 57d8f9b8 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 179006412.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): generate topics and tags for posts and articles. Carries a bundled taxonomy.json / taxonomy_crosswalk.json and per-language embeddings rather than being a single generic classifier. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: utility. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-redact",
+   "name": "Desert Ant Redact (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "On-device PII detection/redaction (names, addresses, card numbers) as the user types, BERT-style token classifier, CoreML+TFLite.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/redact",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-redact-1",
+     "model_id": "desert-ant-redact",
+     "name": "Desert Ant Redact",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/redact",
+     "files": null,
+     "revision": "1ebfc05ffb1cc27468bd98003e00f61a389aeff8",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 36878787.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/redact repo at pinned commit 1ebfc05f from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 55318180.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): filters PII on-device so it never reaches servers; the launch blog post claims 27 languages and 88.8% catch rate, while the Hub repo tags list 22 languages -- both figures recorded here, unreconciled. Token-classification (BERT-family) model; masks names, addresses and card numbers inline. The specialist patient for the PII leg of the duplex loop. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: PII. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-shapes",
+   "name": "Desert Ant Shapes (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "vision",
+   "summary": "Pen-stroke-to-perfect-shape correction (PencilKit-style input), image classification over strokes, CoreML+TFLite.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/shapes",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-shapes-1",
+     "model_id": "desert-ant-shapes",
+     "name": "Desert Ant Shapes",
+     "kind": "vision",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/shapes",
+     "files": null,
+     "revision": "614a3350be91fa98c70943f4e9a792609443660e",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 1711261.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/shapes repo at pinned commit 614a3350 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 2566891.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): rough sketch, perfect shape. Input is pen/stylus stroke data (PencilKit-tagged), not a photo -- classified as `vision` here since it reads a drawn image rather than generating one. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: utility. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-title",
+   "name": "Desert Ant Title (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "Title and description drafting for arbitrary text, small MLX text-generation model.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/title",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-title-1",
+     "model_id": "desert-ant-title",
+     "name": "Desert Ant Title",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/title",
+     "files": null,
+     "revision": "f3264302e5f69aafc76e74584f173cbe66dcfdb5",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 293668650.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/title repo at pinned commit f3264302 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 440502975.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): suggest a title and description for any text. The one MLX (safetensors) model among the 12 -- runs the same Apple-Silicon MLX route as Edge0 and the registry's other local-text models, rather than CoreML/TFLite/ONNX. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: drafter. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-tongue",
+   "name": "Desert Ant Tongue (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "text",
+   "summary": "Text-based language identification from as little as 3 words, ONNX, ~2 MB.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/tongue",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-tongue-1",
+     "model_id": "desert-ant-tongue",
+     "name": "Desert Ant Tongue",
+     "kind": "text",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/tongue",
+     "files": null,
+     "revision": "b529947be7d147b847df9d8349afc92d2bc2e351",
+     "is_pinned": true,
+     "backends": [
+      "cpu"
+     ],
+     "download": {
+      "value": 11582171.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/tongue repo at pinned commit b529947b from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 17373256.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): detect language based on 3 words, 2 MB model per the launch blog post. ONNX-only, with int4/int8 quantized variants alongside the fp export -- no CoreML package, so it is the one entry here without a `metal` backend claim. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: lang-id. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-uhm",
+   "name": "Desert Ant Uhm (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "audio",
+   "summary": "Filler-word / disfluency detection in speech audio, CoreML+ONNX.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/uhm",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-uhm-1",
+     "model_id": "desert-ant-uhm",
+     "name": "Desert Ant Uhm",
+     "kind": "audio",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/uhm",
+     "files": null,
+     "revision": "9b172658b2a20a21ad8ea44092f4d4b3ff2c69a4",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 188164568.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/uhm repo at pinned commit 9b172658 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 282246852.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): detect and remove filler words in seconds.\nLicence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: audio. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
+   "id": "desert-ant-voz",
+   "name": "Desert Ant Voz (Desert Ant Labs)",
+   "family": "desert-ant",
+   "kind": "transcription",
+   "summary": "On-device speech-to-text with word-level timestamps, CoreML/ANE, 25 European languages.\n",
+   "homepage": "https://huggingface.co/desert-ant-labs/voz",
+   "license": {
+    "id": "desert-ant-labs-source-available-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://license.desertant.com/1.0",
+    "restrictions": [
+     "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+     "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+     "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+     "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+     "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "desert-ant-voz-1",
+     "model_id": "desert-ant-voz",
+     "name": "Desert Ant Voz",
+     "kind": "transcription",
+     "family": "desert-ant",
+     "params": null,
+     "precision": null,
+     "repo": "desert-ant-labs/voz",
+     "files": null,
+     "revision": "78e93e14136909cd28977f7edcda4fa462ab58c8",
+     "is_pinned": true,
+     "backends": [
+      "cpu",
+      "metal"
+     ],
+     "download": {
+      "value": 488787378.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "Summed file size of the desert-ant-labs/voz repo at pinned commit 78e93e14 from the Hugging Face Hub API.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 733181067.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Estimated as 1.5x the on-disk checkpoint size to allow for a loaded runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight pages); unflown, not a measured peak. These are small specialist models, so this is a coarse multiplier rather than an architecture- specific derivation.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "desert-ant-labs-source-available-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://license.desertant.com/1.0",
+      "restrictions": [
+       "free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly",
+       "accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach",
+       "cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed",
+       "may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model",
+       "crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Desert Ant Labs launch claim (checked 2026-09-10, from https://desertant.com/models/ and the launch post): transcribes 10 minutes of audio in 2 seconds on an iPhone, claimed 4.7x faster than Whisper, with a start and end time on every word. Ships as three CoreML packages (mel.mlmodelc, encoder.mlmodelc, decoder.mlmodelc) plus an embedding table and vocab -- targets Apple Neural Engine dispatch. Licence is source-available (desert-ant-labs-source-available-1.0), not OSI open source -- free under 100k monthly active devices per platform, see restrictions above. SDK targets: Swift (desertant.com/swift/), Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at https://github.com/Desert-Ant-Labs/desert-ant-cli. Role in the duplex loop: STT. Status: unflown -- no speed entries recorded, nobody has run this on a SpacePilot-probed machine yet.\n"
+    }
+   ]
+  },
+  {
    "id": "distil-whisper",
    "name": "Distil-Whisper",
    "family": "distil-whisper",
@@ -376,6 +1249,126 @@
      ],
      "compromised": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "edge0-35b-a3b-preview",
+   "name": "Edge0 35B-A3B (preview)",
+   "family": "edge0",
+   "kind": "text",
+   "summary": "35B-total / ~3B-active MoE preview from the Edge0 runtime: SSD expert streaming keeps the active set under ~3 GiB resident, a trained prerouter overlaps expert loads with the forward pass, and a Recover-LoRA adapter claws back most of the loss the frozen int4 base takes from quantization. Built on Qwen3.5-MoE 35B-A3B.\n",
+   "homepage": "https://huggingface.co/Edge0/Edge0-35B-A3B-preview",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "edge0-35b-a3b-preview-4bit",
+     "model_id": "edge0-35b-a3b-preview",
+     "name": "Edge0 35B-A3B Preview (4-bit, SSD expert streaming)",
+     "kind": "text",
+     "family": "edge0",
+     "params": "35B (A3B)",
+     "precision": "4bit",
+     "repo": "Edge0/Edge0-35B-A3B-preview",
+     "files": null,
+     "revision": "1ff9f4478890faec0368c5463b621d1036d5b518",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 21147842560.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "~19.7 GiB (21,147,842,560 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 1ff9f447: four 4-bit safetensors shards for the base Qwen3.5-MoE 35B-A3B weights plus the lora_edge0_35b.safetensors Recover-LoRA adapter and the prerouter_edge0_35b.safetensors routing head.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 3221225472.0,
+      "source": "declared",
+      "checked": "2026-09-10",
+      "note": "Edge0's own claim: SSD expert streaming keeps only the active expert set resident, \"under 3 GiB\" peak, independent of the 35B total parameter count -- this is a runtime working set, not the on-disk checkpoint size.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Edge0 runtime source: https://github.com/Edge0-AI/edge0 (Apache-2.0). SSD Expert Offload streams expert weights from storage on demand, so peak memory is bounded by the active set rather than total parameter count. Prerouter: a trained head predicts expert routing one step ahead so expert loads overlap the forward pass instead of stalling it, claimed up to +59% decode throughput. Recover-LoRA: the int4 base is frozen and LoRA adapters are trained by distillation from the FP teacher, recovering most of the quantization loss at 4-bit. Claimed (Edge0 model card, checked 2026-09-10): 15 tok/s decode, 140 tok/s prompt fill. MLX backend targets Apple Silicon only today; CUDA is on the Edge0 roadmap, not shipped.\nLimitations note, verbatim from the Edge0-35B-A3B-preview model card (checked 2026-09-10): \"Agent capability: this preview release is not yet optimized for agentic tasks -- tool use, multi-step planning, and long-horizon autonomy are currently weak.\" The card adds that \"the full release will substantially strengthen agent capability.\"\nStatus: unflown. No speed entries recorded -- nobody has run this on a SpacePilot-probed machine yet; the tok/s and load-seconds figures above are the publisher's own numbers, not a measurement made here.\n"
+    }
+   ]
+  },
+  {
+   "id": "edge0-8b-a1b-preview",
+   "name": "Edge0 8B-A1B (preview)",
+   "family": "edge0",
+   "kind": "text",
+   "summary": "8B-total / ~1B-active MoE preview from the Edge0 runtime, the smaller sibling of Edge0 35B-A3B: same SSD expert streaming, prerouter and Recover-LoRA stack, built on a different, smaller base (Ling-3.0-tiny, not Qwen3.5-MoE -- see notes).\n",
+   "homepage": "https://huggingface.co/Edge0/Edge0-8B-A1B-preview",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "edge0-8b-a1b-preview-4bit",
+     "model_id": "edge0-8b-a1b-preview",
+     "name": "Edge0 8B-A1B Preview (4-bit, SSD expert streaming)",
+     "kind": "text",
+     "family": "edge0",
+     "params": "8B (A1B)",
+     "precision": "4bit",
+     "repo": "Edge0/Edge0-8B-A1B-preview",
+     "files": null,
+     "revision": "0bf17abed23b7de4b66e265a3848e80447ee7b41",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 7923998112.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "~7.92 GiB (7,923,998,112 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 0bf17abe: 4-bit safetensors for the base model plus the lora_edge0_8b.safetensors Recover-LoRA adapter and the prerouter_edge0_8b.safetensors routing head.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1073741824.0,
+      "source": "declared",
+      "checked": "2026-09-10",
+      "note": "Edge0's own claim, scaled from the 35B-A3B card's \"active set, not total params\" framing: proportionally under ~1 GiB for the A1B active slice. Not independently verified -- the model card does not state a working-set number for this variant as explicitly as it does for the 35B-A3B, so this figure is derived from the same streaming design applied to a ~1B active slice rather than quoted directly.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Edge0 runtime source: https://github.com/Edge0-AI/edge0 (Apache-2.0). Same SSD Expert Offload / Prerouter / Recover-LoRA stack as edge0-35b-a3b-preview (see that manifest for the mechanism descriptions).\nCORRECTION to the base-model assumption this entry was requested under: the Edge0-8B-A1B-preview model card (checked 2026-09-10) names its base as inclusionAI/Ling-3.0-tiny-base, a Bailing-MoE architecture with 128 experts (8 selected per token) -- not Qwen3.5-MoE, which is the base only for the 35B-A3B sibling. Recorded here as verified fact rather than carried forward unchecked from the request.\nLimitations note, verbatim from the Edge0-8B-A1B-preview model card (checked 2026-09-10): \"Agent capability: this preview release is not yet optimized for agentic tasks -- tool use, multi-step planning, and long-horizon autonomy are currently weak.\" The card adds that \"the full release will substantially strengthen agent capability.\"\nStatus: unflown. No speed entries recorded -- nobody has run this on a SpacePilot-probed machine yet.\n"
     }
    ]
   },
@@ -2339,6 +3332,68 @@
      "caveats": [],
      "compromised": [],
      "notes": null
+    }
+   ]
+  },
+  {
+   "id": "qwen3-5-35b-a3b-base",
+   "name": "Qwen3.5 35B-A3B Base",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "The upstream sparse-MoE base Edge0 builds its 35B-A3B preview on top of: 35B total parameters, ~3B active per token, hybrid Gated DeltaNet / Gated Attention MoE layout, 262K native context (extensible to ~1M). Registered here as the base checkpoint reference, not as an Edge0-runtime variant -- distinct from qwen1-5-moe and qwen3-6-27b already in this registry.\n",
+   "homepage": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B-Base",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-5-35b-a3b-base-bf16",
+     "model_id": "qwen3-5-35b-a3b-base",
+     "name": "Qwen3.5 35B-A3B Base (bf16, upstream)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "35B (A3B)",
+     "precision": null,
+     "repo": "Qwen/Qwen3.5-35B-A3B-Base",
+     "files": null,
+     "revision": "0f0813072d2358973511097385626f21fcb6d422",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 77207994778.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-10",
+      "note": "~71.9 GiB (77,207,994,778 bytes) full-precision upstream checkpoint on the Hugging Face Hub at pinned commit 0f081307, safetensors shards for the Qwen3_5MoeForConditionalGeneration architecture. This is the unquantized base; SpacePilot would only ever fly a local 4-bit MLX requant of this (as Edge0 does), never the bf16 checkpoint directly.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 82922790502.0,
+      "source": "estimated",
+      "checked": "2026-09-10",
+      "note": "Download size plus a provisional 7.4% allowance for KV cache and runtime overhead at short context on this MoE (40 layers, 256 routed + 1 shared experts, ~3B active params per token); unflown, not a measured peak or hard limit. No Apple Silicon configuration in this fleet fits the bf16 checkpoint resident -- a local run means quantizing first, which is a different, not-yet-registered variant.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Reference base for edge0-35b-a3b-preview (this registry). Architecture: hidden layout 10 x (3 x (Gated DeltaNet -> MoE) -> 1 x (Gated Attention -> MoE)); Gated DeltaNet has 32 linear attention heads for V, 16 for QK, head dim 128; Gated Attention has 16 heads for Q, 2 for KV, head dim 256. Qwen3.5-Flash is the hosted/production version of this base with 1M context by default and built-in tools -- not relevant to local execution. Status: unflown.\n"
     }
    ]
   },
