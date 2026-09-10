@@ -522,7 +522,7 @@
       "metal"
      ],
      "download": {
-      "value": 356855856.0,
+      "value": 277523760.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/clear repo at pinned commit 16be4d51 from the Hugging Face Hub API.\n",
@@ -595,7 +595,7 @@
       "metal"
      ],
      "download": {
-      "value": 2273591990.0,
+      "value": 1986266964.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/clips repo at pinned commit e7e6f31a from the Hugging Face Hub API.\n",
@@ -886,7 +886,7 @@
       "metal"
      ],
      "download": {
-      "value": 36878787.0,
+      "value": 38879587.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/redact repo at pinned commit 1ebfc05f from the Hugging Face Hub API.\n",
@@ -1389,7 +1389,7 @@
       "metal"
      ],
      "download": {
-      "value": 21147842560.0,
+      "value": 19738194799.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~19.7 GiB (21,147,842,560 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 1ff9f447: four 4-bit safetensors shards for the base Qwen3.5-MoE 35B-A3B weights plus the lora_edge0_35b.safetensors Recover-LoRA adapter and the prerouter_edge0_35b.safetensors routing head.\n",
@@ -1449,7 +1449,7 @@
       "metal"
      ],
      "download": {
-      "value": 7923998112.0,
+      "value": 4597697624.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~7.92 GiB (7,923,998,112 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 0bf17abe: 4-bit safetensors for the base model plus the lora_edge0_8b.safetensors Recover-LoRA adapter and the prerouter_edge0_8b.safetensors routing head.\n",
@@ -2124,10 +2124,10 @@
       "metal"
      ],
      "download": {
-      "value": 23740007447.0,
+      "value": 15980130813.0,
       "source": "huggingface-api",
-      "checked": "2026-08-23",
-      "note": null,
+      "checked": "2026-09-10",
+      "note": "Corrected 2026-09-10 (tools/verify_registry.py flagged 33% drift): re-summed the same file patterns against the Hub API at the same pinned revision -- 15,980,130,813 bytes, byte-exact, no SHA change.\n",
       "is_measured": true
      },
      "working_set": {
@@ -3073,9 +3073,9 @@
       "cpu"
      ],
      "download": {
-      "value": 62453760.0,
+      "value": 108725023.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
+      "checked": "2026-09-10",
       "note": null,
       "is_measured": true
      },
@@ -3119,9 +3119,9 @@
       "cpu"
      ],
      "download": {
-      "value": 142606336.0,
+      "value": 246414217.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
+      "checked": "2026-09-10",
       "note": null,
       "is_measured": true
      },
@@ -3483,7 +3483,7 @@
       "cpu"
      ],
      "download": {
-      "value": 77207994778.0,
+      "value": 71926986405.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~71.9 GiB (77,207,994,778 bytes) full-precision upstream checkpoint on the Hugging Face Hub at pinned commit 0f081307, safetensors shards for the Qwen3_5MoeForConditionalGeneration architecture. This is the unquantized base; SpacePilot would only ever fly a local 4-bit MLX requant of this (as Edge0 does), never the bf16 checkpoint directly.\n",
@@ -3988,7 +3988,7 @@
      "precision": "f16",
      "repo": "FunAudioLLM/SenseVoiceSmall",
      "files": [
-      "model.safetensors",
+      "model.pt",
       "configuration.json"
      ],
      "revision": "3847d57b6bdf2dd8875cb1508d2af43d80a16bf7",
@@ -3999,10 +3999,10 @@
       "cpu"
      ],
      "download": {
-      "value": 469762048.0,
+      "value": 936291765.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
-      "note": null,
+      "checked": "2026-09-10",
+      "note": "Corrected 2026-09-10: the repo at this pinned revision ships `model.pt` (936,291,369 bytes), not `model.safetensors` -- that filename matched nothing (confirmed against the Hub API's own sibling list for this revision), so the previous 469,762,048-byte figure was stale/guessed rather than a real sum. `files` updated to match what is actually there; value is the byte-exact sum of model.pt + configuration.json (396 bytes) at the same pinned SHA.\n",
       "is_measured": true
      },
      "working_set": {

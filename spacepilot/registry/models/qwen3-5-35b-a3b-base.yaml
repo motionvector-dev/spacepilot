@@ -25,7 +25,7 @@ variants:
     revision: 0f0813072d2358973511097385626f21fcb6d422
     backends: [metal, cuda, cpu]
     download:
-      value: 77207994778
+      value: 71926986405
       source: huggingface-api
       checked: "2026-09-10"
       note: >
