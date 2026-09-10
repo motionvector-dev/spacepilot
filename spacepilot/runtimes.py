@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -200,19 +201,73 @@ def runtimes() -> Dict[str, Runtime]:
 
 # ------------------------------------------------------------------- status
 
+_CONSOLE_SCRIPT_EXEC_RE = re.compile(r"exec'?\s+'([^']+)'")
+
+
+def _spacepilot_console_python(which_fn=None) -> Optional[str]:
+    """The interpreter behind the installed `spacepilot` console script --
+    the same interpreter `spacepilot run <cli>` actually executes with.
+
+    This is the one truth `fly.py` and `spacepilot runtimes list` have to
+    agree on. Without it, `interpreter()` fell back to `sys.executable` --
+    the interpreter of whichever process happens to be running *this* code,
+    which differs between the two callers: `spacepilot runtimes list` runs
+    inside the pipx-installed console script's own venv, so its
+    `sys.executable` is correct by accident, while `tools/fly.py` is
+    normally launched as `python3 tools/fly.py`, under the ambient
+    interpreter -- not the one `fly.py`'s own flight command
+    (`spacepilot run <cli> ...`) subprocesses into. A shared-interpreter
+    runtime (mlx-lm, whisper-cpp) installed by one caller's `interpreter()`
+    and checked by the other's could disagree on "installed" even though
+    both point at the same package -- see docs/registry/flights.md, "PR
+    #137 said mlx-lm and whisper-cpp were installed" and
+    tests/test_runtimes.py's console-python tests for the story.
+
+    A pipx (or venv `console_scripts`) shim's first line is
+    `exec '<python>' "$0" "$@"`; this reads that path straight out of the
+    shim rather than trusting `sys.executable`, so both callers resolve to
+    the identical interpreter regardless of which one is running. Returns
+    None when there is no `spacepilot` on PATH or its shim does not match
+    that shape -- callers fall back to `sys.executable`, never raise.
+    """
+    which_fn = which_fn or shutil.which
+    exe = which_fn("spacepilot")
+    if not exe:
+        return None
+    try:
+        text = Path(exe).read_text(errors="ignore")
+    except OSError:
+        return None
+    m = _CONSOLE_SCRIPT_EXEC_RE.search(text)
+    if not m:
+        return None
+    candidate = m.group(1)
+    return candidate if Path(candidate).is_file() else None
+
+
 def interpreter(cfg: Optional[Dict[str, Any]] = None) -> str:
     """The interpreter this project runs under.
 
     A runtime installed into some other Python is not installed as far as this
     project is concerned, so every check and every install names it explicitly.
+
+    Resolution order: an explicit override (`SPACEPILOT_PYTHON`/legacy
+    `PLUTO_PYTHON`, or a configured `python_bin`) always wins. Absent one,
+    this resolves the installed `spacepilot` console script's own
+    interpreter (`_spacepilot_console_python`) rather than `sys.executable`
+    -- see that function's docstring for why the two can otherwise disagree
+    across callers. `sys.executable` is the last resort, only when no
+    `spacepilot` console script can be found on PATH at all.
     """
     from spacepilot.paths import env_value
     configured = (cfg or {}).get("python_bin")
-    return (
+    explicit = (
         env_value("SPACEPILOT_PYTHON", "PLUTO_PYTHON")
         or (str(configured) if configured else None)
-        or sys.executable
     )
+    if explicit:
+        return explicit
+    return _spacepilot_console_python() or sys.executable
 
 
 def python_ok(r: Runtime, py: Optional[str] = None) -> tuple[bool, str]:

@@ -2,16 +2,37 @@
 
 `tools/fly.py` measures registered-but-unflown registry variants, one at a
 time, unattended, and writes their real numbers back into the registry.
-Every guard refuses rather than assumes; `--dry-run` (the default for
-`fly.py run`) never touches the network, the registry, or git.
+Every guard refuses rather than assumes; `--dry-run` (the default for both
+`fly.py run` and `fly.py queue`) never touches the network, the registry,
+or git.
 
-## Arm a flight night
-    caffeinate -s python tools/fly.py queue --max-minutes 240 --while-idle
+## Arm a flight night, the one command
+Read the briefing first, then type this and walk away:
 
-`queue` checks, before every model, that the machine has been idle 10+
-minutes (`ioreg -c IOHIDSystem`'s `HIDIdleTime`) and the display is asleep
-or locked (`IODisplayWrangler`'s `CurrentPowerState`). Keyboard/mouse
-activity stops it immediately, between models only.
+    python tools/fly.py plan --tonight
+    caffeinate -s python tools/fly.py queue --max-minutes 300 --while-idle --fly-for-real --push
+
+`plan --tonight` prints the exact order `queue` will fly tonight (same as
+plain `plan`), plus the briefing: total download, the single largest
+peak-memory estimate, how many entries are still BLOCKED and how many of
+those the pre-flight phase will install for you, whether power will be
+measured tonight and via which source (with the optional sudoers line for
+`powermetrics` -- see "Power" below), where the flight log lands, and the
+branch shape each flown model gets committed on.
+
+`queue` (like `run`) is `--dry-run` by default -- add `--fly-for-real` to
+actually install missing runtimes, download, measure, write, and commit,
+all night, unattended. `--push` pushes each flight branch as it lands;
+without it every branch stays local. Before every model (and before every
+pre-flight install -- see "Pre-flight: installing missing runtimes at
+night" below) `queue` checks that the machine has been idle 10+ minutes
+(`ioreg -c IOHIDSystem`'s `HIDIdleTime`) and the display is asleep or locked
+(`IODisplayWrangler`'s `CurrentPowerState`), plus the same disk and
+AC-power guards a single `run` checks. Keyboard/mouse activity stops it
+immediately, between models only. A demo dry-run on a machine that is not
+actually idle or on AC can force every guard green with `--force-guards`
+(refused together with `--fly-for-real` -- it exists for the paste-into-a-
+PR-body dry-run below, never for a real night).
 
 ## What it measures
 Per unflown variant, smallest download first: disk guard (refuses if free
@@ -86,6 +107,77 @@ stops before sampling)`.
 naming the fix (`spacepilot runtimes install <id>`) where one exists. CoreAI
 (muse-glimmer) has no runtime registered in this repo yet, so it stays
 blocked with no fix command.
+
+## One truth for where a runtime lives
+Fixed 2026-09-11. `fly.py plan` and `spacepilot runtimes list` used to be
+able to disagree about the same shared-interpreter runtime: both resolve
+`spacepilot.runtimes.interpreter()`, which fell back to `sys.executable` --
+the interpreter of whichever process happens to import the module. That is
+the pipx-installed `spacepilot` console script's own venv by accident when
+`spacepilot runtimes list` runs it, but *not* the interpreter `fly.py` runs
+under when launched the documented way (`python tools/fly.py ...`, the
+ambient interpreter) -- and not the interpreter `spacepilot run <cli>`
+actually subprocesses into at flight time either. A shared-interpreter
+recipe (`mlx-lm`, `whisper-cpp`) installed into one and checked against the
+other reads as missing even though the package is right there -- this is
+exactly the PR #137 story: that lane's own report said both were installed,
+because it checked against `local-ml-py311`, a third interpreter neither
+`fly.py` nor the real `spacepilot run` command ever uses.
+
+`interpreter()` now resolves the pipx console script's own interpreter
+directly (`_spacepilot_console_python()`, reading the `exec '<python>' "$0"
+"$@"` line out of the installed `spacepilot` shim) whenever no explicit
+override (`SPACEPILOT_PYTHON`/`PLUTO_PYTHON`, or a configured `python_bin`)
+is set, before ever falling back to `sys.executable`. Both callers now
+resolve the identical path regardless of which process asks --
+`tests/test_runtimes.py`'s interpreter-truth tests prove it with a faked
+shim, never a real one.
+
+`mlx-lm` (0.31.3) and `whisper-cpp`/`pywhispercpp` (1.5.1) are installed
+into that exact interpreter now (`pipx runpip spacepilot install
+"mlx-lm>=0.31.3" "transformers>=5.12.1,<5.13" "pywhispercpp>=1.5.1"` --
+pipx strips pip from its own managed venvs, so `pip` itself has to go
+through `pipx runpip <app>`, not a bare `python -m pip`). `spacepilot
+runtimes list` and `fly.py plan` agree on both now -- checked directly
+against each other, not asserted:
+
+| runtime | env | installed |
+| --- | --- | --- |
+| mlx-lm | pipx spacepilot venv (shared interpreter) | yes -- 0.31.3 |
+| whisper-cpp | pipx spacepilot venv (shared interpreter) | yes -- 1.5.1 |
+| edge0 | its own isolated venv (`install.isolated: true`) | yes -- 0.1.0 |
+| desert-ant | `desertant` CLI on PATH (script install) | yes |
+| bitnet-cpp | `bitnet-cli` on PATH (script install, CMake build) | no -- see Pre-flight below |
+| llama-cpp-prism | `llama-cli-prism` on PATH (script install, CMake build) | no -- see Pre-flight below |
+| muse-glimmer (CoreAI) | no runtime registered in this repo yet | n/a -- no fix command |
+
+## Pre-flight: installing missing runtimes at night
+`fly.py queue`'s pre-flight phase (added alongside the interpreter fix
+above) runs before any flight: for every distinct runtime a planned model
+needs and does not have, it installs that runtime once -- in plan order,
+under the exact same idle/AC-power/disk guards a flight itself checks --
+and logs the attempt to the same `flight-log.jsonl`, keyed by `runtime_id`
+instead of `model_id`, with its duration. This is what actually makes
+`bitnet-cpp` and `llama-cpp-prism` flyable overnight: both stayed
+BLOCKED-with-a-fix-command rather than run as a several-minute CMake source
+build on a MacBook when their recipes were registered (see those recipes'
+own notes) -- the pre-flight phase is where that build now happens, nightly,
+unattended, `nice -n 19` and bounded to a handful of parallel jobs
+(`CMAKE_BUILD_PARALLEL_LEVEL`/`MAKEFLAGS`) so it never fights the rest of
+the machine for cores, the same posture quietcargo/quietpnpm take for Rust
+builds elsewhere in this fleet.
+
+A guard failure (idle, AC power, disk) during pre-flight stops the whole
+night, exactly like it always has for a flight -- it is not scoped to one
+runtime. A failed *install itself* (the command ran and lost) is scoped:
+only the models that needed that runtime are marked `skipped: install
+failed`, carrying the tail of the install log, and the night continues to
+every other model. `--dry-run` (the default) logs every install command it
+would run -- `nice -n 19` prefix, bounded job env, the exact `curl | sh` or
+pip target -- and touches no network, no filesystem, no subprocess; tested
+against faked installers and faked guards in `tests/test_fly.py` (see the
+"queue: pre-flight installs" section there), never a real bitnet.cpp or
+PrismML build.
 
 ## Runtimes: edge0 and desert-ant
 Registered 2026-09-10 (`spacepilot/registry/runtimes/edge0.yaml`,
@@ -190,18 +282,23 @@ Dry-run example (edge0-35b-a3b-preview-4bit, role=executor):
     .../benchmarks/l2r/gate3_semantic.py --model edge0-35b-a3b-preview-4bit
 
 ## Arm a flight night, today
-Checked directly against `spacepilot runtimes check` on this Mac,
-2026-09-10 (`fly.py plan` is the live source of truth -- this is one
-snapshot of it, not a standing claim): `desert-ant` and, as of this change,
-`edge0` (its own isolated venv -- see above) are installed; `mlx-lm` and
-`whisper-cpp` are **not** installed on this interpreter right now (a
-previous note in this doc claimed otherwise -- re-checked, corrected here).
-The currently flyable set is therefore `edge0-8b-a1b-preview-4bit`,
-`edge0-35b-a3b-preview-4bit`, and the nine wired Desert Ant variants
-(`desert-ant-{voz,clear,ear,uhm,redact,title,clips,emo,gist}-1`);
+Checked directly against `spacepilot runtimes list` and `fly.py plan` on
+this Mac, 2026-09-11, now that both agree on the same interpreter (see "One
+truth for where a runtime lives" above) -- this is one snapshot, not a
+standing claim; `fly.py plan` is always the live source of truth, read it
+before arming.
+
+`desert-ant`, `edge0` (its own isolated venv), `mlx-lm` (0.31.3), and
+`whisper-cpp` (1.5.1) are all installed. The flyable set is every entry
+`plan` prints with no `BLOCKED` flag -- that now includes
 `qwen1-5-moe-a2-7b-chat-4bit`, `qwen3-5-35b-a3b-base-bf16`, and
-`distil-large-v3-ggml` stay `BLOCKED` until `spacepilot runtimes install
-mlx-lm` / `whisper-cpp` is run on this machine.
-    caffeinate -s python tools/fly.py queue --max-minutes 240 --while-idle
-`fly.py plan` is the live source of truth -- read it before arming, it
-reflects whatever is actually installed on the machine you run it on.
+`distil-large-v3-ggml`, alongside Edge0 and the nine wired Desert Ant
+variants. `bitnet-b1-58-2b4t-{packed,gguf-i2s}` stay `BLOCKED` in a plain
+`plan` listing, but are no longer stuck: `queue`'s pre-flight phase builds
+`bitnet-cpp` for them automatically (see "Pre-flight" above) -- the only
+entries that stay blocked with no fix at all are the ones with no runtime
+registered in this repo yet (CoreAI, and the Desert Ant models the CLI
+itself excludes).
+
+    python tools/fly.py plan --tonight
+    caffeinate -s python tools/fly.py queue --max-minutes 300 --while-idle --fly-for-real --push

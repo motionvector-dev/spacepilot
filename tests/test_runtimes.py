@@ -5,6 +5,8 @@ really importable in the interpreter this project uses, and whether installing
 it would quietly change something else.
 """
 
+import sys
+
 import pytest
 
 from spacepilot.runtimes import (
@@ -171,3 +173,75 @@ def test_external_route_requires_the_binary_to_actually_exist(tmp_path, monkeypa
     assert not st.external
     assert st.external_path is None
     assert st.reason
+
+
+# --------------------------------------------------------- interpreter truth
+#
+# One truth for "where does a runtime live": `fly.py plan` and `spacepilot
+# runtimes list` must resolve the *same* interpreter for a shared-interpreter
+# (non-isolated, non-external) pip runtime, regardless of which process asks.
+# Before this fix, `interpreter()` fell back to `sys.executable` -- the
+# interpreter of whoever imports this module -- which differed between the
+# pipx-installed `spacepilot` console script (correct by accident) and
+# `tools/fly.py` (normally launched as `python3 tools/fly.py`, the ambient
+# interpreter, not the one `spacepilot run <cli>` actually subprocesses
+# into). See docs/registry/flights.md's "PR #137" note for the real
+# incident this reproduces.
+
+def test_spacepilot_console_python_reads_the_pipx_shim(tmp_path):
+    from spacepilot import runtimes as rt
+
+    fake_bin_dir = tmp_path / "pipx" / "venvs" / "spacepilot" / "bin"
+    fake_bin_dir.mkdir(parents=True)
+    fake_python = fake_bin_dir / "python"
+    fake_python.touch()
+
+    shim = tmp_path / "spacepilot"
+    shim.write_text(
+        "#!/bin/sh\n"
+        f"'''exec' '{fake_python}' \"$0\" \"$@\"\n"
+        "' '''\n"
+    )
+    shim.chmod(0o755)
+
+    resolved = rt._spacepilot_console_python(which_fn=lambda name: str(shim))
+    assert resolved == str(fake_python)
+
+
+def test_spacepilot_console_python_returns_none_when_spacepilot_is_not_on_path():
+    from spacepilot import runtimes as rt
+
+    assert rt._spacepilot_console_python(which_fn=lambda name: None) is None
+
+
+def test_interpreter_prefers_the_console_script_over_ambient_sys_executable(monkeypatch, tmp_path):
+    """The whole point: two different callers -- one that happens to *be*
+    the pipx venv's own interpreter, one that is not -- must resolve to the
+    identical interpreter path for a shared-interpreter runtime."""
+    from spacepilot import runtimes as rt
+
+    monkeypatch.delenv("SPACEPILOT_PYTHON", raising=False)
+    monkeypatch.delenv("PLUTO_PYTHON", raising=False)
+    monkeypatch.setattr(rt, "_spacepilot_console_python", lambda which_fn=None: "/fake/pipx/venvs/spacepilot/bin/python")
+    assert rt.interpreter() == "/fake/pipx/venvs/spacepilot/bin/python"
+    # sys.executable of *this* test process is almost certainly a different
+    # path (miniconda/pytest venv, not a pipx spacepilot venv) -- proving
+    # interpreter() no longer falls back to it when a console script exists.
+    assert rt.interpreter() != sys.executable
+
+
+def test_interpreter_falls_back_to_sys_executable_when_no_console_script_is_found(monkeypatch):
+    from spacepilot import runtimes as rt
+
+    monkeypatch.delenv("SPACEPILOT_PYTHON", raising=False)
+    monkeypatch.delenv("PLUTO_PYTHON", raising=False)
+    monkeypatch.setattr(rt, "_spacepilot_console_python", lambda which_fn=None: None)
+    assert rt.interpreter() == sys.executable
+
+
+def test_interpreter_explicit_env_override_still_wins(monkeypatch):
+    from spacepilot import runtimes as rt
+
+    monkeypatch.setenv("SPACEPILOT_PYTHON", "/explicit/override/python")
+    monkeypatch.setattr(rt, "_spacepilot_console_python", lambda which_fn=None: "/fake/pipx/python")
+    assert rt.interpreter() == "/explicit/override/python"
