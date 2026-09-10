@@ -150,7 +150,7 @@
      "speed": [],
      "caveats": [],
      "compromised": [],
-     "notes": "Official inference code: https://github.com/microsoft/BitNet (bitnet.cpp), MIT licence, commit 0b341e582afbf9e1011f24744b554c96a3477eb5 on main checked 2026-09-10 (that repo's README documents CPU kernels for x86/ARM plus a GPU kernel added 2026-05-20; NPU support is listed as \"coming next\", not shipped). Runtime recipe: bitnet.cpp (recipe pending) -- this checkout's runtime-recipe schema (spacepilot/registry/runtimes/) is owned by another worktree lane right now, so no recipe file was added here; see the report for the pinned bitnet.cpp commit.\nModel card, verbatim warning (checked 2026-09-10): \"Please do NOT expect performance efficiency gains (in terms of speed, latency, or energy consumption) when using this model with the standard transformers library, even with the required fork ... For achieving the efficiency benefits demonstrated in the technical paper, you MUST use the dedicated C++ implementation: bitnet.cpp.\" So this `-packed` variant is the source-of-truth weights; the GGUF variant below is the one bitnet.cpp actually reads efficiently.\nCard claims a 54.19 average across ARC-Challenge/Easy, OpenbookQA, BoolQ, HellaSwag, PIQA, WinoGrande, CommonsenseQA, TruthfulQA, TriviaQA, MMLU, HumanEval+, GSM8K, MATH-500, IFEval and MT-bench against similarly-sized full-precision open models (Qwen2.5-1.5B's 55.23 is the only one that beats it) -- declared by the publisher, not reproduced by SpacePilot.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+     "notes": "Official inference code: https://github.com/microsoft/BitNet (bitnet.cpp), MIT licence, commit 0b341e582afbf9e1011f24744b554c96a3477eb5 on main checked 2026-09-10 (that repo's README documents CPU kernels for x86/ARM plus a GPU kernel added 2026-05-20; NPU support is listed as \"coming next\", not shipped). Runtime recipe: spacepilot/registry/runtimes/bitnet-cpp.yaml, pinned to the same commit -- no PyPI wheel, source-tree CMake build; that recipe's notes carry the full build/run sequence and why it was recorded rather than run this pass.\nModel card, verbatim warning (checked 2026-09-10): \"Please do NOT expect performance efficiency gains (in terms of speed, latency, or energy consumption) when using this model with the standard transformers library, even with the required fork ... For achieving the efficiency benefits demonstrated in the technical paper, you MUST use the dedicated C++ implementation: bitnet.cpp.\" So this `-packed` variant is the source-of-truth weights; the GGUF variant below is the one bitnet.cpp actually reads efficiently.\nCard claims a 54.19 average across ARC-Challenge/Easy, OpenbookQA, BoolQ, HellaSwag, PIQA, WinoGrande, CommonsenseQA, TruthfulQA, TriviaQA, MMLU, HumanEval+, GSM8K, MATH-500, IFEval and MT-bench against similarly-sized full-precision open models (Qwen2.5-1.5B's 55.23 is the only one that beats it) -- declared by the publisher, not reproduced by SpacePilot.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
     },
     {
      "id": "bitnet-b1-58-2b4t-gguf-i2s",
@@ -194,7 +194,7 @@
      "speed": [],
      "caveats": [],
      "compromised": [],
-     "notes": "The repo the model card names for `bitnet.cpp` CPU inference specifically (\"Contains the model weights in GGUF format, compatible with the bitnet.cpp library for CPU inference\"). Same MIT licence. Runtime: bitnet.cpp (recipe pending) -- see the packed variant's notes above for the pinned bitnet.cpp commit and why no recipe file was added in this pass.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+     "notes": "The repo the model card names for `bitnet.cpp` CPU inference specifically (\"Contains the model weights in GGUF format, compatible with the bitnet.cpp library for CPU inference\"). Same MIT licence. Runtime: spacepilot/registry/runtimes/bitnet-cpp.yaml (see the packed variant's notes above for the same pin and the recipe's own notes for the build/run sequence). Wired into tools/fly.py's FLIGHT_PLANS under this model's id so `fly.py plan` shows it as a flyable entry, currently BLOCKED on the build being run for real.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
     }
    ]
   },
@@ -522,7 +522,7 @@
       "metal"
      ],
      "download": {
-      "value": 356855856.0,
+      "value": 277523760.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/clear repo at pinned commit 16be4d51 from the Hugging Face Hub API.\n",
@@ -595,7 +595,7 @@
       "metal"
      ],
      "download": {
-      "value": 2273591990.0,
+      "value": 1986266964.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/clips repo at pinned commit e7e6f31a from the Hugging Face Hub API.\n",
@@ -886,7 +886,7 @@
       "metal"
      ],
      "download": {
-      "value": 36878787.0,
+      "value": 38879587.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "Summed file size of the desert-ant-labs/redact repo at pinned commit 1ebfc05f from the Hugging Face Hub API.\n",
@@ -1389,7 +1389,7 @@
       "metal"
      ],
      "download": {
-      "value": 21147842560.0,
+      "value": 19738194799.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~19.7 GiB (21,147,842,560 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 1ff9f447: four 4-bit safetensors shards for the base Qwen3.5-MoE 35B-A3B weights plus the lora_edge0_35b.safetensors Recover-LoRA adapter and the prerouter_edge0_35b.safetensors routing head.\n",
@@ -1449,7 +1449,7 @@
       "metal"
      ],
      "download": {
-      "value": 7923998112.0,
+      "value": 4597697624.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~7.92 GiB (7,923,998,112 bytes) upstream checkpoint on the Hugging Face Hub at pinned commit 0bf17abe: 4-bit safetensors for the base model plus the lora_edge0_8b.safetensors Recover-LoRA adapter and the prerouter_edge0_8b.safetensors routing head.\n",
@@ -2124,10 +2124,10 @@
       "metal"
      ],
      "download": {
-      "value": 23740007447.0,
+      "value": 15980130813.0,
       "source": "huggingface-api",
-      "checked": "2026-08-23",
-      "note": null,
+      "checked": "2026-09-10",
+      "note": "Corrected 2026-09-10 (tools/verify_registry.py flagged 33% drift): re-summed the same file patterns against the Hub API at the same pinned revision -- 15,980,130,813 bytes, byte-exact, no SHA change.\n",
       "is_measured": true
      },
      "working_set": {
@@ -3073,9 +3073,9 @@
       "cpu"
      ],
      "download": {
-      "value": 62453760.0,
+      "value": 108725023.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
+      "checked": "2026-09-10",
       "note": null,
       "is_measured": true
      },
@@ -3119,9 +3119,9 @@
       "cpu"
      ],
      "download": {
-      "value": 142606336.0,
+      "value": 246414217.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
+      "checked": "2026-09-10",
       "note": null,
       "is_measured": true
      },
@@ -3483,7 +3483,7 @@
       "cpu"
      ],
      "download": {
-      "value": 77207994778.0,
+      "value": 71926986405.0,
       "source": "huggingface-api",
       "checked": "2026-09-10",
       "note": "~71.9 GiB (77,207,994,778 bytes) full-precision upstream checkpoint on the Hugging Face Hub at pinned commit 0f081307, safetensors shards for the Qwen3_5MoeForConditionalGeneration architecture. This is the unquantized base; SpacePilot would only ever fly a local 4-bit MLX requant of this (as Edge0 does), never the bf16 checkpoint directly.\n",
@@ -3988,7 +3988,7 @@
      "precision": "f16",
      "repo": "FunAudioLLM/SenseVoiceSmall",
      "files": [
-      "model.safetensors",
+      "model.pt",
       "configuration.json"
      ],
      "revision": "3847d57b6bdf2dd8875cb1508d2af43d80a16bf7",
@@ -3999,10 +3999,10 @@
       "cpu"
      ],
      "download": {
-      "value": 469762048.0,
+      "value": 936291765.0,
       "source": "huggingface-api",
-      "checked": "2026-08-28",
-      "note": null,
+      "checked": "2026-09-10",
+      "note": "Corrected 2026-09-10: the repo at this pinned revision ships `model.pt` (936,291,369 bytes), not `model.safetensors` -- that filename matched nothing (confirmed against the Hub API's own sibling list for this revision), so the previous 469,762,048-byte figure was stale/guessed rather than a real sum. `files` updated to match what is actually there; value is the byte-exact sum of model.pt + configuration.json (396 bytes) at the same pinned SHA.\n",
       "is_measured": true
      },
      "working_set": {
@@ -4311,7 +4311,7 @@
      "speed": [],
      "caveats": [],
      "compromised": [],
-     "notes": "Base model: Qwen/Qwen3-8B (Apache-2.0), requantized ternary by Prism ML. This is the unpacked/base_model repo the GGUF variant below quantizes from -- registered separately because it is the weight source the SpacePilot MLX build path (mlx-2bit sibling repo, not registered here) or a from-scratch GGUF re-conversion would start from, not something meant to be deployed directly. Runtime: PrismML-Eng/llama.cpp (recipe pending) -- see the GGUF variant's notes below.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+     "notes": "Base model: Qwen/Qwen3-8B (Apache-2.0), requantized ternary by Prism ML. This is the unpacked/base_model repo the GGUF variant below quantizes from -- registered separately because it is the weight source the SpacePilot MLX build path (mlx-2bit sibling repo, not registered here) or a from-scratch GGUF re-conversion would start from, not something meant to be deployed directly. Runtime: spacepilot/registry/runtimes/llama-cpp-prism.yaml -- see the GGUF variant's notes below for the pinned commit and why the build was recorded, not run.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
     },
     {
      "id": "ternary-bonsai-8b-gguf-q2-0",
@@ -4381,7 +4381,7 @@
      "compromised": [
       "audio.transcription"
      ],
-     "notes": "Quantization: GGUF Q2_0 g128, each weight {-1, 0, +1} with one shared FP16 scale per 128-weight group -- 34 bytes/block, 2.125 bits/weight effective (the Q2_0 4th code point, +2*scale, is reserved and unused for ternary weights). Kernel note from the model card, verbatim (checked 2026-09-10): \"Q2_0 is not yet in mainline llama.cpp. Use our fork at PrismML-Eng/llama.cpp (prism branch, default) which adds Q2_0 support for CPU (NEON/generic) and Metal.\" So `backends: [cpu, metal]` here describes the fork's support, not mainline llama.cpp's -- a plain mainline build will not read this file's quantization correctly. The Hub listing also tags this repo `cuda`, but the Q2_0 kernel README quoted above only documents CPU and Metal support -- `backends` here follows the README over the tag, so CUDA is left out rather than asserted on a tag alone.\nPublisher-measured accuracy (checked 2026-09-10, EvalScope v1.4.2 + vLLM 0.15.1 on one H100, \"identical infrastructure, generation parameters, and scoring\" across all rows, all models 6B-9B params): avg 75.5 (MMLU-R 72.6, MuSR 56.2, GSM8K 91, HumanEval+ 77.4, IFEval 81.8, BFCL 73.9) at 2.18 GB, second only to full-precision Qwen3-8B's 79.3 at 16.38 GB among the models in that table, and ahead of RNJ 8B, Ministral3 8B and Olmo 3 7B (all full-precision, all larger on disk). All of the above is the publisher's own eval run, not reproduced by SpacePilot -- the point of flying this variant is exactly to check it.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
+     "notes": "Quantization: GGUF Q2_0 g128, each weight {-1, 0, +1} with one shared FP16 scale per 128-weight group -- 34 bytes/block, 2.125 bits/weight effective (the Q2_0 4th code point, +2*scale, is reserved and unused for ternary weights). Kernel note from the model card, verbatim (checked 2026-09-10): \"Q2_0 is not yet in mainline llama.cpp. Use our fork at PrismML-Eng/llama.cpp (prism branch, default) which adds Q2_0 support for CPU (NEON/generic) and Metal.\" So `backends: [cpu, metal]` here describes the fork's support, not mainline llama.cpp's -- a plain mainline build will not read this file's quantization correctly. The Hub listing also tags this repo `cuda`, but the Q2_0 kernel README quoted above only documents CPU and Metal support -- `backends` here follows the README over the tag, so CUDA is left out rather than asserted on a tag alone.\nRuntime recipe: spacepilot/registry/runtimes/llama-cpp-prism.yaml, pinned to PrismML-Eng/llama.cpp@d8f26eec76da6d09bb708bcba51ef64b8cd868a3 (verified public fork, `fork: true`, `default_branch: prism`, checked 2026-09-10) -- llama-cpp-python's pip wheel vendors mainline llama.cpp, not this fork, so it cannot read this file's Q2_0 quantization either; the fork has to be built directly. Not attempted this pass -- a default llama.cpp CMake configure enables the Metal backend on Apple Silicon by itself, a full build, not a small or quick one; see the recipe's own notes for the build command.\nPublisher-measured accuracy (checked 2026-09-10, EvalScope v1.4.2 + vLLM 0.15.1 on one H100, \"identical infrastructure, generation parameters, and scoring\" across all rows, all models 6B-9B params): avg 75.5 (MMLU-R 72.6, MuSR 56.2, GSM8K 91, HumanEval+ 77.4, IFEval 81.8, BFCL 73.9) at 2.18 GB, second only to full-precision Qwen3-8B's 79.3 at 16.38 GB among the models in that table, and ahead of RNJ 8B, Ministral3 8B and Olmo 3 7B (all full-precision, all larger on disk). All of the above is the publisher's own eval run, not reproduced by SpacePilot -- the point of flying this variant is exactly to check it.\nStatus: unflown. Executor-candidate role for the router bench and the L2R typed tasks, per the ternary/1.58-bit registration brief (2026-09-10).\n"
     }
    ]
   },

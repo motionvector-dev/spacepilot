@@ -25,7 +25,7 @@ variants:
     revision: 0bf17abed23b7de4b66e265a3848e80447ee7b41
     backends: [metal]
     download:
-      value: 7923998112
+      value: 4597697624
       source: huggingface-api
       checked: "2026-09-10"
       note: >

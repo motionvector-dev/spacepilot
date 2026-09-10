@@ -52,11 +52,11 @@ variants:
       (bitnet.cpp), MIT licence, commit 0b341e582afbf9e1011f24744b554c96a3477eb5
       on main checked 2026-09-10 (that repo's README documents CPU kernels for
       x86/ARM plus a GPU kernel added 2026-05-20; NPU support is listed as
-      "coming next", not shipped). Runtime recipe: bitnet.cpp (recipe
-      pending) -- this checkout's runtime-recipe schema
-      (spacepilot/registry/runtimes/) is owned by another worktree lane
-      right now, so no recipe file was added here; see the report for the
-      pinned bitnet.cpp commit.
+      "coming next", not shipped). Runtime recipe:
+      spacepilot/registry/runtimes/bitnet-cpp.yaml, pinned to the same
+      commit -- no PyPI wheel, source-tree CMake build; that recipe's notes
+      carry the full build/run sequence and why it was recorded rather than
+      run this pass.
 
       Model card, verbatim warning (checked 2026-09-10): "Please do NOT
       expect performance efficiency gains (in terms of speed, latency, or
@@ -103,9 +103,11 @@ variants:
       The repo the model card names for `bitnet.cpp` CPU inference
       specifically ("Contains the model weights in GGUF format, compatible
       with the bitnet.cpp library for CPU inference"). Same MIT licence.
-      Runtime: bitnet.cpp (recipe pending) -- see the packed variant's notes
-      above for the pinned bitnet.cpp commit and why no recipe file was
-      added in this pass.
+      Runtime: spacepilot/registry/runtimes/bitnet-cpp.yaml (see the
+      packed variant's notes above for the same pin and the recipe's own
+      notes for the build/run sequence). Wired into tools/fly.py's
+      FLIGHT_PLANS under this model's id so `fly.py plan` shows it as a
+      flyable entry, currently BLOCKED on the build being run for real.
 
       Status: unflown. Executor-candidate role for the router bench and the
       L2R typed tasks, per the ternary/1.58-bit registration brief

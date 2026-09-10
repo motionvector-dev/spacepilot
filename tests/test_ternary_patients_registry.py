@@ -83,17 +83,20 @@ def test_bonsai_gguf_declared_speed_is_marked_declared_not_measured():
         assert s.source == "declared"
 
 
-def test_runtime_recipe_is_pending_not_silently_missing():
-    """The brief that added these models forbids touching
-    spacepilot/registry/runtimes/ (owned by another worktree lane), so
-    neither BitNet nor Bonsai gets a runtime recipe file in this pass --
-    that has to be said loudly in the manifest notes, not left implicit."""
+def test_runtime_recipe_is_registered_not_pending():
+    """A later pass (2026-09-10) registered both real runtime recipes --
+    spacepilot/registry/runtimes/{bitnet-cpp,llama-cpp-prism}.yaml -- so the
+    manifest notes must point at the actual recipe file now, not carry the
+    earlier "recipe pending" placeholder from before those existed."""
     reg = load_registry()
     for mid in TERNARY_IDS:
         for v in reg.model(mid).variants:
-            assert "recipe pending" in v.notes or "PrismML-Eng/llama.cpp" in v.notes, (
-                f"{v.id}: notes should name the runtime and its status"
+            assert "recipe pending" not in v.notes, (
+                f"{v.id}: still says recipe pending after both recipes were registered"
             )
+            assert "registry/runtimes/bitnet-cpp.yaml" in v.notes or                 "registry/runtimes/llama-cpp-prism.yaml" in v.notes, (
+                    f"{v.id}: notes should point at the real runtime recipe file"
+                )
 
 
 def test_catalog_is_a_view_over_the_registry_including_ternary_patients():

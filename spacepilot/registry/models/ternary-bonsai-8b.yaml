@@ -55,8 +55,9 @@ variants:
       source the SpacePilot MLX build path (mlx-2bit sibling repo, not
       registered here) or a from-scratch GGUF re-conversion would start
       from, not something meant to be deployed directly. Runtime:
-      PrismML-Eng/llama.cpp (recipe pending) -- see the GGUF variant's
-      notes below.
+      spacepilot/registry/runtimes/llama-cpp-prism.yaml -- see the GGUF
+      variant's notes below for the pinned commit and why the build was
+      recorded, not run.
 
       Status: unflown. Executor-candidate role for the router bench and the
       L2R typed tasks, per the ternary/1.58-bit registration brief
@@ -122,6 +123,16 @@ variants:
       kernel README quoted above only documents CPU and Metal support --
       `backends` here follows the README over the tag, so CUDA is left out
       rather than asserted on a tag alone.
+
+      Runtime recipe: spacepilot/registry/runtimes/llama-cpp-prism.yaml,
+      pinned to PrismML-Eng/llama.cpp@d8f26eec76da6d09bb708bcba51ef64b8cd868a3
+      (verified public fork, `fork: true`, `default_branch: prism`, checked
+      2026-09-10) -- llama-cpp-python's pip wheel vendors mainline
+      llama.cpp, not this fork, so it cannot read this file's Q2_0
+      quantization either; the fork has to be built directly. Not attempted
+      this pass -- a default llama.cpp CMake configure enables the Metal
+      backend on Apple Silicon by itself, a full build, not a small or
+      quick one; see the recipe's own notes for the build command.
 
       Publisher-measured accuracy (checked 2026-09-10, EvalScope v1.4.2 +
       vLLM 0.15.1 on one H100, "identical infrastructure, generation
