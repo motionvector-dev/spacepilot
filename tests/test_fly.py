@@ -33,9 +33,56 @@ def test_plan_lists_unflown_entries_smallest_first():
 def test_plan_refuses_entries_whose_runtime_is_not_installed():
     rows = fly.plan_rows()
     edge0 = next(r for r in rows if r.variant.id == "edge0-8b-a1b-preview-4bit")
-    # mlx-lm is not installed in this test environment.
+    # edge0 is deliberately not installed into this project's shared
+    # interpreter -- it pins mlx-lm==0.31.0 exactly, which downgrades the
+    # mlx-lm runtime already installed here (see edge0.yaml's notes).
     assert edge0.runtime.installed is False
-    assert edge0.runtime.install_cmd == "spacepilot runtimes install mlx-lm"
+    assert edge0.runtime.install_cmd == "spacepilot runtimes install edge0"
+
+
+def test_plan_shows_every_edge0_and_desert_ant_entry_as_flyable(monkeypatch):
+    """Both runtimes are registered now (spacepilot/registry/runtimes/{edge0,
+    desert-ant}.yaml); with the runtime reported installed, `plan` must not
+    print BLOCKED for any Edge0 or Desert Ant entry it has a FlightPlan for.
+    Align/shapes/tongue stay unmapped on purpose -- the CLI itself does not
+    run them -- so they are excluded from this assertion, not silently
+    expected to pass."""
+    from spacepilot import runtimes as rt
+
+    real_check = rt.check
+
+    def fake_check(runtime, *a, **kw):
+        if runtime.id in ("edge0", "desert-ant"):
+            return rt.Status(runtime.id, True, "9.9.9")
+        return real_check(runtime, *a, **kw)
+
+    monkeypatch.setattr(fly.rt, "check", fake_check)
+
+    rows = fly.plan_rows()
+    edge0_ids = {"edge0-35b-a3b-preview-4bit", "edge0-8b-a1b-preview-4bit"}
+    desert_ant_wired_ids = {
+        "desert-ant-voz-1", "desert-ant-clear-1", "desert-ant-ear-1",
+        "desert-ant-uhm-1", "desert-ant-redact-1", "desert-ant-title-1",
+        "desert-ant-clips-1", "desert-ant-emo-1", "desert-ant-gist-1",
+    }
+    checked = 0
+    for row in rows:
+        if row.variant.id in edge0_ids or row.variant.id in desert_ant_wired_ids:
+            assert row.runtime.installed, f"{row.variant.id} still BLOCKED"
+            checked += 1
+    assert checked == len(edge0_ids) + len(desert_ant_wired_ids), \
+        "expected every wired Edge0/Desert Ant entry to appear in the plan"
+
+
+def test_plan_still_blocks_the_desert_ant_models_the_cli_does_not_run():
+    """align, tongue, and shapes have no runtime registered -- the CLI
+    itself has no adapter for them -- so they stay BLOCKED regardless of
+    whether desert-ant is installed."""
+    rows = fly.plan_rows()
+    for variant_id in ("desert-ant-align-1", "desert-ant-tongue-1", "desert-ant-shapes-1"):
+        row = next(r for r in rows if r.variant.id == variant_id)
+        assert row.runtime.installed is False
+        assert row.runtime.install_cmd is None
 
 
 def test_plan_never_marks_an_unflown_variant_as_flown():
@@ -82,6 +129,34 @@ def test_dry_run_of_edge0_8b_logs_every_step_and_touches_no_network():
     # nothing about a commit or a registry write ever appears in a dry run
     assert "committed on" not in joined
     assert "registry updated" not in joined
+
+
+def test_dry_run_of_desert_ant_voz_logs_the_real_command():
+    fetch_calls = []
+
+    class RecordingDryRunDownloader(fly.DryRunDownloader):
+        def fetch(self, repo, revision, files):
+            fetch_calls.append((repo, revision, files))
+            return super().fetch(repo, revision, files)
+
+    result = fly.fly_run(
+        "desert-ant-voz-1",
+        dry_run=True,
+        downloader=RecordingDryRunDownloader(),
+        disk_check=lambda download_bytes: fly.GuardResult(True, "200.0 GB free now, 199.5 GB free after download (>= 40 GB floor)"),
+        power_check=lambda: fly.GuardResult(True, "Now drawing from 'AC Power'"),
+    )
+
+    assert result.outcome == "dry-run"
+    assert fetch_calls
+    repo, revision, _files = fetch_calls[0]
+    assert repo == "desert-ant-labs/voz"
+    assert revision == "78e93e14136909cd28977f7edcda4fa462ab58c8"
+
+    joined = "\n".join(result.steps)
+    assert "flying desert-ant-voz-1" in joined
+    assert "flight command: spacepilot run transcribe --model desert-ant-voz-1 --yes" in joined
+    assert "dry-run: stopping before inference, measurement, registry write and commit" in joined
 
 
 def test_dry_run_never_calls_the_real_downloader():

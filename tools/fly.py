@@ -87,18 +87,29 @@ class FlightPlan:
 
 
 FLIGHT_PLANS: Dict[str, FlightPlan] = {
+    # Corrected 2026-09-10: both Edge0 entries were previously routed through
+    # runtime_id "mlx-lm". Plain mlx-lm does not implement Edge0's SSD expert
+    # streaming, prerouter, or Recover-LoRA adapters, so it cannot run an
+    # Edge0 checkpoint correctly even though the file layout looks similar --
+    # see spacepilot/registry/runtimes/edge0.yaml, the real runtime.
     "edge0-35b-a3b-preview": FlightPlan(
-        "edge0-35b-a3b-preview", "executor", "mlx-lm", "text", needs_gate3=True),
+        "edge0-35b-a3b-preview", "executor", "edge0", "text", needs_gate3=True),
     "edge0-8b-a1b-preview": FlightPlan(
-        "edge0-8b-a1b-preview", "transducer", "mlx-lm", "text"),
+        "edge0-8b-a1b-preview", "transducer", "edge0", "text"),
     "qwen3-5-35b-a3b-base": FlightPlan(
         "qwen3-5-35b-a3b-base", "base", "mlx-lm", "text", needs_requant=True),
     "muse-glimmer-coreai": FlightPlan(
         "muse-glimmer-coreai", "executor", None, "text", needs_gate3=True),
     "qwen1-5-moe": FlightPlan(
         "qwen1-5-moe", "transducer", "mlx-lm", "text"),
+    # Desert Ant Labs' models run through the `desertant` CLI --
+    # spacepilot/registry/runtimes/desert-ant.yaml. Three of the twelve
+    # registered manifests stay unwired (runtime_id None, still BLOCKED) on
+    # purpose: the CLI itself excludes align and shapes (see that recipe's
+    # notes, sourced from the CLI's own Runners.excluded map), and ships no
+    # adapter for tongue at all.
     "desert-ant-voz": FlightPlan(
-        "desert-ant-voz", "stt", None, "transcribe", fixture="wav30", needs_wer=True),
+        "desert-ant-voz", "stt", "desert-ant", "transcribe", fixture="wav30", needs_wer=True),
     "desert-ant-align": FlightPlan(
         "desert-ant-align", "stt", None, "transcribe", fixture="wav30"),
     "distil-whisper": FlightPlan(
@@ -108,23 +119,23 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
     "moonshine": FlightPlan(
         "moonshine", "stt", None, "transcribe", fixture="wav30"),
     "desert-ant-clear": FlightPlan(
-        "desert-ant-clear", "audio", None, "audio", fixture="wav30"),
+        "desert-ant-clear", "audio", "desert-ant", "audio", fixture="wav30"),
     "desert-ant-ear": FlightPlan(
-        "desert-ant-ear", "audio", None, "audio", fixture="wav30"),
+        "desert-ant-ear", "audio", "desert-ant", "audio", fixture="wav30"),
     "desert-ant-uhm": FlightPlan(
-        "desert-ant-uhm", "audio", None, "audio", fixture="wav30"),
+        "desert-ant-uhm", "audio", "desert-ant", "audio", fixture="wav30"),
     "desert-ant-redact": FlightPlan(
-        "desert-ant-redact", "pii", None, "classify", fixture="pii_txt"),
+        "desert-ant-redact", "pii", "desert-ant", "classify", fixture="pii_txt"),
     "desert-ant-tongue": FlightPlan(
         "desert-ant-tongue", "lang-id", None, "classify", fixture="pii_txt"),
     "desert-ant-title": FlightPlan(
-        "desert-ant-title", "drafter", None, "text", fixture="prompt"),
+        "desert-ant-title", "drafter", "desert-ant", "text", fixture="prompt"),
     "desert-ant-clips": FlightPlan(
-        "desert-ant-clips", "utility", None, "classify"),
+        "desert-ant-clips", "utility", "desert-ant", "classify"),
     "desert-ant-emo": FlightPlan(
-        "desert-ant-emo", "utility", None, "classify"),
+        "desert-ant-emo", "utility", "desert-ant", "classify"),
     "desert-ant-gist": FlightPlan(
-        "desert-ant-gist", "utility", None, "classify"),
+        "desert-ant-gist", "utility", "desert-ant", "classify"),
     "desert-ant-shapes": FlightPlan(
         "desert-ant-shapes", "utility", None, "classify"),
 }

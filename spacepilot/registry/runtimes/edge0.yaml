@@ -1,0 +1,71 @@
+schema: 1
+id: edge0
+name: Edge0
+summary: >
+  Streaming-MoE inference framework for Apple Silicon: SSD expert offload keeps
+  only the active expert set resident, a trained prerouter overlaps expert
+  loads with the forward pass, and Recover-LoRA adapters claw back the loss a
+  frozen int4 base takes from quantization. Not mlx-lm -- a different engine
+  built on top of MLX, and the only route that runs an Edge0 checkpoint
+  correctly.
+homepage: https://github.com/Edge0-AI/edge0
+serves: [text]
+backends: [metal]
+license: Apache-2.0
+
+install:
+  method: pip
+  package: edge0
+  source: "edge0 @ git+https://github.com/Edge0-AI/edge0.git@fbab5f8c08e843e204c0fc6ae18b89a154c652cf"
+  checked: "2026-09-10"
+python_requires: ">=3.10"
+
+verify:
+  import: edge0
+
+runs:
+  - edge0-35b-a3b-preview
+  - edge0-8b-a1b-preview
+notes: >
+  Installed from git, pinned to a commit SHA on Edge0-AI/edge0's `main` --
+  there is no PyPI release yet, so `source` carries the real pip target
+  (`package` stays the plain distribution name "edge0" so version lookups
+  still resolve). Pin checked 2026-09-10; re-pin only after re-reading the
+  README and re-running the flight for both tiers.
+
+  edge0's own pyproject.toml pins `mlx==0.30.4`, `mlx-metal==0.30.4` and,
+  notably, `mlx-lm==0.31.0` exactly -- with a comment that newer mlx-lm
+  releases crash in decode ("a `tolist()` on lazily-evaluated arrays").
+  This project's own `mlx-lm` runtime recipe asks for `mlx-lm>=0.31.3`.
+  Installing edge0 into the same interpreter as mlx-lm downgrades it back
+  to 0.31.0 -- a real, disruptive conflict between two runtimes in this
+  registry, not a hypothetical one. `spacepilot runtimes preview edge0`
+  will show the downgrade; give edge0 its own environment rather than
+  installing both into the shared one, the same way mflux already does.
+  Verified 2026-09-10 by installing this exact pinned spec into a throwaway
+  venv (not this project's shared interpreter): `edge0` imports cleanly,
+  `from edge0 import AutoEngine` works, and pip pulls mlx-lm 0.31.0 exactly
+  as pinned -- but pip also warns that mlx-lm 0.31.0 is YANKED on PyPI
+  ("Batched KV cache cross contamination"). pip still installs it because
+  edge0 pins the exact version, but this is worth carrying forward: edge0's
+  own pin depends on a release PyPI flagged as having a correctness bug in
+  KV-cache batching. Not fixed here -- upstream edge0's problem to resolve,
+  noted so nobody re-discovers it from a confusing warning mid-flight.
+
+  CLI: `edge0 chat <tier-or-checkpoint-dir> --prompt "..." --max-new <n>`.
+  Tiers are `edge0-35b` / `edge0-8b`, resolved from `EDGE0_35B_MODEL` /
+  `EDGE0_8B_MODEL` env vars, or pass a checkpoint directory directly (tier
+  auto-detected from its `config.json`). No `generate` subcommand exists;
+  `chat` is the one-shot prompt-to-answer route the flight plan's fixed
+  128-token prompt uses. The CLI prints `# <n> tokens in <wall_s>s` to
+  stderr on every call -- wall-clock and token count, not peak memory; it
+  has no built-in memory-reporting flag, so the flight runner measures RSS
+  itself (see `tools/fly.py`'s "measuring: cold load, 3x tok/s ... peak
+  RSS" step) rather than relying on the CLI to report it.
+
+  Earlier registration mistake, corrected here: both edge0 manifests were
+  previously routed through `runtime_id: mlx-lm` in `tools/fly.py`'s
+  `FLIGHT_PLANS`. Plain mlx-lm does not implement SSD expert streaming, the
+  prerouter, or Recover-LoRA, so it cannot load an Edge0 checkpoint
+  correctly even where the file layout looks compatible -- this recipe and
+  the FLIGHT_PLANS fix are what closes that gap.

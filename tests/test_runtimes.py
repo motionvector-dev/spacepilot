@@ -19,9 +19,13 @@ def test_registry_loads_and_ids_are_unique():
 
 
 def test_every_runtime_declares_how_to_verify_itself():
-    """A runtime with no import to try cannot be checked, only assumed."""
+    """A runtime with no import (or, for a script install, no binary) to try
+    cannot be checked, only assumed."""
     for r in runtimes().values():
-        assert r.verify_import, f"{r.id}: no import to verify with"
+        if r.install.method == "script":
+            assert r.verify_binary, f"{r.id}: no binary to verify with"
+        else:
+            assert r.verify_import, f"{r.id}: no import to verify with"
         assert r.install.package
         assert set(r.serves) <= MODALITIES
         assert set(r.backends) <= BACKENDS
