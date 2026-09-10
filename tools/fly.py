@@ -64,6 +64,16 @@ MIN_FREE_DISK_GB = 40.0
 IDLE_MINUTES = 10.0
 FLIGHT_LOG_ROOT = Path.home() / "code" / "motionvector" / "media-scratch" / "flights"
 
+# Gate 3 (typed-task semantic-range pass rate) lives in the engine repo, not
+# this one -- benchmarks/l2r/ at motionvector-dev/motionvector. A prior lane
+# reported it "missing" because it looked at the local checkout, which sits
+# on a feature branch; `origin/main` is what actually carries it. `git
+# archive` pulls just that subtree without a worktree, the same way `fly.py`
+# never mutates this repo's own working tree for a flight.
+DEFAULT_ENGINE_REPO = Path.home() / "code" / "motionvector" / "mvec-engine"
+DEFAULT_ENGINE_REF = "origin/main"
+GATE3_SCRATCH_ROOT = FLIGHT_LOG_ROOT / "gate3-scratch"
+
 
 # --------------------------------------------------------------- flight plan
 
@@ -385,6 +395,92 @@ class HFDownloader:
         return Path(path)
 
 
+# ------------------------------------------------------------------ gate 3
+
+class Gate3Extractor(Protocol):
+    def extract(self, engine_repo: Path, engine_ref: str, dest: Path) -> Path: ...
+
+
+@dataclass
+class DryRunGate3Extractor:
+    """Logs the archive it would run; touches no filesystem, no subprocess."""
+    log: Callable[[str], None] = print
+
+    def extract(self, engine_repo: Path, engine_ref: str, dest: Path) -> Path:
+        self.log(
+            f"  [dry-run] would archive benchmarks/l2r from mvec-engine@{engine_ref} -- "
+            f"git -C {engine_repo} archive {engine_ref} benchmarks/l2r | tar -x -C {dest}"
+        )
+        return dest / "benchmarks" / "l2r"
+
+
+@dataclass
+class GitArchiveGate3Extractor:
+    """Materialises benchmarks/l2r/ from the engine repo without a worktree.
+
+    `git archive <ref> benchmarks/l2r | tar -x` pulls just that subtree at
+    the pinned ref straight into the flight's scratch dir -- no `git worktree
+    add` churn in the engine checkout, which may itself be sitting on an
+    unrelated feature branch (the reason a previous lane thought Gate 3 was
+    missing: it looked at the local checkout instead of the ref actually
+    fetched here).
+    """
+    log: Callable[[str], None] = print
+
+    def extract(self, engine_repo: Path, engine_ref: str, dest: Path) -> Path:
+        dest.mkdir(parents=True, exist_ok=True)
+        self.log(f"  archiving benchmarks/l2r from mvec-engine@{engine_ref} into {dest}")
+        archive = subprocess.Popen(
+            ["git", "-C", str(engine_repo), "archive", engine_ref, "benchmarks/l2r"],
+            stdout=subprocess.PIPE,
+        )
+        try:
+            tar = subprocess.run(["tar", "-x", "-C", str(dest)], stdin=archive.stdout)
+        finally:
+            if archive.stdout:
+                archive.stdout.close()
+            archive.wait()
+        if archive.returncode != 0:
+            raise RuntimeError(
+                f"git -C {engine_repo} archive {engine_ref} benchmarks/l2r "
+                f"failed (exit {archive.returncode})")
+        if tar.returncode != 0:
+            raise RuntimeError(f"tar extraction into {dest} failed (exit {tar.returncode})")
+        l2r_dir = dest / "benchmarks" / "l2r"
+        if not l2r_dir.is_dir():
+            raise RuntimeError(
+                f"expected {l2r_dir} after extraction, found nothing -- "
+                f"does {engine_ref} carry benchmarks/l2r?")
+        return l2r_dir
+
+
+def resolve_mvec_bin(candidates: Optional[List[Path]] = None) -> Optional[Path]:
+    """The first real, executable `mvec` binary among the usual local spots.
+
+    Never builds one -- cargo builds are heavy work and stay off this
+    machine (see the repo's fan rule); a missing binary is reported, not
+    compiled on the spot.
+    """
+    for c in candidates or [
+        Path.home() / ".local" / "bin" / "mvec",
+        Path.home() / "code" / "motionvector" / ".cargo-target" / "release" / "mvec",
+    ]:
+        if c.is_file():
+            return c
+    return None
+
+
+def gate3_command(l2r_dir: Path, model_id: str, python_bin: Optional[str] = None) -> List[str]:
+    """The argv Gate 3 runs, from inside `l2r_dir`.
+
+    gate3_semantic.py imports its sibling modules (`l2r_codecs`, `fixture`)
+    by bare name, so the working directory has to be the extracted
+    benchmarks/l2r itself, not the engine repo root or this repo's root.
+    """
+    return [python_bin or sys.executable, str(l2r_dir / "gate3_semantic.py"),
+            "--model", model_id]
+
+
 # ------------------------------------------------------------- registry write
 
 def write_flown_measurement(
@@ -451,6 +547,10 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
             registry_dir: Optional[Path] = None, repo_root: Optional[Path] = None,
             disk_check: Optional[Callable[[float], GuardResult]] = None,
             power_check: Optional[Callable[[], GuardResult]] = None,
+            engine_ref: str = DEFAULT_ENGINE_REF, engine_repo: Optional[Path] = None,
+            gate3_scratch_dir: Optional[Path] = None,
+            gate3_extractor: Optional[Gate3Extractor] = None,
+            mvec_bin_candidates: Optional[List[Path]] = None,
             reg=None, log: Callable[[str], None] = print) -> RunResult:
     """Fly one unflown entry.
 
@@ -500,6 +600,20 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
     cmd = ["spacepilot", "run"] + ([plan.cli] if plan else ["text"]) + [
         "--model", variant.id, "--yes"]
     steps.add(f"flight command: {' '.join(cmd)}")
+
+    if plan and plan.needs_gate3:
+        engine_repo_path = engine_repo or DEFAULT_ENGINE_REPO
+        scratch_dir = gate3_scratch_dir or (GATE3_SCRATCH_ROOT / variant.model_id)
+        extractor = gate3_extractor or (
+            DryRunGate3Extractor(log=steps.add) if dry_run else GitArchiveGate3Extractor(log=steps.add))
+        l2r_dir = extractor.extract(engine_repo_path, engine_ref, scratch_dir)
+        mvec_bin = resolve_mvec_bin(mvec_bin_candidates)
+        cmd3 = gate3_command(l2r_dir, variant.id)
+        env_note = f"MVEC_BIN={mvec_bin}" if mvec_bin else "MVEC_BIN=<not found on this machine>"
+        steps.add(f"gate3 command (cwd={l2r_dir}): {env_note} {' '.join(cmd3)}")
+        if mvec_bin is None:
+            steps.add("gate3: no mvec binary found -- checked ~/.local/bin/mvec and "
+                      "~/code/motionvector/.cargo-target/release/mvec")
 
     if dry_run:
         steps.add("dry-run: stopping before inference, measurement, registry write and commit")
@@ -563,7 +677,8 @@ class QueueOutcome:
 
 
 def fly_queue(*, max_minutes: float, while_idle: bool = True, keep: bool = False,
-              push: bool = False, reg=None, idle_check: Optional[Callable[[], GuardResult]] = None,
+              push: bool = False, engine_ref: str = DEFAULT_ENGINE_REF, reg=None,
+              idle_check: Optional[Callable[[], GuardResult]] = None,
               display_check: Optional[Callable[[], GuardResult]] = None,
               keyboard_activity: Optional[Callable[[], bool]] = None,
               clock: Callable[[], float] = time.monotonic,
@@ -606,7 +721,8 @@ def fly_queue(*, max_minutes: float, while_idle: bool = True, keep: bool = False
 
         model_id = row.variant.id
         started = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
-        result = runner(model_id, dry_run=False, keep=keep, push=push, reg=reg, log=log)
+        result = runner(model_id, dry_run=False, keep=keep, push=push, engine_ref=engine_ref,
+                         reg=reg, log=log)
         finished = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
         outcome = QueueOutcome(model_id, started, finished, result.outcome, result.detail)
         outcomes.append(outcome)
@@ -639,23 +755,29 @@ def main(argv: Optional[List[str]] = None) -> int:
                         help="actually download, run, measure, write, and commit")
     run_p.add_argument("--keep", action="store_true", help="keep downloaded weights")
     run_p.add_argument("--push", action="store_true", help="push the flight branch")
+    run_p.add_argument("--engine-ref", default=DEFAULT_ENGINE_REF,
+                        help="git ref on mvec-engine to pull benchmarks/l2r (Gate 3) "
+                             "from -- default origin/main, never a local feature branch")
 
     q_p = sub.add_parser("queue", help="fly the whole plan, unattended, within a time budget")
     q_p.add_argument("--max-minutes", type=float, required=True)
     q_p.add_argument("--while-idle", action="store_true", default=True)
     q_p.add_argument("--keep", action="store_true")
     q_p.add_argument("--push", action="store_true")
+    q_p.add_argument("--engine-ref", default=DEFAULT_ENGINE_REF,
+                      help="git ref on mvec-engine to pull benchmarks/l2r (Gate 3) from")
 
     args = ap.parse_args(argv)
 
     if args.action == "plan":
         return cmd_plan(args)
     if args.action == "run":
-        result = fly_run(args.model_id, dry_run=args.dry_run, keep=args.keep, push=args.push)
+        result = fly_run(args.model_id, dry_run=args.dry_run, keep=args.keep, push=args.push,
+                          engine_ref=args.engine_ref)
         return 0 if result.outcome in ("ok", "dry-run") else 1
     if args.action == "queue":
         outcomes = fly_queue(max_minutes=args.max_minutes, while_idle=args.while_idle,
-                              keep=args.keep, push=args.push)
+                              keep=args.keep, push=args.push, engine_ref=args.engine_ref)
         failed = [o for o in outcomes if o.outcome == "failed"]
         print(f"flew {len(outcomes)} entries, {len(failed)} failed")
         return 1 if failed else 0
