@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -50,7 +51,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -204,6 +205,97 @@ def runtime_status(plan: Optional[FlightPlan]) -> RuntimeStatus:
     return RuntimeStatus(False, fix, status.reason or "not installed")
 
 
+# ------------------------------------------------------------ preflight installs
+#
+# `fly.py queue`'s pre-flight phase: for every distinct runtime a planned
+# model needs and does not have, install it before flying anything --
+# including the two source-tree CMake builds (bitnet-cpp, llama-cpp-prism)
+# that stayed BLOCKED-with-a-fix-command rather than run on a MacBook when
+# their recipes were registered (see those recipes' own notes). `nice -n 19`
+# and a bounded job count keep a several-minute unattended build from
+# fighting the rest of the machine for cores -- the same posture
+# quietcargo/quietpnpm take for Rust builds elsewhere in this fleet.
+
+BUILD_JOBS = max(1, min(4, (os.cpu_count() or 4) - 1))
+
+
+def install_env(jobs: int) -> Dict[str, str]:
+    """The environment a bounded, unattended build runs under. Harmless to
+    a plain `pip install` (mlx-lm, whisper-cpp) -- both env vars are simply
+    unread by pip -- and load-bearing for the two CMake source-tree builds,
+    where an unbounded default `cmake --build` fans out to every core."""
+    env = dict(os.environ)
+    env["CMAKE_BUILD_PARALLEL_LEVEL"] = str(jobs)
+    env["MAKEFLAGS"] = f"-j{jobs}"
+    return env
+
+
+def install_command_for(runtime: "rt.Runtime") -> List[str]:
+    """The real argv fly.py runs to install one runtime -- whatever
+    `spacepilot.runtimes.install_command()` would run, prefixed with
+    `nice -n 19`. Parallelism is bounded separately, via `install_env()`;
+    niceness alone does not cap how many cores a build fans out to."""
+    return ["nice", "-n", "19", *rt.install_command(runtime)]
+
+
+@dataclass(frozen=True)
+class RuntimeInstallResult:
+    runtime_id: str
+    ok: bool
+    detail: str
+    duration_s: float = 0.0
+
+
+def run_runtime_install(
+    runtime: "rt.Runtime", *, dry_run: bool = True, jobs: int = BUILD_JOBS,
+    command_runner: Optional[Callable[..., Any]] = None,
+    check_fn: Optional[Callable[["rt.Runtime"], "rt.Status"]] = None,
+    clock: Callable[[], float] = time.monotonic,
+    log: Callable[[str], None] = print,
+) -> RuntimeInstallResult:
+    """Install one runtime, or (dry-run, the default) just log the command.
+
+    Verifies the same way `spacepilot.runtimes.install()` does -- by
+    calling `check()` afterwards and trusting that, never the installer's
+    own exit code alone -- a script that exits 0 having built the wrong
+    thing is not installed either.
+    """
+    cmd = install_command_for(runtime)
+    if dry_run:
+        log(f"  [dry-run] would install {runtime.id}: {' '.join(cmd)}")
+        return RuntimeInstallResult(runtime.id, True, "dry-run: " + " ".join(cmd), 0.0)
+
+    log(f"  installing {runtime.id}: {' '.join(cmd)}")
+    runner = command_runner or (lambda c, **kw: subprocess.run(
+        c, capture_output=True, text=True, timeout=1800, **kw))
+    start = clock()
+    try:
+        proc = runner(cmd, env=install_env(jobs))
+    except subprocess.TimeoutExpired as exc:
+        duration = clock() - start
+        log(f"  install timed out for {runtime.id}")
+        return RuntimeInstallResult(runtime.id, False, f"install timed out: {exc}", duration)
+    duration = clock() - start
+
+    rc = getattr(proc, "returncode", 1)
+    if rc != 0:
+        combined = ((getattr(proc, "stderr", "") or "") + "\n"
+                    + (getattr(proc, "stdout", "") or "")).strip()
+        tail = "\n".join(combined.splitlines()[-15:])
+        log(f"  install failed for {runtime.id} (exit {rc})")
+        return RuntimeInstallResult(runtime.id, False, tail or f"install exited {rc}", duration)
+
+    check = check_fn or rt.check
+    status = check(runtime)
+    if not status.installed:
+        reason = status.reason or "installed but check still reports it missing"
+        log(f"  install ran but {runtime.id} still fails its own check: {reason}")
+        return RuntimeInstallResult(runtime.id, False, reason, duration)
+    detail = f"installed {status.version or ''}".strip()
+    log(f"  {detail} ({runtime.id})")
+    return RuntimeInstallResult(runtime.id, True, detail, duration)
+
+
 # --------------------------------------------------------------------- plan
 
 @dataclass(frozen=True)
@@ -229,11 +321,24 @@ class PlanRow:
 
 
 def plan_rows(reg=None) -> List[PlanRow]:
-    """Every unflown variant, smallest download first."""
+    """Every unflown variant, smallest download first.
+
+    `runtime_status()` shells out (an import or a `--version` probe) once
+    per call, and many variants share one runtime -- nine Desert Ant
+    models share `desert-ant`, two share `mlx-lm`. Without a cache this
+    reruns the identical subprocess check once per variant; the cache is
+    keyed on runtime_id (None included, for the unmapped rows), which is
+    exactly what the status depends on -- the plan object only supplies
+    which id to check, never which model asked.
+    """
     rows = []
+    status_cache: Dict[Optional[str], RuntimeStatus] = {}
     for v in unflown_variants(reg):
         p = FLIGHT_PLANS.get(v.model_id)
-        rows.append(PlanRow(v, p, runtime_status(p)))
+        key = p.runtime_id if p else None
+        if key not in status_cache:
+            status_cache[key] = runtime_status(p)
+        rows.append(PlanRow(v, p, status_cache[key]))
     return sorted(rows, key=lambda r: r.variant.download.value)
 
 
@@ -249,7 +354,50 @@ def cmd_plan(args: argparse.Namespace) -> int:
         if not row.runtime.installed:
             fix = row.runtime.install_cmd or "(no install path registered for this runtime yet)"
             print(f"    runtime not installed: {row.runtime.reason} -- fix: {fix}")
+    if getattr(args, "tonight", False):
+        print()
+        print(tonight_summary(rows))
     return 0
+
+
+def tonight_summary(rows: List[PlanRow], *, power_sample: Optional[Callable[[], PowerSample]] = None) -> str:
+    """The one-block briefing a human reads before typing the arm command --
+    same order `plan` just printed, plus the totals and provenance that
+    prose alone would make someone dig for: total download, the single
+    largest peak-memory estimate, whether tonight's run can measure power at
+    all, and where the log and the resulting registry branches land. This is
+    what `fly.py plan --tonight` prints and what the "Arm a flight night"
+    doc section pastes verbatim.
+    """
+    total_dl = sum(r.download_gb for r in rows)
+    peak_mem = max((r.working_set_gb for r in rows), default=0.0)
+    sample_fn = power_sample or sample_power
+    power = sample_fn()
+    blocked = [r for r in rows if not r.runtime.installed]
+    installable = [r for r in blocked if r.runtime.install_cmd]
+    no_fix = [r for r in blocked if not r.runtime.install_cmd]
+    today = _dt.date.today().isoformat()
+    log_path = FLIGHT_LOG_ROOT / today / "flight-log.jsonl"
+    lines = [
+        "Tonight's flight night, in the order `plan` just printed:",
+        f"  {len(rows)} unflown entries, {total_dl:.2f} GB total download, "
+        f"{peak_mem:.2f} GB peak memory (largest single entry, est.)",
+        f"  {len(blocked)} still BLOCKED -- {len(installable)} get installed by "
+        "queue's pre-flight phase (each missing runtime once, in plan order, "
+        f"before any flight runs), {len(no_fix)} have no runtime registered "
+        "here yet and stay BLOCKED with no fix",
+        ("  power: measured via " + power.source + f" ({power.limits})"
+         if power.available else f"  power: unmeasured -- {power.limits}"),
+        "    optional, to make `powermetrics` itself the source instead of "
+        "the ioreg fallback: a sudoers line letting this user run it "
+        "unprompted -- "
+        "`<user> ALL=(root) NOPASSWD: /usr/bin/powermetrics` -- "
+        "see docs/registry/flights.md's \"Power\" section",
+        f"  flight log: {log_path}",
+        "  registry branch per flown model: flight/<model-id>-<date>, "
+        "committed locally, pushed only with --push, never merged by this tool",
+    ]
+    return "\n".join(lines)
 
 
 # -------------------------------------------------------------------- guards
@@ -879,21 +1027,43 @@ class QueueOutcome:
 
 
 def fly_queue(*, max_minutes: float, while_idle: bool = True, keep: bool = False,
-              push: bool = False, engine_ref: str = DEFAULT_ENGINE_REF, reg=None,
+              push: bool = False, dry_run: bool = True, jobs: int = BUILD_JOBS,
+              engine_ref: str = DEFAULT_ENGINE_REF, reg=None,
               idle_check: Optional[Callable[[], GuardResult]] = None,
               display_check: Optional[Callable[[], GuardResult]] = None,
+              disk_check: Optional[Callable[[], GuardResult]] = None,
+              power_check: Optional[Callable[[], GuardResult]] = None,
               keyboard_activity: Optional[Callable[[], bool]] = None,
               clock: Callable[[], float] = time.monotonic,
               sleep_fn: Callable[[float], None] = time.sleep,
               runner: Callable[..., RunResult] = fly_run,
+              install_runner: Callable[..., RuntimeInstallResult] = run_runtime_install,
+              flight_disk_check: Optional[Callable[[float], GuardResult]] = None,
+              flight_power_check: Optional[Callable[[], GuardResult]] = None,
               log_dir: Optional[Path] = None,
               log: Callable[[str], None] = print) -> List[QueueOutcome]:
     """Runs `plan()` order until the time budget is spent or a human comes
     back. Never itself downloads or infers -- that is `runner`'s job, so
     tests can pass a fake and prove the loop's stopping behaviour in
-    isolation."""
+    isolation.
+
+    Two phases, both under the idle/AC-power/disk guards. First, pre-flight:
+    every distinct runtime a planned model needs and does not have gets
+    installed once (`install_runner`, `run_runtime_install` by default),
+    logged to the same flight log with its duration. A failed install marks
+    every model that needed it `skipped: install failed` -- with the tail of
+    the install log -- and the night continues; it never aborts the queue.
+    Second, the flights themselves, exactly as before, skipping any model
+    the pre-flight phase marked.
+
+    `dry_run` (default True, same posture as `fly_run`) governs both phases:
+    a dry-run night logs every install command and every flight command and
+    touches no network, no registry, and no git ref.
+    """
     idle_check = idle_check or check_idle_guard
     display_check = display_check or display_asleep_or_locked
+    disk_check = disk_check or (lambda: check_disk_guard(0))
+    power_check = power_check or on_ac_power
     keyboard_activity = keyboard_activity or (lambda: False)
 
     outcomes: List[QueueOutcome] = []
@@ -904,27 +1074,93 @@ def fly_queue(*, max_minutes: float, while_idle: bool = True, keep: bool = False
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "flight-log.jsonl"
 
-    for row in rows:
+    def guards_ok() -> bool:
+        """The same guard sequence a flight checks, run once before each
+        install: time budget, idle+display (when `while_idle`), keyboard
+        activity, disk, AC power. Any failure logs why and the caller
+        returns without touching the flights loop at all -- a guard
+        failure stops the whole night, exactly like it always has for
+        flights; only a failed *install itself* (the command ran and lost)
+        is scoped to just the models that needed it."""
         if clock() - start_clock >= max_minutes * 60:
             log(f"stopping: reached max-minutes ({max_minutes:.0f})")
-            break
+            return False
         if while_idle:
             idle = idle_check()
             if not idle.ok:
                 log(f"stopping: {idle.reason}")
-                break
+                return False
             disp = display_check()
             if not disp.ok:
                 log(f"stopping: display is not asleep/locked ({disp.reason})")
-                break
+                return False
         if keyboard_activity():
             log("stopping: keyboard/mouse activity detected")
+            return False
+        disk = disk_check()
+        if not disk.ok:
+            log(f"stopping: {disk.reason}")
+            return False
+        power = power_check()
+        if not power.ok:
+            log(f"stopping: {power.reason}")
+            return False
+        return True
+
+    # ---------------------------------------------------------- pre-flight
+    skip_reason: Dict[str, str] = {}
+    attempted_runtimes: Dict[str, RuntimeInstallResult] = {}
+    for row in rows:
+        plan = row.plan
+        if plan is None or plan.runtime_id is None or row.runtime.installed:
+            continue
+        runtime_id = plan.runtime_id
+        if runtime_id in attempted_runtimes:
+            if not attempted_runtimes[runtime_id].ok:
+                skip_reason[row.variant.id] = (
+                    f"skipped: install failed -- {attempted_runtimes[runtime_id].detail}")
+            continue
+
+        if not guards_ok():
+            return outcomes
+
+        runtime_obj = rt.runtimes().get(runtime_id)
+        if runtime_obj is None:
+            continue  # unknown runtime id -- runtime_status() already reported it
+
+        started = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+        result = install_runner(runtime_obj, dry_run=dry_run, jobs=jobs, log=log)
+        finished = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+        attempted_runtimes[runtime_id] = result
+        with log_path.open("a") as f:
+            f.write(json.dumps({
+                "runtime_id": runtime_id, "start": started, "end": finished,
+                "outcome": "dry-run" if dry_run else ("ok" if result.ok else "failed"),
+                "detail": result.detail, "duration_s": round(result.duration_s, 1),
+            }) + "\n")
+        if not dry_run and not result.ok:
+            log(f"install failed for {runtime_id}: {result.detail} -- "
+                f"models needing it are skipped, continuing to the rest of the night")
+            skip_reason[row.variant.id] = f"skipped: install failed -- {result.detail}"
+
+    # -------------------------------------------------------------- flights
+    for row in rows:
+        model_id = row.variant.id
+        if model_id in skip_reason:
+            now = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+            outcome = QueueOutcome(model_id, now, now, "skipped", skip_reason[model_id])
+            outcomes.append(outcome)
+            with log_path.open("a") as f:
+                f.write(json.dumps(outcome.__dict__) + "\n")
+            continue
+
+        if not guards_ok():
             break
 
-        model_id = row.variant.id
         started = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
-        result = runner(model_id, dry_run=False, keep=keep, push=push, engine_ref=engine_ref,
-                         reg=reg, log=log)
+        result = runner(model_id, dry_run=dry_run, keep=keep, push=push, engine_ref=engine_ref,
+                         reg=reg, log=log, disk_check=flight_disk_check,
+                         power_check=flight_power_check)
         finished = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
         outcome = QueueOutcome(model_id, started, finished, result.outcome, result.detail)
         outcomes.append(outcome)
@@ -947,7 +1183,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="action", required=True)
 
-    sub.add_parser("plan", help="list unflown entries, smallest download first")
+    plan_p = sub.add_parser("plan", help="list unflown entries, smallest download first")
+    plan_p.add_argument("--tonight", action="store_true",
+                         help="also print the arm-a-flight-night briefing: totals, "
+                              "power provenance, and where the log/branches land")
 
     run_p = sub.add_parser("run", help="fly one entry")
     run_p.add_argument("model_id")
@@ -966,6 +1205,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     q_p.add_argument("--while-idle", action="store_true", default=True)
     q_p.add_argument("--keep", action="store_true")
     q_p.add_argument("--push", action="store_true")
+    q_p.add_argument("--dry-run", action="store_true", default=True,
+                      help="(default) log every step -- pre-flight installs and flights "
+                           "alike -- touch no network, no registry, no git ref")
+    q_p.add_argument("--fly-for-real", dest="dry_run", action="store_false",
+                      help="actually install missing runtimes, download, run, measure, "
+                           "write, and commit, all night, unattended")
+    q_p.add_argument("--force-guards", action="store_true",
+                      help="treat idle/AC-power/disk/keyboard as green without probing "
+                           "them for real -- for a --dry-run demo on a machine that is "
+                           "not actually idle or on AC; never combine with --fly-for-real")
     q_p.add_argument("--engine-ref", default=DEFAULT_ENGINE_REF,
                       help="git ref on mvec-engine to pull benchmarks/l2r (Gate 3) from")
 
@@ -978,8 +1227,21 @@ def main(argv: Optional[List[str]] = None) -> int:
                           engine_ref=args.engine_ref)
         return 0 if result.outcome in ("ok", "dry-run") else 1
     if args.action == "queue":
+        if args.force_guards and not args.dry_run:
+            print("refusing: --force-guards with --fly-for-real would run a real "
+                  "unattended night without ever checking idle/power/disk for real")
+            return 1
+        queue_kwargs = {}
+        if args.force_guards:
+            forced = lambda *a, **kw: GuardResult(True, "forced green (--force-guards, demo only)")
+            queue_kwargs.update(
+                idle_check=forced, display_check=forced, disk_check=forced,
+                power_check=forced, keyboard_activity=lambda: False,
+                flight_disk_check=forced, flight_power_check=forced,
+            )
         outcomes = fly_queue(max_minutes=args.max_minutes, while_idle=args.while_idle,
-                              keep=args.keep, push=args.push, engine_ref=args.engine_ref)
+                              keep=args.keep, push=args.push, dry_run=args.dry_run,
+                              engine_ref=args.engine_ref, **queue_kwargs)
         failed = [o for o in outcomes if o.outcome == "failed"]
         print(f"flew {len(outcomes)} entries, {len(failed)} failed")
         return 1 if failed else 0

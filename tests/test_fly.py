@@ -6,6 +6,7 @@ No test in this file downloads anything, runs `pmset`/`ioreg` for real
 (every guard takes injected text), or leaves a git branch behind.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -318,6 +319,8 @@ def test_queue_runs_within_time_budget_and_writes_the_flight_log(tmp_path):
         while_idle=True,
         idle_check=lambda: fly.GuardResult(True, "idle 20.0 min"),
         display_check=lambda: fly.GuardResult(True, "display power state 0 (asleep/dimmed)"),
+        disk_check=lambda: fly.GuardResult(True, "plenty free"),
+        power_check=lambda: fly.GuardResult(True, "AC Power"),
         keyboard_activity=lambda: False,
         runner=fake_runner,
         log_dir=tmp_path,
@@ -325,11 +328,20 @@ def test_queue_runs_within_time_budget_and_writes_the_flight_log(tmp_path):
     assert len(outcomes) > 0
     log_path = tmp_path / "flight-log.jsonl"
     assert log_path.exists()
-    lines = log_path.read_text().strip().splitlines()
-    assert len(lines) == len(outcomes)
     import json
-    first = json.loads(lines[0])
+    lines = log_path.read_text().strip().splitlines()
+    parsed = [json.loads(line) for line in lines]
+    # Pre-flight install attempts (one per distinct not-installed runtime)
+    # share the same log file, keyed by runtime_id instead of model_id --
+    # see fly_queue's pre-flight phase.
+    model_lines = [row for row in parsed if "model_id" in row]
+    install_lines = [row for row in parsed if "runtime_id" in row]
+    assert len(model_lines) == len(outcomes)
+    assert len(lines) == len(model_lines) + len(install_lines)
+    first = model_lines[0]
     assert {"model_id", "start", "end", "outcome"} <= set(first)
+    if install_lines:
+        assert {"runtime_id", "start", "end", "outcome", "detail", "duration_s"} <= set(install_lines[0])
 
 
 def test_queue_stops_at_the_time_budget():
@@ -357,6 +369,8 @@ def test_queue_stops_at_the_time_budget():
     outcomes = fly.fly_queue(
         max_minutes=1,
         while_idle=False,
+        disk_check=lambda: fly.GuardResult(True, "plenty free"),
+        power_check=lambda: fly.GuardResult(True, "AC Power"),
         clock=fake_clock,
         runner=advancing_runner,
         log_dir=Path("/tmp"),
@@ -513,3 +527,274 @@ def test_write_flown_measurement_carries_power_provenance(tmp_path):
     assert entry.power_source == fly.POWER_SOURCE_IOREG_BATTERY
     assert entry.power_watts == pytest.approx(18.1)
     assert "battery" in entry.power_limits
+
+
+# ------------------------------------------------------- queue: pre-flight installs
+#
+# `fly.py queue`'s pre-flight phase installs every planned model's missing
+# runtime -- including the bitnet.cpp and PrismML source-tree builds -- under
+# the same idle/AC-power/disk guards a flight itself checks, before flying
+# anything. A failed install skips only the models that needed it and the
+# night continues; a guard failure (idle, power, disk) stops the whole night,
+# exactly like it always has. Every test here fakes both the installer and
+# the guards -- none shells out, none touches the real registry.
+
+def _fake_row(model_id: str, runtime_id: str, *, installed: bool, role="executor",
+              backend="metal", download_bytes=1_000_000):
+    """A minimal fake PlanRow/Variant pair, just enough for plan_rows()-shaped
+    code to iterate without touching the real registry or spawning a real
+    runtime check."""
+    from types import SimpleNamespace
+
+    variant = SimpleNamespace(
+        id=model_id, model_id=model_id,
+        download=SimpleNamespace(value=download_bytes),
+        working_set=SimpleNamespace(value=download_bytes, source="unmeasured"),
+        speed=[], backends=[backend], is_pinned=True, revision="deadbeef" * 5,
+        repo="fake/repo", files=None,
+    )
+    plan = fly.FlightPlan(model_id, role, runtime_id, "text")
+    runtime_status = fly.RuntimeStatus(installed, None if installed else
+                                        f"spacepilot runtimes install {runtime_id}",
+                                        "installed" if installed else "not installed")
+    return fly.PlanRow(variant, plan, runtime_status)
+
+
+def test_run_runtime_install_dry_run_logs_the_command_and_touches_nothing(monkeypatch):
+    calls = []
+    monkeypatch.setattr(fly.subprocess, "run",
+                         lambda *a, **kw: (_ for _ in ()).throw(
+                             AssertionError("dry-run must never shell out")))
+    runtime = fly.rt.runtimes()["mlx-lm"]
+    result = fly.run_runtime_install(runtime, dry_run=True, log=calls.append)
+    assert result.ok
+    assert result.duration_s == 0.0
+    assert any("dry-run" in c and runtime.id in c for c in calls)
+
+
+def test_run_runtime_install_wraps_the_real_command_with_nice_and_bounded_jobs(monkeypatch):
+    runtime = fly.rt.runtimes()["bitnet-cpp"]
+    seen = {}
+
+    def fake_runner(cmd, **kw):
+        seen["cmd"] = cmd
+        seen["env"] = kw.get("env")
+        return type("P", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_check(r):
+        return fly.rt.Status(r.id, True, "1.0.0")
+
+    result = fly.run_runtime_install(
+        runtime, dry_run=False, jobs=3, command_runner=fake_runner,
+        check_fn=fake_check, log=lambda *_: None,
+    )
+    assert result.ok
+    assert seen["cmd"][:3] == ["nice", "-n", "19"]
+    assert seen["env"]["CMAKE_BUILD_PARALLEL_LEVEL"] == "3"
+    assert seen["env"]["MAKEFLAGS"] == "-j3"
+
+
+def test_run_runtime_install_reports_the_log_tail_on_failure(monkeypatch):
+    runtime = fly.rt.runtimes()["llama-cpp-prism"]
+
+    def fake_runner(cmd, **kw):
+        return type("P", (), {
+            "returncode": 1, "stdout": "line1\nline2\n",
+            "stderr": "cmake: configure error\n",
+        })()
+
+    result = fly.run_runtime_install(
+        runtime, dry_run=False, command_runner=fake_runner, log=lambda *_: None,
+    )
+    assert not result.ok
+    assert "configure error" in result.detail
+
+
+def test_run_runtime_install_distrusts_a_zero_exit_that_still_fails_check(monkeypatch):
+    """A script that exits 0 having built the wrong thing is not installed
+    either -- the same honesty bar spacepilot.runtimes.install() holds pip
+    to."""
+    runtime = fly.rt.runtimes()["bitnet-cpp"]
+
+    def fake_runner(cmd, **kw):
+        return type("P", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_check(r):
+        return fly.rt.Status(r.id, False, None, "bitnet-cli not found on PATH")
+
+    result = fly.run_runtime_install(
+        runtime, dry_run=False, command_runner=fake_runner,
+        check_fn=fake_check, log=lambda *_: None,
+    )
+    assert not result.ok
+    assert "not found on PATH" in result.detail
+
+
+def test_queue_preflight_installs_each_missing_runtime_once_before_flights(tmp_path):
+    rows = [
+        _fake_row("model-a-1", "shared-rt", installed=False, download_bytes=10),
+        _fake_row("model-b-1", "shared-rt", installed=False, download_bytes=20),
+        _fake_row("model-c-1", "other-rt", installed=True, download_bytes=30),
+    ]
+    install_calls = []
+
+    def fake_install_runner(runtime, *, dry_run, jobs, log):
+        install_calls.append(runtime.id)
+        return fly.RuntimeInstallResult(runtime.id, True, "installed 1.0.0", 2.5)
+
+    flown = []
+
+    def fake_runner(model_id, **kwargs):
+        flown.append(model_id)
+        return fly.RunResult(model_id, "ok", [], "flown")
+
+    class FakeReg:
+        pass
+
+    import fly as fly_mod
+    fake_rt_registry = {"shared-rt": fly_mod.rt.runtimes()["bitnet-cpp"]}
+    orig_runtimes = fly_mod.rt.runtimes
+    orig_plan_rows = fly_mod.plan_rows
+    fly_mod.rt.runtimes = lambda: fake_rt_registry
+    fly_mod.plan_rows = lambda reg=None: rows
+    try:
+        outcomes = fly.fly_queue(
+            max_minutes=240, while_idle=True, dry_run=False,
+            idle_check=lambda: fly.GuardResult(True, "idle"),
+            display_check=lambda: fly.GuardResult(True, "asleep"),
+            disk_check=lambda: fly.GuardResult(True, "plenty free"),
+            power_check=lambda: fly.GuardResult(True, "AC Power"),
+            keyboard_activity=lambda: False,
+            install_runner=fake_install_runner,
+            runner=fake_runner,
+            log_dir=tmp_path,
+        )
+    finally:
+        fly_mod.rt.runtimes = orig_runtimes
+        fly_mod.plan_rows = orig_plan_rows
+
+    # installed exactly once, not once per model that needs it
+    assert install_calls == [fake_rt_registry["shared-rt"].id]
+    assert flown == ["model-a-1", "model-b-1", "model-c-1"]
+    assert [o.outcome for o in outcomes] == ["ok", "ok", "ok"]
+
+    log_lines = [json.loads(l) for l in (tmp_path / "flight-log.jsonl").read_text().splitlines()]
+    install_entries = [l for l in log_lines if l.get("runtime_id") == "shared-rt"]
+    assert len(install_entries) == 1
+    assert install_entries[0]["outcome"] == "ok"
+    assert install_entries[0]["duration_s"] == 2.5
+
+
+def test_queue_preflight_dry_run_never_calls_a_real_installer(tmp_path):
+    rows = [_fake_row("model-a-1", "shared-rt", installed=False)]
+
+    def real_install_runner_would_explode(*a, **kw):
+        raise AssertionError("dry-run must never invoke a real install path")
+
+    import fly as fly_mod
+    orig_runtimes = fly_mod.rt.runtimes
+    orig_plan_rows = fly_mod.plan_rows
+    fake_runtime = fly_mod.rt.runtimes()["bitnet-cpp"]
+    fly_mod.rt.runtimes = lambda: {"shared-rt": fake_runtime}
+    fly_mod.plan_rows = lambda reg=None: rows
+    logged = []
+    try:
+        outcomes = fly.fly_queue(
+            max_minutes=240, while_idle=True, dry_run=True,
+            idle_check=lambda: fly.GuardResult(True, "idle"),
+            display_check=lambda: fly.GuardResult(True, "asleep"),
+            disk_check=lambda: fly.GuardResult(True, "plenty free"),
+            power_check=lambda: fly.GuardResult(True, "AC Power"),
+            keyboard_activity=lambda: False,
+            runner=lambda model_id, **kw: fly.RunResult(model_id, "dry-run", [], ""),
+            log=logged.append,
+            log_dir=tmp_path,
+        )
+    finally:
+        fly_mod.rt.runtimes = orig_runtimes
+        fly_mod.plan_rows = orig_plan_rows
+
+    assert any("[dry-run] would install" in l and fake_runtime.id in l for l in logged)
+    log_lines = [json.loads(l) for l in (tmp_path / "flight-log.jsonl").read_text().splitlines()]
+    install_entries = [l for l in log_lines if l.get("runtime_id") == "shared-rt"]
+    assert install_entries[0]["outcome"] == "dry-run"
+
+
+def test_queue_preflight_failed_install_skips_only_its_own_models_and_continues(tmp_path):
+    rows = [
+        _fake_row("model-a-1", "broken-rt", installed=False),
+        _fake_row("model-b-1", "broken-rt", installed=False),
+        _fake_row("model-c-1", "fine-rt", installed=True),
+    ]
+
+    def fake_install_runner(runtime, *, dry_run, jobs, log):
+        return fly.RuntimeInstallResult(runtime.id, False, "cmake: configure error", 1.2)
+
+    flown = []
+
+    def fake_runner(model_id, **kwargs):
+        flown.append(model_id)
+        return fly.RunResult(model_id, "ok", [], "flown")
+
+    import fly as fly_mod
+    orig_runtimes = fly_mod.rt.runtimes
+    orig_plan_rows = fly_mod.plan_rows
+    fake_broken_runtime = fly_mod.rt.runtimes()["llama-cpp-prism"]
+    fly_mod.rt.runtimes = lambda: {"broken-rt": fake_broken_runtime}
+    fly_mod.plan_rows = lambda reg=None: rows
+    try:
+        outcomes = fly.fly_queue(
+            max_minutes=240, while_idle=True, dry_run=False,
+            idle_check=lambda: fly.GuardResult(True, "idle"),
+            display_check=lambda: fly.GuardResult(True, "asleep"),
+            disk_check=lambda: fly.GuardResult(True, "plenty free"),
+            power_check=lambda: fly.GuardResult(True, "AC Power"),
+            keyboard_activity=lambda: False,
+            install_runner=fake_install_runner,
+            runner=fake_runner,
+            log_dir=tmp_path,
+        )
+    finally:
+        fly_mod.rt.runtimes = orig_runtimes
+        fly_mod.plan_rows = orig_plan_rows
+
+    # the night never aborts -- model-c-1 (a different, working runtime)
+    # still flies even though broken-rt's install failed.
+    assert flown == ["model-c-1"]
+    by_id = {o.model_id: o for o in outcomes}
+    assert by_id["model-a-1"].outcome == "skipped"
+    assert "skipped: install failed" in by_id["model-a-1"].detail
+    assert "configure error" in by_id["model-a-1"].detail
+    assert by_id["model-b-1"].outcome == "skipped"
+    assert by_id["model-c-1"].outcome == "ok"
+
+
+def test_queue_preflight_stops_the_whole_night_on_a_guard_failure_not_just_a_skip(tmp_path):
+    """A guard failure (idle/power/disk) is not the same thing as an install
+    failure -- it stops everything, the same as it always has for a flight,
+    rather than being scoped to one runtime's models."""
+    rows = [_fake_row("model-a-1", "shared-rt", installed=False)]
+
+    def must_not_run(*a, **kw):
+        raise AssertionError("must never install or fly while a guard fails")
+
+    import fly as fly_mod
+    orig_runtimes = fly_mod.rt.runtimes
+    orig_plan_rows = fly_mod.plan_rows
+    fake_guard_runtime = fly_mod.rt.runtimes()["bitnet-cpp"]
+    fly_mod.rt.runtimes = lambda: {"shared-rt": fake_guard_runtime}
+    fly_mod.plan_rows = lambda reg=None: rows
+    try:
+        outcomes = fly.fly_queue(
+            max_minutes=240, while_idle=True, dry_run=False,
+            idle_check=lambda: fly.GuardResult(False, "idle 2.0 min (< 10 min required)"),
+            display_check=lambda: fly.GuardResult(True, "asleep"),
+            install_runner=must_not_run,
+            runner=must_not_run,
+            log_dir=tmp_path,
+        )
+    finally:
+        fly_mod.rt.runtimes = orig_runtimes
+        fly_mod.plan_rows = orig_plan_rows
+
+    assert outcomes == []
