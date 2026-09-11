@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-08",
+ "generated": "2026-09-11",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -31,6 +31,111 @@
   ]
  },
  "models": [
+  {
+   "id": "auk",
+   "name": "Tencent AuK",
+   "family": "hunyuan",
+   "kind": "speech",
+   "summary": "1.5B parameter speech foundation model from Tencent Hunyuan with a 4-step distilled AuK-Flash variant. Delivers zero-shot expressive voice cloning, emotion control, and sub-200ms TTFA voice duplex synthesis.\n",
+   "homepage": "https://github.com/Tencent-Hunyuan/AuK",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "auk-flash-1-5b",
+     "model_id": "auk",
+     "name": "AuK-Flash 1.5B (4-step Distilled)",
+     "kind": "speech",
+     "family": "hunyuan",
+     "params": "1.5B",
+     "precision": "f16",
+     "repo": "Tencent-Hunyuan/AuK-Flash",
+     "files": null,
+     "revision": null,
+     "is_pinned": false,
+     "backends": [
+      "cuda",
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 3221225472.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~3.0 GiB f16 safetensors checkpoint for 4-step distilled duplex speech.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 4294967296.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.0 GiB working set on Apple Silicon unified memory or NVIDIA CUDA VRAM.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "auk-base-1-5b",
+     "model_id": "auk",
+     "name": "AuK Base 1.5B",
+     "kind": "speech",
+     "family": "hunyuan",
+     "params": "1.5B",
+     "precision": "f16",
+     "repo": "Tencent-Hunyuan/AuK-Base",
+     "files": null,
+     "revision": null,
+     "is_pinned": false,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 3221225472.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "Full foundation speech checkpoint for studio editing and voice cloning.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 4831838208.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.5 GiB working set with autoregressive prompt cache.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
   {
    "id": "aurasr",
    "name": "AuraSR",
@@ -2097,6 +2202,110 @@
      "caveats": [],
      "compromised": [],
      "notes": "DFlash speculative decoding drafter with two-phase inference: 1. inject_kv writes target encoder features into the ring KV cache via per-layer\n   Wk/Wv projections.\n2. draft executes bidirectional attention over injected context and mask tokens,\n   producing K=4 token predictions in a single forward pass.\nPerformance: Acceptance rate at K=4 is 64% (~1.85x generation speedup), verified against HF MuseGlimmerAssistantModel at all 24 sub-layer checkpoints. Heterogeneous Dispatch: Partitions the 5-layer sliding-window drafter to Apple Neural Engine (ANE, 2-5W low power) and target causal transformer layers to Metal GPU without memory copying over unified memory. Agentic Tool Calling: Supports Meta ATEM XML protocol (to=self for reasoning_content, to=<tool> with <atem:function_calls> for function invocation, to=user for visible content) exposed over llm-server OpenAI-compatible SSE streaming endpoint. Memory Fit: Fits comfortably on Apple Silicon unified memory configurations >= 24GB (runs_well on 36GB / 48GB / 64GB+ unified memory).\n"
+    }
+   ]
+  },
+  {
+   "id": "nemotron-3",
+   "name": "NVIDIA Nemotron 3",
+   "family": "nvidia",
+   "kind": "text",
+   "summary": "NVIDIA open-weights foundation model family (Nemotron 3 Ultra, Nano, Lightning) specialized for high-efficiency code generation, reasoning, and multi-agent routing. Integrated into Sakana Fugu Ultra v2 to score 74.3 on the DeepSWE benchmark, routing open weights to beat frontier closed models.\n",
+   "homepage": "https://huggingface.co/nvidia/nemotron-3",
+   "license": {
+    "id": "custom",
+    "open_source": true,
+    "spdx": "LicenseRef-NVIDIA-Open-Model",
+    "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "nemotron-3-nano-4bit",
+     "model_id": "nemotron-3",
+     "name": "Nemotron 3 Nano 4-bit (MLX)",
+     "kind": "text",
+     "family": "nvidia",
+     "params": "8B",
+     "precision": "4bit",
+     "repo": "mlx-community/Nemotron-3-Nano-4bit",
+     "files": null,
+     "revision": null,
+     "is_pinned": false,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 4831838208.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.5 GiB estimated download for 4-bit quantized MLX checkpoint.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 6442450944.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~6.0 GiB working set on Apple Silicon Metal or CUDA VRAM.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "custom",
+      "open_source": true,
+      "spdx": "LicenseRef-NVIDIA-Open-Model",
+      "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "nemotron-3-ultra-8bit",
+     "model_id": "nemotron-3",
+     "name": "Nemotron 3 Ultra 8-bit (CUDA / Fleet)",
+     "kind": "text",
+     "family": "nvidia",
+     "params": "34B",
+     "precision": "8bit",
+     "repo": "nvidia/Nemotron-3-Ultra-8bit",
+     "files": null,
+     "revision": null,
+     "is_pinned": false,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 36507222016.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~34 GiB download for 8-bit quantized weights.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 42949672960.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~40 GiB working set with KV cache for agent swarms and DeepSWE routing.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "custom",
+      "open_source": true,
+      "spdx": "LicenseRef-NVIDIA-Open-Model",
+      "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },

@@ -1,0 +1,52 @@
+schema: 1
+id: nemotron-3
+name: NVIDIA Nemotron 3
+family: nvidia
+kind: text
+summary: >
+  NVIDIA open-weights foundation model family (Nemotron 3 Ultra, Nano, Lightning)
+  specialized for high-efficiency code generation, reasoning, and multi-agent routing.
+  Integrated into Sakana Fugu Ultra v2 to score 74.3 on the DeepSWE benchmark,
+  routing open weights to beat frontier closed models.
+homepage: https://huggingface.co/nvidia/nemotron-3
+
+license:
+  id: custom
+  spdx: LicenseRef-NVIDIA-Open-Model
+  open_source: true
+  url: https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt
+
+variants:
+  - id: nemotron-3-nano-4bit
+    name: Nemotron 3 Nano 4-bit (MLX)
+    params: 8B
+    precision: 4bit
+    repo: mlx-community/Nemotron-3-Nano-4bit
+    backends: [metal, cuda]
+    download:
+      value: 4831838208
+      source: estimated
+      checked: "2026-09-11"
+      note: ~4.5 GiB estimated download for 4-bit quantized MLX checkpoint.
+    working_set:
+      value: 6442450944
+      source: estimated
+      checked: "2026-09-11"
+      note: ~6.0 GiB working set on Apple Silicon Metal or CUDA VRAM.
+
+  - id: nemotron-3-ultra-8bit
+    name: Nemotron 3 Ultra 8-bit (CUDA / Fleet)
+    params: 34B
+    precision: 8bit
+    repo: nvidia/Nemotron-3-Ultra-8bit
+    backends: [cuda, metal]
+    download:
+      value: 36507222016
+      source: estimated
+      checked: "2026-09-11"
+      note: ~34 GiB download for 8-bit quantized weights.
+    working_set:
+      value: 42949672960
+      source: estimated
+      checked: "2026-09-11"
+      note: ~40 GiB working set with KV cache for agent swarms and DeepSWE routing.
