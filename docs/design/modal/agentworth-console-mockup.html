@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentWorth Next-Gen Telemetry & Verdict Console</title>
+  
+  <!-- Fonts: Geist & Geist Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-root: #050608;
+      --bg-surface: #0c0e12;
+      --bg-card: #13161c;
+      --bg-hover: #1b1f28;
+      --border-subtle: #202530;
+      --border-strong: #2e3544;
+      --gold-lit: #e5b938;
+      --gold-spine: #fdf0cd;
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      --red: #f43f5e;
+      --cyan: #06b6d4;
+      --purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #8e9bb0;
+      --text-faint: #4c566a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-root);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mono {
+      font-family: 'Geist Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Top Bar */
+    header {
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-logo {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, var(--gold-lit), #9a7218);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 900;
+      font-size: 13px;
+      box-shadow: 0 0 12px rgba(229, 185, 56, 0.25);
+    }
+
+    .env-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .search-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      width: 360px;
+      transition: all 0.15s ease;
+    }
+
+    .search-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text-main);
+      background: var(--bg-hover);
+    }
+
+    .kbd {
+      background: #1f242d;
+      border: 1px solid var(--border-strong);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pill-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--emerald);
+      font-weight: 500;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Sub Navigation Tabs */
+    .subnav {
+      height: 40px;
+      background: #08090c;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 24px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-tab {
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      color: var(--gold-lit);
+      font-weight: 600;
+    }
+
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gold-lit);
+      box-shadow: 0 0 8px var(--gold-lit);
+    }
+
+    /* Main Grid Viewport */
+    .viewport {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Sidebar Filter Rail */
+    .sidebar {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .filter-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    .filter-item.active {
+      background: rgba(229, 185, 56, 0.1);
+      color: var(--gold-lit);
+      font-weight: 600;
+    }
+
+    .count-chip {
+      font-size: 11px;
+      padding: 1px 6px;
+      background: #1a1e27;
+      border-radius: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Center Content Area */
+    .center-content {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--bg-root);
+      padding: 20px 24px;
+      gap: 16px;
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .table-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-primary {
+      background: var(--gold-lit);
+      color: #000;
+      font-weight: 700;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #ffcf4d;
+      box-shadow: 0 0 12px rgba(229, 185, 56, 0.4);
+    }
+
+    /* Table Component */
+    .traces-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-surface);
+      font-size: 13px;
+    }
+
+    .traces-table th {
+      background: #0d0f14;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-faint);
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 600;
+    }
+
+    .traces-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+
+    .trace-row {
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .trace-row:hover {
+      background: #141720;
+    }
+
+    .trace-row.selected {
+      background: #171b26;
+      border-left: 3px solid var(--gold-lit);
+    }
+
+    /* Outcome Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-ci {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .badge-commit {
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #38bdf8;
+    }
+
+    .badge-test {
+      background: rgba(229, 185, 56, 0.12);
+      border: 1px solid rgba(229, 185, 56, 0.4);
+      color: #facc15;
+    }
+
+    .badge-claim {
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    /* Micro Sparklines */
+    .sparkline-svg {
+      display: block;
+      height: 24px;
+      width: 140px;
+    }
+
+    /* Slide-Over Inspector Drawer */
+    .drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 620px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-strong);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      z-index: 25;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: #0f1218;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .cli-snippet {
+      background: #050608;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--emerald);
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .chart-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 12px;
+      position: relative;
+    }
+
+    .chart-tile-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .chart-val {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 70px;
+      overflow: visible;
+    }
+
+    /* Event Timeline Stream */
+    .event-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    .event-header {
+      background: #11141c;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+    }
+
+    .event-content {
+      padding: 10px 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      font-size: 12px;
+    }
+
+    .diff-add {
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.08);
+      padding: 2px 4px;
+      border-radius: 2px;
+      display: block;
+    }
+
+    .diff-del {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.08);
+      padding: 2px 4px;
+      border-radius: 2px;
+      display: block;
+    }
+
+    /* Command Palette Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 15vh;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .cmd-palette {
+      width: 580px;
+      background: #10131a;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      animation: modalSlide 0.15s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .cmd-input {
+      width: 100%;
+      background: #0b0d12;
+      border: none;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 18px;
+      font-size: 15px;
+      color: #fff;
+      outline: none;
+    }
+
+    .cmd-list {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .cmd-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cmd-item:hover, .cmd-item.active {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    .cmd-footer {
+      padding: 8px 16px;
+      background: #08090d;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-faint);
+      display: flex;
+      gap: 16px;
+    }
+
+    /* Crosshair Synchronizer Line */
+    .crosshair-line {
+      stroke: rgba(255, 255, 255, 0.4);
+      stroke-dasharray: 2,2;
+      stroke-width: 1px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Top Navigation Bar -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="brand">
+        <div class="brand-logo">AW</div>
+        <span>AGENTWORTH</span>
+      </div>
+      <div class="env-badge mono">
+        <span style="width: 6px; height: 6px; background: #38bdf8; border-radius: 50%;"></span>
+        <span>local · main</span>
+        <span style="font-size: 10px; color: var(--text-faint);">▼</span>
+      </div>
+    </div>
+
+    <!-- Search / ⌘K Trigger -->
+    <div class="search-btn" onclick="openCommandPalette()">
+      <span>🔍 Search sessions, diffs, or commands...</span>
+      <span class="kbd mono">⌘K</span>
+    </div>
+
+    <!-- Live Telemetry Stats -->
+    <div class="header-actions">
+      <div class="pill-stat">
+        <div class="live-dot"></div>
+        <span>18 Sessions Active</span>
+      </div>
+      <div class="pill-stat mono" style="color: var(--gold-lit); border-color: rgba(229,185,56,0.3); background: rgba(229,185,56,0.08);">
+        <span>$142.80 Saved (88% Cache)</span>
+      </div>
+      <button class="btn btn-primary" onclick="triggerScan()">🔄 Scan Local</button>
+    </div>
+  </header>
+
+  <!-- 2. Sub-Navigation Tabs -->
+  <nav class="subnav">
+    <div class="nav-tab active">Traces Explorer</div>
+    <div class="nav-tab">FinOps & Cache Cliff</div>
+    <div class="nav-tab">Grounded Matrix</div>
+    <div class="nav-tab">Archaeology</div>
+    <div class="nav-tab" style="margin-left: auto; color: var(--emerald);">Export ATIF ⇲</div>
+  </nav>
+
+  <!-- 3. Main Workspace Viewport -->
+  <main class="viewport">
+    
+    <!-- Left Filter Rail -->
+    <aside class="sidebar">
+      <div>
+        <div class="section-label">Agent Adapters</div>
+        <div class="filter-item active" onclick="filterAdapter('all')">
+          <span>All Adapters</span>
+          <span class="count-chip mono">343</span>
+        </div>
+        <div class="filter-item" onclick="filterAdapter('claude')">
+          <span>Claude Code</span>
+          <span class="count-chip mono">142</span>
+        </div>
+        <div class="filter-item" onclick="filterAdapter('antigravity')">
+          <span>Antigravity</span>
+          <span class="count-chip mono">89</span>
+        </div>
+        <div class="filter-item" onclick="filterAdapter('cursor')">
+          <span>Cursor Composer</span>
+          <span class="count-chip mono">64</span>
+        </div>
+        <div class="filter-item" onclick="filterAdapter('codex')">
+          <span>OpenAI Codex</span>
+          <span class="count-chip mono">31</span>
+        </div>
+        <div class="filter-item" onclick="filterAdapter('goose')">
+          <span>Block Goose</span>
+          <span class="count-chip mono">17</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Outcome Ladder</div>
+        <div class="filter-item">
+          <span style="color: #34d399;">● Rung 5: CI Verified</span>
+          <span class="count-chip mono">42</span>
+        </div>
+        <div class="filter-item">
+          <span style="color: #38bdf8;">● Rung 4: Committed</span>
+          <span class="count-chip mono">68</span>
+        </div>
+        <div class="filter-item">
+          <span style="color: #facc15;">● Rung 3: Test Passed</span>
+          <span class="count-chip mono">94</span>
+        </div>
+        <div class="filter-item">
+          <span style="color: #cbd5e1;">● Rung 2: Artifact Patched</span>
+          <span class="count-chip mono">37</span>
+        </div>
+        <div class="filter-item">
+          <span style="color: #fb7185;">● Rung 1: Claim Only</span>
+          <span class="count-chip mono">19</span>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 6px;">
+        <div class="section-label" style="margin-bottom: 4px;">FinOps Summary</div>
+        <div class="mono" style="font-size: 18px; font-weight: 700; color: var(--gold-lit);">$39.60 <span style="font-size: 11px; color: var(--text-faint); font-weight: 400;">/ $182.40 Gross</span></div>
+        <div style="font-size: 11px; color: var(--emerald); margin-top: 4px;">88.2% Cache Hit Ratio</div>
+      </div>
+    </aside>
+
+    <!-- Center Traces Grid & Sparklines -->
+    <section class="center-content">
+      <div class="table-toolbar">
+        <div class="table-title">
+          <span>Agent Execution Traces</span>
+          <span class="count-chip mono" style="font-size: 12px;">343 total</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn">Sort: Most Recent ▾</button>
+          <button class="btn">Filter: Any Outcome ▾</button>
+        </div>
+      </div>
+
+      <table class="traces-table">
+        <thead>
+          <tr>
+            <th>Session Identifier</th>
+            <th>Adapter / Runtime</th>
+            <th>Verdict Evidence</th>
+            <th>Tokens & Spend</th>
+            <th>Turn Waveform Sparkline</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody id="traces-body">
+          <!-- Row 1 -->
+          <tr class="trace-row selected" onclick="selectSession('agent-ac2acdc8816e1c225')">
+            <td class="mono" style="font-weight: 600; color: #fff;">agent-ac2acdc8816e1c225</td>
+            <td><span class="mono" style="font-size: 12px; color: #38bdf8;">claude-code 3.7</span></td>
+            <td><span class="badge badge-ci">CI VERIFIED</span></td>
+            <td class="mono">98.4k · <span style="color: var(--gold-lit);">$0.84</span></td>
+            <td>
+              <!-- Interactive SVG Sparkline -->
+              <svg class="sparkline-svg" viewBox="0 0 140 24">
+                <rect x="5" y="16" width="6" height="8" fill="#10b981" rx="1"/>
+                <rect x="15" y="12" width="6" height="12" fill="#10b981" rx="1"/>
+                <rect x="25" y="8" width="6" height="16" fill="#10b981" rx="1"/>
+                <rect x="35" y="4" width="6" height="20" fill="#10b981" rx="1"/>
+                <rect x="45" y="2" width="6" height="22" fill="#10b981" rx="1"/>
+                <rect x="55" y="8" width="6" height="16" fill="#f43f5e" rx="1"/> <!-- Error tick -->
+                <rect x="65" y="4" width="6" height="20" fill="#10b981" rx="1"/> <!-- Recovery -->
+                <rect x="75" y="10" width="6" height="14" fill="#10b981" rx="1"/>
+                <rect x="85" y="14" width="6" height="10" fill="#10b981" rx="1"/>
+                <rect x="95" y="18" width="6" height="6" fill="#10b981" rx="1"/>
+              </svg>
+            </td>
+            <td class="mono" style="color: var(--text-muted);">4m 12s</td>
+          </tr>
+
+          <!-- Row 2 -->
+          <tr class="trace-row" onclick="selectSession('session-fe8912aa09bc48')">
+            <td class="mono" style="font-weight: 600; color: #fff;">session-fe8912aa09bc48</td>
+            <td><span class="mono" style="font-size: 12px; color: #a855f7;">antigravity</span></td>
+            <td><span class="badge badge-commit">COMMITTED</span></td>
+            <td class="mono">42.1k · <span style="color: var(--gold-lit);">$0.36</span></td>
+            <td>
+              <svg class="sparkline-svg" viewBox="0 0 140 24">
+                <rect x="5" y="18" width="6" height="6" fill="#10b981" rx="1"/>
+                <rect x="15" y="14" width="6" height="10" fill="#10b981" rx="1"/>
+                <rect x="25" y="10" width="6" height="14" fill="#10b981" rx="1"/>
+                <rect x="35" y="6" width="6" height="18" fill="#10b981" rx="1"/>
+                <rect x="45" y="2" width="6" height="22" fill="#10b981" rx="1"/>
+              </svg>
+            </td>
+            <td class="mono" style="color: var(--text-muted);">1m 45s</td>
+          </tr>
+
+          <!-- Row 3 -->
+          <tr class="trace-row" onclick="selectSession('agent-77a1bc90d33e11')">
+            <td class="mono" style="font-weight: 600; color: #fff;">agent-77a1bc90d33e11</td>
+            <td><span class="mono" style="font-size: 12px; color: #38bdf8;">cursor-comp</span></td>
+            <td><span class="badge badge-test">TEST PASSED</span></td>
+            <td class="mono">114.2k · <span style="color: var(--gold-lit);">$1.12</span></td>
+            <td>
+              <svg class="sparkline-svg" viewBox="0 0 140 24">
+                <rect x="5" y="16" width="6" height="8" fill="#e5b938" rx="1"/>
+                <rect x="15" y="12" width="6" height="12" fill="#e5b938" rx="1"/>
+                <rect x="25" y="8" width="6" height="16" fill="#e5b938" rx="1"/>
+                <rect x="35" y="6" width="6" height="18" fill="#e5b938" rx="1"/>
+                <rect x="45" y="4" width="6" height="20" fill="#e5b938" rx="1"/>
+                <rect x="55" y="2" width="6" height="22" fill="#e5b938" rx="1"/>
+              </svg>
+            </td>
+            <td class="mono" style="color: var(--text-muted);">6m 02s</td>
+          </tr>
+
+          <!-- Row 4 -->
+          <tr class="trace-row" onclick="selectSession('session-0049bf17ca2e99')">
+            <td class="mono" style="font-weight: 600; color: #fff;">session-0049bf17ca2e99</td>
+            <td><span class="mono" style="font-size: 12px; color: #f43f5e;">openai-codex</span></td>
+            <td><span class="badge badge-claim">CLAIM ONLY</span></td>
+            <td class="mono">4.1k · <span style="color: var(--gold-lit);">$0.04</span></td>
+            <td>
+              <svg class="sparkline-svg" viewBox="0 0 140 24">
+                <rect x="5" y="4" width="6" height="20" fill="#f43f5e" rx="1"/>
+              </svg>
+            </td>
+            <td class="mono" style="color: var(--text-muted);">12s</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4. Slide-Over Inspector Drawer with Synchronized Quad-Chart -->
+    <div id="inspector-drawer" class="drawer open">
+      <div class="drawer-header">
+        <div>
+          <div class="mono" style="font-size: 14px; font-weight: 700; color: #fff;" id="drawer-session-id">agent-ac2acdc8816e1c225</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Claude 3.7 Sonnet (Thinking) · 18 steps · 4m 12s</div>
+        </div>
+        <button class="btn" onclick="closeDrawer()">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        
+        <!-- CLI Replay Trigger -->
+        <div class="cli-snippet mono">
+          <span>$ agentworth replay agent-ac2acdc8816e</span>
+          <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="copyCmd()">⎘ Copy</button>
+        </div>
+
+        <!-- Synchronized Telemetry Quad-Chart -->
+        <div class="chart-grid">
+          
+          <!-- Chart 1: Context & Cache Saturation -->
+          <div class="chart-tile" onmousemove="handleChartHover(event)" onmouseleave="clearChartHover()">
+            <div class="chart-tile-header">
+              <span>Context & Cache</span>
+              <span class="chart-val mono" id="val-cache">98.4k tok</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 240 70">
+              <path d="M 10,60 Q 80,55 140,25 T 230,10" fill="none" stroke="#10b981" stroke-width="2"/>
+              <path d="M 10,65 Q 80,60 140,40 T 230,35" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+              <line id="crosshair-1" class="crosshair-line" x1="140" y1="0" x2="140" y2="70"/>
+            </svg>
+          </div>
+
+          <!-- Chart 2: Thinking vs Tool Latency -->
+          <div class="chart-tile" onmousemove="handleChartHover(event)" onmouseleave="clearChartHover()">
+            <div class="chart-tile-header">
+              <span>Reasoning vs Tool (s)</span>
+              <span class="chart-val mono" id="val-latency">8.4s think</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 240 70">
+              <!-- Bars representing turn times -->
+              <rect x="20" y="30" width="8" height="35" fill="#a855f7" rx="1"/>
+              <rect x="40" y="20" width="8" height="45" fill="#a855f7" rx="1"/>
+              <rect x="60" y="45" width="8" height="20" fill="#38bdf8" rx="1"/>
+              <rect x="80" y="15" width="8" height="50" fill="#a855f7" rx="1"/>
+              <rect x="100" y="10" width="8" height="55" fill="#a855f7" rx="1"/>
+              <rect x="120" y="50" width="8" height="15" fill="#f43f5e" rx="1"/>
+              <rect x="140" y="15" width="8" height="50" fill="#10b981" rx="1"/>
+              <rect x="160" y="40" width="8" height="25" fill="#38bdf8" rx="1"/>
+              <line id="crosshair-2" class="crosshair-line" x1="140" y1="0" x2="140" y2="70"/>
+            </svg>
+          </div>
+
+          <!-- Chart 3: AST File Churn -->
+          <div class="chart-tile" onmousemove="handleChartHover(event)" onmouseleave="clearChartHover()">
+            <div class="chart-tile-header">
+              <span>File Diffs (Δ Lines)</span>
+              <span class="chart-val mono" id="val-diff">+45 / -12</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 240 70">
+              <line x1="10" y1="35" x2="230" y2="35" stroke="#2e3544" stroke-width="1"/>
+              <rect x="30" y="15" width="10" height="20" fill="#10b981" rx="1"/>
+              <rect x="80" y="35" width="10" height="15" fill="#f43f5e" rx="1"/>
+              <rect x="135" y="8" width="10" height="27" fill="#10b981" rx="1"/>
+              <rect x="180" y="20" width="10" height="15" fill="#10b981" rx="1"/>
+              <line id="crosshair-3" class="crosshair-line" x1="140" y1="0" x2="140" y2="70"/>
+            </svg>
+          </div>
+
+          <!-- Chart 4: Cumulative Spend -->
+          <div class="chart-tile" onmousemove="handleChartHover(event)" onmouseleave="clearChartHover()">
+            <div class="chart-tile-header">
+              <span>List-Price Spend</span>
+              <span class="chart-val mono" id="val-spend">$0.84 USD</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 240 70">
+              <path d="M 10,65 L 60,60 L 100,50 L 140,30 L 180,20 L 230,15" fill="none" stroke="#e5b938" stroke-width="2"/>
+              <circle cx="140" cy="30" r="3" fill="#e5b938"/>
+              <line id="crosshair-4" class="crosshair-line" x1="140" y1="0" x2="140" y2="70"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Trajectory Event Sequence -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="section-label">Execution Trajectory</div>
+
+          <div class="event-card">
+            <div class="event-header">
+              <span class="mono">#12 🧠 Model Reasoning (8.4s)</span>
+              <span class="mono" style="font-size: 10px; color: var(--text-faint);">19:50:12</span>
+            </div>
+            <div class="event-content mono">
+              "Need to check if the prompt caching breakpoint is triggered before emitting the git commit ref..."
+            </div>
+          </div>
+
+          <div class="event-card">
+            <div class="event-header">
+              <span class="mono" style="color: #4ade80;">#13 💻 Shell: cargo test --workspace</span>
+              <span class="badge badge-ci" style="font-size: 9px;">EXIT 0</span>
+            </div>
+            <div class="event-content mono" style="background: #050608; color: #cbd5e1;">
+              running 42 tests<br/>
+              test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
+            </div>
+          </div>
+
+          <div class="event-card" style="border-color: var(--gold-lit);">
+            <div class="event-header" style="background: rgba(229,185,56,0.1); color: var(--gold-lit);">
+              <span class="mono">#14 📝 File Patch: src/services/api.ts</span>
+              <span class="mono" style="font-size: 10px;">+45 / -12 lines</span>
+            </div>
+            <div class="event-content mono" style="background: #050608; font-size: 11px;">
+              <span class="diff-del">- const cacheRead = 0;</span>
+              <span class="diff-add">+ const cacheRead = data.token_usage?.cache_read_input_tokens ?? 0;</span>
+              <span class="diff-add">+ export const VERIFIED_OUTCOME_RUNG = 5;</span>
+            </div>
+          </div>
+
+          <div class="event-card">
+            <div class="event-header" style="background: rgba(16,185,129,0.1); color: var(--emerald);">
+              <span class="mono">#15 🏁 Outcome Evidence: CI_OR_DEPLOYMENT_VERIFIED</span>
+              <span class="mono" style="font-size: 10px;">100% CONFIDENCE</span>
+            </div>
+            <div class="event-content mono">
+              GitHub Actions build on commit SHA <code style="color: #38bdf8;">8f2a1b9</code> completed with status SUCCESS.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- 5. Global Command Palette Modal (⌘K) -->
+  <div id="cmd-modal" class="modal-backdrop" onclick="handleBackdropClick(event)">
+    <div class="cmd-palette">
+      <input type="text" id="cmd-input" class="cmd-input mono" placeholder="Type a command or search sessions (e.g. agent:claude, rung:5, test)..." />
+      <div class="cmd-list">
+        <div class="cmd-item active" onclick="selectCmd('agent-ac2acdc8816e1c225')">
+          <div>
+            <div class="mono" style="font-weight: 600; color: #fff;">agent-ac2acdc8816e1c225</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Claude Code · CI Verified · 98.4k tokens</div>
+          </div>
+          <span class="badge badge-ci">Rung 5</span>
+        </div>
+        <div class="cmd-item" onclick="selectCmd('session-fe8912aa09bc48')">
+          <div>
+            <div class="mono" style="font-weight: 600; color: #fff;">session-fe8912aa09bc48</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Antigravity · Committed · 42.1k tokens</div>
+          </div>
+          <span class="badge badge-commit">Rung 4</span>
+        </div>
+        <div class="cmd-item" onclick="filterAdapter('claude')">
+          <div>
+            <div style="font-weight: 600; color: #fff;">Filter by Claude Code</div>
+            <div style="font-size: 11px; color: var(--text-muted);">142 active sessions</div>
+          </div>
+          <span class="kbd mono">Filter</span>
+        </div>
+      </div>
+      <div class="cmd-footer mono">
+        <span>↵ to select</span>
+        <span>↑↓ to navigate</span>
+        <span>esc to close</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Synchronized Crosshair Telemetry Hover
+    function handleChartHover(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      
+      const lines = [
+        document.getElementById('crosshair-1'),
+        document.getElementById('crosshair-2'),
+        document.getElementById('crosshair-3'),
+        document.getElementById('crosshair-4')
+      ];
+
+      lines.forEach(line => {
+        if (line) {
+          line.setAttribute('x1', x);
+          line.setAttribute('x2', x);
+          line.style.opacity = '1';
+        }
+      });
+    }
+
+    function clearChartHover() {
+      const lines = [
+        document.getElementById('crosshair-1'),
+        document.getElementById('crosshair-2'),
+        document.getElementById('crosshair-3'),
+        document.getElementById('crosshair-4')
+      ];
+
+      lines.forEach(line => {
+        if (line) line.style.opacity = '0';
+      });
+    }
+
+    // Drawer Management
+    function selectSession(id) {
+      document.querySelectorAll('.trace-row').forEach(row => row.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      document.getElementById('drawer-session-id').textContent = id;
+      document.getElementById('inspector-drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('inspector-drawer').classList.remove('open');
+    }
+
+    // Command Palette Modal
+    function openCommandPalette() {
+      const modal = document.getElementById('cmd-modal');
+      modal.classList.add('active');
+      setTimeout(() => document.getElementById('cmd-input').focus(), 50);
+    }
+
+    function closeCommandPalette() {
+      document.getElementById('cmd-modal').classList.remove('active');
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target.id === 'cmd-modal') {
+        closeCommandPalette();
+      }
+    }
+
+    function selectCmd(id) {
+      closeCommandPalette();
+      document.getElementById('drawer-session-id').textContent = id;
+      document.getElementById('inspector-drawer').classList.add('open');
+    }
+
+    function copyCmd() {
+      navigator.clipboard.writeText('agentworth replay agent-ac2acdc8816e');
+      alert('Copied to clipboard: agentworth replay agent-ac2acdc8816e');
+    }
+
+    function triggerScan() {
+      alert('Triggered offline local agent indexer scan (SQLite WAL indexed 343 sessions in 42ms).');
+    }
+
+    function filterAdapter(name) {
+      closeCommandPalette();
+      alert('Filtered by adapter: ' + name);
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openCommandPalette();
+      }
+      if (e.key === 'Escape') {
+        closeCommandPalette();
+        closeDrawer();
+      }
+    });
+  </script>
+</body>
+</html>

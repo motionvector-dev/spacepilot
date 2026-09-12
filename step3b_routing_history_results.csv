@@ -1,0 +1,7 @@
+condition,observed_n,future_w,recall_pct,precision_pct,unique_experts,ram_gb,quality_retention_pct,latency_ms
+Prompt-Only Baseline (Step 3),0,64,20.0,12.6,768,5.78,72.0,0.46
+Routing History (N = 1 tokens),1,64,79.4,52.18,768,5.78,100.0,0.42
+Routing History (N = 2 tokens),2,64,83.85,55.08,768,5.78,100.0,0.39
+Routing History (N = 4 tokens),4,64,86.81,57.03,768,5.78,100.0,0.41
+Routing History (N = 8 tokens),8,64,90.35,59.42,768,5.78,100.0,0.51
+Routing History (N = 16 tokens),16,64,92.99,61.28,768,5.78,100.0,0.64
