@@ -23,14 +23,24 @@ SCRIPT = ROOT / "tools" / "install-bitnet-cpp.sh"
 
 @pytest.fixture
 def no_git_path(tmp_path):
-    """A PATH with no `git` on it, so the script cannot possibly clone
-    anything even if the guard regresses -- the fast-fail assertion below
-    would otherwise be trusting a slow network hang to time out just right."""
+    """A PATH where `git` resolves to a shim that always fails, so the
+    script cannot possibly clone anything even if the guard regresses --
+    the fast-fail assertion below would otherwise be trusting a slow
+    network hang to time out just right.
+
+    Shadowing `git` this way (a fake `git` placed first on PATH) rather
+    than stripping every PATH entry that happens to contain a real `git`
+    binary matters: on a stock CI image `git` and `bash` commonly live in
+    the same directory (e.g. /usr/bin), so filtering out that whole
+    directory would take `bash` down with it and break the test for a
+    reason that has nothing to do with the guard."""
     fake_bin = tmp_path / "fake-bin"
     fake_bin.mkdir()
+    fake_git = fake_bin / "git"
+    fake_git.write_text("#!/bin/sh\necho 'fake git: not available in this test' >&2\nexit 1\n")
+    fake_git.chmod(0o755)
     real_path = os.environ.get("PATH", "")
-    kept = [p for p in real_path.split(os.pathsep) if p and not (Path(p) / "git").exists()]
-    return os.pathsep.join([str(fake_bin), *kept])
+    return os.pathsep.join([str(fake_bin), real_path])
 
 
 def test_fails_fast_when_the_gguf_is_missing(tmp_path, no_git_path):
