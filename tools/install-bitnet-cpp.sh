@@ -25,6 +25,16 @@ BITNET_COMMIT="0b341e582afbf9e1011f24744b554c96a3477eb5"
 BITNET_DIR="${BITNET_CPP_DIR:-$HOME/.local/share/spacepilot/bitnet-cpp}"
 GGUF_DIR="${1:?usage: install-bitnet-cpp.sh <dir-containing-ggml-model-i2_s.gguf>}"
 
+# setup_env.py's compile() step always runs the full CMake build below (see
+# this script's header) before it ever looks at whether the GGUF is there --
+# so a directory that hasn't been fetched yet used to fail deep inside that
+# build with a confusing CMake/setup_env error, minutes in. Fail fast
+# instead, before any clone/build starts.
+if [ ! -f "$GGUF_DIR/ggml-model-i2_s.gguf" ]; then
+    echo "install-bitnet-cpp.sh: ggml-model-i2_s.gguf not found in $GGUF_DIR -- fetch it first: tools/fly.py run bitnet-b1-58-2b4t-gguf-i2s" >&2
+    exit 2
+fi
+
 git clone --recursive https://github.com/microsoft/BitNet.git "$BITNET_DIR"
 cd "$BITNET_DIR"
 git checkout "$BITNET_COMMIT"
