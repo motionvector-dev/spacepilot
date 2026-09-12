@@ -798,3 +798,89 @@ def test_queue_preflight_stops_the_whole_night_on_a_guard_failure_not_just_a_ski
         fly_mod.plan_rows = orig_plan_rows
 
     assert outcomes == []
+
+
+# ------------------------------------------------------- flight-plan coverage
+
+def _registry_runtime_runs():
+    """(runtime_yaml_id, model_id) for every model listed under `runs:` in
+    every spacepilot/registry/runtimes/*.yaml file."""
+    pairs = []
+    for yaml_path in sorted(fly.rt.RUNTIME_DIR.glob("*.yaml")):
+        raw = yaml.safe_load(yaml_path.read_text())
+        runtime_id = raw["id"]
+        for model_id in raw.get("runs") or []:
+            pairs.append((runtime_id, model_id))
+    return pairs
+
+
+# Registry runtime `runs:` entries confirmed unmapped in tools/fly.py's
+# FLIGHT_PLANS as of this test's introduction (2026-09-12). None of these is
+# invented here -- each is a real gap this test found. Do not add a mapping
+# to this set to make it pass; either wire the model in FLIGHT_PLANS and
+# remove it from here, or leave it and it stays visibly BLOCKED via
+# fly.py's own runtime_status()/plan() reporting.
+KNOWN_UNMAPPED = {
+    ("diffusers", "wan-2-1"),
+    ("diffusers", "wan-2-2"),
+    ("diffusers", "ltx-video"),
+    ("diffusers", "flux"),
+    ("kokoro-onnx", "kokoro"),
+    ("llama-cpp", "deepseek-r1-distill-qwen"),
+    ("llama-cpp", "qwen2-5-vl"),
+    ("mflux", "flux"),
+    ("mflux", "qwen-image"),
+    ("mflux", "z-image"),
+    ("mflux", "fibo"),
+    ("mflux", "ernie-image"),
+    ("mflux", "ideogram"),
+    ("mflux", "seedvr2"),
+    ("mflux", "boogu"),
+    ("mflux", "lens"),
+    ("mflux", "flux2-klein"),
+    ("mlx-audio", "kokoro"),
+    ("mlx-lm", "qwen3-8"),
+    ("mlx-lm", "qwen3-embedding"),
+    ("mlx-video", "wan-2-1"),
+    ("mlx-video", "wan-2-2"),
+    ("mlx-video", "ltx-video"),
+    ("whisper-cpp", "whisper"),
+}
+
+
+@pytest.mark.parametrize("runtime_id,model_id", _registry_runtime_runs())
+def test_every_registry_runtime_run_is_a_mapped_flight_plan(runtime_id, model_id):
+    """Every model a runtime recipe's `runs:` list names must have a
+    FLIGHT_PLANS entry that points back at that same runtime -- otherwise
+    `fly.py plan` prints it as "role unmapped" forever, silently, even
+    though a runtime already exists to fly it (ternary-bonsai-8b via
+    llama-cpp-prism was exactly this bug)."""
+    if (runtime_id, model_id) in KNOWN_UNMAPPED:
+        pytest.skip(f"{model_id}: known unmapped in FLIGHT_PLANS, see KNOWN_UNMAPPED")
+    assert model_id in fly.FLIGHT_PLANS, (
+        f"{model_id} is listed under runs: in {runtime_id}.yaml but has no "
+        f"FLIGHT_PLANS entry in tools/fly.py")
+    plan = fly.FLIGHT_PLANS[model_id]
+    assert plan.runtime_id == runtime_id, (
+        f"{model_id}'s FLIGHT_PLANS entry points at runtime_id "
+        f"{plan.runtime_id!r}, but it is registered under runs: in "
+        f"{runtime_id}.yaml")
+
+
+def test_every_mapped_runtime_id_names_a_runtime_that_exists():
+    """The reverse direction: every FLIGHT_PLANS entry with a real
+    runtime_id must name a runtime recipe that actually exists in
+    spacepilot/registry/runtimes/ -- a typo'd or removed runtime_id would
+    otherwise fail silently at `runtime_status()` time instead of here."""
+    known_runtime_ids = {p.stem for p in fly.rt.RUNTIME_DIR.glob("*.yaml")}
+    # every yaml's own `id:` field should also match its filename stem
+    for yaml_path in sorted(fly.rt.RUNTIME_DIR.glob("*.yaml")):
+        raw = yaml.safe_load(yaml_path.read_text())
+        assert raw["id"] == yaml_path.stem
+    for model_id, plan in fly.FLIGHT_PLANS.items():
+        if plan.runtime_id is None:
+            continue
+        assert plan.runtime_id in known_runtime_ids, (
+            f"{model_id}'s FLIGHT_PLANS entry names runtime_id "
+            f"{plan.runtime_id!r}, which has no "
+            f"spacepilot/registry/runtimes/{plan.runtime_id}.yaml")
