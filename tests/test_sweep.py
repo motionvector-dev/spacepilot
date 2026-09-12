@@ -93,6 +93,21 @@ class _Profile:
     unknown = {}
 
 
+@pytest.fixture(autouse=True)
+def _plenty_of_disk(monkeypatch):
+    """Every test in this file gets a deterministic disk reading unless it
+    says otherwise. Without this, `run_sweep`'s disk guard calls the real
+    `shutil.disk_usage` on whatever host runs the suite -- so a runner that
+    is itself low on disk (not the code under test) makes these tests fail
+    for the wrong reason, tripping `disk_floor_before_start` before the
+    scenario each test actually cares about ever gets to run. The two
+    `test_disk_guard_*` tests below override this with their own
+    `monkeypatch.setattr` (monkeypatch stacks fine; the later setattr wins)
+    to exercise the guard itself on purpose."""
+    import spacepilot.sweep as sweep_mod
+    monkeypatch.setattr(sweep_mod, "disk_free_gb", lambda path: 500.0)
+
+
 # --------------------------------------------------------------- spec parsing
 
 def test_load_spec_parses_both_seeded_specs():
