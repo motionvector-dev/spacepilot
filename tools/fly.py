@@ -118,6 +118,11 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
     # reads its BitLinear kernels correctly -- plain llama-cpp-python cannot.
     "bitnet-b1-58-2b4t": FlightPlan(
         "bitnet-b1-58-2b4t", "executor", "bitnet-cpp", "text", needs_gate3=True),
+    # ternary-bonsai-8b: spacepilot/registry/runtimes/llama-cpp-prism.yaml
+    # runs its Q2_0 GGUF build through PrismML's llama.cpp fork -- the only
+    # path that reads its ternary kernels.
+    "ternary-bonsai-8b": FlightPlan(
+        "ternary-bonsai-8b", "executor", "llama-cpp-prism", "text", needs_gate3=True),
     # Desert Ant Labs' models run through the `desertant` CLI --
     # spacepilot/registry/runtimes/desert-ant.yaml. Three of the twelve
     # registered manifests stay unwired (runtime_id None, still BLOCKED) on
