@@ -235,12 +235,36 @@ def install_env(jobs: int) -> Dict[str, str]:
     return env
 
 
-def install_command_for(runtime: "rt.Runtime") -> List[str]:
+def runtime_needs_model_dir(runtime: "rt.Runtime") -> bool:
+    """Whether this runtime's install script reads a `{model_dir}` -- the
+    directory a flight has already fetched the checkpoint into -- as one of
+    its positional arguments (see bitnet-cpp.yaml's `install.args`)."""
+    return any("{model_dir}" in a for a in runtime.install.script_args)
+
+
+def install_command_for(runtime: "rt.Runtime",
+                         model_dir: Optional[Path] = None) -> List[str]:
     """The real argv fly.py runs to install one runtime -- whatever
     `spacepilot.runtimes.install_command()` would run, prefixed with
     `nice -n 19`. Parallelism is bounded separately, via `install_env()`;
-    niceness alone does not cap how many cores a build fans out to."""
-    return ["nice", "-n", "19", *rt.install_command(runtime)]
+    niceness alone does not cap how many cores a build fans out to.
+
+    `model_dir` is the directory a flight has already downloaded the
+    checkpoint into -- bitnet-cpp's install script needs it as its one
+    positional argument. Unlike `spacepilot.runtimes.install_command()`
+    (which stays permissive for preview callers with no download to name
+    yet), this is the layer that actually runs an install for real, so a
+    runtime that declares the placeholder and gets no directory errors
+    clearly here rather than shipping `curl -fsSL <url> | sh -s --
+    {model_dir}` with the literal, unresolved template text as the
+    argument -- the same silent-breakage shape the missing argument used
+    to take entirely (`curl -fsSL <url> | sh` with nothing after it)."""
+    if runtime_needs_model_dir(runtime) and model_dir is None:
+        raise rt.RuntimeError_(
+            f"{runtime.id}: install script needs the fetched model directory "
+            f"(install.args={runtime.install.script_args!r}) but none was given"
+        )
+    return ["nice", "-n", "19", *rt.install_command(runtime, model_dir=model_dir)]
 
 
 @dataclass(frozen=True)
@@ -253,6 +277,7 @@ class RuntimeInstallResult:
 
 def run_runtime_install(
     runtime: "rt.Runtime", *, dry_run: bool = True, jobs: int = BUILD_JOBS,
+    model_dir: Optional[Path] = None,
     command_runner: Optional[Callable[..., Any]] = None,
     check_fn: Optional[Callable[["rt.Runtime"], "rt.Status"]] = None,
     clock: Callable[[], float] = time.monotonic,
@@ -264,11 +289,35 @@ def run_runtime_install(
     calling `check()` afterwards and trusting that, never the installer's
     own exit code alone -- a script that exits 0 having built the wrong
     thing is not installed either.
+
+    `model_dir` is threaded straight through to `install_command_for()` --
+    only a runtime whose script declares a `{model_dir}` argument (bitnet-cpp)
+    reads it; every other runtime here ignores it. A runtime that needs one
+    and gets none never raises out of this function -- `fly_queue`'s
+    pre-flight phase calls this with no try/except around it, and a raised
+    exception there would abort the whole night instead of skipping just
+    the models that needed this runtime (see fly_queue's own contract). A
+    dry run previews the best command it can even with no directory yet
+    (bitnet-cpp is never actually installable at pre-flight time, before
+    any of its models have been downloaded); a real run refuses cleanly.
     """
-    cmd = install_command_for(runtime)
+    needs_model_dir = runtime_needs_model_dir(runtime)
+
     if dry_run:
+        if needs_model_dir and model_dir is None:
+            cmd = ["nice", "-n", "19", *rt.install_command(runtime)]
+        else:
+            cmd = install_command_for(runtime, model_dir=model_dir)
         log(f"  [dry-run] would install {runtime.id}: {' '.join(cmd)}")
         return RuntimeInstallResult(runtime.id, True, "dry-run: " + " ".join(cmd), 0.0)
+
+    if needs_model_dir and model_dir is None:
+        detail = (f"{runtime.id}: install needs the fetched model directory "
+                  f"(install.args={runtime.install.script_args!r}) but none was given")
+        log(f"  cannot install {runtime.id}: {detail}")
+        return RuntimeInstallResult(runtime.id, False, detail, 0.0)
+
+    cmd = install_command_for(runtime, model_dir=model_dir)
 
     log(f"  installing {runtime.id}: {' '.join(cmd)}")
     runner = command_runner or (lambda c, **kw: subprocess.run(
@@ -880,6 +929,7 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
             gate3_scratch_dir: Optional[Path] = None,
             gate3_extractor: Optional[Gate3Extractor] = None,
             mvec_bin_candidates: Optional[List[Path]] = None,
+            install_runner: Optional[Callable[..., RuntimeInstallResult]] = None,
             reg=None, log: Callable[[str], None] = print) -> RunResult:
     """Fly one unflown entry.
 
@@ -916,7 +966,15 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
 
     rstatus = runtime_status(plan)
     steps.add(f"runtime: {'installed' if rstatus.installed else 'BLOCKED -- ' + rstatus.reason}")
-    if not rstatus.installed and not dry_run:
+
+    # A script-install runtime whose recipe declares a `{model_dir}`
+    # argument (bitnet-cpp) cannot be installed until the model itself has
+    # been fetched -- its own install.sh reads the GGUF path as $1. Such a
+    # runtime is not refused up front the way every other missing runtime
+    # is; installation is attempted below, once the download has run.
+    runtime_obj = rt.runtimes().get(plan.runtime_id) if plan and plan.runtime_id else None
+    needs_model_dir = bool(runtime_obj and runtime_needs_model_dir(runtime_obj))
+    if not rstatus.installed and not dry_run and not needs_model_dir:
         return RunResult(model_id, "refused", steps.steps, f"runtime not installed: {rstatus.reason}")
 
     if not variant.is_pinned or variant.revision.lower() in MOVING_REFS:
@@ -924,7 +982,15 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
         return RunResult(model_id, "refused", steps.steps, "unpinned revision")
 
     dl = downloader or (DryRunDownloader(log=log) if dry_run else HFDownloader(log=log))
-    dl.fetch(variant.repo, variant.revision, variant.files)
+    fetched_dir = dl.fetch(variant.repo, variant.revision, variant.files)
+
+    if not rstatus.installed and needs_model_dir:
+        installer = install_runner or run_runtime_install
+        install_result = installer(runtime_obj, dry_run=dry_run, model_dir=fetched_dir, log=steps.add)
+        steps.add(f"install: {'ok' if install_result.ok else 'FAILED'} -- {install_result.detail}")
+        if not install_result.ok and not dry_run:
+            return RunResult(model_id, "refused", steps.steps,
+                              f"runtime install failed: {install_result.detail}")
 
     cmd = ["spacepilot", "run"] + ([plan.cli] if plan else ["text"]) + [
         "--model", variant.id, "--yes"]

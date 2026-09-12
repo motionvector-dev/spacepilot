@@ -189,6 +189,77 @@ def test_dry_run_refuses_an_unknown_model():
     assert result.outcome == "failed"
 
 
+def test_fly_run_hands_the_fetched_model_dir_to_the_bitnet_install(monkeypatch):
+    """bitnet-b1-58-2b4t-gguf-i2s's runtime (bitnet-cpp) needs the directory
+    tools/install-bitnet-cpp.sh's own `${1:?usage...}` guard requires -- the
+    same directory the flight just downloaded the GGUF into. `fly_run` must
+    hand that fetched directory to the install path (via `install_runner`,
+    `run_runtime_install` by default) rather than discarding the
+    downloader's return value the way it used to (`dl.fetch(...)` was never
+    even assigned to a name).
+
+    Uses the dry-run downloader (no network) and a fake install runner (no
+    subprocess) -- exactly the harness `fly_queue`'s own preflight tests use
+    for `install_runner` -- and asserts on the exact argv/shell string
+    `install_command_for` builds from the fetched dir, not just that some
+    install happened.
+    """
+    from spacepilot import runtimes as rt
+
+    real_check = rt.check
+
+    def fake_check(runtime, *a, **kw):
+        if runtime.id == "bitnet-cpp":
+            return rt.Status(runtime.id, False, None, "bitnet-cli not found on PATH")
+        return real_check(runtime, *a, **kw)
+
+    monkeypatch.setattr(fly.rt, "check", fake_check)
+
+    fetched = {}
+
+    class RecordingDryRunDownloader(fly.DryRunDownloader):
+        def fetch(self, repo, revision, files):
+            path = super().fetch(repo, revision, files)
+            fetched["path"] = path
+            return path
+
+    install_calls = []
+
+    def fake_install_runner(runtime, *, dry_run, model_dir, log):
+        cmd = fly.install_command_for(runtime, model_dir=model_dir)
+        install_calls.append((runtime.id, model_dir, cmd))
+        return fly.RuntimeInstallResult(runtime.id, True, "dry-run install", 0.0)
+
+    result = fly.fly_run(
+        "bitnet-b1-58-2b4t-gguf-i2s",
+        dry_run=True,
+        downloader=RecordingDryRunDownloader(),
+        install_runner=fake_install_runner,
+        disk_check=lambda download_bytes: fly.GuardResult(True, "plenty free"),
+        power_check=lambda: fly.GuardResult(True, "on AC"),
+    )
+
+    assert result.outcome == "dry-run"
+    assert install_calls, "install_runner was never invoked for the missing bitnet-cpp runtime"
+    runtime_id, model_dir, cmd = install_calls[0]
+    assert runtime_id == "bitnet-cpp"
+    assert model_dir == fetched["path"]
+    joined_cmd = " ".join(str(c) for c in cmd)
+    assert str(fetched["path"]) in joined_cmd
+    assert "sh -s --" in joined_cmd
+
+
+def test_install_command_for_a_runtime_needing_model_dir_errors_clearly_without_one():
+    """A runtime whose install script requires `{model_dir}` (bitnet-cpp)
+    must fail loudly and specifically when asked to build its install
+    command with no directory known yet -- not silently ship
+    `curl -fsSL <url> | sh` with nothing after it, the exact shape that
+    left `$1` unset for tools/install-bitnet-cpp.sh before this fix."""
+    runtime = fly.rt.runtimes()["bitnet-cpp"]
+    with pytest.raises(fly.rt.RuntimeError_, match="model_dir|model directory"):
+        fly.install_command_for(runtime)
+
+
 # --------------------------------------------------------------------- guards
 
 def test_disk_guard_refuses_under_the_floor():
@@ -586,10 +657,11 @@ def test_run_runtime_install_wraps_the_real_command_with_nice_and_bounded_jobs(m
 
     result = fly.run_runtime_install(
         runtime, dry_run=False, jobs=3, command_runner=fake_runner,
-        check_fn=fake_check, log=lambda *_: None,
+        check_fn=fake_check, log=lambda *_: None, model_dir="/fake/gguf-dir",
     )
     assert result.ok
     assert seen["cmd"][:3] == ["nice", "-n", "19"]
+    assert "/fake/gguf-dir" in " ".join(seen["cmd"])
     assert seen["env"]["CMAKE_BUILD_PARALLEL_LEVEL"] == "3"
     assert seen["env"]["MAKEFLAGS"] == "-j3"
 
@@ -640,6 +712,7 @@ def test_run_runtime_install_surfaces_the_missing_gguf_message_verbatim(monkeypa
 
     result = fly.run_runtime_install(
         runtime, dry_run=False, command_runner=fake_runner, log=lambda *_: None,
+        model_dir="/fake/gguf-dir-without-the-file",
     )
     assert not result.ok
     assert "ggml-model-i2_s.gguf" in result.detail
@@ -661,7 +734,7 @@ def test_run_runtime_install_distrusts_a_zero_exit_that_still_fails_check(monkey
 
     result = fly.run_runtime_install(
         runtime, dry_run=False, command_runner=fake_runner,
-        check_fn=fake_check, log=lambda *_: None,
+        check_fn=fake_check, log=lambda *_: None, model_dir="/fake/gguf-dir",
     )
     assert not result.ok
     assert "not found on PATH" in result.detail
