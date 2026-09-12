@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -76,6 +77,12 @@ class Install:
     # `isolated` is the flag for a runtime this project creates and manages
     # itself.
     isolated: bool = False
+    # method == "script" only. Positional arguments the install script
+    # needs, as format() templates -- e.g. ["{model_dir}"] for bitnet-cpp's
+    # tools/install-bitnet-cpp.sh, whose own `${1:?usage...}` guard refuses
+    # to run without the directory containing the fetched GGUF. Empty for a
+    # script that takes no arguments (llama-cpp-prism, desert-ant).
+    script_args: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -161,6 +168,7 @@ def parse_runtime(raw: Dict[str, Any], where: str) -> Runtime:
             source=inst.get("source"),
             script_url=script_url,
             isolated=bool(inst.get("isolated", False)),
+            script_args=list(inst.get("args") or []),
         ),
         verify_import=verify_import,
         verify_binary=verify_binary,
@@ -660,9 +668,27 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
     return imp
 
 
-def install_command(r: Runtime, py: Optional[str] = None) -> List[str]:
-    """The exact argv that would run. Callers show this before running it."""
+def install_command(r: Runtime, py: Optional[str] = None,
+                     model_dir: Optional[Path | str] = None) -> List[str]:
+    """The exact argv that would run. Callers show this before running it.
+
+    `model_dir` fills a `{model_dir}` placeholder in `install.args` (see
+    bitnet-cpp.yaml) -- the directory a flight has already downloaded the
+    checkpoint into, known only after that download, never at parse time.
+    Never raises for a missing `model_dir`: this is also what a preview
+    (`spacepilot runtimes install <id>`, the MCP/API preview endpoints)
+    calls before any download exists to name, so an unresolved placeholder
+    is left as literal text (`{model_dir}`) rather than refusing to build a
+    command at all. `tools/fly.py`'s `install_command_for` is the layer
+    that actually refuses to run a real install with the placeholder
+    unresolved -- see its docstring.
+    """
     if r.install.method == "script":
+        if r.install.script_args:
+            formatted = [a.format(model_dir=str(model_dir)) if model_dir is not None else a
+                         for a in r.install.script_args]
+            args_str = " ".join(shlex.quote(a) for a in formatted)
+            return ["sh", "-c", f"curl -fsSL {r.install.script_url} | sh -s -- {args_str}"]
         return ["sh", "-c", f"curl -fsSL {r.install.script_url} | sh"]
     if r.install.isolated:
         # Always the isolated venv's own interpreter -- an explicit `py`
@@ -673,10 +699,12 @@ def install_command(r: Runtime, py: Optional[str] = None) -> List[str]:
     return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
 
 
-def install(r: Runtime, py: Optional[str] = None, timeout: int = 900) -> Status:
+def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
+            model_dir: Optional[Path | str] = None) -> Status:
     """Install, then verify by importing. The install is not the evidence."""
     if r.install.method == "script":
-        proc = subprocess.run(install_command(r), capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(install_command(r, model_dir=model_dir),
+                               capture_output=True, text=True, timeout=timeout)
         if proc.returncode != 0:
             tail = (proc.stderr or proc.stdout or "").strip().splitlines()
             return Status(r.id, False, None,

@@ -16,6 +16,13 @@ install:
   method: script
   package: bitnet-cpp
   script_url: "https://raw.githubusercontent.com/motionvector-dev/spacepilot/83e179de6f282126619d9c317e3ac29c50b3e41d/tools/install-bitnet-cpp.sh"
+  # tools/install-bitnet-cpp.sh's own `${1:?usage...}` guard requires the
+  # directory containing the already-fetched ggml-model-i2_s.gguf as its
+  # one positional argument -- fly.py's install_command_for() fills this
+  # in from the downloader's own return value once the flight has fetched
+  # the model; a caller with no directory yet gets a clear error instead
+  # of a silently broken `curl | sh` with nothing after it.
+  args: ["{model_dir}"]
   checked: "2026-09-10"
 
 verify:
