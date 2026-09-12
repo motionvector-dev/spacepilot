@@ -9,6 +9,7 @@ fly.py plan assertions here check that the entry is *flyable in principle*
 concrete install fix, not that the binary is actually present.
 """
 
+import re as _re
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from spacepilot.runtimes import load_runtimes, parse_runtime
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIR = ROOT / "spacepilot" / "registry" / "runtimes"
 MODEL_DIR = ROOT / "spacepilot" / "registry" / "models"
+TOOLS_DIR = ROOT / "tools"
 
 
 # ------------------------------------------------------------- recipe parsing
@@ -122,3 +124,64 @@ def test_fly_plan_reports_exactly_which_install_bitnet_needs():
         pytest.skip("bitnet-cli happens to be built and on PATH on this machine")
     assert row.runtime.install_cmd == "spacepilot runtimes install bitnet-cpp"
     assert row.runtime.reason
+
+
+# -------------------------------------------------- install argument wiring
+
+def test_install_scripts_needing_a_positional_arg_declare_a_template_placeholder():
+    """`tools/install-bitnet-cpp.sh` refuses to run without its GGUF
+    directory as `$1` (`GGUF_DIR="${1:?usage: ...}"`) -- since #142 that
+    guard fails fast with a clear message instead of failing deep inside a
+    CMake build. But the guard only helps if something upstream actually
+    supplies `$1`. `spacepilot.runtimes.install_command()` builds
+    `curl -fsSL <script_url> | sh` with nothing after `sh` unless the
+    runtime's own recipe says an argument is needed and how to fill it in --
+    so every install script under tools/ that requires a positional
+    argument must have a matching template placeholder (e.g. `{model_dir}`)
+    in its runtime recipe's `install.args`, or that argument silently never
+    arrives.
+    """
+    positional_arg_re = _re.compile(r"\$\{1:\?")
+    checked_any = False
+    for runtime_path in sorted(RUNTIME_DIR.glob("*.yaml")):
+        raw = yaml.safe_load(runtime_path.read_text())
+        install = raw.get("install", {})
+        if install.get("method") != "script":
+            continue
+        script_url = install.get("script_url", "")
+        script_name = script_url.rsplit("/", 1)[-1]
+        script_path = TOOLS_DIR / script_name
+        if not script_path.is_file():
+            # Not one of ours (e.g. desert-ant's upstream install.sh) --
+            # nothing here to check against.
+            continue
+        checked_any = True
+        text = script_path.read_text()
+        if not positional_arg_re.search(text):
+            continue
+        args = install.get("args") or []
+        assert any("{" in a and "}" in a for a in args), (
+            f"{runtime_path.name}: {script_name} requires a positional "
+            f"argument ({positional_arg_re.pattern}) but install.args "
+            f"({args!r}) has no template placeholder for it"
+        )
+    assert checked_any, "expected at least one runtime recipe pointing at a tools/ install script"
+
+
+def test_bitnet_cpp_yaml_declares_the_model_dir_placeholder():
+    raw = yaml.safe_load((RUNTIME_DIR / "bitnet-cpp.yaml").read_text())
+    args = raw.get("install", {}).get("args") or []
+    assert "{model_dir}" in args, (
+        "bitnet-cpp.yaml's install.args must carry a {model_dir} placeholder -- "
+        "tools/install-bitnet-cpp.sh's $1 is the fetched GGUF directory"
+    )
+
+
+def test_llama_cpp_prism_yaml_has_no_spurious_model_dir_placeholder():
+    """llama-cpp-prism's install script takes no positional argument at
+    all -- unlike bitnet-cpp it never reads a GGUF path itself (Ternary
+    Bonsai's checkpoint is only ever named later, on the `spacepilot run`
+    command line), so it must not carry the same template."""
+    raw = yaml.safe_load((RUNTIME_DIR / "llama-cpp-prism.yaml").read_text())
+    args = raw.get("install", {}).get("args") or []
+    assert args == []
