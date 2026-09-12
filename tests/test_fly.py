@@ -610,6 +610,43 @@ def test_run_runtime_install_reports_the_log_tail_on_failure(monkeypatch):
     assert "configure error" in result.detail
 
 
+def test_run_runtime_install_surfaces_the_missing_gguf_message_verbatim(monkeypatch):
+    """bitnet-cpp's install script now fails fast (exit 2) with a one-line
+    stderr message naming the missing ggml-model-i2_s.gguf and the fly
+    command that fetches it, instead of failing deep inside a CMake build
+    with a confusing setup_env error.
+
+    `run_runtime_install`'s own dry-run mode (`dry_run=True`) never invokes
+    a command at all -- it only logs the argv it would run (see
+    `test_run_runtime_install_dry_run_logs_the_command_and_touches_nothing`
+    above) -- so there is no way to observe a script's stderr without
+    actually running something. This test instead follows the shape of
+    `test_run_runtime_install_reports_the_log_tail_on_failure` immediately
+    above: a fake `command_runner` stands in for the real subprocess call
+    (dry_run=False, but nothing real executes -- the fake never shells out),
+    and asserts the guard's exact message survives into `result.detail`
+    rather than being flattened into a generic 'install failed' string."""
+    runtime = fly.rt.runtimes()["bitnet-cpp"]
+    guard_message = (
+        "install-bitnet-cpp.sh: ggml-model-i2_s.gguf not found in "
+        "<model-dir> -- fetch it first: tools/fly.py run "
+        "bitnet-b1-58-2b4t-gguf-i2s\n"
+    )
+
+    def fake_runner(cmd, **kw):
+        return type("P", (), {
+            "returncode": 2, "stdout": "", "stderr": guard_message,
+        })()
+
+    result = fly.run_runtime_install(
+        runtime, dry_run=False, command_runner=fake_runner, log=lambda *_: None,
+    )
+    assert not result.ok
+    assert "ggml-model-i2_s.gguf" in result.detail
+    assert "fly.py run bitnet-b1-58-2b4t-gguf-i2s" in result.detail
+    assert result.detail != "install exited 2"
+
+
 def test_run_runtime_install_distrusts_a_zero_exit_that_still_fails_check(monkeypatch):
     """A script that exits 0 having built the wrong thing is not installed
     either -- the same honesty bar spacepilot.runtimes.install() holds pip
