@@ -22,6 +22,7 @@ variants:
     params: 8B
     precision: 4bit
     repo: mlx-community/Nemotron-3-Nano-4bit
+    revision: df45459346d0a797c2fe1f938d87a29eb49219df
     backends: [metal, cuda]
     download:
       value: 4831838208
@@ -39,6 +40,7 @@ variants:
     params: 34B
     precision: 8bit
     repo: nvidia/Nemotron-3-Ultra-8bit
+    revision: bf6fe0b66ea5a76e01a0cb6064f28aa2a6136d8d
     backends: [cuda, metal]
     download:
       value: 36507222016

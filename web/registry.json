@@ -57,8 +57,8 @@
      "precision": "f16",
      "repo": "Tencent-Hunyuan/AuK-Flash",
      "files": null,
-     "revision": null,
-     "is_pinned": false,
+     "revision": "0753a812e95a947da75765792ecf048d08595995",
+     "is_pinned": true,
      "backends": [
       "cuda",
       "metal",
@@ -101,8 +101,8 @@
      "precision": "f16",
      "repo": "Tencent-Hunyuan/AuK-Base",
      "files": null,
-     "revision": null,
-     "is_pinned": false,
+     "revision": "f613c7c25c345eb67a0e28fdfd475cf2609ebfe8",
+     "is_pinned": true,
      "backends": [
       "cuda",
       "metal"
@@ -2379,8 +2379,8 @@
      "precision": "4bit",
      "repo": "mlx-community/Nemotron-3-Nano-4bit",
      "files": null,
-     "revision": null,
-     "is_pinned": false,
+     "revision": "df45459346d0a797c2fe1f938d87a29eb49219df",
+     "is_pinned": true,
      "backends": [
       "metal",
       "cuda"
@@ -2422,8 +2422,8 @@
      "precision": "8bit",
      "repo": "nvidia/Nemotron-3-Ultra-8bit",
      "files": null,
-     "revision": null,
-     "is_pinned": false,
+     "revision": "bf6fe0b66ea5a76e01a0cb6064f28aa2a6136d8d",
+     "is_pinned": true,
      "backends": [
       "cuda",
       "metal"
@@ -2842,6 +2842,48 @@
      "caveats": [],
      "compromised": [],
      "notes": null
+    },
+    {
+     "id": "qwen3-8-27b-splash",
+     "model_id": "qwen3-8",
+     "name": "Qwen3.8 27B Splash (Inco AI)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "27B",
+     "precision": "4bit",
+     "repo": "incoai/Qwen3.8-27B-Splash",
+     "files": null,
+     "revision": "9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 16106127360.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "15 GiB weights + 1.2 GiB DFlash 2 draft model package.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 19595784192.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels. Published by Inco AI (https://inco.ai/blog/splash/).\n"
     }
    ]
   },

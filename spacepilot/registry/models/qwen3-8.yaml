@@ -40,3 +40,25 @@ variants:
       value: 19327352832
       source: estimated
       note: 16.081 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.
+
+  - id: qwen3-8-27b-splash
+    name: Qwen3.8 27B Splash (Inco AI)
+    params: 27B
+    precision: 4bit
+    repo: incoai/Qwen3.8-27B-Splash
+    revision: 9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+    backends: [metal]
+    download:
+      value: 16106127360
+      source: estimated
+      checked: "2026-09-17"
+      note: 15 GiB weights + 1.2 GiB DFlash 2 draft model package.
+    working_set:
+      value: 19595784192
+      source: estimated
+      checked: "2026-09-17"
+      note: ~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.
+    notes: >
+      Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels.
+      Published by Inco AI (https://inco.ai/blog/splash/).
+

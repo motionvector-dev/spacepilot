@@ -21,6 +21,7 @@ variants:
     params: 1.5B
     precision: f16
     repo: Tencent-Hunyuan/AuK-Flash
+    revision: 0753a812e95a947da75765792ecf048d08595995
     backends: [cuda, metal, cpu]
     download:
       value: 3221225472
@@ -38,6 +39,7 @@ variants:
     params: 1.5B
     precision: f16
     repo: Tencent-Hunyuan/AuK-Base
+    revision: f613c7c25c345eb67a0e28fdfd475cf2609ebfe8
     backends: [cuda, metal]
     download:
       value: 3221225472
