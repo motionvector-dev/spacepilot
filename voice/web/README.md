@@ -15,18 +15,15 @@ quickly, and it depends on Gemini being reachable and paid for.
 ## What it needs
 
 `GEMINI_PRIMARY_API_KEY` (or `GEMINI_API_KEY` / `GOOGLE_API_KEY` as
-fallbacks), from Doppler — project `unfoundbox`, config `dev_personal`.
-Never export it by hand or put it in a file; `doppler run --` injects it into
-the bridge process's environment for the duration of the run.
+fallbacks), passed via environment variables or a secrets manager.
 
 ## Running it
 
 Two processes, both on `localhost:8090`:
 
 ```bash
-# 1. The bridge — proxies to Gemini Live, key injected by Doppler
-doppler run --project unfoundbox --config dev_personal -- \
-  python voice/web/voice-bridge.py
+# 1. The bridge — proxies to Gemini Live
+GEMINI_API_KEY="your-key" python voice/web/voice-bridge.py
 ```
 
 ```bash

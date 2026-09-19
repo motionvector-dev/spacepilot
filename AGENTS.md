@@ -31,8 +31,8 @@ come through two doors and MCP fits both: the FoundationModels framework (the
 app calls the model, with Tools, so an MCP bridge is a Tool) and App Intents
 (Siri and Apple Intelligence understand the request and call macbar, no model
 call, no cost). The web cockpit adds WebMCP for browser agents (Chrome origin
-trial, not a standard yet). Apple's reference checkouts are at
-`~/code/unfoundbox/ml-ai/coreai-*` and `mlx-*`. The `../space-voice` checkout
+trial, not a standard yet). Reference checkouts include
+`coreai-*` and `mlx-*`. The `../space-voice` checkout
 is a cheap Gemini-Live prototype of the same idea; review it, rebuild from
 scratch if it fights the plan. Sources: `docs/design/VISION.md`.
 
@@ -75,9 +75,9 @@ subprocess, never imported. Point the driver at it with `SPACEPILOT_MFLUX_BIN` o
 
 ## Secrets
 
-Doppler, project `unfoundbox`, config `dev_personal`, scoped at `~/code`. Prefix
-with `doppler run --`. Never write secrets into `.env`, into code, or into a
-command line that lands in a process list or shell history.
+Configuration variables and provider API keys can be provided via environment
+variables or standard secrets managers (`doppler run --`). Never write secrets into
+committed code, or into a command line that lands in a process list or shell history.
 
 `LOCAL_WORKER_TOKEN` is required: the worker exits without it and `spacepilot launch`
 refuses to start a billing instance it could not deploy to.
@@ -135,7 +135,7 @@ The old operational docs (AWS.md, INFERENCE.md, PIPELINE-STATE.md) are
 archived at `~/code/motionvector/handoffs/` — context only, not current
 authority. Their load-bearing facts as of the archive date: the AWS boundary
 and quota live in this file above; the inference-provider list is
-Doppler-scoped (`doppler run --`, project `unfoundbox`); and nothing in
+managed via environment variables or Doppler; and nothing in
 `outputs/` was ever a real render. DECISION-INBOX.md was archived in the same
 2026-08-24 clearing but was recreated on 2026-09-02 (#108) and is current
 again — see the pointer above.

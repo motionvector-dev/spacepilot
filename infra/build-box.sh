@@ -53,7 +53,11 @@ instance_ip() {
 }
 
 get_ts_authkey() {
-  doppler secrets get TS_AUTHKEY --project unfoundbox --config dev_personal --plain 2>/dev/null || true
+  if [[ -n "${TS_AUTHKEY:-}" ]]; then
+    echo "$TS_AUTHKEY"
+  else
+    doppler secrets get TS_AUTHKEY --plain 2>/dev/null || true
+  fi
 }
 
 build_user_data() {

@@ -119,5 +119,4 @@ design, not a shipped feature.
 - `docs/design/macos-app-intents-apple-intelligence-integration.md` — Siri, Shortcuts, Spotlight.
 - `docs/design/macos-distributed-inference-and-training-with-mlx.md` — Thunderbolt 5 clustering.
 - `../spacepilot-landing/paper/spacepilot-paper.pdf` — SpacePilot V2, the execution graph (Saurabh Nandwana, Aug 2026).
-- `../space-voice` — a Gemini-Live prototype of duplex voice. Rebuild if it fights the plan. (`AGENTS.md`)
-- `~/code/unfoundbox/ml-ai/coreai-models`, `coreai-optimization`, `coreai-torch` — Apple's Core AI checkouts: export recipes, compression, the PyTorch bridge.
+- Apple's Core AI reference checkouts: `coreai-models`, `coreai-optimization`, `coreai-torch` (export recipes, compression, the PyTorch bridge).

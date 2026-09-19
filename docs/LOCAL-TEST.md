@@ -159,11 +159,10 @@ first served text variant instead.
 `claude-sonnet-5` is a second backend behind `/v1/chat/completions` — see
 `docs/design/INFERENCE-SURFACE.md`, "Remote providers" — for testing
 SpaceBar's brain while Apple Intelligence is off, or while the local rungs
-are not wired yet. `ANTHROPIC_API_KEY` comes from Doppler
-(`unfoundbox`/`dev_personal`), never from a file in the repo:
+are not wired yet. Provide `ANTHROPIC_API_KEY` via your environment or secrets manager:
 
 ```bash
-doppler run --project unfoundbox --config dev_personal -- \
+ANTHROPIC_API_KEY="your-key" \
   curl -sS http://127.0.0.1:8088/v1/chat/completions \
     -H "X-SpacePilot-Token: $(cat .studio_token)" \
     -H "Content-Type: application/json" \
