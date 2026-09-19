@@ -1,7 +1,8 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/((?!api/|docs|llms\\.txt|AGENTS\\.md|robots\\.txt|sitemap\\.xml|.*\\..*).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

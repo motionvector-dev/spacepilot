@@ -1,18 +1,43 @@
 # SpacePilot
 
-> SpacePilot compiles intent into cinema.
+> You decide what to run. SpacePilot decides how and where.
 
-SpacePilot is a generative cinema runtime by the MotionVector program
-(motionvector.dev). It runs open-weight video and audio models directly on GPUs
-you control — local or cloud — and is directed through code, UI, or MCP tools,
-serving human directors and AI agents alike.
+SpacePilot is a provenance-first decision layer and inference orchestration CLI for single-owner AI compute fleets. It evaluates what models fit the hardware in front of you before you download them, pricing cold starts and warm memory residency across Apple Silicon, Linux, and Cloud instances.
 
-## Status
+## Installation
 
-In private development. The public surface is this waitlist page:
-https://spacepilot.dev — join for early access. Runtime documentation is
-internal.
+```bash
+# Global CLI installation (recommended)
+uv tool install spacepilot
 
-## Related
+# Or via pip
+pip install spacepilot
+```
 
-- MotionVector agentic video studio: https://motionvector.dev
+## Core CLI Commands
+
+- `spacepilot probe`: Inspect local hardware, memory hierarchy, backend (Metal/CPU/CUDA), and usable VRAM.
+- `spacepilot doctor`: Check local environment, runtimes, ffmpeg, and weights.
+- `spacepilot models list`: List all models with empirical fit verdicts (`runs_well`, `tight_fit`, `too_large`).
+- `spacepilot runtimes list`: List available inference runtimes (Splash, MLX, Whisper.cpp, Kokoro, Edge0).
+- `spacepilot-mcp`: Stdio Model Context Protocol (MCP) server for AI coding agents.
+
+## FastMCP Server Integration
+
+Add to your MCP configuration (`~/.gemini/antigravity/mcp_config.json` or Claude Desktop):
+
+```json
+{
+  "mcpServers": {
+    "spacepilot": {
+      "command": "spacepilot-mcp"
+    }
+  }
+}
+```
+
+## Repository & Links
+
+- PyPI: https://pypi.org/project/spacepilot/
+- GitHub: https://github.com/motionvector-dev/spacepilot
+- Documentation: https://spacepilot.dev/docs
