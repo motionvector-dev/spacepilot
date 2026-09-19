@@ -121,7 +121,7 @@ jobs:
   # moved to lenovo-spacepilot: measured across several runs this job takes
   # ~30-35s end to end, under the bar for moving it (2026-09-02).
   security:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lenovo]
     timeout-minutes: 10
 
     steps:
