@@ -1,0 +1,56 @@
+schema: 1
+id: desert-ant-gist
+name: Desert Ant Gist (Desert Ant Labs)
+family: desert-ant
+kind: text
+summary: >
+  Topic and tag generation for posts and articles, multi-label text classification against a fixed taxonomy, TFLite+CoreML.
+homepage: https://huggingface.co/desert-ant-labs/gist
+
+license:
+  id: desert-ant-labs-source-available-1.0
+  spdx: null
+  open_source: false
+  url: https://license.desertant.com/1.0
+  restrictions:
+    - free while use stays below 100,000 monthly active devices (MAD) per platform, per model; resets monthly
+    - accounts and applications under common control count together toward the MAD threshold; splitting to stay under it is a breach
+    - cannot sell, sublicense, or distribute the models or SDKs themselves (or a substantially unmodified derivative) as a standalone product; embedding within your own application is allowed
+    - may not use the models, their outputs, or anything logged from them to train, fine-tune, or distill a competing model
+    - crossing 100k MAD on any platform for any model requires contacting licensing@desertant.com for a commercial licence
+
+variants:
+  - id: desert-ant-gist-1
+    name: Desert Ant Gist
+    repo: desert-ant-labs/gist
+    revision: 57d8f9b8b1dc74dcd97e324036f7b46eec1e40b1
+    backends: [cpu]
+    download:
+      value: 119337608
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        Summed file size of the desert-ant-labs/gist repo at pinned commit 57d8f9b8
+        from the Hugging Face Hub API.
+    working_set:
+      value: 179006412
+      source: estimated
+      checked: "2026-09-10"
+      note: >
+        Estimated as 1.5x the on-disk checkpoint size to allow for a loaded
+        runtime (CoreML/TFLite/ONNX session buffers, model.mil graph, weight
+        pages); unflown, not a measured peak. These are small specialist
+        models, so this is a coarse multiplier rather than an architecture-
+        specific derivation.
+    speed: []
+    notes: >
+      Desert Ant Labs launch claim (checked 2026-09-10, from
+      https://desertant.com/models/ and the launch post): generate topics and tags for posts and articles.
+      Carries a bundled taxonomy.json / taxonomy_crosswalk.json and per-language embeddings rather than being a single generic classifier.
+      Licence is source-available (desert-ant-labs-source-available-1.0), not
+      OSI open source -- free under 100k monthly active devices per platform,
+      see restrictions above. SDK targets: Swift (desertant.com/swift/),
+      Kotlin (desertant.com/kotlin/), JS (desertant.com/js/); CLI at
+      https://github.com/Desert-Ant-Labs/desert-ant-cli.
+      Role in the duplex loop: utility. Status: unflown -- no speed entries
+      recorded, nobody has run this on a SpacePilot-probed machine yet.

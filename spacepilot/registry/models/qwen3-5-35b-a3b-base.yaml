@@ -1,0 +1,56 @@
+schema: 1
+id: qwen3-5-35b-a3b-base
+name: Qwen3.5 35B-A3B Base
+family: qwen
+kind: text
+summary: >
+  The upstream sparse-MoE base Edge0 builds its 35B-A3B preview on top of:
+  35B total parameters, ~3B active per token, hybrid Gated DeltaNet / Gated
+  Attention MoE layout, 262K native context (extensible to ~1M). Registered
+  here as the base checkpoint reference, not as an Edge0-runtime variant --
+  distinct from qwen1-5-moe and qwen3-6-27b already in this registry.
+homepage: https://huggingface.co/Qwen/Qwen3.5-35B-A3B-Base
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: qwen3-5-35b-a3b-base-bf16
+    name: Qwen3.5 35B-A3B Base (bf16, upstream)
+    params: 35B (A3B)
+    repo: Qwen/Qwen3.5-35B-A3B-Base
+    revision: 0f0813072d2358973511097385626f21fcb6d422
+    backends: [metal, cuda, cpu]
+    download:
+      value: 71926986405
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        ~71.9 GiB (77,207,994,778 bytes) full-precision upstream checkpoint on
+        the Hugging Face Hub at pinned commit 0f081307, safetensors shards for
+        the Qwen3_5MoeForConditionalGeneration architecture. This is the
+        unquantized base; SpacePilot would only ever fly a local 4-bit MLX
+        requant of this (as Edge0 does), never the bf16 checkpoint directly.
+    working_set:
+      value: 82922790502
+      source: estimated
+      checked: "2026-09-10"
+      note: >
+        Download size plus a provisional 7.4% allowance for KV cache and runtime
+        overhead at short context on this MoE (40 layers, 256 routed + 1 shared
+        experts, ~3B active params per token); unflown, not a measured peak or
+        hard limit. No Apple Silicon configuration in this fleet fits the bf16
+        checkpoint resident -- a local run means quantizing first, which is a
+        different, not-yet-registered variant.
+    speed: []
+    notes: >
+      Reference base for edge0-35b-a3b-preview (this registry). Architecture:
+      hidden layout 10 x (3 x (Gated DeltaNet -> MoE) -> 1 x (Gated Attention ->
+      MoE)); Gated DeltaNet has 32 linear attention heads for V, 16 for QK, head
+      dim 128; Gated Attention has 16 heads for Q, 2 for KV, head dim 256.
+      Qwen3.5-Flash is the hosted/production version of this base with 1M
+      context by default and built-in tools -- not relevant to local execution.
+      Status: unflown.

@@ -1618,7 +1618,10 @@ def cmd_runtimes(args, cfg=None) -> int:
         argv = rt.install_command(r, py=runtime_python)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
-        print(f"  into       {runtime_python}")
+        if r.install.isolated:
+            print(f"  into       its own environment -- {rt.isolated_env_dir(r)}")
+        else:
+            print(f"  into       {runtime_python}")
         print(f"  licence    {r.license}")
         if r.notes:
             print(f"  note       {r.notes}")

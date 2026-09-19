@@ -22,12 +22,20 @@ variants:
     precision: f16
     repo: FunAudioLLM/SenseVoiceSmall
     revision: 3847d57b6bdf2dd8875cb1508d2af43d80a16bf7
-    files: ["model.safetensors", "configuration.json"]
+    files: ["model.pt", "configuration.json"]
     backends: [metal, cuda, cpu]
     download:
-      value: 469762048
+      value: 936291765
       source: huggingface-api
-      checked: "2026-08-28"
+      checked: "2026-09-10"
+      note: >
+        Corrected 2026-09-10: the repo at this pinned revision ships
+        `model.pt` (936,291,369 bytes), not `model.safetensors` -- that
+        filename matched nothing (confirmed against the Hub API's own
+        sibling list for this revision), so the previous 469,762,048-byte
+        figure was stale/guessed rather than a real sum. `files` updated to
+        match what is actually there; value is the byte-exact sum of
+        model.pt + configuration.json (396 bytes) at the same pinned SHA.
     working_set:
       value: 629145600
       source: estimated

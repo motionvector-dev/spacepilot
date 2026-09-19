@@ -1,0 +1,54 @@
+schema: 1
+id: llama-cpp-prism
+name: llama.cpp (PrismML fork)
+summary: >
+  Prism ML's fork of llama.cpp, branch `prism`: adds GGUF Q2_0 g128 support
+  for ternary weights on CPU (NEON/generic) and Metal -- a quantization
+  mainline llama.cpp does not read. Needed for Ternary Bonsai 8B's GGUF
+  build specifically; the plain `llama-cpp` runtime already registered here
+  (mainline, via the llama-cpp-python wheel) cannot load it.
+homepage: https://github.com/PrismML-Eng/llama.cpp
+serves: [text]
+backends: [cpu, metal]
+license: MIT
+
+install:
+  method: script
+  package: llama-cpp-prism
+  script_url: "https://raw.githubusercontent.com/motionvector-dev/spacepilot/83e179de6f282126619d9c317e3ac29c50b3e41d/tools/install-llama-cpp-prism.sh"
+  checked: "2026-09-10"
+
+verify:
+  binary: llama-cli-prism
+
+runs:
+  - ternary-bonsai-8b
+
+notes: >
+  Pinned to PrismML-Eng/llama.cpp commit
+  d8f26eec76da6d09bb708bcba51ef64b8cd868a3 on branch `prism` -- confirmed a
+  real, public fork of llama.cpp (`gh api repos/PrismML-Eng/llama.cpp`:
+  `fork: true`, `default_branch: prism`), checked 2026-09-10. `backends`
+  here is `[cpu, metal]`, matching the Ternary Bonsai 8B model card's own
+  claim for this fork's Q2_0 kernel support (its `backends` tag for CUDA is
+  explicitly not carried into that model's registered backends either, for
+  the same reason -- see ternary-bonsai-8b.yaml).
+
+  Like bitnet-cpp, this is a source-tree CMake build, not a pip package:
+  llama-cpp-python's wheel vendors mainline llama.cpp as its build
+  dependency, not PrismML-Eng's fork, so installing that pip package would
+  not add Q2_0 support no matter which version is pinned -- the plain
+  `llama-cpp` runtime recipe already in this registry is a different,
+  correct thing for a different, non-ternary model. Building the fork
+  directly is the only route the model card documents.
+
+  `tools/install-llama-cpp-prism.sh` in this repo (pinned to the same
+  commit, POSIX sh) carries the real clone+build sequence, and this
+  recipe's `script_url` points at that file, same shape as `bitnet-cpp`'s.
+
+  Status: build not attempted this pass. A default llama.cpp CMake
+  configure enables the Metal backend on Apple Silicon by itself, which is
+  a full build of GGML plus whichever backends it auto-detects -- not a
+  small or quick build, so it was recorded rather than run on a MacBook.
+  `spacepilot runtimes check llama-cpp-prism` reports the binary missing
+  until a build host runs the script for real.

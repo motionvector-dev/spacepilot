@@ -25,9 +25,9 @@ variants:
     files: ["ctranslate2/tiny/model.bin", "ctranslate2/tiny/vocabulary.json"]
     backends: [metal, cpu]
     download:
-      value: 62453760
+      value: 108725023
       source: huggingface-api
-      checked: "2026-08-28"
+      checked: "2026-09-10"
     working_set:
       value: 268435456
       source: estimated
@@ -43,9 +43,9 @@ variants:
     files: ["ctranslate2/base/model.bin", "ctranslate2/base/vocabulary.json"]
     backends: [metal, cpu]
     download:
-      value: 142606336
+      value: 246414217
       source: huggingface-api
-      checked: "2026-08-28"
+      checked: "2026-09-10"
     working_set:
       value: 419430400
       source: estimated

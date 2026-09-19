@@ -25,9 +25,14 @@ variants:
   backends:
   - metal
   download:
-    value: 23740007447
+    value: 15980130813
     source: huggingface-api
-    checked: '2026-08-23'
+    checked: '2026-09-10'
+    note: 'Corrected 2026-09-10 (tools/verify_registry.py flagged 33% drift): re-summed
+      the same file patterns against the Hub API at the same pinned revision --
+      15,980,130,813 bytes, byte-exact, no SHA change.
+
+      '
   working_set:
     value: 28488008936
     source: estimated

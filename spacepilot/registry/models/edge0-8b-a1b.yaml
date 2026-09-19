@@ -1,0 +1,67 @@
+schema: 1
+id: edge0-8b-a1b-preview
+name: Edge0 8B-A1B (preview)
+family: edge0
+kind: text
+summary: >
+  8B-total / ~1B-active MoE preview from the Edge0 runtime, the smaller sibling
+  of Edge0 35B-A3B: same SSD expert streaming, prerouter and Recover-LoRA stack,
+  built on a different, smaller base (Ling-3.0-tiny, not Qwen3.5-MoE -- see
+  notes).
+homepage: https://huggingface.co/Edge0/Edge0-8B-A1B-preview
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: edge0-8b-a1b-preview-4bit
+    name: Edge0 8B-A1B Preview (4-bit, SSD expert streaming)
+    params: 8B (A1B)
+    precision: 4bit
+    repo: Edge0/Edge0-8B-A1B-preview
+    revision: 0bf17abed23b7de4b66e265a3848e80447ee7b41
+    backends: [metal]
+    download:
+      value: 4597697624
+      source: huggingface-api
+      checked: "2026-09-10"
+      note: >
+        ~7.92 GiB (7,923,998,112 bytes) upstream checkpoint on the Hugging Face
+        Hub at pinned commit 0bf17abe: 4-bit safetensors for the base model plus
+        the lora_edge0_8b.safetensors Recover-LoRA adapter and the
+        prerouter_edge0_8b.safetensors routing head.
+    working_set:
+      value: 1073741824
+      source: declared
+      checked: "2026-09-10"
+      note: >
+        Edge0's own claim, scaled from the 35B-A3B card's "active set, not total
+        params" framing: proportionally under ~1 GiB for the A1B active slice.
+        Not independently verified -- the model card does not state a working-set
+        number for this variant as explicitly as it does for the 35B-A3B, so this
+        figure is derived from the same streaming design applied to a ~1B active
+        slice rather than quoted directly.
+    speed: []
+    notes: >
+      Edge0 runtime source: https://github.com/Edge0-AI/edge0 (Apache-2.0). Same
+      SSD Expert Offload / Prerouter / Recover-LoRA stack as edge0-35b-a3b-preview
+      (see that manifest for the mechanism descriptions).
+
+      CORRECTION to the base-model assumption this entry was requested under:
+      the Edge0-8B-A1B-preview model card (checked 2026-09-10) names its base as
+      inclusionAI/Ling-3.0-tiny-base, a Bailing-MoE architecture with 128 experts
+      (8 selected per token) -- not Qwen3.5-MoE, which is the base only for the
+      35B-A3B sibling. Recorded here as verified fact rather than carried forward
+      unchecked from the request.
+
+      Limitations note, verbatim from the Edge0-8B-A1B-preview model card
+      (checked 2026-09-10): "Agent capability: this preview release is not yet
+      optimized for agentic tasks -- tool use, multi-step planning, and
+      long-horizon autonomy are currently weak." The card adds that "the full
+      release will substantially strengthen agent capability."
+
+      Status: unflown. No speed entries recorded -- nobody has run this on a
+      SpacePilot-probed machine yet.
