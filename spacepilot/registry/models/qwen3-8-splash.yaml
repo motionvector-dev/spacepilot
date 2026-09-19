@@ -1,0 +1,37 @@
+schema: 1
+id: qwen3-8-splash
+name: Qwen3.8 Splash (Inco AI)
+family: qwen
+kind: text
+summary: >
+  Model-specialized Apple-silicon inference engine with fused Metal kernels,
+  8-bit KV-cache decode, GDN on-chip prefill, and DFlash 2 speculative draft.
+homepage: https://inco.ai/blog/splash/
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: qwen3-8-27b-splash
+    name: Qwen3.8 27B Splash (Inco AI)
+    params: 27B
+    precision: 4bit
+    repo: incoai/Qwen3.8-27B-Splash
+    revision: 9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+    backends: [metal]
+    download:
+      value: 16106127360
+      source: estimated
+      checked: "2026-09-17"
+      note: 15 GiB weights + 1.2 GiB DFlash 2 draft model package.
+    working_set:
+      value: 19595784192
+      source: estimated
+      checked: "2026-09-17"
+      note: ~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.
+    notes: >
+      Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels.
+      Published by Inco AI (https://inco.ai/blog/splash/).

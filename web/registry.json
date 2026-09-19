@@ -3950,6 +3950,66 @@
    ]
   },
   {
+   "id": "qwen3-8-splash",
+   "name": "Qwen3.8 Splash (Inco AI)",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Model-specialized Apple-silicon inference engine with fused Metal kernels, 8-bit KV-cache decode, GDN on-chip prefill, and DFlash 2 speculative draft.\n",
+   "homepage": "https://inco.ai/blog/splash/",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-8-27b-splash",
+     "model_id": "qwen3-8-splash",
+     "name": "Qwen3.8 27B Splash (Inco AI)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "27B",
+     "precision": "4bit",
+     "repo": "incoai/Qwen3.8-27B-Splash",
+     "files": null,
+     "revision": "9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 16106127360.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "15 GiB weights + 1.2 GiB DFlash 2 draft model package.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 19595784192.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels. Published by Inco AI (https://inco.ai/blog/splash/).\n"
+    }
+   ]
+  },
+  {
    "id": "qwen3-8",
    "name": "Qwen3.8",
    "family": "qwen",
@@ -4017,48 +4077,6 @@
      "caveats": [],
      "compromised": [],
      "notes": null
-    },
-    {
-     "id": "qwen3-8-27b-splash",
-     "model_id": "qwen3-8",
-     "name": "Qwen3.8 27B Splash (Inco AI)",
-     "kind": "text",
-     "family": "qwen",
-     "params": "27B",
-     "precision": "4bit",
-     "repo": "incoai/Qwen3.8-27B-Splash",
-     "files": null,
-     "revision": "9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
-     "is_pinned": true,
-     "backends": [
-      "metal"
-     ],
-     "download": {
-      "value": 16106127360.0,
-      "source": "estimated",
-      "checked": "2026-09-17",
-      "note": "15 GiB weights + 1.2 GiB DFlash 2 draft model package.",
-      "is_measured": false
-     },
-     "working_set": {
-      "value": 19595784192.0,
-      "source": "estimated",
-      "checked": "2026-09-17",
-      "note": "~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.",
-      "is_measured": false
-     },
-     "license": {
-      "id": "apache-2.0",
-      "open_source": true,
-      "spdx": "Apache-2.0",
-      "url": "https://www.apache.org/licenses/LICENSE-2.0",
-      "restrictions": [],
-      "is_permissive": true
-     },
-     "speed": [],
-     "caveats": [],
-     "compromised": [],
-     "notes": "Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels. Published by Inco AI (https://inco.ai/blog/splash/).\n"
     }
    ]
   },

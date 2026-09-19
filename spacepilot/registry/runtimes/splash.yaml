@@ -18,7 +18,7 @@ verify:
   import: splash
 
 runs:
-  - qwen3-8
+  - qwen3-8-splash
 notes: >
   Inco AI open-source inference engine for Apple Silicon. Built around the model
   with fused Metal kernels, 8-bit KV-cache decode kernels, on-chip GDN prefill,

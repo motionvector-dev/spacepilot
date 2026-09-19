@@ -113,6 +113,8 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
         "muse-glimmer-coreai", "executor", None, "text", needs_gate3=True),
     "qwen1-5-moe": FlightPlan(
         "qwen1-5-moe", "transducer", "mlx-lm", "text"),
+    "qwen3-8-splash": FlightPlan(
+        "qwen3-8-splash", "executor", "splash", "text", needs_gate3=True),
     # bitnet-b1-58-2b4t: spacepilot/registry/runtimes/bitnet-cpp.yaml runs
     # its GGUF variant through bitnet.cpp's llama-cli, the only path that
     # reads its BitLinear kernels correctly -- plain llama-cpp-python cannot.
