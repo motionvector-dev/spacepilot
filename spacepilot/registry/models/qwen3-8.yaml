@@ -40,3 +40,4 @@ variants:
       value: 19327352832
       source: estimated
       note: 16.081 GB decimal cached payload plus a provisional roughly 3.0 GiB allowance for short-context KV cache, activations, and runtime overhead; unflown, not a measured peak or hard limit.
+

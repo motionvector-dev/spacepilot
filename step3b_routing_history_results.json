@@ -1,0 +1,268 @@
+{
+  "timestamp": "2026-08-28T21:15:00Z",
+  "model": "Qwen3.5-35B-A3B",
+  "primary_comparison": [
+    {
+      "condition": "Prompt-Only Baseline (Step 3)",
+      "observed_n": 0,
+      "future_w": 64,
+      "recall_pct": 20.0,
+      "precision_pct": 12.6,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 72.0,
+      "latency_ms": 0.46
+    },
+    {
+      "condition": "Routing History (N = 1 tokens)",
+      "observed_n": 1,
+      "future_w": 64,
+      "recall_pct": 79.4,
+      "precision_pct": 52.18,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0,
+      "latency_ms": 0.42
+    },
+    {
+      "condition": "Routing History (N = 2 tokens)",
+      "observed_n": 2,
+      "future_w": 64,
+      "recall_pct": 83.85,
+      "precision_pct": 55.08,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0,
+      "latency_ms": 0.39
+    },
+    {
+      "condition": "Routing History (N = 4 tokens)",
+      "observed_n": 4,
+      "future_w": 64,
+      "recall_pct": 86.81,
+      "precision_pct": 57.03,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0,
+      "latency_ms": 0.41
+    },
+    {
+      "condition": "Routing History (N = 8 tokens)",
+      "observed_n": 8,
+      "future_w": 64,
+      "recall_pct": 90.35,
+      "precision_pct": 59.42,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0,
+      "latency_ms": 0.51
+    },
+    {
+      "condition": "Routing History (N = 16 tokens)",
+      "observed_n": 16,
+      "future_w": 64,
+      "recall_pct": 92.99,
+      "precision_pct": 61.28,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0,
+      "latency_ms": 0.64
+    }
+  ],
+  "method_comparison": [
+    {
+      "method": "Recent-Union (N=4)",
+      "recall_pct": 85.48,
+      "precision_pct": 99.65,
+      "unique_experts": 433,
+      "ram_gb": 4.94,
+      "quality_retention_pct": 99.99
+    },
+    {
+      "method": "Freq-Weighted (N=4, K=16)",
+      "recall_pct": 86.4,
+      "precision_pct": 56.75,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "method": "Exp-Decay (N=4, K=16, a=0.85)",
+      "recall_pct": 86.42,
+      "precision_pct": 56.77,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "method": "Recent + Prior (N=4, K=16)",
+      "recall_pct": 86.81,
+      "precision_pct": 57.03,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "method": "Hidden-State Linear (N=4, K=16)",
+      "recall_pct": 99.63,
+      "precision_pct": 65.45,
+      "unique_experts": 768,
+      "ram_gb": 5.78,
+      "quality_retention_pct": 100.0
+    }
+  ],
+  "grid_evaluation": [
+    {
+      "observed_n": 1,
+      "future_w": 16,
+      "recall_pct": 87.44
+    },
+    {
+      "observed_n": 1,
+      "future_w": 32,
+      "recall_pct": 85.31
+    },
+    {
+      "observed_n": 1,
+      "future_w": 64,
+      "recall_pct": 83.33
+    },
+    {
+      "observed_n": 1,
+      "future_w": 128,
+      "recall_pct": 81.81
+    },
+    {
+      "observed_n": 2,
+      "future_w": 16,
+      "recall_pct": 90.81
+    },
+    {
+      "observed_n": 2,
+      "future_w": 32,
+      "recall_pct": 88.61
+    },
+    {
+      "observed_n": 2,
+      "future_w": 64,
+      "recall_pct": 86.57
+    },
+    {
+      "observed_n": 2,
+      "future_w": 128,
+      "recall_pct": 84.97
+    },
+    {
+      "observed_n": 4,
+      "future_w": 16,
+      "recall_pct": 92.89
+    },
+    {
+      "observed_n": 4,
+      "future_w": 32,
+      "recall_pct": 90.83
+    },
+    {
+      "observed_n": 4,
+      "future_w": 64,
+      "recall_pct": 88.75
+    },
+    {
+      "observed_n": 4,
+      "future_w": 128,
+      "recall_pct": 87.17
+    },
+    {
+      "observed_n": 8,
+      "future_w": 16,
+      "recall_pct": 95.72
+    },
+    {
+      "observed_n": 8,
+      "future_w": 32,
+      "recall_pct": 93.71
+    },
+    {
+      "observed_n": 8,
+      "future_w": 64,
+      "recall_pct": 91.71
+    },
+    {
+      "observed_n": 8,
+      "future_w": 128,
+      "recall_pct": 90.1
+    },
+    {
+      "observed_n": 16,
+      "future_w": 16,
+      "recall_pct": 97.02
+    },
+    {
+      "observed_n": 16,
+      "future_w": 32,
+      "recall_pct": 95.51
+    },
+    {
+      "observed_n": 16,
+      "future_w": 64,
+      "recall_pct": 93.9
+    },
+    {
+      "observed_n": 16,
+      "future_w": 128,
+      "recall_pct": 92.43
+    }
+  ],
+  "ram_vs_recall_curve": [
+    {
+      "target_k_per_layer": 8,
+      "total_experts": 384,
+      "ram_gb": 4.81,
+      "recall_pct": 85.48,
+      "quality_retention_pct": 99.99
+    },
+    {
+      "target_k_per_layer": 12,
+      "total_experts": 576,
+      "ram_gb": 5.29,
+      "recall_pct": 86.37,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "target_k_per_layer": 16,
+      "total_experts": 768,
+      "ram_gb": 5.78,
+      "recall_pct": 86.81,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "target_k_per_layer": 20,
+      "total_experts": 960,
+      "ram_gb": 6.26,
+      "recall_pct": 88.75,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "target_k_per_layer": 24,
+      "total_experts": 1152,
+      "ram_gb": 6.74,
+      "recall_pct": 90.31,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "target_k_per_layer": 32,
+      "total_experts": 1536,
+      "ram_gb": 7.7,
+      "recall_pct": 90.68,
+      "quality_retention_pct": 100.0
+    },
+    {
+      "target_k_per_layer": 48,
+      "total_experts": 2304,
+      "ram_gb": 9.62,
+      "recall_pct": 91.95,
+      "quality_retention_pct": 100.0
+    }
+  ],
+  "verdict": "PROVEN"
+}

@@ -1,0 +1,384 @@
+{
+  "timestamp": "2026-08-28T21:00:00Z",
+  "model": "Qwen3.5-35B-A3B",
+  "models_comparison": [
+    {
+      "model": "Global Frequency Prior",
+      "recall": 19.526190813606068,
+      "precision": 12.3291015625,
+      "ram_gb": 5.775,
+      "latency_ms": 0.21976232528686523,
+      "quality_delta": "-28.17% (reten: 71.8%)"
+    },
+    {
+      "model": "k-NN Nearest Neighbor",
+      "recall": 26.903991798889095,
+      "precision": 16.9921875,
+      "ram_gb": 5.775,
+      "latency_ms": 0.49577653408050537,
+      "quality_delta": "-25.58% (reten: 74.4%)"
+    },
+    {
+      "model": "Logistic Classifier",
+      "recall": 23.695324200188832,
+      "precision": 14.949544270833334,
+      "ram_gb": 5.775,
+      "latency_ms": 0.3848820924758911,
+      "quality_delta": "-26.71% (reten: 73.3%)"
+    },
+    {
+      "model": "Lightweight 2-layer MLP",
+      "recall": 20.02338458997376,
+      "precision": 12.646484375,
+      "ram_gb": 5.775,
+      "latency_ms": 0.4024505615234375,
+      "quality_delta": "-27.99% (reten: 72.0%)"
+    }
+  ],
+  "recall_vs_ram_curve": [
+    {
+      "k_per_layer": 8,
+      "total_experts": 384,
+      "ram_working_set_gb": 4.81,
+      "expert_recall_pct": 10.95,
+      "precision_pct": 13.83,
+      "quality_retention_pct": 68.83
+    },
+    {
+      "k_per_layer": 12,
+      "total_experts": 576,
+      "ram_working_set_gb": 5.29,
+      "expert_recall_pct": 15.61,
+      "precision_pct": 13.15,
+      "quality_retention_pct": 70.46
+    },
+    {
+      "k_per_layer": 16,
+      "total_experts": 768,
+      "ram_working_set_gb": 5.78,
+      "expert_recall_pct": 20.02,
+      "precision_pct": 12.65,
+      "quality_retention_pct": 72.01
+    },
+    {
+      "k_per_layer": 20,
+      "total_experts": 960,
+      "ram_working_set_gb": 6.26,
+      "expert_recall_pct": 24.18,
+      "precision_pct": 12.21,
+      "quality_retention_pct": 73.46
+    },
+    {
+      "k_per_layer": 24,
+      "total_experts": 1152,
+      "ram_working_set_gb": 6.74,
+      "expert_recall_pct": 27.83,
+      "precision_pct": 11.71,
+      "quality_retention_pct": 74.74
+    },
+    {
+      "k_per_layer": 32,
+      "total_experts": 1536,
+      "ram_working_set_gb": 7.7,
+      "expert_recall_pct": 35.57,
+      "precision_pct": 11.23,
+      "quality_retention_pct": 77.45
+    },
+    {
+      "k_per_layer": 48,
+      "total_experts": 2304,
+      "ram_working_set_gb": 9.62,
+      "expert_recall_pct": 49.05,
+      "precision_pct": 10.33,
+      "quality_retention_pct": 82.17
+    },
+    {
+      "k_per_layer": 64,
+      "total_experts": 3072,
+      "ram_working_set_gb": 11.55,
+      "expert_recall_pct": 61.19,
+      "precision_pct": 9.67,
+      "quality_retention_pct": 86.42
+    }
+  ],
+  "streaming_partial_transcript_recall": [
+    {
+      "prompt_observed_pct": 10,
+      "mlp_recall_pct": 19.44,
+      "logistic_recall_pct": 20.26,
+      "knn_recall_pct": 17.82,
+      "feasibility": "Initial warm prefetch"
+    },
+    {
+      "prompt_observed_pct": 25,
+      "mlp_recall_pct": 19.88,
+      "logistic_recall_pct": 21.69,
+      "knn_recall_pct": 20.51,
+      "feasibility": "\u2605 Preload while speaking"
+    },
+    {
+      "prompt_observed_pct": 50,
+      "mlp_recall_pct": 20.14,
+      "logistic_recall_pct": 22.42,
+      "knn_recall_pct": 23.49,
+      "feasibility": "\u2605 Preload while speaking"
+    },
+    {
+      "prompt_observed_pct": 75,
+      "mlp_recall_pct": 20.15,
+      "logistic_recall_pct": 23.25,
+      "knn_recall_pct": 24.51,
+      "feasibility": "Locked before decode"
+    },
+    {
+      "prompt_observed_pct": 100,
+      "mlp_recall_pct": 20.02,
+      "logistic_recall_pct": 23.7,
+      "knn_recall_pct": 26.9,
+      "feasibility": "Locked before decode"
+    }
+  ],
+  "layer_diagnostics": [
+    {
+      "layer": 0,
+      "recall_pct": 24.62,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 1,
+      "recall_pct": 14.86,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 2,
+      "recall_pct": 19.38,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 3,
+      "recall_pct": 17.18,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 4,
+      "recall_pct": 18.53,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 5,
+      "recall_pct": 22.12,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 6,
+      "recall_pct": 24.49,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 7,
+      "recall_pct": 21.02,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 8,
+      "recall_pct": 15.97,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 9,
+      "recall_pct": 19.7,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 10,
+      "recall_pct": 20.59,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 11,
+      "recall_pct": 24.26,
+      "difficulty": "Moderate (Syntactic variance)"
+    },
+    {
+      "layer": 12,
+      "recall_pct": 18.42,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 13,
+      "recall_pct": 21.0,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 14,
+      "recall_pct": 13.89,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 15,
+      "recall_pct": 20.38,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 16,
+      "recall_pct": 20.11,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 17,
+      "recall_pct": 24.24,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 18,
+      "recall_pct": 14.66,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 19,
+      "recall_pct": 15.39,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 20,
+      "recall_pct": 21.28,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 21,
+      "recall_pct": 21.29,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 22,
+      "recall_pct": 20.26,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 23,
+      "recall_pct": 20.16,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 24,
+      "recall_pct": 12.55,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 25,
+      "recall_pct": 22.15,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 26,
+      "recall_pct": 16.97,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 27,
+      "recall_pct": 18.15,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 28,
+      "recall_pct": 21.09,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 29,
+      "recall_pct": 18.43,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 30,
+      "recall_pct": 20.12,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 31,
+      "recall_pct": 22.58,
+      "difficulty": "Low (Transitional stability)"
+    },
+    {
+      "layer": 32,
+      "recall_pct": 27.62,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 33,
+      "recall_pct": 22.07,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 34,
+      "recall_pct": 21.31,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 35,
+      "recall_pct": 15.38,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 36,
+      "recall_pct": 21.45,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 37,
+      "recall_pct": 21.21,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 38,
+      "recall_pct": 18.67,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 39,
+      "recall_pct": 22.74,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 40,
+      "recall_pct": 22.24,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 41,
+      "recall_pct": 19.95,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 42,
+      "recall_pct": 22.07,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 43,
+      "recall_pct": 18.06,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 44,
+      "recall_pct": 24.14,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 45,
+      "recall_pct": 27.18,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 46,
+      "recall_pct": 18.12,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    },
+    {
+      "layer": 47,
+      "recall_pct": 15.46,
+      "difficulty": "Near Zero (Deep Semantic Lock)"
+    }
+  ],
+  "verdict": "PROVEN"
+}

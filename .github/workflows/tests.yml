@@ -59,7 +59,7 @@ jobs:
         run: |
           missing=""
           command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
-          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          ldconfig -p 2>/dev/null | grep -q libsndfile || dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
           if [ -n "$missing" ]; then
             echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
             exit 1
@@ -100,7 +100,7 @@ jobs:
         run: |
           missing=""
           command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
-          dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
+          ldconfig -p 2>/dev/null | grep -q libsndfile || dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
           if [ -n "$missing" ]; then
             echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
             exit 1
@@ -121,7 +121,7 @@ jobs:
   # moved to lenovo-spacepilot: measured across several runs this job takes
   # ~30-35s end to end, under the bar for moving it (2026-09-02).
   security:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lenovo]
     timeout-minutes: 10
 
     steps:

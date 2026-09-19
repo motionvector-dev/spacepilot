@@ -1,0 +1,64 @@
+schema: 1
+id: minicpm5-2b
+name: MiniCPM5 2B
+family: openbmb
+kind: text
+summary: Edge-oriented 2B dense model with deep-thinking SFT and RL+OPD distillation, running natively on Apple Silicon.
+homepage: https://github.com/OpenBMB/MiniCPM
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://www.apache.org/licenses/LICENSE-2.0
+
+variants:
+  - id: minicpm5-2b-bf16
+    name: MiniCPM5 2B BF16
+    params: 2.52B
+    precision: bf16
+    repo: openbmb/MiniCPM5-2B
+    revision: 3497c460c89e00520c3cfa2e73f49ab7647f1177
+    backends: [metal, cuda, cpu]
+    download:
+      value: 5033557096
+      source: huggingface-api
+      checked: "2026-09-08"
+    working_set:
+      value: 5494538240
+      source: measured
+      checked: "2026-09-08"
+      note: Measured peak memory during MLX inference run on Apple M1 Max 32GB (5.117 GB).
+    speed:
+      - device: Apple M1 Max 32GB
+        backend: metal
+        metric: tokens_per_second
+        value: 33.30
+        source: measured
+        measured_on: "2026-09-08"
+        note: Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 10.76 tps cold.
+
+  - id: minicpm5-2b-mlx-4bit
+    name: MiniCPM5 2B 4-bit (MLX)
+    params: 2.52B
+    precision: 4bit
+    repo: openbmb/MiniCPM5-2B-MLX
+    revision: e7289deb8bbce9d0284f38073c6117916337d008
+    backends: [metal]
+    download:
+      value: 1416035216
+      source: huggingface-api
+      checked: "2026-09-08"
+    working_set:
+      value: 1695462400
+      source: measured
+      checked: "2026-09-08"
+      note: Measured peak memory during MLX inference run on Apple M1 Max 32GB (1.579 GB).
+    speed:
+      - device: Apple M1 Max 32GB
+        backend: metal
+        metric: tokens_per_second
+        value: 123.88
+        source: measured
+        measured_on: "2026-09-08"
+        note: Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 30.5 tps cold, 60.3 tps warm.

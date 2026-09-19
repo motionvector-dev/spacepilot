@@ -1,0 +1,53 @@
+schema: 1
+id: auk
+name: Tencent AuK
+family: hunyuan
+kind: speech
+summary: >
+  1.5B parameter speech foundation model from Tencent Hunyuan with a 4-step distilled
+  AuK-Flash variant. Delivers zero-shot expressive voice cloning, emotion control,
+  and sub-200ms TTFA voice duplex synthesis.
+homepage: https://github.com/Tencent-Hunyuan/AuK
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://opensource.org/licenses/Apache-2.0
+
+variants:
+  - id: auk-flash-1-5b
+    name: AuK-Flash 1.5B (4-step Distilled)
+    params: 1.5B
+    precision: f16
+    repo: Tencent-Hunyuan/AuK-Flash
+    revision: 0753a812e95a947da75765792ecf048d08595995
+    backends: [cuda, metal, cpu]
+    download:
+      value: 3221225472
+      source: estimated
+      checked: "2026-09-11"
+      note: ~3.0 GiB f16 safetensors checkpoint for 4-step distilled duplex speech.
+    working_set:
+      value: 4294967296
+      source: estimated
+      checked: "2026-09-11"
+      note: ~4.0 GiB working set on Apple Silicon unified memory or NVIDIA CUDA VRAM.
+
+  - id: auk-base-1-5b
+    name: AuK Base 1.5B
+    params: 1.5B
+    precision: f16
+    repo: Tencent-Hunyuan/AuK-Base
+    revision: f613c7c25c345eb67a0e28fdfd475cf2609ebfe8
+    backends: [cuda, metal]
+    download:
+      value: 3221225472
+      source: estimated
+      checked: "2026-09-11"
+      note: Full foundation speech checkpoint for studio editing and voice cloning.
+    working_set:
+      value: 4831838208
+      source: estimated
+      checked: "2026-09-11"
+      note: ~4.5 GiB working set with autoregressive prompt cache.

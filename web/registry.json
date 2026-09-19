@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-10",
+ "generated": "2026-09-19",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -31,6 +31,111 @@
   ]
  },
  "models": [
+  {
+   "id": "auk",
+   "name": "Tencent AuK",
+   "family": "hunyuan",
+   "kind": "speech",
+   "summary": "1.5B parameter speech foundation model from Tencent Hunyuan with a 4-step distilled AuK-Flash variant. Delivers zero-shot expressive voice cloning, emotion control, and sub-200ms TTFA voice duplex synthesis.\n",
+   "homepage": "https://github.com/Tencent-Hunyuan/AuK",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://opensource.org/licenses/Apache-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "auk-flash-1-5b",
+     "model_id": "auk",
+     "name": "AuK-Flash 1.5B (4-step Distilled)",
+     "kind": "speech",
+     "family": "hunyuan",
+     "params": "1.5B",
+     "precision": "f16",
+     "repo": "Tencent-Hunyuan/AuK-Flash",
+     "files": null,
+     "revision": "0753a812e95a947da75765792ecf048d08595995",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal",
+      "cpu"
+     ],
+     "download": {
+      "value": 3221225472.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~3.0 GiB f16 safetensors checkpoint for 4-step distilled duplex speech.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 4294967296.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.0 GiB working set on Apple Silicon unified memory or NVIDIA CUDA VRAM.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "auk-base-1-5b",
+     "model_id": "auk",
+     "name": "AuK Base 1.5B",
+     "kind": "speech",
+     "family": "hunyuan",
+     "params": "1.5B",
+     "precision": "f16",
+     "repo": "Tencent-Hunyuan/AuK-Base",
+     "files": null,
+     "revision": "f613c7c25c345eb67a0e28fdfd475cf2609ebfe8",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 3221225472.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "Full foundation speech checkpoint for studio editing and voice cloning.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 4831838208.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.5 GiB working set with autoregressive prompt cache.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://opensource.org/licenses/Apache-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    }
+   ]
+  },
   {
    "id": "aurasr",
    "name": "AuraSR",
@@ -2978,6 +3083,160 @@
    ]
   },
   {
+   "id": "minicpm5-2b",
+   "name": "MiniCPM5 2B",
+   "family": "openbmb",
+   "kind": "text",
+   "summary": "Edge-oriented 2B dense model with deep-thinking SFT and RL+OPD distillation, running natively on Apple Silicon.",
+   "homepage": "https://github.com/OpenBMB/MiniCPM",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "minicpm5-2b-bf16",
+     "model_id": "minicpm5-2b",
+     "name": "MiniCPM5 2B BF16",
+     "kind": "text",
+     "family": "openbmb",
+     "params": "2.52B",
+     "precision": "bf16",
+     "repo": "openbmb/MiniCPM5-2B",
+     "files": null,
+     "revision": "3497c460c89e00520c3cfa2e73f49ab7647f1177",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda",
+      "cpu"
+     ],
+     "download": {
+      "value": 5033557096.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 5494538240.0,
+      "source": "measured",
+      "checked": "2026-09-08",
+      "note": "Measured peak memory during MLX inference run on Apple M1 Max 32GB (5.117 GB).",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 32GB",
+       "backend": "metal",
+       "metric": "tokens_per_second",
+       "value": 33.3,
+       "source": "measured",
+       "measured_on": "2026-09-08",
+       "note": "Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 10.76 tps cold.",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "minicpm5-2b-bf16",
+       "metric": "tokens_per_second",
+       "solo_median": 33.299,
+       "solo_samples": 1,
+       "observed_median": 33.299,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
+    },
+    {
+     "id": "minicpm5-2b-mlx-4bit",
+     "model_id": "minicpm5-2b",
+     "name": "MiniCPM5 2B 4-bit (MLX)",
+     "kind": "text",
+     "family": "openbmb",
+     "params": "2.52B",
+     "precision": "4bit",
+     "repo": "openbmb/MiniCPM5-2B-MLX",
+     "files": null,
+     "revision": "e7289deb8bbce9d0284f38073c6117916337d008",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 1416035216.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-08",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 1695462400.0,
+      "source": "measured",
+      "checked": "2026-09-08",
+      "note": "Measured peak memory during MLX inference run on Apple M1 Max 32GB (1.579 GB).",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [
+      {
+       "device": "Apple M1 Max 32GB",
+       "backend": "metal",
+       "metric": "tokens_per_second",
+       "value": 123.88,
+       "source": "measured",
+       "measured_on": "2026-09-08",
+       "note": "Single-stream generation via mlx_lm on Apple M1 Max (32-core GPU); prompt prefill 30.5 tps cold, 60.3 tps warm.",
+       "power_source": null,
+       "power_watts": null,
+       "power_limits": null
+      }
+     ],
+     "caveats": [],
+     "compromised": [],
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "minicpm5-2b-mlx-4bit",
+       "metric": "tokens_per_second",
+       "solo_median": 123.878,
+       "solo_samples": 1,
+       "observed_median": 123.878,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "minimax-music",
    "name": "MiniMax Music 3.0",
    "family": "minimax",
@@ -3204,6 +3463,110 @@
      "caveats": [],
      "compromised": [],
      "notes": "DFlash speculative decoding drafter with two-phase inference: 1. inject_kv writes target encoder features into the ring KV cache via per-layer\n   Wk/Wv projections.\n2. draft executes bidirectional attention over injected context and mask tokens,\n   producing K=4 token predictions in a single forward pass.\nPerformance: Acceptance rate at K=4 is 64% (~1.85x generation speedup), verified against HF MuseGlimmerAssistantModel at all 24 sub-layer checkpoints. Heterogeneous Dispatch: Partitions the 5-layer sliding-window drafter to Apple Neural Engine (ANE, 2-5W low power) and target causal transformer layers to Metal GPU without memory copying over unified memory. Agentic Tool Calling: Supports Meta ATEM XML protocol (to=self for reasoning_content, to=<tool> with <atem:function_calls> for function invocation, to=user for visible content) exposed over llm-server OpenAI-compatible SSE streaming endpoint. Memory Fit: Fits comfortably on Apple Silicon unified memory configurations >= 24GB (runs_well on 36GB / 48GB / 64GB+ unified memory).\n"
+    }
+   ]
+  },
+  {
+   "id": "nemotron-3",
+   "name": "NVIDIA Nemotron 3",
+   "family": "nvidia",
+   "kind": "text",
+   "summary": "NVIDIA open-weights foundation model family (Nemotron 3 Ultra, Nano, Lightning) specialized for high-efficiency code generation, reasoning, and multi-agent routing. Integrated into Sakana Fugu Ultra v2 to score 74.3 on the DeepSWE benchmark, routing open weights to beat frontier closed models.\n",
+   "homepage": "https://huggingface.co/nvidia/nemotron-3",
+   "license": {
+    "id": "custom",
+    "open_source": true,
+    "spdx": "LicenseRef-NVIDIA-Open-Model",
+    "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "nemotron-3-nano-4bit",
+     "model_id": "nemotron-3",
+     "name": "Nemotron 3 Nano 4-bit (MLX)",
+     "kind": "text",
+     "family": "nvidia",
+     "params": "8B",
+     "precision": "4bit",
+     "repo": "mlx-community/Nemotron-3-Nano-4bit",
+     "files": null,
+     "revision": "df45459346d0a797c2fe1f938d87a29eb49219df",
+     "is_pinned": true,
+     "backends": [
+      "metal",
+      "cuda"
+     ],
+     "download": {
+      "value": 4831838208.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~4.5 GiB estimated download for 4-bit quantized MLX checkpoint.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 6442450944.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~6.0 GiB working set on Apple Silicon Metal or CUDA VRAM.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "custom",
+      "open_source": true,
+      "spdx": "LicenseRef-NVIDIA-Open-Model",
+      "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
+    },
+    {
+     "id": "nemotron-3-ultra-8bit",
+     "model_id": "nemotron-3",
+     "name": "Nemotron 3 Ultra 8-bit (CUDA / Fleet)",
+     "kind": "text",
+     "family": "nvidia",
+     "params": "34B",
+     "precision": "8bit",
+     "repo": "nvidia/Nemotron-3-Ultra-8bit",
+     "files": null,
+     "revision": "bf6fe0b66ea5a76e01a0cb6064f28aa2a6136d8d",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 36507222016.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~34 GiB download for 8-bit quantized weights.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 42949672960.0,
+      "source": "estimated",
+      "checked": "2026-09-11",
+      "note": "~40 GiB working set with KV cache for agent swarms and DeepSWE routing.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "custom",
+      "open_source": true,
+      "spdx": "LicenseRef-NVIDIA-Open-Model",
+      "url": "https://developer.download.nvidia.com/licenses/nvidia-open-model-license.txt",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null
     }
    ]
   },
@@ -3583,6 +3946,66 @@
      "caveats": [],
      "compromised": [],
      "notes": "The model card documents a dense architecture with rotary position handling extended to its multimodal (video) inputs \u2014 this file does not claim more than that; no separately documented \"spatial coordinate embedding\" primitive was found beyond the base attention mechanism."
+    }
+   ]
+  },
+  {
+   "id": "qwen3-8-splash",
+   "name": "Qwen3.8 Splash (Inco AI)",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Model-specialized Apple-silicon inference engine with fused Metal kernels, 8-bit KV-cache decode, GDN on-chip prefill, and DFlash 2 speculative draft.\n",
+   "homepage": "https://inco.ai/blog/splash/",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-8-27b-splash",
+     "model_id": "qwen3-8-splash",
+     "name": "Qwen3.8 27B Splash (Inco AI)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "27B",
+     "precision": "4bit",
+     "repo": "incoai/Qwen3.8-27B-Splash",
+     "files": null,
+     "revision": "9f8a3c2b1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 16106127360.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "15 GiB weights + 1.2 GiB DFlash 2 draft model package.",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 19595784192.0,
+      "source": "estimated",
+      "checked": "2026-09-17",
+      "note": "~18.25 GiB working set with 32K paged KV cache prefix reuse on Apple Silicon.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Engine compiled around the model using DFlash 2 speculative draft and fused Metal kernels. Published by Inco AI (https://inco.ai/blog/splash/).\n"
     }
    ]
   },

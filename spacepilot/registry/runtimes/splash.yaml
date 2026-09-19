@@ -1,0 +1,28 @@
+schema: 1
+id: splash
+name: Splash
+summary: Model-specialized Apple-silicon inference engine with fused Metal kernels and DFlash 2 speculative draft.
+homepage: https://inco.ai/blog/splash/
+serves: [text]
+backends: [metal]
+license: MIT
+
+install:
+  method: pip
+  package: splash-client
+  min_version: "0.1.0"
+  checked: "2026-09-17"
+python_requires: ">=3.9"
+
+verify:
+  import: splash
+
+runs:
+  - qwen3-8-splash
+notes: >
+  Inco AI open-source inference engine for Apple Silicon. Built around the model
+  with fused Metal kernels, 8-bit KV-cache decode kernels, on-chip GDN prefill,
+  and native DFlash 2 draft speculative decoding. Reopens cached 32K context in
+  123 ms and achieves 210 tok/s on Qwen3.6-35B-A3B and 74 tok/s on Qwen3.8-27B
+  on M5 Pro (48 GB). Runs via Homebrew CLI (`brew install incoai/tap/splash` and
+  `splash serve`), LM Studio Bionic, or OpenAI/Anthropic HTTP daemon on port 8000.
