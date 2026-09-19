@@ -36,13 +36,12 @@ brew install portaudio
 
 ### 2. Installation
 ```bash
-cd /Users/saurabh/code/motionvector/space-voice
-doppler run --project unfoundbox --config dev_personal -- pip install -e .
+pip install -e .
 ```
 
 ### 3. Launch Voice Assistant
 ```bash
-doppler run --project unfoundbox --config dev_personal -- space-voice
+space-voice
 ```
 
 ---

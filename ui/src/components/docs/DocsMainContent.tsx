@@ -55,7 +55,7 @@ export function DocsMainContent() {
             <button className="bg-inset text-ink font-medium border-none px-4 py-3 text-sm cursor-pointer border-r border-line-300 border-b-transparent -mb-[1px]">Terminal</button>
             <button 
               onClick={() => {
-                navigator.clipboard.writeText('npm i -g @spacepilot/cli\ndoppler setup -p spacepilot -c dev_personal\ndoppler run -- spacepilot daemon start --port 8088');
+                navigator.clipboard.writeText('npm i -g @spacepilot/cli\ndoppler setup -p spacepilot -c dev\ndoppler run -- spacepilot daemon start --port 8088');
                 alert('Copied to clipboard!');
               }}
               className="ml-auto bg-transparent border-none text-ink-700 hover:text-ink px-4 py-3 cursor-pointer text-sm transition-colors"
@@ -66,7 +66,7 @@ export function DocsMainContent() {
           <pre className="p-4 overflow-x-auto font-mono text-sm text-ink"><code className="language-bash">
 {`# Install CLI and pull config
 npm i -g @spacepilot/cli
-doppler setup -p spacepilot -c dev_personal
+doppler setup -p spacepilot -c dev
 
 # Run local hardware diagnostics and start daemon
 doppler run -- spacepilot daemon start --port 8088`}

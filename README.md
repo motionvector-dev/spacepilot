@@ -91,24 +91,24 @@ description of what this repo does today.
 ## Setup & Secrets
 
 ```bash
-# Environment setup (Conda or venv)
-conda activate local-ml-py311   # Default recommended ML env at ~/miniconda3
+# Environment setup (venv or conda)
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Secrets are centrally scoped with **Doppler**, project `unfoundbox`, config `dev_personal` at `~/code`:
-```bash
-doppler run -- spacepilot studio
-```
+Configuration variables and provider API keys can be passed as standard environment variables or through any secrets manager (e.g., `.env` or Doppler):
 
-**`LOCAL_WORKER_TOKEN`** is required for gated compute operations. The GPU worker requires it, and all mutating POST endpoints enforce `X-SpacePilot-Token`.
+```bash
+export LOCAL_WORKER_TOKEN="your-token"            # Required for gated worker endpoints
+spacepilot studio
+```
 
 ---
 
 ## Running the Studio
 
 ```bash
-doppler run -- spacepilot studio          # or: python spacepilot/web_api.py
+spacepilot studio                                 # or: python spacepilot/web_api.py
 ```
 
 Serves the Web UI and API on:
