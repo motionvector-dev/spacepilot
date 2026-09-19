@@ -1,8 +1,7 @@
 # SpacePilot 🚀
 
-**Status**: Current
-**Verified**: 2026-09-02 via the `tests` CI run on main (771 passed, 4 skipped,
-run `33631068854`) and reading the tree directly.
+**Status**: v2.8.0 Released on PyPI
+**Verified**: 2026-09-20 via GitHub Release v2.8.0 and pytest test suite on main.
 **Supersedes / Superseded by**: none
 
 > **"You decide what to run. SpacePilot decides how and where."**
@@ -22,14 +21,13 @@ rented box. A CLI, a FastMCP tool server and a zero-build web UI (`/create`,
 ## First run
 
 The canonical install, upgrade, runtime, Qwen text, and MCP instructions live
-in [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). Keep one pipx control-plane
-installation; inference runtimes use separately configured interpreters.
+in [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md).
 
 ```bash
-uv tool install --force .                         # or: uv pip install . / pipx install --force .
+uv tool install spacepilot                         # Global installation from PyPI
 spacepilot probe                                  # what this machine can run
-spacepilot models                                 # which models run here, with the fit verdict
-spacepilot run text --prompt "explain unified memory" --yes
+spacepilot models list                            # which models run here, with the fit verdict
+spacepilot doctor                                 # check environment and dependencies
 ```
 
 What works today:
