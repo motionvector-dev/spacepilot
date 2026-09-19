@@ -26,7 +26,7 @@ Run this from a clean, current checkout:
 ```bash
 git status --short
 git pull --ff-only
-pipx install --force .
+uv tool install --force .                         # or: pipx install --force .
 ```
 
 `--force` replaces the existing `spacepilot` pipx environment in place. Do not

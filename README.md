@@ -26,7 +26,7 @@ in [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md). Keep one pipx control-plane
 installation; inference runtimes use separately configured interpreters.
 
 ```bash
-pipx install --force .                            # install or replace one CLI
+uv tool install --force .                         # or: uv pip install . / pipx install --force .
 spacepilot probe                                  # what this machine can run
 spacepilot models                                 # which models run here, with the fit verdict
 spacepilot run text --prompt "explain unified memory" --yes
