@@ -1,7 +1,7 @@
 [project]
 name = "spacepilot"
 version = "2.8.0"
-description = "SpacePilot: High-performance generative cinema workstation and compute platform"
+description = "SpacePilot: Inference orchestration across the machines you can reach"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
