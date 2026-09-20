@@ -42,7 +42,7 @@ local-ml = [
     "kokoro-onnx>=0.3.0",
     "faster-whisper>=1.0.0",
     "torch>=2.1.0",
-    "scipy>=1.11.0",
+    "scipy>=1.17.1",
 ]
 # The stack `spacepilot/ltx_worker.py` needs, and only it.  The worker runs on
 # the GPU box, never on a laptop or in CI, so none of this is a core dependency
