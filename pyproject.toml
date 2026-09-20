@@ -70,7 +70,7 @@ dev = [
 # tests inject a fake client rather than exercising the real SDK — same
 # pattern as mlx-lm, which also never appears in requirements.txt.
 cloud = [
-    "anthropic>=0.40.0",
+    "anthropic>=1.6.0",
 ]
 
 [project.urls]
