@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
 from spacepilot import __version__
-from spacepilot.paths import checkout_root, env_value, outputs_dir, user_data_dir
+from spacepilot.paths import checkout_root, env_value, outputs_dir, state_root
 
 
 def _resolve_repo_root() -> Path:
@@ -41,18 +41,6 @@ def _package_web_dir() -> Path:
     if override:
         return Path(override).expanduser().resolve()
     return Path(str(resources.files("spacepilot"))) / "web"
-
-
-def _state_root() -> Path:
-    """Where per-user state (the studio token) is kept.
-
-    A checkout keeps it in the checkout, exactly as before, so a dev's token
-    survives where they expect it. An install keeps it under the user data
-    directory — never inside the install tree, which is unbackuped and wiped
-    by the next upgrade.
-    """
-    root = checkout_root()
-    return root if root is not None else user_data_dir()
 
 
 def _get_or_create_studio_token(root: Path) -> str:
@@ -96,7 +84,7 @@ class Settings(BaseModel):
     outputs_dir: Path = Field(default_factory=outputs_dir)
     web_dir: Path = Field(default_factory=_package_web_dir)
 
-    studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(_state_root()))
+    studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(state_root()))
     local_worker_token: Optional[str] = Field(default_factory=lambda: os.environ.get("LOCAL_WORKER_TOKEN"))
 
     # Loopback by default. This server hands out a token that unlocks a shell

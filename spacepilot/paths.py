@@ -217,6 +217,24 @@ def identity_lock_path() -> Path:
     return identity_dir() / IDENTITY_LOCK_FILENAME
 
 
+def state_root() -> Path:
+    """Where per-user state that is not a registry record lives.
+
+    The studio token and `.spacepilot_config.json` follow the same split every
+    other writable path here follows: the checkout when there is one, so a
+    dev's token and config stay where they expect them, and the user data
+    directory otherwise. Never the install tree — `uv tool upgrade` replaces
+    it, and a credential inside a directory package tooling treats as
+    disposable is a credential that disappears on a routine upgrade.
+
+    One function, because answering a path question twice is what produced the
+    original defect: `core/config.py` computed `outputs_dir` a second time and
+    got a different answer than `spacepilot/paths.py` did.
+    """
+    root = checkout_root()
+    return root if root is not None else user_data_dir()
+
+
 def writable_registry_root() -> Path:
     """Where new records go. Never inside site-packages."""
     if env_value(DATA_DIR_ENV, "PLUTO_DATA_DIR", default="").strip():

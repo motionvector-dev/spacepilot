@@ -20,6 +20,7 @@ guards the one thing that arrangement could hide.
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -38,11 +39,26 @@ A_SHIPPED_MODEL = "kokoro-82m-onnx"
 A_SHIPPED_RUNTIME = "mflux"
 
 
+# setuptools stages package data into `build/lib/` and caches the file list in
+# `*.egg-info/SOURCES.txt`, and it reuses both.  A tree that has been built
+# before therefore ships files the current `pyproject.toml` no longer asks for:
+# deleting a whole `package-data` glob changed nothing until these were gone.
+# That is a false green on exactly the gate this file exists to be, so the
+# wheel is built from a clean copy rather than from the working tree.
+_BUILD_ARTIFACTS = shutil.ignore_patterns(
+    "build", "dist", "*.egg-info", ".git", ".claude", "outputs", "media-scratch",
+    "__pycache__", "*.pyc", ".pytest_cache", "node_modules", ".venv", "venv",
+)
+
+
 @pytest.fixture(scope="module")
 def wheel(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("wheel")
+    source = tmp_path_factory.mktemp("source") / "spacepilot"
+    shutil.copytree(ROOT, source, ignore=_BUILD_ARTIFACTS, symlinks=True)
     proc = subprocess.run(
-        [sys.executable, "-m", "pip", "wheel", "--no-deps", "--wheel-dir", str(out), str(ROOT)],
+        [sys.executable, "-m", "pip", "wheel", "--no-deps", "--no-cache-dir",
+         "--wheel-dir", str(out), str(source)],
         capture_output=True, text=True,
     )
     if proc.returncode != 0:
@@ -306,17 +322,44 @@ ADVERTISED_PAGES = [
     "/settings", "/onboarding", "/blueprint", "/docs", "/documentation",
 ]
 
+# Everything above is a `FileResponse` from `api/routes/views.py`. These come
+# through the `StaticFiles` mount in `app.py` instead, which is a second path
+# to `settings.web_dir` and was not covered by curling HTML alone — a page can
+# answer 200 while its stylesheet and its font 404 underneath it.
+STATIC_MOUNT_ASSETS = [
+    "/app.js", "/app.css", "/registry.json", "/theme.js",
+    "/fonts/geist-variable.woff2",
+]
 
-def test_the_wheel_carries_the_web_ui(wheel):
-    """The registry's defect, repeated for the frontend: zero `web/` entries."""
+
+def test_the_wheel_carries_every_file_in_the_web_tree(wheel):
+    """The registry's defect, repeated for the frontend: zero `web/` entries.
+
+    Set equality, not a count. The glob list in pyproject.toml is per
+    extension, so a threshold like ">= 15 html files" stays green while a
+    whole file type silently stops shipping — drop `web/**/*.woff2` and the
+    self-hosted font vanishes, every page still answers 200, and only the
+    typeface is wrong. Comparing against the tree covers every extension that
+    exists now and every one somebody adds later, with nothing to remember.
+    """
+    tree = {
+        p.relative_to(ROOT / "spacepilot").as_posix()
+        for p in (ROOT / "spacepilot" / "web").rglob("*")
+        if p.is_file() and not p.name.startswith(".")
+    }
+    assert tree, "no web tree in the checkout to compare against"
+
     with zipfile.ZipFile(wheel) as z:
-        names = z.namelist()
-    pages = [n for n in names if n.startswith("spacepilot/web/") and n.endswith(".html")]
-    assert len(pages) >= 15, f"only {len(pages)} html files in the wheel"
-    for required in ("index.html", "cockpit.html", "create.html", "onboarding.html", "docs.html"):
-        assert f"spacepilot/web/{required}" in names, f"{required} is not in the wheel"
-    assert "spacepilot/web/app.js" in names
-    assert "spacepilot/web/registry.json" in names
+        shipped = {
+            n[len("spacepilot/"):] for n in z.namelist()
+            if n.startswith("spacepilot/web/") and not n.endswith("/")
+        }
+
+    missing = sorted(tree - shipped)
+    assert not missing, (
+        "files in spacepilot/web/ that the wheel does not carry — each one is a "
+        "missing glob in [tool.setuptools.package-data]:\n  " + "\n  ".join(missing))
+    assert not sorted(shipped - tree), f"wheel carries web files not in the tree: {sorted(shipped - tree)}"
 
 
 def test_the_installed_web_dir_is_inside_the_package(install):
@@ -378,12 +421,12 @@ def test_the_installed_server_serves_every_advertised_page(install):
             pytest.fail("the installed server never came up")
 
         failures = []
-        for path in ADVERTISED_PAGES:
+        for path in ADVERTISED_PAGES + STATIC_MOUNT_ASSETS:
             try:
                 with urllib.request.urlopen(base + path, timeout=10) as r:
                     body = r.read()
-                    if r.status != 200 or b"<" not in body[:200]:
-                        failures.append(f"{path} -> {r.status}")
+                    if r.status != 200 or not body:
+                        failures.append(f"{path} -> {r.status}, {len(body)} bytes")
             except urllib.error.HTTPError as e:
                 failures.append(f"{path} -> {e.code}")
             except Exception as e:  # pragma: no cover - transport failure

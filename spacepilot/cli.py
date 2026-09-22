@@ -31,13 +31,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from spacepilot.paths import checkout_root, env_value, fleet_orders_path, outputs_dir, user_data_dir
+from spacepilot.paths import env_value, fleet_orders_path, outputs_dir, state_root
 
 # Anything read-and-written follows `spacepilot.paths`: the checkout when there
 # is one, the user data directory otherwise. `REPO_ROOT` in an installed copy is
 # site-packages, so deriving these from it wrote the config and the studio token
 # into the install tree, where they are unbackuped and wiped by the next upgrade.
-STATE_ROOT = checkout_root() or user_data_dir()
+STATE_ROOT = state_root()
 OUTPUTS_DIR = outputs_dir()
 # The config carries provider credentials and is machine-local. It is
 # redirectable for the same reason $SPACEPILOT_OUTPUTS_DIR is: without that,
