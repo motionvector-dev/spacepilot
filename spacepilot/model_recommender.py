@@ -4,6 +4,7 @@
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
 from spacepilot.device_probe import GIB, DeviceProfile, probe_local_device, usable_memory_bytes
+from spacepilot.capability import absent, refuse
 from spacepilot.paths import model_recommender_cache_dir, model_recommender_cache_read_dirs
 from spacepilot.verdict import RUNS_SLOWLY, RUNS_WELL, UNKNOWN, WONT_FIT, UnknownModel, fit_verdict
 
@@ -105,10 +106,34 @@ RECOMMENDED_MODEL_CATALOG: List[ModelEntry] = [
 ]
 
 
+# A cache entry smaller than this is not weights. The gated mock downloader
+# left 73-75 byte YAML markers behind ("model_id: …\nsize_gb: …\nsha256: …"),
+# and those markers were being reported as loaded models while `doctor` said
+# the ONNX weights were missing. The lightest real weight file we ship is
+# kokoro-82m (~80 MB), so 1 MiB separates a marker from a model with room to
+# spare, and errs towards calling something a marker.
+WEIGHT_FILE_MIN_BYTES = 1024 * 1024
+
+# One capability-absence shape across every gated subsystem — see
+# spacepilot/capability.py for why a gate and a bad id are not the same answer.
+MODEL_DOWNLOAD = absent(
+    "model_download", "2026-08-24",
+    "Model download is not implemented; this wrote a stub with a mock "
+    "sha256 and claimed success. Gated 2026-08-24.",
+)
+
+
 def is_model_downloaded(model_id: str) -> bool:
-    """Check if a model exists in the local cache."""
+    """Whether real weights for this model are in the local cache.
+
+    One threshold with `cached_model_report`, below. This used `> 10 bytes`,
+    so the two calls answered opposite things about the same 73-byte marker —
+    and this is the one the MCP recommender tool and the cockpit's
+    "Downloaded" badge read.
+    """
     return any(
-        (root / model_id).is_file() and (root / model_id).stat().st_size > 10
+        (root / model_id).is_file()
+        and (root / model_id).stat().st_size >= WEIGHT_FILE_MIN_BYTES
         for root in model_recommender_cache_read_dirs()
     )
 
@@ -123,15 +148,6 @@ def downloaded_model_ids() -> List[str]:
             if path.is_file() and path.name not in values:
                 values.append(path.name)
     return values
-
-
-# A cache entry smaller than this is not weights. The gated mock downloader
-# left 73-75 byte YAML markers behind ("model_id: …\nsize_gb: …\nsha256: …"),
-# and those markers were being reported as loaded models while `doctor` said
-# the ONNX weights were missing. The lightest real weight file we ship is
-# kokoro-82m (~80 MB), so 1 MiB separates a marker from a model with room to
-# spare, and errs towards calling something a marker.
-WEIGHT_FILE_MIN_BYTES = 1024 * 1024
 
 
 def cached_model_report() -> Dict[str, List[str]]:
@@ -250,10 +266,7 @@ def download_model_mock(model_id: str) -> Dict[str, Any]:
     # returned {"status": "downloaded"} — a fabricated download. Disabled so it
     # can no longer report fake success. The real path is a huggingface_hub
     # wrapper writing to the HF cache (see docs/THESIS.md). Mock body below dead.
-    raise NotImplementedError(
-        "Model download is not implemented; this wrote a stub with a mock "
-        "sha256 and claimed success. Gated 2026-08-24."
-    )
+    refuse(MODEL_DOWNLOAD)
     target_entry = next((m for m in RECOMMENDED_MODEL_CATALOG if m.model_id == model_id), None)
     if not target_entry:
         return {"success": False, "error": f"Model {model_id} not found in catalogue."}

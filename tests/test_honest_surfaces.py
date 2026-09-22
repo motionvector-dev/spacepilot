@@ -114,6 +114,66 @@ def test_mcp_and_http_local_status_answer_identically(stub_marker_cache):
     assert mcp == http
 
 
+def test_a_stub_marker_is_not_a_downloaded_model_either(stub_marker_cache):
+    """`is_downloaded` is the same claim under another name.
+
+    It used its own `> 10 bytes` threshold, so the cache report and this call
+    answered opposite things about one file — and this one is what the MCP
+    recommender tool and the cockpit's "Downloaded" badge read.
+    """
+    assert model_recommender.is_model_downloaded("kokoro-82m-tts") is False
+
+    recommendations = model_recommender.recommend_models_for_device()["recommendations"]
+    kokoro = next(r for r in recommendations if r["model_id"] == "kokoro-82m-tts")
+    assert kokoro["is_downloaded"] is False
+
+
+def test_a_real_weight_file_is_downloaded(stub_marker_cache):
+    canonical, _ = stub_marker_cache
+    (canonical / "kokoro-82m-tts").write_bytes(b"\0" * (2 * 1024 * 1024))
+    assert model_recommender.is_model_downloaded("kokoro-82m-tts") is True
+
+
+# ------------------------------------------------- one refusal idiom, not three
+
+
+def test_every_gated_capability_reports_the_same_shape():
+    """Three gated subsystems, one capability-absence shape.
+
+    Without this they drift into three idioms: the reader of a listing then
+    needs to know which subsystem it is looking at to know it is looking at a
+    gate.
+    """
+    from spacepilot.model_recommender import MODEL_DOWNLOAD
+    from spacepilot.services.checkpoint_sync import CHECKPOINT_SYNC
+    from spacepilot.services.lora import LORA_TRAINING
+
+    for capability in (CHECKPOINT_SYNC, LORA_TRAINING, MODEL_DOWNLOAD):
+        assert set(capability) == {"name", "implemented", "gated", "detail"}
+        assert capability["implemented"] is False
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", capability["gated"])
+        assert capability["gated"] in capability["detail"], "the gate names its date"
+
+
+def test_a_gated_call_refuses_in_its_capability_s_own_words():
+    from spacepilot.model_recommender import MODEL_DOWNLOAD, download_model_mock
+    from spacepilot.services.checkpoint_sync import CHECKPOINT_SYNC, CheckpointSyncEngine
+    from spacepilot.services.lora import LORA_TRAINING, lora_manager
+
+    with pytest.raises(NotImplementedError) as exc:
+        CheckpointSyncEngine().create_snapshot("j", 1, 1, 0.1, [])
+    assert str(exc.value) == CHECKPOINT_SYNC["detail"]
+
+    with pytest.raises(NotImplementedError) as exc:
+        lora_manager.create_training_job(
+            name="n", base_model="b", image_paths=[], trigger_word="t")
+    assert str(exc.value) == LORA_TRAINING["detail"]
+
+    with pytest.raises(NotImplementedError) as exc:
+        download_model_mock("kokoro-82m-tts")
+    assert str(exc.value) == MODEL_DOWNLOAD["detail"]
+
+
 # ---------------------------------------------------------------- bug 3
 
 
@@ -138,8 +198,8 @@ def test_every_surface_reports_one_usable_memory_and_one_source():
 
     assert _usable_from(doctor) == expected_gib
     assert _usable_from(probe) == expected_gib
-    assert mcp["vram_usable_gb"] == expected_gib
-    assert http["vram_usable_gb"] == expected_gib
+    assert mcp["vram_usable_gib"] == mcp["vram_usable_gb"] == expected_gib
+    assert http["vram_usable_gib"] == http["vram_usable_gb"] == expected_gib
 
     assert "source: metal" in doctor
     assert "source: metal" in probe

@@ -193,9 +193,12 @@ def test_recommender_cache_writes_canonical_and_reads_legacy(tmp_path, monkeypat
         tmp_path / ".cache" / "pluto" / "models",
     ]
 
+    # Weights, not a marker: `is_model_downloaded` now takes the same
+    # >= 1 MiB threshold as `cached_model_report`, because an 18-byte file
+    # answering True was how a 73-byte stub got rendered as "Downloaded".
     legacy_model = tmp_path / ".cache" / "pluto" / "models" / "kokoro-82m-tts"
     legacy_model.parent.mkdir(parents=True)
-    legacy_model.write_bytes(b"legacy model bytes")
+    legacy_model.write_bytes(b"\0" * (2 * 1024 * 1024))
     from spacepilot import model_recommender
     assert model_recommender.is_model_downloaded("kokoro-82m-tts") is True
     assert model_recommender.downloaded_model_ids() == ["kokoro-82m-tts"]

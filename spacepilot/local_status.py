@@ -35,6 +35,10 @@ def local_status_payload() -> Dict[str, Any]:
         "status": "online",
         "backend": profile.backend,
         "device_name": profile.device_name,
+        # The value is GiB and always was. `vram_usable_gb` keeps the old name
+        # because SpaceBar and the cockpit decode it; `vram_usable_gib` is the
+        # one to read, and says what the number is.
+        "vram_usable_gib": memory["usable_memory_gib"],
         "vram_usable_gb": memory["usable_memory_gib"],
         "vram_usable_known": memory["usable_memory_known"],
         "memory_limit_source": memory["memory_limit_source"],

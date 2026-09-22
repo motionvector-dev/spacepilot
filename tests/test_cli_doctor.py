@@ -97,9 +97,9 @@ class TestCliDoctor(unittest.TestCase):
         vram_line = next(l for l in output.splitlines() if "VRAM" in l)
         self.assertIn("unknown", vram_line)
         # 15.48 GiB is this machine's RAM. It must appear on the RAM line only.
-        self.assertNotIn("15.5", vram_line)
+        self.assertNotIn("15.4", vram_line)
         self.assertNotIn("12.5", vram_line)
-        self.assertIn("15.5GB total", next(l for l in output.splitlines() if l.strip().startswith("RAM")))
+        self.assertIn("15.48 GiB total", next(l for l in output.splitlines() if l.strip().startswith("RAM")))
         self.assertIn("Status   : partial", output)
         self.assertIn("[Not measured]", output)
 
@@ -123,7 +123,7 @@ class TestCliDoctor(unittest.TestCase):
             sys.stdout = sys.__stdout__
         output = captured_output.getvalue()
 
-        self.assertIn("4.0GB present, 0GB usable", output)
+        self.assertIn("4.00 GiB present, 0 GiB usable", output)
         # "can reach this card" was a claim about the hardware. The probe only
         # knows what it looked for and did not find.
         self.assertIn("no compute runtime SpacePilot can use was detected", output)

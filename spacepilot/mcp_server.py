@@ -101,17 +101,21 @@ def spacepilot_get_local_status() -> Dict[str, Any]:
 
 @mcp.tool()
 def spacepilot_create_checkpoint(job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> Dict[str, Any]:
-    """Create a new training checkpoint snapshot.
-    
+    """GATED 2026-09-22 — checkpoint sync is not implemented; this always errors.
+
+    It stored nothing: a genuine sha256 was computed, no bytes were copied, and
+    the record lived in one process's memory, so it vanished on restart and was
+    invisible to the other transport. Do not call this expecting a snapshot.
+
     Args:
         job_id (str): The ID of the training job.
         step (int): The current training step.
         epoch (int): The current training epoch.
         loss (float): The current loss value.
         local_paths (List[str]): List of local file paths to include in the snapshot.
-        
+
     Returns:
-        Dict[str, Any]: The metadata of the created snapshot.
+        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
@@ -146,14 +150,18 @@ def spacepilot_list_checkpoints(job_id: Optional[str] = None) -> Dict[str, Any]:
 
 @mcp.tool()
 def spacepilot_restore_checkpoint(snapshot_id: str, target_dir: Optional[str] = None) -> Dict[str, Any]:
-    """Restore a training checkpoint snapshot.
-    
+    """GATED 2026-09-22 — checkpoint restore is not implemented; this always errors.
+
+    It used to report `"status": "success"` with `target_dir` echoed back while
+    creating no directory and writing no file. Nothing lands on disk; do not
+    proceed as though weights are there.
+
     Args:
         snapshot_id (str): The ID of the snapshot to restore.
         target_dir (str, optional): The local directory to restore to.
-        
+
     Returns:
-        Dict[str, Any]: The restore operation status.
+        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine

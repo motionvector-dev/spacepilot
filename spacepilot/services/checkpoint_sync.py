@@ -26,6 +26,8 @@ class CheckpointMetadata:
     timestamp: str
     mock: bool = False
 
+from spacepilot.capability import absent, refuse
+
 GATE_DATE = "2026-09-22"
 
 # GATED 2026-09-22: none of this subsystem stored anything. `create_snapshot`
@@ -38,15 +40,16 @@ GATE_DATE = "2026-09-22"
 # found". Real checkpoint sync (an S3/R2 upload and download) is a separate,
 # unbuilt feature. Until it exists every entry point refuses rather than
 # pretend, the way LoRA training and model download already do.
-_GATE_DETAIL = (
+CHECKPOINT_SYNC = absent(
+    "checkpoint_sync", GATE_DATE,
     "Checkpoint sync is not implemented. It stored nothing: snapshots were "
     "kept in one process's memory, no bytes were ever uploaded or downloaded, "
-    f"and restore reported success while writing no file. Gated {GATE_DATE}."
+    f"and restore reported success while writing no file. Gated {GATE_DATE}.",
 )
 
 
 def _refuse() -> NoReturn:
-    raise NotImplementedError(_GATE_DETAIL)
+    refuse(CHECKPOINT_SYNC)
 
 
 class CheckpointSyncEngine:
@@ -83,7 +86,7 @@ class CheckpointSyncEngine:
 
     def store_status(self) -> Dict[str, Any]:
         """Why a listing is empty — "no store" is not "this job has none"."""
-        return {"implemented": False, "gated": GATE_DATE, "detail": _GATE_DETAIL}
+        return dict(CHECKPOINT_SYNC)
 
     def _compute_checksum(self, paths: List[str]) -> str:
         h = hashlib.sha256()
