@@ -22,7 +22,7 @@ because it is the one the user can act on.
 | --- | --- | --- | --- |
 | no-mic-permission | "Microphone access is off" | The gap, named. No telemetry, no transcript. | **Open Settings** — deep-links the exact privacy pane |
 | offline-daemon | "SpacePilot is not running" | The reason, the sentence "Voice still works. Fleet data does not.", and `spacepilot serve`. No numbers at all. | **Retry** |
-| idle | "Ready" | Machine name, backend, headroom, loaded models, SpaceBar's own memory | **Talk** |
+| idle | "Ready" | Machine name, backend, headroom, cached models, SpaceBar's own memory | **Talk** |
 | listening | "Listening" | The same, plus what it has heard so far, and a mic-open dot | **Stop** |
 | thinking | "Thinking" | The last thing heard; the transcript panel takes a gold hairline | **Stop** |
 | speaking | "Speaking" | Heard and said, both | **Talk** — talking over it is the interrupt |
@@ -40,7 +40,7 @@ empties rather than leave a last good reading on screen looking current.
 | Zone | Carries | Why there |
 | --- | --- | --- |
 | Header | state dot + one word | The only thing you need at a glance |
-| Machine card | name, backend, headroom, loaded models, SpaceBar's memory rail | The answer to "can I run this here", which is the question |
+| Machine card | name, backend, headroom, cached models, SpaceBar's memory rail | The answer to "can I run this here", which is the question |
 | Transcript | last thing heard, last thing said | Two lines. Not a chat log — a chat log in a popover is a worse chat log |
 | Controls | one verb, mic-open indicator, Quit | One button. The verb changes with the state; the button does not move |
 

@@ -124,7 +124,7 @@ struct DaemonBrain: Brain {
             thermalState: telemetry.thermal,
             backend: daemon?.backend ?? "no reading",
             headroom: daemon?.headroomLine ?? "no reading",
-            loadedModels: daemon?.loadedModels ?? [],
+            cachedModels: daemon?.cachedModels ?? [],
             daemonReachable: daemon != nil
         )
         let messages = [

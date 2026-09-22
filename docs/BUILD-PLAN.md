@@ -95,6 +95,29 @@ by name (`spacepilot/cli.py`, the `_refuse_legacy_aws` docstring) — whoever
 landed it was already treating BUILD-PLAN.md as the Phase 4 pointer, which is
 one more reason to merge this doc rather than leave it orphaned as a PR.
 
+**0.6 DONE (2026-09-22) — three surfaces stopped reporting state that was not
+real.** All three were verified against installed v2.8.0 the same day.
+- `loaded_models` listed 75-byte marker files left by the gated mock downloader
+  as loaded models, while `doctor` correctly said the weights were missing —
+  and the MCP tool and `GET /api/compute/local-status` answered the same
+  question differently at the same instant, because each walked the cache
+  itself. One builder now serves both (`spacepilot/local_status.py`);
+  `loaded_models` is deprecated and always empty, and the cache is reported as
+  `cached_weight_model_ids` / `stub_marker_ids`.
+- Checkpoint sync is gated. It stored nothing: `create_snapshot` computed a
+  genuine sha256 and copied no bytes, `restore_snapshot` reported success and
+  wrote no file, and the records lived in one process's memory, so a snapshot
+  survived neither a restart nor the hop between HTTP and stdio MCP. Every
+  entry point now refuses; a listing carries `store` so an empty list does not
+  read as "this job has no snapshots".
+- Usable memory was computed and printed independently by `doctor`, `probe` and
+  the two status surfaces — 25.0 GB, 24.96 GiB and 28.8 GB for one 32 GB M1 Max
+  at one instant, feeding every fit verdict. One helper
+  (`device_probe.usable_memory_report`), one format (GiB), and the source
+  (`metal` or `heuristic`) now travels with the number on every surface. A
+  process without torch cannot ask Metal and falls back to the heuristic, so
+  that difference is now visible instead of silent.
+
 **0.4 Cockpit fabrications — the first-run page lies first.** All fixes are
 small; the pages themselves are Saurabh's in the design session, so **touch
 logic only, never copy/layout**:

@@ -87,7 +87,7 @@ enum Snapshot {
             voice.lastHeard = "how much headroom have I got"
         case .speaking, .interrupted:
             voice.lastHeard = "how much headroom have I got"
-            voice.lastSaid = "Apple M1 Max · nominal · mlx · 20.5 GB usable · nothing loaded."
+            voice.lastSaid = "Apple M1 Max · nominal · mlx · 20.5 GB usable · nothing cached."
         }
     }
 
