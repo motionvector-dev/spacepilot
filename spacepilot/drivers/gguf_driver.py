@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Union
 
+from spacepilot.api.contracts import SCENE_COUNT_MAX, SCENE_COUNT_MIN
 from spacepilot.drivers.base import DriverSpec, InferenceDriver
 
 logger = logging.getLogger("spacepilot.drivers.gguf")
@@ -193,7 +194,12 @@ class GGUFDriver(InferenceDriver):
         if not script or not script.strip():
             raise ValueError("script cannot be empty")
 
-        scene_count = max(4, min(10, scene_count))
+        # Refuse rather than clamp; see the note in storyboard_decomposer.
+        if not SCENE_COUNT_MIN <= scene_count <= SCENE_COUNT_MAX:
+            raise ValueError(
+                f"scene_count must be between {SCENE_COUNT_MIN} and "
+                f"{SCENE_COUNT_MAX} (got {scene_count})"
+            )
         base_seed = character_seed if character_seed is not None else abs(hash(script.strip())) % 1000000
         prompt = (
             "Return JSON only with one key, scenes, containing exactly "

@@ -11,25 +11,45 @@ except ImportError as exc:  # pragma: no cover - import guard
         f"import failed: {exc}"
     ) from exc
 
-from typing import Optional, Dict, Any, List
+from typing import Annotated, Optional, Dict, Any, List
 
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 
+from spacepilot import __version__ as SERVER_VERSION
 from spacepilot.api import contracts
-from spacepilot.core.config import get_settings
 
 # An empty serverInfo.version told a client nothing about what it was talking
-# to. It is the package version, from the one place that holds it.
-mcp = MCPServer("SpacePilot", version=get_settings().version)
+# to. It comes from the package, never from Settings: constructing Settings
+# mints `.studio_token` through a default factory, and under `uv tool install`
+# that writes a secret into the install tree (the bug #155 exists to fix).
+# This module deliberately imports no config.
+mcp = MCPServer("SpacePilot", version=SERVER_VERSION)
 
 
 def _refused(exc: ValidationError) -> Dict[str, Any]:
-    """The refusal an MCP caller gets for input HTTP would answer with a 422."""
-    return {"status": "error", "message": contracts.describe(exc)}
+    """The refusal an MCP caller gets for input HTTP would answer with a 422.
+
+    Carries `error` as well as `status`/`message` so a client has one key to
+    test across every refusal this server can return — unknown ids answer
+    `{"error": ..., "known": [...]}`, and the two shapes were untestable
+    together.
+    """
+    message = contracts.describe(exc)
+    return {"status": "error", "error": message, "message": message}
 
 
 @mcp.tool()
-def spacepilot_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
+def spacepilot_decompose_storyboard(
+    script: str,
+    # Annotated so `tools/list` publishes the range too. Enforcement is the
+    # shared contract below; this is what a schema-validating client reads,
+    # instead of learning the bounds only from a refusal string.
+    scene_count: Annotated[int, Field(
+        ge=contracts.SCENE_COUNT_MIN, le=contracts.SCENE_COUNT_MAX)] = 6,
+    target_duration_sec: Annotated[float, Field(
+        ge=contracts.DURATION_MIN_SEC, le=contracts.DURATION_MAX_SEC)] = 60.0,
+    style: str = "cinematic",
+) -> Dict[str, Any]:
     """Decompose a high-level narrative script into cinematic storyboard scenes with 3D camera vectors.
 
     Out-of-range values are refused, not clamped: this used to answer a request

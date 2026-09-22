@@ -22,8 +22,25 @@ SCENE_COUNT_MIN, SCENE_COUNT_MAX = 4, 10
 DURATION_MIN_SEC, DURATION_MAX_SEC = 10.0, 300.0
 
 
-class StoryboardDecomposeRequest(BaseModel):
+class ScriptedRequest(BaseModel):
+    """A request carrying a script that must actually say something.
+
+    The emptiness check lived in the HTTP route body, so MCP accepted a blank
+    script that HTTP refused — the same split as `scene_count`, on the same
+    endpoint. It belongs in the model both surfaces share.
+    """
+
     script: str
+
+    @field_validator("script")
+    @classmethod
+    def script_is_not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("script must not be empty or whitespace")
+        return v
+
+
+class StoryboardDecomposeRequest(ScriptedRequest):
     target_duration_sec: float = Field(default=60.0, ge=DURATION_MIN_SEC, le=DURATION_MAX_SEC)
     scene_count: int = Field(default=6, ge=SCENE_COUNT_MIN, le=SCENE_COUNT_MAX)
     style: str = "cinematic"
@@ -31,8 +48,7 @@ class StoryboardDecomposeRequest(BaseModel):
     character_seed: Optional[int] = None
 
 
-class LocalNarrativeDecomposeRequest(BaseModel):
-    script: str
+class LocalNarrativeDecomposeRequest(ScriptedRequest):
     target_duration_sec: float = Field(default=60.0, ge=DURATION_MIN_SEC, le=DURATION_MAX_SEC)
     scene_count: int = Field(default=6, ge=SCENE_COUNT_MIN, le=SCENE_COUNT_MAX)
     style: str = "cinematic"

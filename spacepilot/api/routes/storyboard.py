@@ -19,10 +19,9 @@ router = APIRouter(tags=["storyboard"])
 @router.post("/api/storyboard/decompose")
 def post_storyboard_decompose_api(req: StoryboardDecomposeRequest, _: None = Depends(require_token)):
     """Deconstructs narrative into 6-8 cinematic storyboard scenes with 3D camera trajectory vectors."""
+    # Emptiness is the model's rule now (a 422), so both surfaces refuse the
+    # same blank script; this body used to own it and MCP had no equivalent.
     script_text = req.script.strip()
-    if not script_text:
-        raise HTTPException(status_code=400, detail="Script or prompt text is required")
-    
     update_activity()
     result = decompose_storyboard(
         script=script_text,
@@ -39,9 +38,6 @@ def post_storyboard_decompose_api(req: StoryboardDecomposeRequest, _: None = Dep
 def decompose_local_narrative_api(req: LocalNarrativeDecomposeRequest, _: None = Depends(require_token)):
     """In-process GGUF narrative decomposition driver for screenplay and cinematic scene beats."""
     script_text = req.script.strip()
-    if not script_text:
-        raise HTTPException(status_code=400, detail="Script text cannot be empty")
-
     update_activity()
     try:
         from spacepilot.local_workers import local_worker_manager
