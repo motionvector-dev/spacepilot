@@ -21,6 +21,11 @@ REPO_ROOT = _resolve_repo_root()
 
 
 def _get_or_create_studio_token(root: Path) -> str:
+    # An explicit token skips the file entirely, so nothing that merely imports
+    # the settings mints one into the checkout. The test suite relies on this.
+    explicit = env_value("SPACEPILOT_STUDIO_TOKEN", "PLUTO_STUDIO_TOKEN", default="").strip()
+    if explicit:
+        return explicit
     token_file = root / ".studio_token"
     if token_file.exists():
         try:

@@ -34,8 +34,20 @@ if str(REPO_ROOT) not in sys.path:
 from spacepilot.paths import env_value, fleet_orders_path
 
 OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(REPO_ROOT / "outputs")))
-CONFIG_FILE = REPO_ROOT / ".spacepilot_config.json"
-LEGACY_CONFIG_FILE = REPO_ROOT / ".pluto_config.json"
+# The config carries provider credentials and is machine-local. It is
+# redirectable for the same reason $SPACEPILOT_OUTPUTS_DIR is: without that,
+# anything that exercises `save_config` — the test suite included — overwrites
+# the developer's real credentials and AWS profile. The legacy name follows the
+# canonical one into whatever directory it was pointed at, so the fallback in
+# `load_config` keeps working.
+CONFIG_FILE = Path(
+    env_value(
+        "SPACEPILOT_CONFIG_FILE",
+        "PLUTO_CONFIG_FILE",
+        default=str(REPO_ROOT / ".spacepilot_config.json"),
+    )
+).expanduser()
+LEGACY_CONFIG_FILE = CONFIG_FILE.parent / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path(
     env_value(
         "SPACEPILOT_SSH_KEY",
