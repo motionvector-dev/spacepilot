@@ -325,8 +325,14 @@ def spacepilot_list_runtimes() -> dict:
                            and st.python_compatible,
             "reason": st.reason, "python_note": st.python_note,
             "runs": r.runs, "license": r.license,
+            # An isolated runtime does not live in the interpreter named
+            # below, so each row carries the one it is actually checked in.
+            "interpreter": st.interpreter or rt.interpreter(),
+            "isolated": r.install.isolated,
         })
-    return {"backend": profile.backend, "interpreter": rt.interpreter(), "runtimes": out}
+    return {"backend": profile.backend,
+            # The shared interpreter; see each runtime's own field above.
+            "interpreter": rt.interpreter(), "runtimes": out}
 
 
 @mcp.tool()
@@ -344,8 +350,11 @@ def spacepilot_preview_runtime_install(runtime_id: str) -> dict:
         return {"error": f"no runtime '{runtime_id}'", "known": sorted(rt.runtimes())}
     imp = rt.preview(r)
     return {"runtime_id": runtime_id,
-            "command": " ".join(rt.install_command(r)),
-            "interpreter": rt.interpreter(), **imp.to_dict()}
+            "command": " ".join(rt.install_command(r, probe=True)),
+            # The interpreter this runtime actually installs into -- its own
+            # venv when it is `isolated`, not whatever the daemon runs under.
+            "interpreter": rt.runtime_python(runtime_id),
+            "isolated": r.install.isolated, **imp.to_dict()}
 
 
 @mcp.tool()
@@ -364,7 +373,7 @@ def spacepilot_install_runtime(runtime_id: str, allow_downgrade: bool = False) -
 
     imp = rt.preview(r)
     if imp.error:
-        return {"installed": False, "error": imp.error}
+        return {"installed": False, "blocked": True, "error": imp.error}
     if imp.is_disruptive and not allow_downgrade:
         return {"installed": False, "refused": "would downgrade a package",
                 "downgrades": imp.downgrades,

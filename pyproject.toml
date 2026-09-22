@@ -115,4 +115,6 @@ markers = [
 ]
 # Deselected from the default run, not from CI: the packaging job runs
 # `pytest -m packaging`, and a later -m on the command line overrides this one.
-addopts = "-m 'not packaging'"
+# -rs: every skip names itself in the summary. A gate that stops
+# running must read loudly, never as a quiet green.
+addopts = "-m 'not packaging' -rs"

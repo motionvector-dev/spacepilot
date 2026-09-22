@@ -53,10 +53,15 @@ def list_runtimes():
             # compatible — separate from whether it happens to be installed.
             "usable_here": bool(profile.backend and profile.backend in r.backends)
                            and st.python_compatible,
+            # Per runtime, because an `isolated` one does not live in the
+            # interpreter named below. Free: `check()` already resolved it.
+            "interpreter": st.interpreter or rt.interpreter(),
+            "isolated": r.install.isolated,
         })
     return {
         "backend": profile.backend,
         "chip": profile.chip,
+        # The shared interpreter. An isolated runtime reports its own above.
         "interpreter": rt.interpreter(),
         "runtimes": out,
     }
@@ -77,8 +82,11 @@ async def preview_install(runtime_id: str):
     imp = await asyncio.to_thread(rt.preview, r)
     return {
         "runtime_id": runtime_id,
-        "command": " ".join(rt.install_command(r)),
-        "interpreter": rt.interpreter(),
+        "command": " ".join(rt.install_command(r, probe=True)),
+        # The interpreter this runtime installs into, which for an
+        # `isolated` runtime is its own venv rather than the daemon's.
+        "interpreter": rt.runtime_python(runtime_id),
+        "isolated": r.install.isolated,
         **imp.to_dict(),
     }
 

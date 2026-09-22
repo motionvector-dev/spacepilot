@@ -14,6 +14,25 @@ from spacepilot.drivers.base import DriverSpec, InferenceDriver
 RESULT_PREFIX = "SPACEPILOT_RESULT "
 CHUNK_PREFIX = "SPACEPILOT_CHUNK "
 
+# Runs inside `python_bin` (mlx-lm's own venv), so it imports nothing of
+# SpacePilot's. Builds the prompt exactly the way mlx_lm_runner.py does, or
+# the count would not describe the call that follows it.
+_COUNT_TOKENS_SCRIPT = """
+import json, sys
+from pathlib import Path
+from mlx_lm.tokenizer_utils import load as load_tokenizer
+
+payload = json.loads(sys.stdin.read())
+tokenizer = load_tokenizer(Path(payload["snapshot"]))
+messages = payload["messages"]
+if tokenizer.has_chat_template:
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True)
+else:
+    prompt = messages[-1].get("content", "") if messages else ""
+print(len(tokenizer.encode(prompt)))
+"""
+
 
 class MlxLmSubprocessError(RuntimeError):
     """The isolated MLX-LM worker failed or returned unverifiable output."""
@@ -30,9 +49,11 @@ class MlxLmDriver(InferenceDriver):
             driver_id=driver_id, task="text", backend="metal",
             resident_vram_gb=18.0, is_loaded=False,
         ))
-        from spacepilot.runtimes import interpreter
+        from spacepilot.runtimes import runtime_python
         self.variant_id = variant_id
-        self.python_bin = python_bin or interpreter()
+        # mlx-lm installs into its own venv, so this is that venv's
+        # interpreter once it exists and the shared one otherwise.
+        self.python_bin = python_bin or runtime_python("mlx-lm")
         self.resolved_revision: Optional[str] = None
 
     def load(self) -> bool:
@@ -84,21 +105,32 @@ class MlxLmDriver(InferenceDriver):
         deciding whether a run is worth starting at all. Builds the prompt
         the same way `mlx_lm_runner.py` does, so the count matches what a
         real call would actually send.
+
+        Counted inside `python_bin`, not here: mlx-lm lives in its own venv
+        now, so this process has nothing to import. An unavailable runtime
+        returns None -- a count is an optimisation, never a reason to fail a
+        request that would otherwise run.
         """
         variant_id = variant_id or self.variant_id
         resolved = self.asset_dir(variant_id)
         if resolved is None:
             return None
         snapshot, _revision = resolved
-        from mlx_lm.tokenizer_utils import load as load_tokenizer
-
-        tokenizer = load_tokenizer(Path(snapshot))
-        if tokenizer.has_chat_template:
-            prompt = tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True)
-        else:
-            prompt = messages[-1].get("content", "") if messages else ""
-        return len(tokenizer.encode(prompt))
+        try:
+            proc = subprocess.run(
+                [self.python_bin, "-c", _COUNT_TOKENS_SCRIPT],
+                input=json.dumps({"snapshot": snapshot, "messages": messages}),
+                capture_output=True, text=True, timeout=120,
+                env=self._offline_env(),
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if proc.returncode != 0:
+            return None
+        try:
+            return int((proc.stdout or "").strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            return None
 
     def route_status(self, variant_id: Optional[str] = None) -> tuple[bool, str]:
         variant_id = variant_id or self.variant_id
@@ -118,8 +150,13 @@ class MlxLmDriver(InferenceDriver):
         max_kv_size: int, temperature: float, stream: bool,
         messages: Optional[list] = None,
     ) -> list[str]:
+        from spacepilot.drivers import mlx_lm_runner
+        # By file path, never `-m spacepilot.drivers.mlx_lm_runner`: this
+        # interpreter is mlx-lm's own venv, which has no `spacepilot` package
+        # in it. The runner imports only the standard library and mlx_lm, so
+        # running it as a plain script is enough.
         cmd = [
-            self.python_bin, "-m", "spacepilot.drivers.mlx_lm_runner",
+            self.python_bin, mlx_lm_runner.__file__,
             "--model", snapshot, "--output", out_path,
             "--max-tokens", str(max_tokens), "--max-kv-size", str(max_kv_size),
             "--temperature", str(temperature),

@@ -10,6 +10,7 @@ license: MIT
 install:
   method: pip
   package: mlx-lm
+  isolated: true
   min_version: "0.31.3"
   constraints:
     - "transformers>=5.12.1,<5.13"
@@ -27,6 +28,11 @@ notes: >
   The first SpacePilot route is intentionally one-shot and bounded. It consumes
   only a pinned local snapshot, caps output and KV cache size, and does not
   change macOS iogpu.wired_limit_mb.
+  Installed into its own venv (`isolated: true`): resolving mlx-lm into a
+  shared interpreter downgrades tokenizers 0.23.2 -> 0.22.2, measured
+  2026-09-22 against the released v2.8.0 tool venv. Both drivers run their
+  runner as a subprocess of that venv's interpreter, by file path, so the venv
+  needs mlx-lm and nothing of SpacePilot's own.
   Transformers is capped below 5.13 because mlx-lm 0.31.3 passes a string to
   AutoTokenizer.register and fails during import on 5.13; upstream fixed it
   after the 0.31.3 release. Remove the cap only after a fixed mlx-lm release is

@@ -29,9 +29,11 @@ class MlxEmbedDriver(InferenceDriver):
             driver_id=driver_id, task="embedding", backend="metal",
             resident_vram_gb=0.7, is_loaded=False,
         ))
-        from spacepilot.runtimes import interpreter
+        from spacepilot.runtimes import runtime_python
         self.variant_id = variant_id
-        self.python_bin = python_bin or interpreter()
+        # Embeddings come out of the same mlx-lm runtime, so they follow it
+        # into its isolated venv.
+        self.python_bin = python_bin or runtime_python("mlx-lm")
         self.resolved_revision: Optional[str] = None
 
     def load(self) -> bool:
@@ -99,8 +101,11 @@ class MlxEmbedDriver(InferenceDriver):
             raise MlxEmbedSubprocessError(
                 f"weights are not cached; run `spacepilot recipes download {variant_id}`")
         snapshot, revision = resolved
+        from spacepilot.drivers import mlx_embed_runner
+        # By file path for the same reason as the text runner: mlx-lm's
+        # isolated venv has mlx_lm in it and nothing of SpacePilot's own.
         cmd = [
-            self.python_bin, "-m", "spacepilot.drivers.mlx_embed_runner",
+            self.python_bin, mlx_embed_runner.__file__,
             "--model", snapshot, "--output", out_path,
             "--max-tokens", str(max_tokens),
         ]
