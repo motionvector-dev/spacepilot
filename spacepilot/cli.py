@@ -31,9 +31,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from spacepilot.paths import env_value, fleet_orders_path
+from spacepilot.paths import env_value, fleet_orders_path, outputs_dir, state_root
 
-OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(REPO_ROOT / "outputs")))
+# Anything read-and-written follows `spacepilot.paths`: the checkout when there
+# is one, the user data directory otherwise. `REPO_ROOT` in an installed copy is
+# site-packages, so deriving these from it wrote the config and the studio token
+# into the install tree, where they are unbackuped and wiped by the next upgrade.
+STATE_ROOT = state_root()
+OUTPUTS_DIR = outputs_dir()
 # The config carries provider credentials and is machine-local. It is
 # redirectable for the same reason $SPACEPILOT_OUTPUTS_DIR is: without that,
 # anything that exercises `save_config` — the test suite included — overwrites
@@ -48,9 +53,10 @@ _CONFIG_OVERRIDE = (env_value("SPACEPILOT_CONFIG_FILE", "PLUTO_CONFIG_FILE", def
 CONFIG_FILE = (
     Path(_CONFIG_OVERRIDE).expanduser()
     if _CONFIG_OVERRIDE
-    else REPO_ROOT / ".spacepilot_config.json"
+    else STATE_ROOT / ".spacepilot_config.json"
 )
 LEGACY_CONFIG_FILE = CONFIG_FILE.parent / ".pluto_config.json"
+STUDIO_TOKEN_FILE = STATE_ROOT / ".studio_token"
 KEY_FILE_DEFAULT = Path(
     env_value(
         "SPACEPILOT_SSH_KEY",
@@ -632,7 +638,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print(f"             {line}")
 
     # 5. Studio Token check
-    token_path = REPO_ROOT / ".studio_token"
+    token_path = STUDIO_TOKEN_FILE
     if token_path.exists():
         print(f"  Session  : ✅ Token found (.studio_token)")
     else:

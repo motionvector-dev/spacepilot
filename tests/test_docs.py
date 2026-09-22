@@ -50,7 +50,7 @@ def test_docs_page_contains_core_architecture_sections():
 
 def test_docs_js_syntax_is_valid():
     """Verify web/docs.js syntax with node."""
-    docs_js_path = REPO_ROOT / "web" / "docs.js"
+    docs_js_path = REPO_ROOT / "spacepilot" / "web" / "docs.js"
     assert docs_js_path.exists()
 
     res = subprocess.run(["node", "-c", str(docs_js_path)], capture_output=True, text=True)

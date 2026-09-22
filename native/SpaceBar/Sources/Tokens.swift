@@ -1,6 +1,6 @@
 // Tokens.swift — GENERATED. Do not edit.
 //
-// Source:    web/spacebar/tokens.css
+// Source:    spacepilot/web/spacebar/tokens.css
 // Generator: native/SpaceBar/tools/gen_tokens.py
 //
 // Every colour in SpaceBar is written down once, in the CSS file, so the
