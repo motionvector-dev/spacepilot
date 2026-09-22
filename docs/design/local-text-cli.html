@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This Mac — local text, 22 Sep 2026</title>
+<style>
+  :root {
+    --ink: #1c1915;
+    --paper: #f4efe6;
+    --rule: #d9d0c2;
+    --muted: #6e675e;
+    --ok: #1f6b45;
+    --ok-bg: #e5f2ea;
+    --bad: #8c2f2f;
+    --bad-bg: #f8e8e4;
+    --wait: #8a5a12;
+    --wait-bg: #f8efd8;
+    --accent: #c4552a;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); color: var(--ink); }
+  body {
+    margin: 0 auto;
+    max-width: 920px;
+    padding: 48px 28px 80px;
+    font: 17px/1.45 "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  }
+  header { border-bottom: 1px solid var(--ink); padding-bottom: 18px; margin-bottom: 28px; }
+  .kicker {
+    font: 12px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  h1 { font-weight: 500; font-size: 40px; line-height: 1.05; margin: 0 0 10px; letter-spacing: -0.02em; }
+  .lede { margin: 0; max-width: 62ch; color: var(--ink); }
+  h2 {
+    font: 13px/1.2 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 36px 0 12px;
+  }
+  p { margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font: 11px/1.2 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  code, .mono { font: 13px/1.35 ui-monospace, "SF Mono", Menlo, monospace; }
+  .pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font: 11px/1.5 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .ok { background: var(--ok-bg); color: var(--ok); }
+  .bad { background: var(--bad-bg); color: var(--bad); }
+  .wait { background: var(--wait-bg); color: var(--wait); }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card {
+    border: 1px solid var(--rule);
+    padding: 14px 16px 12px;
+    background: #fbf8f2;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 18px; font-weight: 500; }
+  .card p { margin: 0; color: #3c3832; font-size: 15px; }
+  .num { font-variant-numeric: tabular-nums; }
+  ol { margin: 0; padding-left: 1.2em; }
+  li { margin: 0 0 10px; }
+  li strong { font-weight: 600; }
+  footer {
+    margin-top: 36px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font: 12px/1.4 ui-monospace, Menlo, monospace;
+  }
+  @media (max-width: 700px) {
+    body { padding: 28px 16px 56px; }
+    h1 { font-size: 32px; }
+    .cards { grid-template-columns: 1fr; }
+    table { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="kicker">SpacePilot · M1 Max · 32 GB · 22 Sep 2026</p>
+  <h1>What this Mac actually ran.</h1>
+  <p class="lede">Every number below is from a solo run on this machine, temperature 0, one model at a time. Vendor scores from the model cards are not in this page.</p>
+</header>
+
+<h2>CLI runs</h2>
+<p><span class="mono">spacepilot run text</span> applies the chat template and leaves thinking on. A 64-token cap then often dies inside the trace.</p>
+<table>
+  <thead>
+    <tr><th>Model</th><th>Load</th><th>Peak</th><th>Decode</th><th>2 + 2</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Maple-Preview 2-bit<br><span class="mono">maple-preview-2bit-mlx</span></td>
+      <td class="num">0.9 s</td>
+      <td class="num">7.0 GB</td>
+      <td class="num">132 tok/s</td>
+      <td><span class="pill ok">answered</span><br>after a short think</td>
+    </tr>
+    <tr>
+      <td>LFM2.5 8B-A1B 4-bit<br><span class="mono">lfm2-5-8b-a1b-mlx-4bit</span></td>
+      <td class="num">1.7 s</td>
+      <td class="num">4.9 GB</td>
+      <td class="num">129 tok/s</td>
+      <td><span class="pill bad">no answer</span><br>64 tokens, all inside &lt;think&gt;, recorded as ok</td>
+    </tr>
+    <tr>
+      <td>MiMo distill 9B<br><span class="mono">mimo-v2-6-distill-qwen-9b-optiq-4bit</span></td>
+      <td class="num">2.5 s</td>
+      <td class="num">7.3 GB</td>
+      <td class="num">42 tok/s</td>
+      <td><span class="pill ok">answered</span><br>after a think</td>
+    </tr>
+    <tr>
+      <td>Ternary Bonsai 2 27B<br><span class="mono">ternary-bonsai-2-27b-mlx-2bit</span></td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td><span class="pill bad">refused to load</span><br><span class="mono">prism_hadamard_qwen35</span> is not in mlx-lm 0.31.3</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Same three prompts, thinking off</h2>
+<p>These were not CLI runs. The template was called with thinking disabled. Each model got a Python function, a train-time arithmetic problem, and a stock price it should refuse to invent.</p>
+<table>
+  <thead>
+    <tr><th>Model</th><th>Load</th><th>Decode</th><th>Answers</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Qwen3.5-9B 4-bit<br><span class="muted">not in the registry</span></td>
+      <td class="num">1.7 s</td>
+      <td class="num">55–59 tok/s</td>
+      <td><span class="pill ok">all three correct</span></td>
+    </tr>
+    <tr>
+      <td>MiMo distill, same body</td>
+      <td class="num">2.3 s</td>
+      <td class="num">38–47 tok/s</td>
+      <td><span class="pill ok">same answers, slower</span></td>
+    </tr>
+    <tr>
+      <td>Gemma 4 26B-A4B 4-bit<br>about 3.8B active</td>
+      <td class="num">6.0 s</td>
+      <td class="num">55–65 tok/s</td>
+      <td><span class="pill ok">same answers, shorter</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>What the registry serves</h2>
+<p>Order is the serve list. The first text model is the default when <span class="mono">--model</span> is omitted. That is still Qwen3-8 27B. We did not run it this week.</p>
+<table>
+  <thead>
+    <tr><th></th><th>Id</th><th>On this machine</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1 default</td><td class="mono">qwen3-8-27b-4bit</td><td><span class="pill wait">not run</span></td></tr>
+    <tr><td>2</td><td class="mono">qwen1-5-moe-a2-7b-chat-4bit</td><td><span class="pill wait">not run</span></td></tr>
+    <tr><td>3</td><td class="mono">mimo-v2-6-distill-qwen-9b-optiq-4bit</td><td><span class="pill ok">ran</span></td></tr>
+    <tr><td>4</td><td class="mono">gemma4-26b-a4b-it-4bit</td><td><span class="pill ok">ran, thinking off</span></td></tr>
+    <tr><td>5</td><td class="mono">maple-preview-2bit-mlx</td><td><span class="pill ok">ran</span></td></tr>
+    <tr><td>6</td><td class="mono">ternary-bonsai-2-27b-mlx-2bit</td><td><span class="pill bad">cannot load</span></td></tr>
+    <tr><td>7</td><td class="mono">lfm2-5-8b-a1b-mlx-4bit</td><td><span class="pill wait">ran, no answer</span></td></tr>
+  </tbody>
+</table>
+
+<h2>Spec, four behaviors</h2>
+<div class="cards">
+  <article class="card">
+    <h3>1. Thinking off by default</h3>
+    <p><span class="mono">--thinking off|on</span>. Off passes <span class="mono">enable_thinking=False</span> when the template accepts it. On is explicit, and the token cap has to cover the trace. No effort ladder.</p>
+  </article>
+  <article class="card">
+    <h3>2. A think-only transcript is a failure</h3>
+    <p>Non-empty is not an answer. If the cap ends inside an unclosed <span class="mono">&lt;think&gt;</span>, exit non-zero. Keep the speed number. LFM’s template does not honor the flag. The weights write the tag themselves.</p>
+  </article>
+  <article class="card">
+    <h3>3. Ready means this MLX can load it</h3>
+    <p>Import <span class="mono">mlx_lm.models.&lt;model_type&gt;</span> before the plan says ready. Bonsai was marked ready, then the child exited 1. Registry notes drift. The installed package does not.</p>
+  </article>
+  <article class="card">
+    <h3>4. The download bar tracks bytes</h3>
+    <p>Xet writes one large <span class="mono">.incomplete</span> shard, so the bar sits at 0% and then jumps. Count those bytes. One overwritten line, not a new line every tick.</p>
+  </article>
+</div>
+
+<h2>Where the repo is, 22 Sep</h2>
+<p>Checked before this page was extended. Main is <span class="mono">20bc86d</span>, even with origin. The model entries and this file ship with the CLI honesty change. Five agent worktrees under <span class="mono">.claude/worktrees</span> still exist. Their PRs are already merged: packaging (#155), MCP/CLI contract (#156), honest status (#158), pip-less runtimes (#153), test isolation (#164). Nothing in those worktrees is the next feature.</p>
+<table>
+  <thead>
+    <tr><th>Open PR</th><th>Age</th><th>What it is</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/122">#122</a> draft</td><td>2 Sep</td><td>SpaceBar CoreAI brain. An exported <span class="mono">.aimodel</span> inside the menu bar app.</td></tr>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/131">#131</a></td><td>8 Sep</td><td>Muse Glimmer CoreAI recipe, K=4 DFlash drafter.</td></tr>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/130">#130</a></td><td>8 Sep</td><td>MiniCPM5-2B, with flown M1 Max numbers.</td></tr>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/134">#134</a></td><td>10 Sep</td><td>Voice daemon has an on-device wake word. SpaceBar holds to talk by choice.</td></tr>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/125">#125</a> draft</td><td>3 Sep</td><td>Shared speech API for the Archie demo.</td></tr>
+    <tr><td><a href="https://github.com/motionvector-dev/spacepilot/pull/94">#94</a> <a href="https://github.com/motionvector-dev/spacepilot/pull/124">#124</a></td><td>late Aug</td><td>SpaceBar menu-bar HUD and a ship icon. Drafts.</td></tr>
+    <tr><td>#150–152</td><td>20 Sep</td><td>Dependabot: scipy, anthropic, torchao.</td></tr>
+  </tbody>
+</table>
+<p><span class="mono">docs/BUILD-PLAN.md</span> was last revalidated 2 Sep. It still says <span class="mono">run speech</span> and <span class="mono">run transcribe</span> do not exist. They do, on current main. The README first-run path is also in. Treat phases 0.4 (cockpit lies) and 2–4 (providers, ranking, docks) as the written plan, and re-check a line before building it. <span class="mono">feat/registry-sept-2026-models</span> is a parked branch from 12 Sep with no PR.</p>
+
+<h2>Now — the honesty lane</h2>
+<p>These four behaviors are in this tree. They do not pick a new default model and they do not start a Core AI port.</p>
+<ol>
+  <li><strong>Thinking off by default.</strong> One flag. Record it on the measurement.</li>
+  <li><strong>A think-only transcript fails.</strong> Speed can still be stored.</li>
+  <li><strong>Ready means this MLX can load the architecture.</strong> Bonsai would have been caught.</li>
+  <li><strong>Download progress counts bytes,</strong> including the incomplete shard.</li>
+</ol>
+
+<h2>Next — a model that can stay on</h2>
+<p>From <span class="mono">docs/design/VISION.md</span>: free when the machine can do it, Core AI when the on-device Apple model is too small, a rented box only after that. Coding models are where that pays first. What we measured this week, and only that:</p>
+<table>
+  <thead>
+    <tr><th>Candidate</th><th>Why it is on the list</th><th>Blocker</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Gemma 4 26B-A4B</td><td>Best answers we actually compared. 55–65 tok/s with thinking off. About 15 GB.</td><td>No Core AI bundle. The other Gemma 4 sizes already have one.</td></tr>
+    <tr><td>Maple-Preview</td><td>Fastest CLI run. 132 tok/s, 7 GB peak, 5.3 GB on disk.</td><td>Ternary MoE. A Core AI port is a new kernel, not a recipe swap.</td></tr>
+    <tr><td>LFM2.5 8B-A1B</td><td>Loads. 4.9 GB peak. The 8B already has a community Core AI bundle.</td><td>It thinks by default, and the template will not turn that off.</td></tr>
+    <tr><td>Qwen3.5-9B</td><td>Same quality as MiMo on three prompts, faster. The exporter already exists.</td><td>Not in the registry. The teach-the-port model, not the one to leave running.</td></tr>
+    <tr><td>Bonsai 2 27B</td><td>About 8.6 GB for a 27B-class body. A community <span class="mono">.aimodel</span> exists.</td><td>Stock MLX cannot load it. The published bundle targets an M4, not this M1.</td></tr>
+  </tbody>
+</table>
+
+<h2>Later — the thesis, still gated</h2>
+<p>VISION and the build plan agree on the order. None of this starts while the CLI still records a non-answer as success.</p>
+<ol>
+  <li><strong>Fit before download.</strong> The plan already says what fits. Bonsai showed the gap: the plan said ready, the child could not load.</li>
+  <li><strong>Rank routes.</strong> Warm local above a priced API when the numbers say so, and show why. Phase 3. The warm half can land before any provider.</li>
+  <li><strong>One router, not N provider drivers.</strong> Phase 2. LiteLLM is a declared dependency that no shipped code imports. Money stays loud: price before, actual after. The build plan says this waits until Saurabh is in the room.</li>
+  <li><strong>Send work to another machine, then a dock.</strong> The daemon can see peers and cannot dispatch. No dollar budget exists yet. A dock does not start before that.</li>
+  <li><strong>SpaceBar voice, read-only.</strong> Duplex voice on Apple’s on-device model, then Core AI, then a rented box. The menu bar app must not change daemon state until that rule is lifted in writing. #122 and #134 are the open drafts.</li>
+  <li><strong>Cockpit stops inventing numbers.</strong> Phase 0.4 is still the written bug list. <span class="mono">ui/</span> exists and is not what the server serves. Whether it replaces <span class="mono">web/</span> is still an open call. No agent rewrites marketing copy.</li>
+</ol>
+
+<h2>Leave alone</h2>
+<ol>
+  <li><strong>One-shot process.</strong> Load, answer, exit, memory returns. A resident server fights that.</li>
+  <li><strong>The 256-token safe cap.</strong> Reasoners ask for more by turning thinking on, not by raising the default.</li>
+  <li><strong>The default model.</strong> Changing it off Qwen3-8 is a product choice, not part of making the command honest.</li>
+  <li><strong>Stdin, a system message, and <span class="mono">--json</span>.</strong> Later, for agents. Not what made these runs lie.</li>
+</ol>
+
+<h2>Questions that pick the next lane</h2>
+<ol>
+  <li><strong>Which model stays loaded?</strong> Gemma 4 26B-A4B, Maple, or LFM 8B. Qwen3-8 stays the CLI default until that is chosen.</li>
+  <li><strong>Which lane is first?</strong> The four CLI fixes, or a Core AI port. The port that teaches the tools is Qwen3.5-9B. The port that earns a permanent place is Gemma 4 26B-A4B.</li>
+  <li><strong>September PRs.</strong> Close #122, #130, #131, and #134, or revive them as the SpaceBar lane?</li>
+  <li><strong>Money.</strong> The 25 Aug rule still says providers and docks wait until you are in the room. Say if that has changed.</li>
+</ol>
+
+<footer>
+  Uncommitted. Speeds are one short generation unless a range is shown.
+  Maple, MiMo, and LFM CLI figures include thinking tokens. The three-prompt table does not.
+  Open PRs and worktrees checked 22 Sep 2026 against origin/main 20bc86d.
+  BUILD-PLAN.md was not re-audited line by line. Phase 1.4 and 1.5 look done. 0.4 and phases 2–4 were not re-proven.
+</footer>
+</body>
+</html>

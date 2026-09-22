@@ -113,6 +113,9 @@ CAVEAT_CAPABILITY_ALIASES = {
 
 SPEED_METRICS = {
     "tokens_per_second",
+    # Prefill and decode are different phases. text_execution records both
+    # under one run_id so a median of one is not mixed into the other.
+    "prompt_tokens_per_second",
     "seconds_per_image",
     "seconds_per_second_of_video",
     "realtime_factor",

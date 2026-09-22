@@ -1,0 +1,49 @@
+schema: 1
+id: mimo-v2-6-distill-qwen-9b
+name: MiMo-V2.6 Distill Qwen 9B
+family: xiaomi
+kind: text
+summary: >
+  Xiaomi's 9B agent student. Supervised fine-tune of Qwen3.5-9B on
+  MiMo-V2.6 traces, served here as an MLX mixed 4/8-bit OptiQ build.
+homepage: https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B/blob/main/LICENSE
+
+variants:
+  - id: mimo-v2-6-distill-qwen-9b-optiq-4bit
+    name: MiMo-V2.6 Distill Qwen 9B OptiQ 4-bit (MLX)
+    params: 9B
+    precision: 4bit
+    repo: mlx-community/MiMo-V2.6-Distill-Qwen-9B-OptiQ-4bit
+    revision: f8642c8eff3159d84518ad005c95d940f359e538
+    files:
+      - chat_template.jinja
+      - config.json
+      - generation_config.json
+      - model-00001-of-00002.safetensors
+      - model-00002-of-00002.safetensors
+      - model.safetensors.index.json
+      - optiq/metadata.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 7120891874
+      source: huggingface-api
+      checked: "2026-09-22"
+      note: >
+        Sum of the nine files named above from the Hub tree on this date.
+        Excludes README and .gitattributes. OptiQ assigns 4 or 8 bits per
+        tensor; 4-bit is the predominant width, not a uniform quant.
+    working_set:
+      value: 9268375522
+      source: estimated
+      note: >
+        7.121 GB decimal cached payload plus a provisional 2 GiB allowance
+        for a short KV cache, activations, and runtime overhead. Unflown,
+        not a measured peak.

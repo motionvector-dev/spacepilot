@@ -24,6 +24,29 @@ def auth_headers():
     return {"X-Pluto-Token": settings.studio_token}
 
 
+def test_dir_bytes_counts_an_incomplete_shard_and_not_the_snapshot_copy(tmp_path):
+    repo = tmp_path / "models--org--name"
+    blob = repo / "blobs"
+    blob.mkdir(parents=True)
+    (blob / "abc.incomplete").write_bytes(b"x" * 1000)
+    snap = repo / "snapshots" / "sha"
+    snap.mkdir(parents=True)
+    (snap / "model.safetensors").write_bytes(b"y" * 5000)
+    assert catalog_manager._dir_bytes(repo) == 1000
+
+
+def test_transfer_meter_counts_only_the_transfer_bar():
+    from spacepilot.services.model_catalog import TransferMeter
+
+    meter = TransferMeter()
+    cls = meter.tqdm_class()
+    transfer = cls(total=10, name="huggingface_hub.snapshot_download.transfer", disable=True)
+    reconstruct = cls(total=10, name="huggingface_hub.snapshot_download", disable=True)
+    transfer.update(4)
+    reconstruct.update(9)
+    assert meter.bytes == 4
+
+
 def test_list_recipes_auth_gate(client):
     res = client.get("/api/compute/recipes")
     assert res.status_code == 401

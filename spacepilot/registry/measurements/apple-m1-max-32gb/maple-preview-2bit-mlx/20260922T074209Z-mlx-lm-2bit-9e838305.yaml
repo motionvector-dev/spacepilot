@@ -1,0 +1,26 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: maple-preview-2bit-mlx
+metric: tokens_per_second
+value: 132.4506615450983
+contention: solo
+measured_on: '2026-09-22T07:42:09+00:00'
+variant_id: maple-preview-2bit-mlx
+runtime_id: mlx-lm
+model_revision: e8be321fb325c40beb7b621bd98e8e57a324ec42
+quantisation: 2bit
+backend: metal
+wall_seconds: 2.4303266250062734
+run_id: 15a1254416cc446fba2688963b732f76
+tokens_in: 22
+tokens_out: 42
+knobs:
+  max_tokens: 64
+  max_kv_size: 1024
+  temperature: 0.0
+  prompt_tokens: 22
+  generation_tokens: 42
+  load_seconds: 0.9133131669368595
+  peak_memory_gb: 6.962698248
+note: ordinary bounded spacepilot run text success; text artifact verified
+status: ok

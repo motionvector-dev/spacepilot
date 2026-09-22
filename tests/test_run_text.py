@@ -84,7 +84,11 @@ def test_registry_has_exact_pinned_qwen_route():
     # mlx-lm now carries the embedding route too — same runtime, same install,
     # a second modality. The text half of the pin is what this test guards.
     assert runtime.serves == ["text", "embedding"]
-    assert runtime.runs == ["qwen3-8", "qwen1-5-moe", "qwen3-embedding"]
+    assert runtime.runs == [
+        "qwen3-8", "qwen1-5-moe", "mimo-v2-6-distill-qwen-9b",
+        "gemma4-26b-a4b", "maple-preview", "ternary-bonsai-2-27b",
+        "lfm2-5-8b-a1b", "qwen3-embedding",
+    ]
 
 
 def test_uncached_weights_are_no_route_and_never_load(tmp_path):
@@ -117,6 +121,7 @@ def test_execute_is_bounded_and_records_real_generation_speed(tmp_path):
     assert decode["runtime_id"] == "mlx-lm"
     assert decode["metric"] == "tokens_per_second"
     assert decode["knobs"]["max_tokens"] == 128
+    assert decode["knobs"]["thinking"] == "off"
     assert decode["knobs"]["max_kv_size"] == 2048
     assert prefill["metric"] == "prompt_tokens_per_second"
     assert prefill["run_id"] == decode["run_id"]
@@ -212,6 +217,8 @@ def test_driver_uses_local_snapshot_offline_and_no_sysctl(tmp_path, monkeypatch)
     assert str(snapshot) in argv
     assert "hello" not in argv
     assert seen["kwargs"]["input"] == "hello"
+    assert "--thinking" in argv
+    assert argv[argv.index("--thinking") + 1] == "off"
     assert "sysctl" not in " ".join(argv)
     assert seen["kwargs"]["env"]["HF_HUB_OFFLINE"] == "1"
     assert seen["kwargs"]["env"]["TRANSFORMERS_OFFLINE"] == "1"
@@ -248,6 +255,7 @@ def test_cli_parser_accepts_safe_text_defaults(tmp_path):
     assert args.max_tokens == 256
     assert args.max_kv_size == 4096
     assert args.temperature == 0.0
+    assert args.thinking == "off"
     assert args.model is None
 
 
@@ -258,6 +266,106 @@ def test_cli_parser_accepts_a_model_flag(tmp_path):
             "qwen1-5-moe-a2-7b-chat-4bit", "--yes",
         ]) == 0
     assert handler.call_args.args[0].model == "qwen1-5-moe-a2-7b-chat-4bit"
+
+
+def test_an_unclosed_think_block_is_recorded_and_is_not_success(tmp_path):
+    from spacepilot.services.execution import LocalExecutionError
+    from spacepilot.services.text_execution import TextRequest
+
+    driver = _Driver(write=False)
+    calls = []
+
+    def infer(**kwargs):
+        driver.calls.append(kwargs)
+        Path(kwargs["out_path"]).write_text("<think>\nstill reasoning")
+        return {
+            "status": "completed",
+            "model_revision": "abc",
+            "wall_seconds": 2.0, "load_seconds": 1.0,
+            "prompt_tokens": 8, "prompt_tps": 20.0,
+            "generation_tokens": 64, "generation_tps": 30.0,
+            "peak_memory_gb": 5.0,
+        }
+
+    driver.infer = infer
+    service = _service(
+        tmp_path, driver=driver,
+        recorder=lambda **fields: calls.append(fields) or tmp_path / "m.yaml",
+    )
+    with pytest.raises(LocalExecutionError, match="unclosed"):
+        service.execute(service.plan("text"), TextRequest(
+            workload="text", prompt="2+2", output=tmp_path / "x.txt",
+            max_tokens=64, max_kv_size=1024, temperature=0.0,
+        ))
+    assert (tmp_path / "x.txt").read_text().startswith("<think>")
+    assert len(calls) == 1
+    assert calls[0]["status"] == "failed"
+    assert calls[0]["knobs"]["generation_tps"] == pytest.approx(30.0)
+    assert "not an answer" in calls[0]["note"]
+
+
+def test_a_closed_think_with_an_answer_still_succeeds(tmp_path):
+    from spacepilot.services.text_execution import TextRequest
+
+    driver = _Driver(write=False)
+
+    def infer(**kwargs):
+        driver.calls.append(kwargs)
+        Path(kwargs["out_path"]).write_text("<think>\narithmetic\n</think>\n\n4")
+        return {
+            "status": "completed",
+            "model_revision": "abc",
+            "wall_seconds": 2.0, "load_seconds": 1.0,
+            "prompt_tokens": 8, "prompt_tps": 20.0,
+            "generation_tokens": 12, "generation_tps": 30.0,
+            "peak_memory_gb": 5.0,
+        }
+
+    driver.infer = infer
+    service = _service(tmp_path, driver=driver)
+    result = service.execute(service.plan("text"), TextRequest(
+        workload="text", prompt="2+2", output=tmp_path / "x.txt",
+    ))
+    assert result.status == "completed"
+
+
+def test_apply_chat_passes_thinking_off_and_falls_back(tmp_path):
+    from spacepilot.drivers.mlx_lm_runner import apply_chat
+
+    class _Tok:
+        def apply_chat_template(self, messages, **kwargs):
+            self.kwargs = kwargs
+            return "PROMPT"
+
+    tok = _Tok()
+    assert apply_chat(tok, [{"role": "user", "content": "hi"}], thinking=False) == "PROMPT"
+    assert tok.kwargs["enable_thinking"] is False
+
+    class _Old:
+        def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=False):
+            return "PLAIN"
+
+    assert apply_chat(_Old(), [{"role": "user", "content": "hi"}], thinking=True) == "PLAIN"
+
+
+def test_architecture_ready_accepts_a_local_model_file_and_rejects_an_unknown_type(tmp_path):
+    import sys
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+
+    driver = MlxLmDriver(python_bin=sys.executable)
+    maple = tmp_path / "maple"
+    maple.mkdir()
+    (maple / "maple.py").write_text("class Model: pass\n")
+    (maple / "config.json").write_text('{"model_type": "maple", "model_file": "maple.py"}\n')
+    ok, detail = driver.architecture_ready(str(maple))
+    assert ok, detail
+
+    bonsai = tmp_path / "bonsai"
+    bonsai.mkdir()
+    (bonsai / "config.json").write_text('{"model_type": "prism_hadamard_qwen35"}\n')
+    ok, detail = driver.architecture_ready(str(bonsai))
+    assert not ok
+    assert "prism_hadamard_qwen35" in detail
 
 
 def test_cli_run_text_model_flag_selects_the_requested_variant(tmp_path):

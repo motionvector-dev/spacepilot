@@ -1,0 +1,52 @@
+schema: 1
+id: lfm2-5-8b-a1b
+name: LFM2.5 8B-A1B
+family: liquid
+kind: text
+summary: >
+  Liquid AI's small mixture-of-experts. About 8.3B total and 1.5B active.
+  This variant is their MLX 4-bit build, converted with mlx-lm 0.31.3.
+homepage: https://huggingface.co/LiquidAI/LFM2.5-8B-A1B
+
+license:
+  id: lfm-1.0
+  spdx: null
+  open_source: false
+  url: https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-MLX-4bit/blob/main/LICENSE
+  restrictions:
+    - LFM Open License v1.0. Commercial use is limited to organizations under $10M annual revenue. Confirm the license file before shipping a product on it.
+
+variants:
+  - id: lfm2-5-8b-a1b-mlx-4bit
+    name: LFM2.5 8B-A1B 4-bit (MLX)
+    params: 8B
+    precision: 4bit
+    repo: LiquidAI/LFM2.5-8B-A1B-MLX-4bit
+    revision: 2e92b640a63d47ad4dcf81a19a366b902356b3bc
+    files:
+      - chat_template.jinja
+      - config.json
+      - generation_config.json
+      - model.safetensors
+      - model.safetensors.index.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 4851982764
+      source: huggingface-api
+      checked: "2026-09-22"
+      note: >
+        Sum of the seven files named above from the Hub tree on this date.
+        Excludes README, LICENSE, and .gitattributes. model_type is
+        lfm2_moe, which mlx-lm 0.31.3 ships.
+    working_set:
+      value: 5822379317
+      source: estimated
+      note: >
+        4.85 GB decimal cached payload plus a provisional 20% allowance
+        for a short KV cache and runtime overhead. Unflown until a
+        spacepilot run records a peak.
+    notes: >
+      The 24B-A2B sibling is about 14 GB at 4-bit and is not this entry.
+      This 8B is the one that fits beside a normal desktop.

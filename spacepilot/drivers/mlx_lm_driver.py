@@ -73,8 +73,52 @@ class MlxLmDriver(InferenceDriver):
             return False, f"mlx-lm is unavailable in {self.python_bin}: {detail}"
         return True, f"mlx-lm importable in {self.python_bin}"
 
+    def architecture_ready(self, snapshot: str) -> tuple[bool, str]:
+        """True when this mlx-lm can construct the snapshot's model class.
+
+        Mirrors ``mlx_lm.utils.load_model`` without reading weights. A
+        ``model_file`` in config (Maple's ``maple.py``) is a local class.
+        Otherwise ``model_type`` must be an ``mlx_lm.models`` module.
+        ``prism_hadamard_qwen35`` is not, so Bonsai is not ready.
+        """
+        script = (
+            "import importlib, json, sys\n"
+            "from pathlib import Path\n"
+            "snap = Path(sys.argv[1])\n"
+            "cfg = json.loads((snap / 'config.json').read_text())\n"
+            "model_file = cfg.get('model_file')\n"
+            "if isinstance(model_file, str) and model_file:\n"
+            "    if not (snap / model_file).is_file():\n"
+            "        sys.stderr.write('model file missing: ' + model_file)\n"
+            "        raise SystemExit(1)\n"
+            "    raise SystemExit(0)\n"
+            "model_type = cfg.get('model_type')\n"
+            "if not isinstance(model_type, str) or not model_type:\n"
+            "    sys.stderr.write('config.json has no model_type')\n"
+            "    raise SystemExit(1)\n"
+            "try:\n"
+            "    from mlx_lm.utils import MODEL_REMAPPING\n"
+            "    model_type = MODEL_REMAPPING.get(model_type, model_type)\n"
+            "    importlib.import_module('mlx_lm.models.' + model_type)\n"
+            "except ImportError:\n"
+            "    sys.stderr.write('model type ' + model_type + ' is not in this mlx-lm')\n"
+            "    raise SystemExit(1)\n"
+        )
+        try:
+            proc = subprocess.run(
+                [self.python_bin, "-c", script, snapshot],
+                capture_output=True, text=True, timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return False, f"architecture check failed: {exc}"
+        if proc.returncode != 0:
+            detail = (proc.stderr or proc.stdout or "unsupported").strip().splitlines()
+            return False, detail[-1] if detail else "unsupported architecture"
+        return True, "architecture loadable"
+
     def count_prompt_tokens(
         self, messages: list, variant_id: Optional[str] = None,
+        *, thinking: bool = False,
     ) -> Optional[int]:
         """Real prompt token count, tokenizer only — no weights loaded.
 
@@ -94,8 +138,8 @@ class MlxLmDriver(InferenceDriver):
 
         tokenizer = load_tokenizer(Path(snapshot))
         if tokenizer.has_chat_template:
-            prompt = tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True)
+            from spacepilot.drivers.mlx_lm_runner import apply_chat
+            prompt = apply_chat(tokenizer, messages, thinking=thinking)
         else:
             prompt = messages[-1].get("content", "") if messages else ""
         return len(tokenizer.encode(prompt))
@@ -111,18 +155,22 @@ class MlxLmDriver(InferenceDriver):
                 f"no route — weights are not cached; run `spacepilot recipes "
                 f"download {variant_id}`")
         snapshot, revision = resolved
+        supported, why = self.architecture_ready(snapshot)
+        if not supported:
+            return False, f"no route — {why}"
         return True, f"ready — {Path(snapshot).name} at {revision[:12]} via mlx-lm"
 
     def _command(
         self, snapshot: str, out_path: str, max_tokens: int,
         max_kv_size: int, temperature: float, stream: bool,
-        messages: Optional[list] = None,
+        messages: Optional[list] = None, thinking: bool = False,
     ) -> list[str]:
         cmd = [
             self.python_bin, "-m", "spacepilot.drivers.mlx_lm_runner",
             "--model", snapshot, "--output", out_path,
             "--max-tokens", str(max_tokens), "--max-kv-size", str(max_kv_size),
             "--temperature", str(temperature),
+            "--thinking", "on" if thinking else "off",
         ]
         if stream:
             cmd.append("--stream")
@@ -152,6 +200,7 @@ class MlxLmDriver(InferenceDriver):
         temperature: float,
         variant_id: Optional[str] = None,
         messages: Optional[list] = None,
+        thinking: bool = False,
         **kwargs: Any,
     ):
         """Yield deltas as the runner produces them, then the final metadata.
@@ -167,7 +216,8 @@ class MlxLmDriver(InferenceDriver):
                 f"weights are not cached; run `spacepilot recipes download {variant_id}`")
         snapshot, revision = resolved
         cmd = self._command(snapshot, out_path, max_tokens, max_kv_size,
-                            temperature, stream=True, messages=messages)
+                            temperature, stream=True, messages=messages,
+                            thinking=thinking)
         try:
             proc = subprocess.Popen(
                 cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -213,6 +263,7 @@ class MlxLmDriver(InferenceDriver):
         variant_id: Optional[str] = None,
         timeout: Optional[float] = None,
         messages: Optional[list] = None,
+        thinking: bool = False,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         variant_id = variant_id or self.variant_id
@@ -222,7 +273,8 @@ class MlxLmDriver(InferenceDriver):
                 f"weights are not cached; run `spacepilot recipes download {variant_id}`")
         snapshot, revision = resolved
         cmd = self._command(snapshot, out_path, max_tokens, max_kv_size,
-                            temperature, stream=False, messages=messages)
+                            temperature, stream=False, messages=messages,
+                            thinking=thinking)
         env = self._offline_env()
         try:
             proc = subprocess.run(

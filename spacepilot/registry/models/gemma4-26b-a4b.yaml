@@ -1,0 +1,45 @@
+schema: 1
+id: gemma4-26b-a4b
+name: Gemma 4 26B-A4B
+family: gemma
+kind: text
+summary: MoE instruction-tuned multimodal model (text+image in, text out), 26B total with about 3.8B–4B active, 256K context, thinking mode.
+homepage: https://huggingface.co/google/gemma-4-26B-A4B-it
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://ai.google.dev/gemma/docs/gemma_4_license
+  restrictions:
+    - the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release
+
+variants:
+  - id: gemma4-26b-a4b-it-4bit
+    name: Gemma 4 26B-A4B Instruct 4-bit (MLX)
+    params: 26B
+    precision: 4bit
+    repo: mlx-community/gemma-4-26B-A4B-it-4bit
+    revision: 0d77464eeb233a2da68ebf9d7dc4edaac7db956d
+    files:
+      - chat_template.jinja
+      - config.json
+      - generation_config.json
+      - model-00001-of-00003.safetensors
+      - model-00002-of-00003.safetensors
+      - model-00003-of-00003.safetensors
+      - model.safetensors.index.json
+      - processor_config.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 15373586252
+      source: huggingface-api
+      checked: "2026-09-22"
+      note: Sum of the 10 inference files named above, statted from the local Hugging Face snapshot blobs for revision 0d77464eeb233a2da68ebf9d7dc4edaac7db956d (cached Hub snapshot sizes, not a live API response); excludes README.md and .gitattributes.
+    working_set:
+      value: 18448303502
+      source: estimated
+      note: 14.32 GiB (15,373,586,252 bytes) 4-bit cached payload plus a provisional 20% allowance for KV cache, activations, and runtime overhead (MoE gemma4, about 3.8B–4B active of 26B total); estimated, not a measured peak or hard limit. The informal bake-off did not record peak memory.
+    notes: Google's model card for google/gemma-4-26B-A4B-it (read 2026-09-22) lists 25.2B total parameters and 3.8B active (8 of 128 experts, plus 1 shared expert) and also describes inference as activating about a 4B subset. The params field stays 26B, the published size name. Local config.json at this revision has num_experts 128, top_k_experts 8, 30 text layers, and max_position_embeddings 262144. Speed is unflown; no spacepilot run text record is stored here.

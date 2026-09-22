@@ -69,6 +69,36 @@ class ModelRecipeSpec(BaseModel):
         return round((self.working_set_bytes or 0) / GIB, 2)
 
 
+class TransferMeter:
+    """Bytes the Hub's Xet transfer bar has reported for one download.
+
+    Reconstruction writes the ``.incomplete`` shard late. The transfer count
+    moves while those chunks are still in flight. Disk bytes and this count
+    are combined with max(), never added, so a finished file is not counted
+    twice.
+    """
+
+    def __init__(self) -> None:
+        self.bytes = 0
+
+    def tqdm_class(self):
+        meter = self
+        from huggingface_hub.utils.tqdm import tqdm as hf_tqdm
+
+        class _TransferTqdm(hf_tqdm):
+            def __init__(self, *args, **kwargs):
+                name = kwargs.get("name") or ""
+                self._count = str(name).endswith(".transfer")
+                super().__init__(*args, **kwargs)
+
+            def update(self, n=1):
+                if self._count and n:
+                    meter.bytes += int(n)
+                return super().update(n)
+
+        return _TransferTqdm
+
+
 class DownloadJob(BaseModel):
     job_id: str
     recipe_id: str
@@ -180,7 +210,8 @@ class ModelCatalogManager:
         # Count blobs/ only. The hub stores each file's content once under blobs/
         # and materialises it again under snapshots/ — on a filesystem where that
         # is a copy rather than a symlink, walking everything double-counts and
-        # reports twice the bytes that crossed the network.
+        # reports twice the bytes that crossed the network. An in-flight shard
+        # is ``<etag>.incomplete`` in blobs/ and counts here until it is renamed.
         total = 0
         for f in path.rglob("*"):
             try:
@@ -201,11 +232,14 @@ class ModelCatalogManager:
 
         job = self.jobs[job_id]
         self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        meter = TransferMeter()
+        self._transfer_meter = meter
         snapshot = Path(snapshot_download(
             repo_id=repo_id,
             cache_dir=str(self.MODELS_DIR),
             allow_patterns=allow_patterns,
             revision=revision,
+            tqdm_class=meter.tqdm_class(),
         ))
         files = concrete_snapshot_files(snapshot, allow_patterns)
         if not files:
@@ -222,11 +256,9 @@ class ModelCatalogManager:
                              revision: Optional[str] = None):
         """Run the download, reporting bytes actually on disk.
 
-        Progress is measured by walking the cache directory rather than by hooking
-        huggingface_hub's progress bars: in hub 1.x, tqdm_class only wraps the outer
-        'Fetching N files' counter, so anything derived from it reports file counts
-        as though they were bytes. Disk is the ground truth and does not move
-        between library versions.
+        Progress is the larger of bytes already in the cache (including an
+        ``.incomplete`` shard) and bytes the Xet transfer bar has reported.
+        The transfer count moves before reconstruction writes the shard.
         """
         from huggingface_hub import HfApi
 
@@ -261,7 +293,9 @@ class ModelCatalogManager:
             )
             while not task.done():
                 await asyncio.sleep(0.5)
-                got = max(0, self._dir_bytes(repo_dir) - before)
+                on_disk = max(0, self._dir_bytes(repo_dir) - before)
+                transferred = getattr(getattr(self, "_transfer_meter", None), "bytes", 0)
+                got = max(on_disk, transferred)
                 job.downloaded_bytes = got
                 elapsed = time.monotonic() - started
                 if elapsed > 0:
