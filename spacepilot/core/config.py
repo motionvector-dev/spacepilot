@@ -5,6 +5,7 @@ import secrets
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
+from spacepilot import __version__
 from spacepilot.paths import env_value
 
 
@@ -47,7 +48,7 @@ class Settings(BaseModel):
     """Consolidated SpacePilot Settings."""
 
     app_name: str = "SpacePilot Studio"
-    version: str = "2.8.0"
+    version: str = __version__
 
     root_dir: Path = Field(default_factory=lambda: REPO_ROOT)
     outputs_dir: Path = Field(

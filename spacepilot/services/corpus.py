@@ -40,6 +40,29 @@ def _load_measurements() -> List[ms.Measurement]:
         raise CorpusReadError(f"measurements could not be read: {exc}") from exc
 
 
+def known_variant_ids() -> List[str]:
+    """Every variant id a caller may legitimately filter on.
+
+    A registry entry with nothing measured yet is known; so is an old or
+    external measurement whose variant the registry no longer describes.
+    Anything else is a typo, and an empty result would hide that.
+    """
+    known = set(_registry_variants())
+    known.update(ms.subject_id(record) for record in _load_measurements())
+    return sorted(known)
+
+
+def known_system_ids() -> List[str]:
+    """Every system id a caller may legitimately filter on."""
+    try:
+        systems = ms.load_systems()
+    except (OSError, ValueError) as exc:
+        raise CorpusReadError(f"systems could not be read: {exc}") from exc
+    known = set(systems)
+    known.update(record.system_id for record in _load_measurements())
+    return sorted(known)
+
+
 def measurement_payload() -> dict:
     """Every individual observation, with canonical variant and caveats."""
     variants = _registry_variants()

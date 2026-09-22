@@ -1,36 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
-from pydantic import BaseModel, field_validator, Field
 
 from spacepilot.services.lora import lora_manager, LoRAAdapterSpec
 from spacepilot.api.deps import require_token
 
+# Shared with the MCP tool of the same name; see spacepilot/api/contracts.py.
+from spacepilot.api.contracts import TrainLoRARequest  # noqa: F401  (re-exported)
+
 router = APIRouter(prefix="/api/lora", tags=["lora"])
 
-class TrainLoRARequest(BaseModel):
-    name: str
-    base_model: str
-    image_paths: List[str]
-    trigger_word: str
-    rank: int = 16
-    alpha: float = 16.0
-    target_modules: Optional[List[str]] = None
-    steps: int = 500
-    lr: float = 1e-4
-
-    @field_validator('rank')
-    @classmethod
-    def validate_rank(cls, v):
-        if v <= 0 or (v & (v - 1)) != 0:
-            raise ValueError("rank must be > 0 and a power of 2")
-        return v
-
-    @field_validator('alpha')
-    @classmethod
-    def validate_alpha(cls, v):
-        if v <= 0:
-            raise ValueError("alpha must be > 0")
-        return v
 
 @router.get("/adapters", response_model=List[LoRAAdapterSpec])
 async def list_adapters(base_model: Optional[str] = None, _: None = Depends(require_token)):

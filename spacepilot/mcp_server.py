@@ -11,30 +11,75 @@ except ImportError as exc:  # pragma: no cover - import guard
         f"import failed: {exc}"
     ) from exc
 
-from typing import Optional, Dict, Any, List
+from typing import Annotated, Optional, Dict, Any, List
 
-mcp = MCPServer("SpacePilot")
+from pydantic import Field, ValidationError
+
+from spacepilot import __version__ as SERVER_VERSION
+from spacepilot.api import contracts
+
+# An empty serverInfo.version told a client nothing about what it was talking
+# to. It comes from the package, never from Settings: constructing Settings
+# mints `.studio_token` through a default factory, and under `uv tool install`
+# that writes a secret into the install tree (the bug #155 exists to fix).
+# This module deliberately imports no config.
+mcp = MCPServer("SpacePilot", version=SERVER_VERSION)
+
+
+def _refused(exc: ValidationError) -> Dict[str, Any]:
+    """The refusal an MCP caller gets for input HTTP would answer with a 422.
+
+    Carries `error` as well as `status`/`message` so a client has one key to
+    test across every refusal this server can return — unknown ids answer
+    `{"error": ..., "known": [...]}`, and the two shapes were untestable
+    together.
+    """
+    message = contracts.describe(exc)
+    return {"status": "error", "error": message, "message": message}
+
 
 @mcp.tool()
-def spacepilot_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
-    """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
-    
+def spacepilot_decompose_storyboard(
+    script: str,
+    # Annotated so `tools/list` publishes the range too. Enforcement is the
+    # shared contract below; this is what a schema-validating client reads,
+    # instead of learning the bounds only from a refusal string.
+    scene_count: Annotated[int, Field(
+        ge=contracts.SCENE_COUNT_MIN, le=contracts.SCENE_COUNT_MAX)] = 6,
+    target_duration_sec: Annotated[float, Field(
+        ge=contracts.DURATION_MIN_SEC, le=contracts.DURATION_MAX_SEC)] = 60.0,
+    style: str = "cinematic",
+) -> Dict[str, Any]:
+    """Decompose a high-level narrative script into cinematic storyboard scenes with 3D camera vectors.
+
+    Out-of-range values are refused, not clamped: this used to answer a request
+    for 50 scenes with 10 and the word "success".
+
     Args:
         script (str): The narrative story or high-level video prompt.
-        scene_count (int, optional): Number of scenes (4-10). Defaults to 6.
-        target_duration_sec (float, optional): Total duration in seconds. Defaults to 60.0.
+        scene_count (int, optional): Number of scenes, 4 to 10. Defaults to 6.
+        target_duration_sec (float, optional): Total duration in seconds, 10 to 300. Defaults to 60.0.
         style (str, optional): Visual directing style. Defaults to "cinematic".
-        
+
     Returns:
         Dict[str, Any]: Structured scenes with locked character seed and 3D camera trajectory tokens.
     """
     try:
+        request = contracts.StoryboardDecomposeRequest(
+            script=script,
+            scene_count=scene_count,
+            target_duration_sec=target_duration_sec,
+            style=style,
+        )
+    except ValidationError as exc:
+        return _refused(exc)
+    try:
         from spacepilot.storyboard_decomposer import decompose_storyboard
         return decompose_storyboard(
-            script=script,
-            target_duration_sec=target_duration_sec,
-            scene_count=scene_count,
-            style=style,
+            script=request.script,
+            target_duration_sec=request.target_duration_sec,
+            scene_count=request.scene_count,
+            style=request.style,
         )
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -219,7 +264,7 @@ def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], tr
         base_model (str): Base model ID.
         image_paths (list[str]): List of image paths for training.
         trigger_word (str): Trigger word.
-        rank (int, optional): LoRA rank. Defaults to 16.
+        rank (int, optional): LoRA rank; must be a positive power of 2. Defaults to 16.
         steps (int, optional): Training steps. Defaults to 500.
         lr (float, optional): Learning rate. Defaults to 1e-4.
         
@@ -227,15 +272,22 @@ def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], tr
         Dict[str, Any]: Job details.
     """
     try:
+        request = contracts.TrainLoRARequest(
+            name=name, base_model=base_model, image_paths=image_paths,
+            trigger_word=trigger_word, rank=rank, steps=steps, lr=lr,
+        )
+    except ValidationError as exc:
+        return _refused(exc)
+    try:
         from spacepilot.services.lora import lora_manager
         job = lora_manager.create_training_job(
-            name=name,
-            base_model=base_model,
-            image_paths=image_paths,
-            trigger_word=trigger_word,
-            rank=rank,
-            steps=steps,
-            lr=lr
+            name=request.name,
+            base_model=request.base_model,
+            image_paths=request.image_paths,
+            trigger_word=request.trigger_word,
+            rank=request.rank,
+            steps=request.steps,
+            lr=request.lr
         )
         return {"status": "success", "job": job}
     except Exception as e:
@@ -339,12 +391,18 @@ def spacepilot_measurements(variant_id: Optional[str] = None) -> dict:
 
     ``variant_id`` is an exact registry identifier when supplied; it is a
     filter over loaded records, never a filesystem path or a fuzzy model name.
+    An unknown id is an error naming what is known — a typo and "nothing
+    measured yet" are different answers, and both used to come back as [].
     """
-    from spacepilot.services.corpus import CorpusReadError, measurement_payload
+    from spacepilot.services import corpus
 
     try:
-        payload = measurement_payload()
-    except CorpusReadError as exc:
+        if variant_id is not None:
+            known = corpus.known_variant_ids()
+            if variant_id not in known:
+                return {"error": f"no such variant_id '{variant_id}'", "known": known}
+        payload = corpus.measurement_payload()
+    except corpus.CorpusReadError as exc:
         return {"error": str(exc)}
     if variant_id is not None:
         payload["measurements"] = [
@@ -355,12 +413,20 @@ def spacepilot_measurements(variant_id: Optional[str] = None) -> dict:
 
 @mcp.tool()
 def spacepilot_system_summary(system_id: Optional[str] = None) -> dict:
-    """Return flown two-stream summaries with associated capability caveats."""
-    from spacepilot.services.corpus import CorpusReadError, summary_payload
+    """Return flown two-stream summaries with associated capability caveats.
+
+    An unknown ``system_id`` is an error naming the known ids, never an empty
+    list: a caller cannot otherwise tell a typo from an unmeasured machine.
+    """
+    from spacepilot.services import corpus
 
     try:
-        return summary_payload(system_id=system_id)
-    except CorpusReadError as exc:
+        if system_id is not None:
+            known = corpus.known_system_ids()
+            if system_id not in known:
+                return {"error": f"no such system_id '{system_id}'", "known": known}
+        return corpus.summary_payload(system_id=system_id)
+    except corpus.CorpusReadError as exc:
         return {"error": str(exc)}
 
 

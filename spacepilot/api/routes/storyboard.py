@@ -1,39 +1,27 @@
 """Storyboard and narrative decomposition routes."""
 
-from typing import Optional
-from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException
 
 from spacepilot.api.deps import require_token, update_activity
+
+# The request shapes live in spacepilot.api.contracts because the MCP tools
+# validate against the same models. When the bounds lived here, the MCP tool
+# carried its own copy — in a docstring, enforcing nothing.
+from spacepilot.api.contracts import (  # noqa: F401  (re-exported for callers)
+    LocalNarrativeDecomposeRequest,
+    StoryboardDecomposeRequest,
+)
 from spacepilot.storyboard_decomposer import decompose_storyboard
 
 router = APIRouter(tags=["storyboard"])
 
 
-class StoryboardDecomposeRequest(BaseModel):
-    script: str
-    target_duration_sec: float = Field(default=60.0, ge=10.0, le=300.0)
-    scene_count: int = Field(default=6, ge=4, le=10)
-    style: str = "cinematic"
-    model: str = "gemini-3.7-flash"
-    character_seed: Optional[int] = None
-
-
-class LocalNarrativeDecomposeRequest(BaseModel):
-    script: str
-    target_duration_sec: float = Field(default=60.0, ge=10.0, le=300.0)
-    scene_count: int = Field(default=6, ge=4, le=10)
-    style: str = "cinematic"
-    character_seed: Optional[int] = None
-
-
 @router.post("/api/storyboard/decompose")
 def post_storyboard_decompose_api(req: StoryboardDecomposeRequest, _: None = Depends(require_token)):
     """Deconstructs narrative into 6-8 cinematic storyboard scenes with 3D camera trajectory vectors."""
+    # Emptiness is the model's rule now (a 422), so both surfaces refuse the
+    # same blank script; this body used to own it and MCP had no equivalent.
     script_text = req.script.strip()
-    if not script_text:
-        raise HTTPException(status_code=400, detail="Script or prompt text is required")
-    
     update_activity()
     result = decompose_storyboard(
         script=script_text,
@@ -50,9 +38,6 @@ def post_storyboard_decompose_api(req: StoryboardDecomposeRequest, _: None = Dep
 def decompose_local_narrative_api(req: LocalNarrativeDecomposeRequest, _: None = Depends(require_token)):
     """In-process GGUF narrative decomposition driver for screenplay and cinematic scene beats."""
     script_text = req.script.strip()
-    if not script_text:
-        raise HTTPException(status_code=400, detail="Script text cannot be empty")
-
     update_activity()
     try:
         from spacepilot.local_workers import local_worker_manager

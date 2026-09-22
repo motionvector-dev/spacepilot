@@ -117,6 +117,29 @@ class DaemonClient:
         self.timeout = timeout
         self.output_root = Path(output_root) if output_root is not None else outputs_dir()
 
+    def _explain(self, method: str, path: str, exc: Exception) -> str:
+        """Say what actually went wrong with the local door.
+
+        `[Errno 2] No such file or directory` named neither the file nor the
+        fix.  Every daemon-backed CLI path printed it, and a reader had no way
+        to know it meant "the daemon is not installed".
+        """
+        connect_failed = isinstance(exc, (httpx.ConnectError, ConnectionError, OSError))
+        if connect_failed and not self.socket_path.exists():
+            return (
+                "the local daemon is not running — no socket at "
+                f"{self.socket_path}. Run `spacepilot daemon install` to install "
+                f"and start it. (wanted: {method} {path})"
+            )
+        if isinstance(exc, (httpx.ConnectError, ConnectionError)):
+            return (
+                f"the local daemon is not answering at {self.socket_path}; the "
+                "socket exists but nothing is listening, so the daemon is stopped "
+                "or the socket is stale. Try `spacepilot daemon status`. "
+                f"(wanted: {method} {path}): {exc}"
+            )
+        return f"daemon request {method} {path} failed: {exc}"
+
     def _request(self, method: str, path: str, *, json: Any = None) -> dict[str, Any]:
         transport = httpx.HTTPTransport(uds=str(self.socket_path))
         try:
@@ -131,7 +154,7 @@ class DaemonClient:
         except (httpx.HTTPError, OSError, ValueError) as exc:
             # Never fall back to DirectLocal here.  For POST /v1/run, a broken
             # response is an ambiguous outcome and a retry may execute twice.
-            raise SubstrateError(f"daemon request {method} {path} failed: {exc}") from exc
+            raise SubstrateError(self._explain(method, path, exc)) from exc
         if not isinstance(payload, dict):
             raise SubstrateError(f"daemon returned a non-object for {method} {path}")
         return payload
