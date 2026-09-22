@@ -578,13 +578,133 @@ class Impact:
     error: Optional[str] = None
 
     @property
+    def blocked(self) -> bool:
+        """The install cannot proceed as resolved. `error` says why.
+
+        A caller that only reads `is_disruptive` used to see `false` next to a
+        fatal error and go ahead -- MCP agents read this dict directly, so the
+        stop signal has to be in the dict, not only in prose.
+        """
+        return self.error is not None
+
+    @property
     def is_disruptive(self) -> bool:
-        return bool(self.downgrades)
+        return bool(self.downgrades) or self.blocked
 
     def to_dict(self) -> Dict[str, Any]:
         return {"new": self.new, "upgrades": self.upgrades,
                 "downgrades": self.downgrades, "error": self.error,
-                "is_disruptive": self.is_disruptive}
+                "blocked": self.blocked, "is_disruptive": self.is_disruptive}
+
+
+# --- Installing from an interpreter that may have no pip -------------------
+#
+# The documented first run is `uv tool install spacepilot`, and a uv-managed
+# venv ships no pip at all. Every install here used to be
+# `[python, "-m", "pip", "install", ...]`, so on the released artifact every
+# `method: pip` runtime was uninstallable -- including mlx-lm, the runtime
+# behind every model that carries a route. So: use pip when it is there, `uv
+# pip install --python <interpreter>` when it is not, `ensurepip` as a last
+# resort, and a named command when none of the three is possible.
+
+_PIP_PROBE: Dict[str, bool] = {}
+
+
+def pip_available(py: str) -> bool:
+    """Whether `py -m pip` actually runs.
+
+    An interpreter we cannot even launch (a placeholder path in a caller that
+    only wants the argv shape) is reported as having pip: that is the default
+    form, and nothing is learned by guessing otherwise.
+    """
+    if py in _PIP_PROBE:
+        return _PIP_PROBE[py]
+    try:
+        proc = subprocess.run([py, "-m", "pip", "--version"],
+                              capture_output=True, text=True, timeout=60)
+        ok = proc.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ok = True  # cannot probe; keep the default form
+    _PIP_PROBE[py] = ok
+    return ok
+
+
+def _uv() -> Optional[str]:
+    return shutil.which("uv")
+
+
+def _ensurepip(py: str, timeout: int = 300) -> bool:
+    """Last resort: ask the interpreter to install pip into itself."""
+    try:
+        proc = subprocess.run([py, "-m", "ensurepip", "--upgrade"],
+                              capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if proc.returncode != 0:
+        return False
+    _PIP_PROBE.pop(py, None)
+    return pip_available(py)
+
+
+def no_installer_error(py: str, specs: List[str]) -> str:
+    """What to tell someone whose interpreter can install nothing at all."""
+    manual = f"uv pip install --python {py} " + " ".join(shlex.quote(s) for s in specs)
+    return (f"{py} has no pip (uv-managed environments ship without one), `uv` is "
+            f"not on PATH, and ensurepip could not add pip. Install uv "
+            f"(https://docs.astral.sh/uv/getting-started/installation/) and re-run, "
+            f"or install it yourself with: {manual}")
+
+
+def _pip_install_argv(py: str, specs: List[str]) -> List[str]:
+    if pip_available(py):
+        return [py, "-m", "pip", "install", *specs]
+    uv = _uv()
+    if uv:
+        return [uv, "pip", "install", "--python", py, *specs]
+    # Neither is here. The uv form is still the command worth showing, since
+    # it is the one that will work once uv is installed; `install()` and
+    # `preview()` refuse with `no_installer_error` rather than running it.
+    return ["uv", "pip", "install", "--python", py, *specs]
+
+
+def _impact_from_uv_dry_run(text: str) -> Impact:
+    """Read `uv pip install --dry-run` output into the same Impact shape.
+
+    uv prints one line per package: `+ name==version` for what would land and
+    `- name==version` for what would be removed first, so a version change
+    shows up as a pair.
+    """
+    removed: Dict[str, str] = {}
+    added: List[tuple] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line[0] not in "+-~" or "==" not in line:
+            continue
+        sign, rest = line[0], line[1:].strip()
+        name, _, ver = rest.partition("==")
+        name, ver = name.strip(), ver.split()[0].strip() if ver else ""
+        if not name or not ver:
+            continue
+        if sign == "-":
+            removed[name] = ver
+        else:
+            added.append((name, ver))
+
+    imp = Impact()
+    for name, ver in added:
+        cur = removed.get(name)
+        if cur is None:
+            imp.new.append((name, ver))
+        elif cur == ver:
+            continue
+        else:
+            try:
+                from packaging.version import Version
+                target = imp.upgrades if Version(ver) > Version(cur) else imp.downgrades
+            except Exception:
+                target = imp.upgrades
+            target.append((name, cur, ver))
+    return imp
 
 
 def _install_specs(r: Runtime) -> List[str]:
@@ -619,6 +739,21 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
     py = py or interpreter()
     specs = _install_specs(r)
+
+    if not pip_available(py):
+        uv = _uv()
+        if not uv and not _ensurepip(py):
+            return Impact(error=no_installer_error(py, specs))
+        if uv and not pip_available(py):
+            proc = subprocess.run(
+                [uv, "pip", "install", "--python", py, "--dry-run", *specs],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            if proc.returncode != 0:
+                tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+                return Impact(error=tail[-1] if tail else f"uv exited {proc.returncode}")
+            # uv writes the plan to stderr on some versions, stdout on others.
+            return _impact_from_uv_dry_run((proc.stdout or "") + "\n" + (proc.stderr or ""))
 
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
         report = fh.name
@@ -695,8 +830,8 @@ def install_command(r: Runtime, py: Optional[str] = None,
         # never overrides it, the whole point of `isolated` is that this
         # runtime is never installed into whatever interpreter the caller
         # names.
-        return [str(isolated_python(r)), "-m", "pip", "install", *_install_specs(r)]
-    return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
+        return _pip_install_argv(str(isolated_python(r)), _install_specs(r))
+    return _pip_install_argv(py or interpreter(), _install_specs(r))
 
 
 def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
@@ -719,6 +854,12 @@ def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
     if not compatible:
         return Status(r.id, False, None, note, python_compatible=False,
                       python_note=note, interpreter=py)
+
+    if not pip_available(py) and not _uv() and not _ensurepip(py):
+        # Nothing here can install anything. Say so with the command that
+        # would, rather than dispatching one that cannot run.
+        return Status(r.id, False, None, no_installer_error(py, _install_specs(r)),
+                      python_compatible=True, python_note=note or None, interpreter=py)
 
     proc = subprocess.run(install_command(r, py), capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:

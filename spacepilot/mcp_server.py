@@ -364,7 +364,7 @@ def spacepilot_install_runtime(runtime_id: str, allow_downgrade: bool = False) -
 
     imp = rt.preview(r)
     if imp.error:
-        return {"installed": False, "error": imp.error}
+        return {"installed": False, "blocked": True, "error": imp.error}
     if imp.is_disruptive and not allow_downgrade:
         return {"installed": False, "refused": "would downgrade a package",
                 "downgrades": imp.downgrades,
