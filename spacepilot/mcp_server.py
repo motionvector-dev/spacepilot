@@ -325,8 +325,14 @@ def spacepilot_list_runtimes() -> dict:
                            and st.python_compatible,
             "reason": st.reason, "python_note": st.python_note,
             "runs": r.runs, "license": r.license,
+            # An isolated runtime does not live in the interpreter named
+            # below, so each row carries the one it is actually checked in.
+            "interpreter": st.interpreter or rt.interpreter(),
+            "isolated": r.install.isolated,
         })
-    return {"backend": profile.backend, "interpreter": rt.interpreter(), "runtimes": out}
+    return {"backend": profile.backend,
+            # The shared interpreter; see each runtime's own field above.
+            "interpreter": rt.interpreter(), "runtimes": out}
 
 
 @mcp.tool()

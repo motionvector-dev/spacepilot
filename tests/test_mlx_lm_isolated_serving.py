@@ -23,14 +23,53 @@ from spacepilot import runtimes as rt
 from spacepilot.runtimes import runtimes
 
 
+STUB_MLX_LM = """
+class _Tok:
+    has_chat_template = True
+    def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
+        return "\\n".join(m["content"] for m in messages)
+    def encode(self, text):
+        return text.split()
+"""
+
+
+def _make_venv(env_dir):
+    env_dir.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, "-m", "venv", str(env_dir)],
+                   capture_output=True, text=True, check=True)
+    return env_dir
+
+
+def _add_stub_mlx_lm(env_dir):
+    """Make the venv genuinely able to import mlx_lm, without 5GB of wheel."""
+    site = next((env_dir / "lib").glob("python*")) / "site-packages"
+    pkg = site / "mlx_lm"
+    pkg.mkdir(parents=True, exist_ok=True)
+    (pkg / "__init__.py").write_text(STUB_MLX_LM)
+    (pkg / "tokenizer_utils.py").write_text(
+        "from . import _Tok\n\n\ndef load(path):\n    return _Tok()\n")
+    return pkg
+
+
+@pytest.fixture
+def empty_isolated_env(tmp_path, monkeypatch):
+    """The state a FAILED `runtimes install mlx-lm` leaves behind.
+
+    `_install_isolated` creates the venv and then installs into it, so an
+    install that dies partway leaves a venv with no mlx-lm in it.
+    """
+    monkeypatch.setenv("SPACEPILOT_RUNTIME_ENVS_DIR", str(tmp_path / "runtime-envs"))
+    monkeypatch.setattr(rt, "_ISOLATED_OK", {})
+    return _make_venv(rt.isolated_env_dir(runtimes()["mlx-lm"]))
+
+
 @pytest.fixture
 def isolated_env(tmp_path, monkeypatch):
     """A real venv standing in for the one `runtimes install mlx-lm` makes."""
     monkeypatch.setenv("SPACEPILOT_RUNTIME_ENVS_DIR", str(tmp_path / "runtime-envs"))
-    env_dir = rt.isolated_env_dir(runtimes()["mlx-lm"])
-    env_dir.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run([sys.executable, "-m", "venv", str(env_dir)],
-                   capture_output=True, text=True, check=True)
+    monkeypatch.setattr(rt, "_ISOLATED_OK", {})
+    env_dir = _make_venv(rt.isolated_env_dir(runtimes()["mlx-lm"]))
+    _add_stub_mlx_lm(env_dir)
     return env_dir
 
 
@@ -136,3 +175,66 @@ def test_the_preview_payload_names_the_environment_it_would_install_into(isolate
     assert out["isolated"] is True
     assert out["interpreter"] == str(rt.isolated_python(runtimes()["mlx-lm"]))
     assert out["blocked"] is False
+
+
+def test_a_venv_left_by_a_failed_install_never_shadows_a_working_one(empty_isolated_env):
+    """The regression this change could have introduced.
+
+    An empty venv exists, so preferring it on existence alone would take away
+    the route of someone whose own environment has a working mlx-lm.
+    """
+    from spacepilot.drivers.mlx_lm_driver import MlxLmDriver
+    from spacepilot.drivers.mlx_embed_driver import MlxEmbedDriver
+
+    assert (empty_isolated_env / "bin" / "python").is_file()
+    assert rt.runtime_python("mlx-lm") == rt.interpreter()
+    assert MlxLmDriver().python_bin == rt.interpreter()
+    assert MlxEmbedDriver().python_bin == rt.interpreter()
+
+
+def test_a_failed_isolated_install_leaves_no_venv_behind(tmp_path, monkeypatch):
+    """Belt as well as braces: the half-made environment is torn down."""
+    monkeypatch.setenv("SPACEPILOT_RUNTIME_ENVS_DIR", str(tmp_path / "runtime-envs"))
+    monkeypatch.setattr(rt, "_ISOLATED_OK", {})
+    r = runtimes()["mlx-lm"]
+    env_dir = rt.isolated_env_dir(r)
+    real_run = subprocess.run
+
+    def fail_the_install(argv, *a, **kw):
+        if isinstance(argv, list) and "install" in argv:
+            class Done:
+                returncode = 1
+                stdout = ""
+                stderr = "ERROR: No matching distribution found for mlx-lm"
+            return Done()
+        return real_run(argv, *a, **kw)
+
+    monkeypatch.setattr(rt.subprocess, "run", fail_the_install)
+    st = rt.install(r)
+
+    assert st.installed is False
+    assert not env_dir.exists(), "a failed install left its venv behind"
+    assert rt.runtime_python("mlx-lm") == rt.interpreter()
+
+
+def test_a_uv_resolver_error_keeps_the_package_name_not_just_the_last_line():
+    """uv draws a box; its last line alone says nothing useful."""
+    class Done:
+        returncode = 1
+        stdout = ""
+        stderr = (
+            "  x No solution found when resolving dependencies:\n"
+            "  |-> Because mlx-lm==99.0 was not found in the package registry\n"
+            "      and you require mlx-lm==99.0, we can conclude that\n"
+            "      your requirements are unsatisfiable.\n")
+
+    tail = rt._error_tail(Done(), ["/opt/homebrew/bin/uv", "pip", "install"])
+    assert "mlx-lm==99.0" in tail
+    assert "unsatisfiable" in tail
+    # pip's single ERROR: line is still reported as one line.
+    class Pip:
+        returncode = 1
+        stdout = ""
+        stderr = "Collecting mlx-lm\nERROR: No matching distribution found for mlx-lm"
+    assert rt._error_tail(Pip(), ["/usr/bin/python3", "-m", "pip"]) == \
+        "ERROR: No matching distribution found for mlx-lm"

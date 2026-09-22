@@ -10,6 +10,7 @@ These tests run against a real pip-less interpreter made by `uv venv`, not a
 mock: the bug was about what a real interpreter does or does not have.
 """
 
+import os
 import shutil
 import subprocess
 
@@ -20,7 +21,23 @@ from spacepilot.runtimes import Impact, runtimes
 
 
 UV = shutil.which("uv")
-needs_uv = pytest.mark.skipif(not UV, reason="uv is not on PATH")
+
+# Deliberately NOT `skipif`. uv is how the documented first run installs this
+# project, so it is a real dependency of these proofs, not an optional extra:
+# a runner without it must fail loudly here rather than shrink the pip-less
+# proof to a quiet green. Set SPACEPILOT_TESTS_ALLOW_NO_UV=1 to opt out, and
+# the opt-out says so in the skip reason.
+needs_uv = pytest.mark.skipif(
+    not UV and os.environ.get("SPACEPILOT_TESTS_ALLOW_NO_UV") == "1",
+    reason="uv is not on PATH and SPACEPILOT_TESTS_ALLOW_NO_UV=1 was set")
+
+
+def test_uv_is_on_path_because_every_proof_below_depends_on_it():
+    assert UV, (
+        "uv is not on PATH. The documented first run is `uv tool install "
+        "spacepilot`, so these tests cannot prove anything without it. "
+        "Install uv on this runner; set SPACEPILOT_TESTS_ALLOW_NO_UV=1 only "
+        "if you accept losing the pip-less proof.")
 
 
 def shared_env_runtime():
@@ -45,7 +62,8 @@ def shared_env_runtime():
 def pipless_python(tmp_path_factory):
     """A real interpreter with no pip, exactly like a uv tool venv."""
     if not UV:
-        pytest.skip("uv is not on PATH")
+        pytest.fail("uv is not on PATH; see "
+                    "test_uv_is_on_path_because_every_proof_below_depends_on_it")
     env = tmp_path_factory.mktemp("pipless") / "venv"
     subprocess.run([UV, "venv", str(env)], capture_output=True, text=True, check=True)
     py = env / "bin" / "python"
@@ -147,12 +165,15 @@ def test_with_neither_pip_nor_uv_the_error_names_a_command_to_run(pipless_python
 
     imp = rt.preview(shared_env_runtime(), py=pipless_python)
     assert imp.blocked and imp.error
-    assert "uv pip install" in imp.error
+    # Leads with something runnable on the machine as it stands: naming a uv
+    # command while saying uv is missing gives nobody anything to paste.
+    assert f"{pipless_python} -m ensurepip --upgrade" in imp.error
+    assert imp.error.index("ensurepip") < imp.error.index("uv pip install")
     assert pipless_python in imp.error
 
     st = rt.install(shared_env_runtime(), py=pipless_python)
     assert st.installed is False
-    assert st.reason and "uv pip install" in st.reason
+    assert st.reason and "ensurepip --upgrade" in st.reason
 
 
 def test_script_installs_are_untouched_by_any_of_this():
@@ -174,3 +195,12 @@ def test_the_mcp_preview_tool_passes_the_stop_signal_through(monkeypatch):
     assert out["blocked"] is True
     assert out["is_disruptive"] is True
     assert out["error"] == "No module named pip"
+
+
+def test_an_unlaunchable_interpreter_is_a_guess_and_is_never_remembered():
+    """`install_command` runs for a venv that does not exist yet (the CLI
+    prints the command before creating it). Caching "that path has pip" from
+    a path with nothing on it would then answer for the real interpreter."""
+    missing = "/nonexistent/interpreter/bin/python"
+    assert rt.pip_available(missing) is True     # a default, not a measurement
+    assert missing not in rt._PIP_PROBE

@@ -1579,7 +1579,7 @@ def cmd_runtimes(args, cfg=None) -> int:
     from spacepilot import runtimes as rt
 
     reg = rt.runtimes()
-    runtime_python = rt.interpreter(cfg)
+    shared_python = rt.interpreter(cfg)
     action = getattr(args, "runtimes_action", None) or "list"
 
     if action == "list":
@@ -1615,13 +1615,13 @@ def cmd_runtimes(args, cfg=None) -> int:
                 })
             print(json.dumps({
                 "system": {"chip": profile.chip, "backend": backend,
-                           "interpreter": runtime_python},
+                           "interpreter": shared_python},
                 "runtimes": rows,
             }, indent=2, default=str))
             return 0
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
-              f"· {runtime_python}\n")
+              f"· {shared_python}\n")
         print("\n".join(_runtimes_table([
             {"state": _state_of(r, st), "id": r.id, "serves": r.serves,
              "backends": r.backends, "version": st.version,
@@ -1676,19 +1676,19 @@ def cmd_runtimes(args, cfg=None) -> int:
             print(f"Cannot install {r.name}: {st.python_note}")
             return 1
 
-        argv = rt.install_command(r, py=runtime_python)
+        argv = rt.install_command(r, py=shared_python)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
         if r.install.isolated:
             print(f"  into       its own environment -- {rt.isolated_env_dir(r)}")
         else:
-            print(f"  into       {runtime_python}")
+            print(f"  into       {shared_python}")
         print(f"  licence    {r.license}")
         if r.notes:
             print(f"  note       {r.notes}")
 
         print("\n  resolving what this would change...")
-        imp = rt.preview(r, py=runtime_python)
+        imp = rt.preview(r, py=shared_python)
         if imp.error:
             print(f"  could not resolve: {imp.error}")
             return 1
@@ -1721,7 +1721,7 @@ def cmd_runtimes(args, cfg=None) -> int:
                 return 1
 
         print(f"\n  installing {r.install.package}...")
-        st = rt.install(r, py=runtime_python)
+        st = rt.install(r, py=shared_python)
         if st.installed and not st.below_minimum:
             print(f"  {r.name} {st.version} installed and imports cleanly.")
             return 0
