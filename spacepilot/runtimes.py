@@ -278,6 +278,24 @@ def interpreter(cfg: Optional[Dict[str, Any]] = None) -> str:
     return _spacepilot_console_python() or sys.executable
 
 
+def runtime_python(runtime_id: str, cfg: Optional[Dict[str, Any]] = None) -> str:
+    """The interpreter that can actually run one runtime's code.
+
+    For an `install.isolated` runtime this is its own venv -- installing it
+    there and then looking for it in the shared interpreter would report "no
+    route" for something that is installed. The isolated venv only counts once
+    it exists: someone who installed mlx-lm into their own environment before
+    it became isolated keeps their route, and the shared interpreter stays the
+    answer for every non-isolated runtime.
+    """
+    r = runtimes().get(runtime_id)
+    if r is not None and r.install.isolated:
+        env_py = isolated_python(r)
+        if env_py.is_file():
+            return str(env_py)
+    return interpreter(cfg)
+
+
 def python_ok(r: Runtime, py: Optional[str] = None) -> tuple[bool, str]:
     """Whether this interpreter satisfies the runtime's declared requirement."""
     if not r.python_requires:

@@ -78,7 +78,10 @@ async def preview_install(runtime_id: str):
     return {
         "runtime_id": runtime_id,
         "command": " ".join(rt.install_command(r)),
-        "interpreter": rt.interpreter(),
+        # The interpreter this runtime installs into, which for an
+        # `isolated` runtime is its own venv rather than the daemon's.
+        "interpreter": rt.runtime_python(runtime_id),
+        "isolated": r.install.isolated,
         **imp.to_dict(),
     }
 

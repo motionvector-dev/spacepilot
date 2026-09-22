@@ -208,7 +208,10 @@ def test_driver_uses_local_snapshot_offline_and_no_sysctl(tmp_path, monkeypatch)
         max_kv_size=1024, temperature=0.0,
     )
     argv = seen["argv"]
-    assert argv[:3] == ["/fake/python", "-m", "spacepilot.drivers.mlx_lm_runner"]
+    # The runner goes by file path, not `-m`: mlx-lm's isolated venv has
+    # mlx_lm in it and no `spacepilot` package to import.
+    assert argv[0] == "/fake/python"
+    assert argv[1].endswith("mlx_lm_runner.py")
     assert str(snapshot) in argv
     assert "hello" not in argv
     assert seen["kwargs"]["input"] == "hello"

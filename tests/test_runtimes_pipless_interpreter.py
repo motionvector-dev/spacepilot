@@ -23,6 +23,24 @@ UV = shutil.which("uv")
 needs_uv = pytest.mark.skipif(not UV, reason="uv is not on PATH")
 
 
+def shared_env_runtime():
+    """A `method: pip` runtime that installs into the shared interpreter.
+
+    Deliberately synthetic rather than a registry entry: the registry's own
+    runtimes come and go and can become `isolated`, which would quietly stop
+    these tests from exercising the shared-interpreter path at all.
+    """
+    return rt.parse_runtime({
+        "schema": 1, "id": "shared-probe", "name": "Shared probe",
+        "summary": "s", "license": "MIT", "serves": ["text"],
+        "backends": ["metal"],
+        "install": {"method": "pip", "package": "mlx-lm", "min_version": "0.31.3",
+                    "checked": "2026-09-22",
+                    "constraints": ["transformers>=5.12.1,<5.13"]},
+        "verify": {"import": "mlx_lm"},
+    }, "shared-probe.yaml")
+
+
 @pytest.fixture(scope="module")
 def pipless_python(tmp_path_factory):
     """A real interpreter with no pip, exactly like a uv tool venv."""
@@ -45,7 +63,7 @@ def test_the_fixture_interpreter_really_has_no_pip(pipless_python):
 @needs_uv
 def test_install_command_falls_back_to_uv_for_a_pipless_interpreter(pipless_python):
     """`-m pip install` cannot run there, so it is not what we claim to run."""
-    argv = rt.install_command(runtimes()["mlx-lm"], py=pipless_python)
+    argv = rt.install_command(shared_env_runtime(), py=pipless_python)
     assert argv[:5] == [UV, "pip", "install", "--python", pipless_python]
     assert "mlx-lm>=0.31.3" in argv
     assert "-m" not in argv
@@ -70,7 +88,7 @@ def test_install_dispatches_the_uv_command_not_pip(pipless_python, monkeypatch):
 
     monkeypatch.setattr(rt.subprocess, "run", spy)
     monkeypatch.setattr(rt, "check", lambda r, py=None, cfg=None: rt.Status(r.id, True, "0.0.0"))
-    rt.install(runtimes()["mlx-lm"], py=pipless_python)
+    rt.install(shared_env_runtime(), py=pipless_python)
 
     assert seen, "no install command was dispatched"
     assert seen[-1][:5] == [UV, "pip", "install", "--python", pipless_python]
@@ -95,7 +113,7 @@ def test_preview_dry_runs_through_uv_when_pip_is_absent(pipless_python, monkeypa
         return real_run(argv, *a, **kw)
 
     monkeypatch.setattr(rt.subprocess, "run", spy)
-    imp = rt.preview(runtimes()["mlx-lm"], py=pipless_python)
+    imp = rt.preview(shared_env_runtime(), py=pipless_python)
 
     dry = [c for c in seen if "--dry-run" in c][-1]
     assert dry[:5] == [UV, "pip", "install", "--python", pipless_python]
@@ -127,12 +145,12 @@ def test_with_neither_pip_nor_uv_the_error_names_a_command_to_run(pipless_python
     monkeypatch.setattr(rt.shutil, "which", lambda name: None)
     monkeypatch.setattr(rt, "_ensurepip", lambda py, timeout=300: False)
 
-    imp = rt.preview(runtimes()["mlx-lm"], py=pipless_python)
+    imp = rt.preview(shared_env_runtime(), py=pipless_python)
     assert imp.blocked and imp.error
     assert "uv pip install" in imp.error
     assert pipless_python in imp.error
 
-    st = rt.install(runtimes()["mlx-lm"], py=pipless_python)
+    st = rt.install(shared_env_runtime(), py=pipless_python)
     assert st.installed is False
     assert st.reason and "uv pip install" in st.reason
 

@@ -109,11 +109,11 @@ def test_mlx_lm_install_carries_the_known_good_transformers_constraint():
 
     runtime = runtimes()["mlx-lm"]
     assert runtime.install.constraints == ["transformers>=5.12.1,<5.13"]
+    # mlx-lm is `isolated` now, so an explicit `py` is ignored on purpose --
+    # the whole point is that it never resolves into a shared interpreter.
     argv = rt.install_command(runtime, py="/tmp/python")
-    assert argv == [
-        "/tmp/python", "-m", "pip", "install", "mlx-lm>=0.31.3",
-        "transformers>=5.12.1,<5.13",
-    ]
+    assert argv[0] == str(rt.isolated_python(runtime))
+    assert argv[-2:] == ["mlx-lm>=0.31.3", "transformers>=5.12.1,<5.13"]
 
 
 def test_unknown_backend_is_rejected():

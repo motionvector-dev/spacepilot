@@ -1240,7 +1240,7 @@ def _cmd_run_text(args, cfg=None) -> int:
         return 1
     print(f"  model       {variant_id}" + ("" if requested else " (default — pass --model to pick another)"))
 
-    driver = MlxLmDriver(python_bin=rt.interpreter(cfg))
+    driver = MlxLmDriver(python_bin=rt.runtime_python("mlx-lm", cfg))
     service = TextExecutionService(driver=driver)
     try:
         plan = service.plan("text", variant_id=variant_id)

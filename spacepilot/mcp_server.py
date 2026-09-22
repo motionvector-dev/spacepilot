@@ -345,7 +345,10 @@ def spacepilot_preview_runtime_install(runtime_id: str) -> dict:
     imp = rt.preview(r)
     return {"runtime_id": runtime_id,
             "command": " ".join(rt.install_command(r)),
-            "interpreter": rt.interpreter(), **imp.to_dict()}
+            # The interpreter this runtime actually installs into -- its own
+            # venv when it is `isolated`, not whatever the daemon runs under.
+            "interpreter": rt.runtime_python(runtime_id),
+            "isolated": r.install.isolated, **imp.to_dict()}
 
 
 @mcp.tool()
