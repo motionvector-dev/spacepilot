@@ -300,8 +300,21 @@ async def inspect_shell_ws(websocket: WebSocket):
 
         lc_fn = _get_api_attr("load_config", load_config)
         gi_fn = _get_api_attr("get_instance_info", get_instance_info)
-        cfg = lc_fn()
-        inst = gi_fn(cfg)
+
+        # Asking AWS is the first thing that can fail, and it fails for
+        # ordinary reasons: a missing profile, expired credentials, no
+        # network. `get_instance_info` raises those rather than rendering
+        # them as "no instance", so an unguarded call escaped the handler and
+        # the client saw a bare 1006 with no message. Report the reason
+        # through the socket the "Instance not running" path already intends.
+        try:
+            cfg = lc_fn()
+            inst = gi_fn(cfg)
+        except Exception as exc:
+            await websocket.send_json({"type": "error", "message": str(exc) or exc.__class__.__name__})
+            await websocket.close(code=1011)
+            return
+
         if not inst or inst.get("state") != "running" or not inst.get("ip"):
             await websocket.send_json({"type": "error", "message": "Instance not running"})
             await websocket.close(code=1011)
