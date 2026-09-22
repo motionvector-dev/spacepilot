@@ -96,6 +96,16 @@ A test that passes against the broken code is not a test. When fixing a bug,
 check the new test actually fails against the original behaviour before
 believing it.
 
+Before believing any local packaging result, move `build/` and `*.egg-info`
+aside. setuptools stages package data into `build/lib/` and caches the file
+list in `*.egg-info/SOURCES.txt`, and reuses both — so a stale one ships files
+the current `pyproject.toml` no longer asks for. On a tree that has been built
+before, every `web/**` glob was once deleted and the wheel came out
+byte-identical, which nearly got a real packaging hole reported as
+non-reproducible. CI builds from a fresh clone and is not exposed; your laptop
+is. The `wheel` fixture in `tests/test_wheel_install.py` now builds from a
+filtered copy for this reason — reuse it rather than rolling your own.
+
 ## Money and hardware
 
 `spacepilot launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour that
