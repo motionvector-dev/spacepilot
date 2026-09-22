@@ -73,6 +73,38 @@ def usable_memory_bytes(profile: "DeviceProfile") -> Optional[int]:
     return max(0, capacity - reserve)
 
 
+def format_gib(value_bytes: Optional[int]) -> str:
+    """The one way every surface prints a capacity. Bytes are GiB, so say GiB."""
+    if value_bytes is None:
+        return "unknown"
+    return f"{value_bytes / GIB:.2f} GiB"
+
+
+def usable_memory_report(profile: "DeviceProfile") -> Dict[str, Any]:
+    """The single usable-memory answer, for every surface that prints one.
+
+    `doctor`, `probe`, the MCP status tool and GET /api/compute/local-status
+    each used to do this arithmetic themselves, and reported three different
+    capacities for one machine at one instant — 25.0 GB, 24.96 GiB and 28.8 GB
+    on a 32 GB M1 Max. Every fit verdict is computed from this number, so the
+    disagreement propagated into what users were told a model would do.
+
+    The source travels with the number on purpose. `metal` is the platform's
+    own recommended working set; `heuristic` is our reserve arithmetic, which
+    is a guess and has to read as one. A process without torch cannot ask Metal
+    and falls back to the heuristic, so naming the source is how that stays
+    visible instead of looking like a second measurement.
+    """
+    usable = usable_memory_bytes(profile)
+    return {
+        "usable_memory_bytes": usable,
+        "usable_memory_gib": round((usable or 0) / GIB, 2),
+        "usable_memory_known": usable is not None,
+        "memory_limit_source": profile.memory_limit_source
+        or ("heuristic" if usable is not None else "unknown"),
+    }
+
+
 def _run(argv: List[str], timeout: float = 4.0) -> Optional[str]:
     try:
         out = subprocess.run(

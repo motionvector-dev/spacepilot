@@ -51,23 +51,15 @@ def download_local_model(req: ModelDownloadRequest):
 
 @router.get("/local-status")
 def get_local_compute_status():
-    """Get live status of local inference cache and loaded weights."""
+    """Get live status of the local inference cache.
+
+    The payload is built by `spacepilot.local_status`, which the MCP tool also
+    calls: this route used to re-implement the cache walk over the canonical
+    directory only and answered differently from MCP at the same instant.
+    """
     try:
-        from spacepilot.device_probe import probe_local_device
-        from spacepilot.model_recommender import MODELS_CACHE
-        profile = probe_local_device()
-        downloaded = []
-        if MODELS_CACHE.exists():
-            downloaded = [f.name for f in MODELS_CACHE.iterdir() if f.is_file()]
-        return {
-            "status": "online",
-            "backend": profile.backend,
-            "device_name": profile.device_name,
-            "vram_usable_gb": profile.vram_usable_gb,
-            "vram_usable_known": profile.usable_memory_known,
-            "loaded_models": downloaded,
-            "is_local_capable": profile.is_local_capable,
-        }
+        from spacepilot.local_status import local_status_payload
+        return local_status_payload()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve local status: {str(e)}")
 

@@ -57,14 +57,20 @@ def test_checkpoint_storage_inside_outputs_dir():
     _assert_contained(engine.base_dir)
 
 
-def test_checkpoint_restore_target_inside_outputs_dir():
+def test_checkpoint_calls_refuse_rather_than_sync(tmp_path):
+    """Checkpoint sync is gated, so there is no restore target to contain.
+
+    It stored nothing and said `success` anyway; the containment question is
+    now simply that a refusal writes nothing, anywhere.
+    """
     engine = CheckpointSyncEngine()
-    meta = engine.create_snapshot("job-contained", 1, 1, 0.1, [])
-    try:
-        res = engine.restore_snapshot(meta.snapshot_id)
-        _assert_contained(res["target_dir"])
-    finally:
-        engine.delete_snapshot(meta.snapshot_id)
+    target = tmp_path / "restored"
+    with pytest.raises(NotImplementedError):
+        engine.create_snapshot("job-contained", 1, 1, 0.1, [])
+    with pytest.raises(NotImplementedError):
+        engine.restore_snapshot("snap-contained", str(target))
+    assert not target.exists()
+    assert not Path(engine.base_dir).exists() or not any(Path(engine.base_dir).iterdir())
 
 
 @pytest.mark.parametrize("relpath", SOURCES)

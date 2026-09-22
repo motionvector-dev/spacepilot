@@ -125,6 +125,40 @@ def downloaded_model_ids() -> List[str]:
     return values
 
 
+# A cache entry smaller than this is not weights. The gated mock downloader
+# left 73-75 byte YAML markers behind ("model_id: …\nsize_gb: …\nsha256: …"),
+# and those markers were being reported as loaded models while `doctor` said
+# the ONNX weights were missing. The lightest real weight file we ship is
+# kokoro-82m (~80 MB), so 1 MiB separates a marker from a model with room to
+# spare, and errs towards calling something a marker.
+WEIGHT_FILE_MIN_BYTES = 1024 * 1024
+
+
+def cached_model_report() -> Dict[str, List[str]]:
+    """What is actually in the local model cache, split by what it is.
+
+    One implementation, read by every surface. The MCP tool walked the
+    canonical *and* legacy cache dirs while the HTTP route re-implemented the
+    walk over the canonical dir only, so the same field name answered two
+    different things at the same instant.
+    """
+    weights: List[str] = []
+    stubs: List[str] = []
+    for root in model_recommender_cache_read_dirs():
+        if not root.is_dir():
+            continue
+        for path in sorted(root.iterdir(), key=lambda item: item.name):
+            if not path.is_file():
+                continue
+            if path.name in weights or path.name in stubs:
+                continue
+            if path.stat().st_size >= WEIGHT_FILE_MIN_BYTES:
+                weights.append(path.name)
+            else:
+                stubs.append(path.name)
+    return {"cached_weight_model_ids": weights, "stub_marker_ids": stubs}
+
+
 def _entry_verdict(entry: ModelEntry, profile: DeviceProfile,
                    usable_bytes: Optional[int], usable_vram: float) -> Dict[str, Any]:
     """The shared verdict words, for a catalogue entry.

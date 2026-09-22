@@ -83,24 +83,17 @@ def spacepilot_recommend_models() -> Dict[str, Any]:
 
 @mcp.tool()
 def spacepilot_get_local_status() -> Dict[str, Any]:
-    """Get live status of local inference workers and loaded models.
-    
+    """Get live status of the local inference cache and hardware.
+
     Returns:
-        Dict[str, Any]: Loaded model weights, current VRAM allocation, and worker availability.
+        Dict[str, Any]: The same dict `GET /api/compute/local-status` returns —
+        one implementation in `spacepilot.local_status`, so the two surfaces
+        cannot answer the same question two ways again. `loaded_models` is
+        deprecated and always empty; read `cached_weight_model_ids`.
     """
     try:
-        from spacepilot.device_probe import probe_local_device
-        from spacepilot.model_recommender import downloaded_model_ids
-        profile = probe_local_device()
-        downloaded = downloaded_model_ids()
-        return {
-            "status": "online",
-            "backend": profile.backend,
-            "vram_usable_gb": profile.vram_usable_gb,
-            "vram_usable_known": profile.usable_memory_known,
-            "loaded_models": downloaded,
-            "is_local_capable": profile.is_local_capable,
-        }
+        from spacepilot.local_status import local_status_payload
+        return local_status_payload()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -132,19 +125,22 @@ def spacepilot_create_checkpoint(job_id: str, step: int, epoch: int, loss: float
 @mcp.tool()
 def spacepilot_list_checkpoints(job_id: Optional[str] = None) -> Dict[str, Any]:
     """List training checkpoint snapshots.
-    
+
     Args:
         job_id (str, optional): The ID of the training job to filter by.
-        
+
     Returns:
-        Dict[str, Any]: List of snapshot metadata.
+        Dict[str, Any]: Snapshot metadata, plus `store`, which says whether a
+        checkpoint store exists at all. An empty list alone read as "this job
+        has no snapshots"; checkpoint sync is gated, so nothing is stored.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
         from dataclasses import asdict
         engine = CheckpointSyncEngine()
         snapshots = engine.list_snapshots(job_id)
-        return {"status": "success", "snapshots": [asdict(s) for s in snapshots]}
+        return {"status": "success", "snapshots": [asdict(s) for s in snapshots],
+                "store": engine.store_status()}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

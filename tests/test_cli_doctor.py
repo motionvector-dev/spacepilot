@@ -8,18 +8,15 @@ class TestCliDoctor(unittest.TestCase):
     @patch('spacepilot.device_probe.probe_local_device')
     @patch('subprocess.run')
     def test_cmd_doctor_success(self, mock_subprocess_run, mock_probe):
-        # Mock device profile
-        mock_profile = MagicMock()
-        mock_profile.os_type = "macOS"
-        mock_profile.architecture = "arm64"
-        mock_profile.backend = "metal"
-        mock_profile.device_name = "M2 Max"
-        mock_profile.vram_usable_gb = 24.0
-        mock_profile.vram_total_gb = 32.0
-        mock_profile.memory_limit_source = "metal"
-        mock_profile.ram_free_gb = 16.0
-        mock_profile.ram_total_gb = 32.0
-        mock_probe.return_value = mock_profile
+        # A real profile, not a MagicMock: the usable-memory line is computed by
+        # the shared helper now, and a mock would let it print anything.
+        from spacepilot.device_probe import GIB, DeviceProfile
+        mock_probe.return_value = DeviceProfile(
+            os_name="macOS", arch="arm64", backend="metal", gpu_name="M2 Max",
+            memory_total_bytes=32 * GIB, memory_free_bytes=16 * GIB,
+            memory_unified=True,
+            memory_limit_bytes=24 * GIB, memory_limit_source="metal",
+        )
 
         # Mock subprocess (ffmpeg and aws sts)
         mock_subprocess_run.side_effect = [
@@ -40,27 +37,24 @@ class TestCliDoctor(unittest.TestCase):
         output = captured_output.getvalue()
         
         # Assertions
-        self.assertIn("OS/Arch  : macOS / arm64", output)
+        self.assertIn("OS/Arch  : darwin / arm64", output)
         self.assertIn("Backend  : METAL", output)
         self.assertIn("Device   : M2 Max", output)
-        self.assertIn("VRAM     : 24.0GB usable / 32.0GB total", output)
-        self.assertIn("limit source: metal", output)
+        self.assertIn("VRAM     : 24.00 GiB usable / 32.00 GiB total", output)
+        self.assertIn("source: metal", output)
+        self.assertIn("reserved: 8.00 GiB", output)
         self.assertIn("FFmpeg   : ✅ Installed", output)
         self.assertIn("AWS Auth : ✅ Valid", output)
 
     @patch('spacepilot.device_probe.probe_local_device')
     @patch('subprocess.run')
     def test_cmd_doctor_missing_deps(self, mock_subprocess_run, mock_probe):
-        mock_profile = MagicMock()
-        mock_profile.os_type = "Linux"
-        mock_profile.architecture = "x86_64"
-        mock_profile.backend = "cuda"
-        mock_profile.device_name = "RTX 4090"
-        mock_profile.vram_usable_gb = 22.0
-        mock_profile.vram_total_gb = 24.0
-        mock_profile.ram_free_gb = 32.0
-        mock_profile.ram_total_gb = 64.0
-        mock_probe.return_value = mock_profile
+        from spacepilot.device_probe import GIB, DeviceProfile
+        mock_probe.return_value = DeviceProfile(
+            os_name="Linux", arch="x86_64", backend="cuda", gpu_name="RTX 4090",
+            memory_total_bytes=64 * GIB, memory_free_bytes=32 * GIB,
+            vram_total_bytes=24 * GIB,
+        )
 
         # Simulate failures for ffmpeg and aws
         mock_subprocess_run.side_effect = Exception("Command not found")

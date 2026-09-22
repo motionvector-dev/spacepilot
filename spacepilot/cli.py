@@ -548,9 +548,15 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print(f"  Runtime  : {profile.compute_runtime} present but unrouted "
                   f"— {profile.compute_runtime_detail}")
     else:
-        source = getattr(profile, "memory_limit_source", None) or "unknown"
-        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total "
-              f"(limit source: {source}; Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
+        # One computation for every surface (`usable_memory_report`), printed
+        # one way: these bytes are GiB, and three surfaces used to print three
+        # numbers for one machine.
+        from spacepilot.device_probe import format_gib, usable_memory_report
+        memory = usable_memory_report(profile)
+        reserved = (profile.accelerator_memory_bytes or 0) - (memory["usable_memory_bytes"] or 0)
+        print(f"  VRAM     : {format_gib(memory['usable_memory_bytes'])} usable / "
+              f"{format_gib(profile.accelerator_memory_bytes)} total "
+              f"(source: {memory['memory_limit_source']}; reserved: {format_gib(reserved)})")
     print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")
     for gpu in (profile.gpus if isinstance(profile.gpus, list) else []):
         vram = f"{gpu['vram_total_bytes'] / (1024 ** 3):.2f}GB" if gpu.get("vram_total_bytes") else "VRAM unknown"
@@ -1977,10 +1983,16 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         if system.memory_total_bytes:
             unified = " unified" if system.memory_unified else ""
             print(f"  memory    : {gib(system.memory_total_bytes)}{unified}")
-        if system.memory_limit_bytes is not None:
-            src = system.memory_limit_source or "unknown"
-            print(f"  usable    : {gib(system.memory_limit_bytes)} (source: {src})")
-        elif profile.accelerator_memory_bytes is None:
+        # Same helper `doctor` and the status surfaces use. Reading
+        # system.memory_limit_bytes directly was a second implementation, and a
+        # profile whose platform limit is unknown printed nothing here while
+        # `doctor` printed a heuristic number.
+        from spacepilot.device_probe import format_gib, usable_memory_report
+        memory = usable_memory_report(profile)
+        if memory["usable_memory_known"]:
+            print(f"  usable    : {format_gib(memory['usable_memory_bytes'])} usable "
+                  f"(source: {memory['memory_limit_source']})")
+        else:
             print("  usable    : unknown — accelerator memory not measured")
         if system.vram_total_bytes:
             print(f"  vram      : {gib(system.vram_total_bytes)} present")
