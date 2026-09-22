@@ -96,6 +96,22 @@ A test that passes against the broken code is not a test. When fixing a bug,
 check the new test actually fails against the original behaviour before
 believing it.
 
+Before believing any local packaging result, move `build/` and `*.egg-info`
+aside. setuptools stages package data into `build/lib/` and reuses it, so a
+stale one ships files the current `pyproject.toml` no longer asks for. For
+wheels `build/lib/` is the one that matters — clearing only `*.egg-info` still
+gives you the false pass — but move both, since `SOURCES.txt` drives sdists.
+`pip wheel` builds in place and leaves both behind, so the trap arms itself on
+first use.
+
+Measured, not assumed: on a tree built once, deleting every package-data glob
+from `pyproject.toml` produced a wheel with the same 107 data files and the
+same CRCs. Clearing `build/` dropped it to zero. A real packaging hole was
+nearly reported as non-reproducible this way. CI is safe because
+`actions/checkout` defaults to `clean: true` and runs `git clean -ffdx` — not
+because the runner is fresh; it is a persistent self-hosted workspace, so if
+anyone disables that flag for speed, CI is exposed too.
+
 ## Money and hardware
 
 `spacepilot launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour that
