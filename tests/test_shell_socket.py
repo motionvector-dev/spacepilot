@@ -12,6 +12,7 @@ unexplained drop.
 """
 
 import json
+import logging
 
 import pytest
 from fastapi.testclient import TestClient
@@ -97,12 +98,22 @@ def test_a_client_that_never_authenticates_is_closed_1008(client):
         assert ws.receive()["code"] == 1008
 
 
-def test_an_auth_frame_sent_after_the_window_is_too_late(client, token):
-    """The window is not reopened by eventually saying the right thing."""
+def test_an_auth_frame_sent_after_the_window_buys_nothing(client, token, monkeypatch):
+    """Saying the right thing late does not reopen the window.
+
+    Asserted by what the handler does next rather than by what comes back:
+    past the close there is nothing to receive and a second read would hang.
+    If the late frame had been honoured, the handler would go on to ask AWS
+    for the instance — so a lookup that records its calls proves it did not.
+    """
+    calls = []
+    monkeypatch.setattr(
+        web_api, "get_instance_info", lambda cfg: calls.append(cfg), raising=False
+    )
     with client.websocket_connect(SHELL) as ws:
-        first = ws.receive()
-        assert first["code"] == 1008
+        assert ws.receive()["code"] == 1008
         ws.send_json({"type": "auth", "token": token})
+    assert calls == [], "a late auth frame reopened the authenticated path"
 
 
 def test_cross_origin_reads_of_the_token_route_are_not_allowed(client):
@@ -121,7 +132,7 @@ def test_no_running_instance_is_reported_and_closed_1011(client, token):
         assert ws.receive()["code"] == 1011
 
 
-def test_an_aws_failure_is_reported_instead_of_crashing(client, token, monkeypatch):
+def test_an_aws_failure_is_reported_instead_of_crashing(client, token, monkeypatch, caplog):
     """The bug: this raised out of the handler and the client saw a bare 1006."""
     def boom(cfg):
         raise RuntimeError(
@@ -130,11 +141,41 @@ def test_an_aws_failure_is_reported_instead_of_crashing(client, token, monkeypat
         )
 
     monkeypatch.setattr(web_api, "get_instance_info", boom, raising=False)
+    with caplog.at_level(logging.ERROR, logger="spacepilot.api.routes.gpu"):
+        with client.websocket_connect(SHELL) as ws:
+            ws.send_json({"type": "auth", "token": token})
+            msg = json.loads(ws.receive_text())
+            assert msg["type"] == "error"
+            assert "could not be found" in msg["message"]
+            assert ws.receive()["code"] == 1011
+
+    # The catch is total, so the trace has to land somewhere a developer looks.
+    assert any(r.exc_info for r in caplog.records), "the failure was swallowed silently"
+
+
+def test_a_long_failure_message_is_bounded_on_the_socket(client, token, monkeypatch):
+    """aws stderr can be long; the socket gets a bounded slice of it."""
+    def boom(cfg):
+        raise RuntimeError("x" * 5000)
+
+    monkeypatch.setattr(web_api, "get_instance_info", boom, raising=False)
     with client.websocket_connect(SHELL) as ws:
         ws.send_json({"type": "auth", "token": token})
         msg = json.loads(ws.receive_text())
-        assert msg["type"] == "error"
-        assert "could not be found" in msg["message"]
+        assert 0 < len(msg["message"]) <= 500
+        assert ws.receive()["code"] == 1011
+
+
+def test_an_error_with_no_message_still_names_itself(client, token, monkeypatch):
+    """`str(exc)` is empty for a bare raise; an empty error frame says nothing."""
+    def boom(cfg):
+        raise TimeoutError()
+
+    monkeypatch.setattr(web_api, "get_instance_info", boom, raising=False)
+    with client.websocket_connect(SHELL) as ws:
+        ws.send_json({"type": "auth", "token": token})
+        msg = json.loads(ws.receive_text())
+        assert msg["message"] == "TimeoutError"
         assert ws.receive()["code"] == 1011
 
 

@@ -7,38 +7,43 @@ path on that machine. Same lesson `conftest.py` already learned for the outputs
 directory, one file over.
 
 These assert against wherever the config would really live, not against one
-hardcoded path: the checkout when running from one, the per-user data directory
-otherwise. A change to that resolution must not quietly disarm the guard.
+hardcoded path. In practice that is the checkout, which is what a developer
+runs the suite from and what the clobber actually hit. The per-user data
+directory is checked too, for an installed copy — and it has to be asked for
+with `$SPACEPILOT_DATA_DIR` cleared, because conftest points that at a tmp dir
+and an unclearing check would compare one tmp path against another and pass
+regardless.
 """
 
 import json
 import os
 from pathlib import Path
 
-from spacepilot import cli
+from spacepilot import cli, paths
 
 CONFIG_NAMES = (".spacepilot_config.json", ".pluto_config.json")
+CHECKOUT = Path(__file__).resolve().parent.parent
+DATA_DIR_ENV_NAMES = ("SPACEPILOT_DATA_DIR", "PLUTO_DATA_DIR")
+
+
+def _true_user_data_dir():
+    """The real per-user root, not the one conftest redirected."""
+    saved = {k: os.environ.pop(k, None) for k in DATA_DIR_ENV_NAMES}
+    try:
+        return paths.user_data_dir()
+    finally:
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
 
 
 def _real_roots():
     """Every directory a real config could resolve to on this machine."""
-    roots = {Path(__file__).resolve().parent.parent}  # the checkout
-    try:
-        from spacepilot import paths
-
-        for fn in ("checkout_root", "user_data_dir", "state_root"):
-            get = getattr(paths, fn, None)
-            if get is None:
-                continue
-            try:
-                root = get()
-            except Exception:
-                continue
-            if root:
-                roots.add(Path(root).resolve())
-    except ImportError:  # pragma: no cover - paths always imports today
-        pass
-    return roots
+    roots = {CHECKOUT, _true_user_data_dir()}
+    checkout = paths.checkout_root()
+    if checkout:
+        roots.add(Path(checkout).resolve())
+    return {Path(r).resolve() for r in roots}
 
 
 def _real_config_paths():
@@ -92,7 +97,34 @@ def test_importing_the_settings_does_not_mint_a_token_into_the_checkout():
     from spacepilot.core.config import get_settings
 
     assert get_settings().studio_token == os.environ["SPACEPILOT_STUDIO_TOKEN"]
-    for root in _real_roots():
-        token_file = root / ".studio_token"
-        if root == Path(__file__).resolve().parent.parent:
-            assert not token_file.exists(), "the suite minted .studio_token in the checkout"
+    assert not (CHECKOUT / ".studio_token").exists(), (
+        "the suite minted .studio_token into the checkout"
+    )
+
+
+def test_an_empty_override_falls_back_instead_of_becoming_a_directory():
+    """`Path("")` is `Path(".")`, which would make CONFIG_FILE a directory.
+
+    `save_config` then fails on os.replace. paths.py strips and falls back
+    everywhere for this reason; the override has to do the same.
+
+    Run in a subprocess, deliberately. Reloading `spacepilot.cli` in-process
+    would point the live module at the real config for the length of the
+    test, and this suite runs background threads — a guard test must not open
+    the very window it exists to close.
+    """
+    import subprocess
+    import sys
+
+    env = {**os.environ, "SPACEPILOT_CONFIG_FILE": "   ", "PYTHONPATH": str(CHECKOUT)}
+    proc = subprocess.run(
+        [sys.executable, "-c",
+         "from spacepilot import cli; print(cli.CONFIG_FILE); print(cli.LEGACY_CONFIG_FILE)"],
+        capture_output=True, text=True, env=env, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    config_file, legacy_file = (Path(p) for p in proc.stdout.strip().splitlines())
+
+    assert config_file.name == ".spacepilot_config.json"
+    assert config_file != Path(".") and not config_file.is_dir()
+    assert legacy_file.name == ".pluto_config.json"
