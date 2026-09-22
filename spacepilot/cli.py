@@ -40,13 +40,16 @@ OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", defa
 # the developer's real credentials and AWS profile. The legacy name follows the
 # canonical one into whatever directory it was pointed at, so the fallback in
 # `load_config` keeps working.
-CONFIG_FILE = Path(
-    env_value(
-        "SPACEPILOT_CONFIG_FILE",
-        "PLUTO_CONFIG_FILE",
-        default=str(REPO_ROOT / ".spacepilot_config.json"),
-    )
-).expanduser()
+#
+# An empty value is not a path: `Path("")` is `Path(".")`, which would make
+# CONFIG_FILE a directory and fail `save_config` on os.replace. Every helper in
+# paths.py strips and falls back for the same reason.
+_CONFIG_OVERRIDE = (env_value("SPACEPILOT_CONFIG_FILE", "PLUTO_CONFIG_FILE", default="") or "").strip()
+CONFIG_FILE = (
+    Path(_CONFIG_OVERRIDE).expanduser()
+    if _CONFIG_OVERRIDE
+    else REPO_ROOT / ".spacepilot_config.json"
+)
 LEGACY_CONFIG_FILE = CONFIG_FILE.parent / ".pluto_config.json"
 KEY_FILE_DEFAULT = Path(
     env_value(
