@@ -1510,6 +1510,47 @@ def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> in
     return 2
 
 
+RUNTIME_COLUMN_CAP = 30
+
+
+def _fit_cell(text: str, cap: int) -> str:
+    """Trim a cell to its cap, saying so, rather than running into the next one."""
+    return text if len(text) <= cap else text[: cap - 1] + "…"
+
+
+def _runtimes_table(rows: list[dict]) -> list[str]:
+    """Render the runtimes table with every column sized to its own content.
+
+    SERVES used to be a flat 16 characters with no guard, so `desert-ant`'s
+    `transcription,audio,text` ran straight into the BACKENDS column and the
+    row stopped being readable. Widths now come from the data, capped so one
+    pathological value cannot push VERSION off the screen either.
+    """
+    columns = [
+        ("STATE", lambda row: row["state"]),
+        ("RUNTIME", lambda row: row["id"]),
+        ("SERVES", lambda row: ",".join(row["serves"])),
+        ("BACKENDS", lambda row: ",".join(row["backends"])),
+        ("VERSION", lambda row: row["version"] or "-"),
+    ]
+    cells = [[_fit_cell(read(row), RUNTIME_COLUMN_CAP) for _header, read in columns]
+             for row in rows]
+    widths = [
+        max([len(header)] + [len(line[index]) for line in cells]) + 2
+        for index, (header, _read) in enumerate(columns)
+    ]
+
+    lines = ["  " + "".join(f"{header:{width}s}" for (header, _), width
+                            in zip(columns, widths)).rstrip()]
+    indent = len("  ") + sum(widths[:2])
+    for row, line in zip(rows, cells):
+        lines.append(("  " + "".join(f"{cell:{width}s}" for cell, width
+                                     in zip(line, widths))).rstrip())
+        if row.get("note"):
+            lines.append(" " * indent + row["note"])
+    return lines
+
+
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
@@ -1559,14 +1600,12 @@ def cmd_runtimes(args, cfg=None) -> int:
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
               f"· {runtime_python}\n")
-        width = max(11, max(len(_state_of(r, st)) for r, st in checked) + 2)
-        print(f"  {'STATE':{width}s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
-        for r, st in checked:
-            state = _state_of(r, st)
-            print(f"  {state:{width}s}{r.id:20s}{','.join(r.serves):16s}"
-                  f"{','.join(r.backends):20s}{st.version or '-'}")
-            if not st.python_compatible:
-                print(f"  {'':{width}s}{'':20s}{st.python_note}")
+        print("\n".join(_runtimes_table([
+            {"state": _state_of(r, st), "id": r.id, "serves": r.serves,
+             "backends": r.backends, "version": st.version,
+             "note": None if st.python_compatible else st.python_note}
+            for r, st in checked
+        ])))
         print("\n  `spacepilot runtimes check <id>` for detail, `install <id>` to add one.")
         print("  n/a here means it needs silicon this machine does not have.")
         return 0

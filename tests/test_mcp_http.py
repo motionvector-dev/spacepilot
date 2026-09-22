@@ -42,6 +42,34 @@ def test_mcp_v1_accepts_an_initialize_request(client):
     assert payload["result"]["serverInfo"]["name"] == "SpacePilot"
 
 
+def test_initialize_reports_the_package_version_not_an_empty_string(client):
+    """A blank version tells a client nothing about what it is talking to."""
+    from spacepilot.core.config import get_settings
+
+    response = client.post(
+        MCP_HTTP_PATH,
+        headers={
+            "Host": "spacepilot.localhost:8088",
+            "Accept": "application/json, text/event-stream",
+            "Content-Type": "application/json",
+        },
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "spacepilot-test", "version": "1"},
+            },
+        },
+    )
+    assert response.status_code == 200
+    reported = response.json()["result"]["serverInfo"]["version"]
+    assert reported, "serverInfo.version was empty"
+    assert reported == get_settings().version
+
+
 def test_mcp_transport_is_covered_by_the_host_guard(client):
     response = client.post(
         MCP_HTTP_PATH,

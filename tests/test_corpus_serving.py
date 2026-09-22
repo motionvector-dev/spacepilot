@@ -84,12 +84,49 @@ def test_mcp_corpus_tools_filter_exact_ids_and_preserve_caveats(monkeypatch):
     rows = spacepilot_measurements("distil-large-v3-ggml")["measurements"]
     assert len(rows) == 2
     assert rows[0]["caveats"][0]["capability"] == "audio.transcription"
-    assert spacepilot_measurements("not-a-variant")["measurements"] == []
 
     summaries = spacepilot_system_summary("test-system")["summaries"]
     assert len(summaries) == 1
     assert summaries[0]["variant_id"] == "distil-large-v3-ggml"
     assert summaries[0]["caveats"][0]["status"] == "preserved"
+
+
+def test_an_unknown_variant_id_is_an_error_not_an_empty_measurement_list(monkeypatch):
+    """"Nothing measured yet" and "you typed it wrong" are different answers.
+
+    Both used to come back as {"measurements": []}, so an agent deciding
+    whether to run a measurement could not tell which one it had.
+    """
+    _fixture_corpus(monkeypatch)
+    from spacepilot.mcp_server import spacepilot_measurements
+
+    answer = spacepilot_measurements("no-such-model")
+    assert "measurements" not in answer
+    assert "no-such-model" in answer["error"]
+    assert "distil-large-v3-ggml" in answer["known"]
+
+
+def test_an_unknown_system_id_is_an_error_not_an_empty_summary_list(monkeypatch):
+    _fixture_corpus(monkeypatch)
+    from spacepilot.mcp_server import spacepilot_system_summary
+
+    answer = spacepilot_system_summary("no-such-system")
+    assert "summaries" not in answer
+    assert "no-such-system" in answer["error"]
+    assert "test-system" in answer["known"]
+
+
+def test_a_known_id_with_no_rows_still_answers_with_an_empty_list(monkeypatch):
+    """The other half of the distinction: known, measured nothing, not an error."""
+    _fixture_corpus(monkeypatch)
+    from spacepilot.mcp_server import spacepilot_measurements
+    from spacepilot.services import corpus as corpus_module
+
+    monkeypatch.setattr(corpus_module, "known_variant_ids",
+                        lambda: ["distil-large-v3-ggml", "measured-nothing-yet"])
+    answer = spacepilot_measurements("measured-nothing-yet")
+    assert answer["measurements"] == []
+    assert "error" not in answer
 
 
 def test_mcp_check_is_a_read_only_probe_with_local_summary(monkeypatch):
