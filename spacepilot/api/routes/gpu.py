@@ -3,6 +3,7 @@
 import sys
 import json
 import asyncio
+import logging
 import subprocess
 from pathlib import Path
 from pydantic import BaseModel
@@ -15,7 +16,14 @@ from spacepilot.api.deps import require_token
 from spacepilot.services.gpu_lifecycle import get_cached_status
 from spacepilot.cli import get_instance_info, load_config, save_config, run_cmd
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["gpu"])
+
+# What a failed instance lookup may say on the socket. The AWS message is the
+# point — "The config profile (x) could not be found" is what makes the drop
+# explicable — but stderr can be long, so it is bounded rather than trusted.
+_WS_ERROR_MAX = 500
 
 
 class GpuActionRequest(BaseModel):
@@ -307,11 +315,19 @@ async def inspect_shell_ws(websocket: WebSocket):
         # them as "no instance", so an unguarded call escaped the handler and
         # the client saw a bare 1006 with no message. Report the reason
         # through the socket the "Instance not running" path already intends.
+        #
+        # The catch stays total on purpose. The defect is "an exception
+        # escaped", and an allowlist recreates it for the next type nobody
+        # listed — `json.loads` on malformed AWS output raises ValueError and
+        # a truncated config raises KeyError, both reachable here. The
+        # traceback goes to the log; the socket gets a bounded message.
         try:
             cfg = lc_fn()
             inst = gi_fn(cfg)
         except Exception as exc:
-            await websocket.send_json({"type": "error", "message": str(exc) or exc.__class__.__name__})
+            logger.exception("shell socket: could not determine instance state")
+            detail = (str(exc) or exc.__class__.__name__)[:_WS_ERROR_MAX]
+            await websocket.send_json({"type": "error", "message": detail})
             await websocket.close(code=1011)
             return
 
