@@ -1676,7 +1676,8 @@ def cmd_runtimes(args, cfg=None) -> int:
             print(f"Cannot install {r.name}: {st.python_note}")
             return 1
 
-        argv = rt.install_command(r, py=shared_python)
+        # About to install, and already resolving; show the real command.
+        argv = rt.install_command(r, py=shared_python, probe=True)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
         if r.install.isolated:

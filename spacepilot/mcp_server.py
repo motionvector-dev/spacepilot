@@ -350,7 +350,7 @@ def spacepilot_preview_runtime_install(runtime_id: str) -> dict:
         return {"error": f"no runtime '{runtime_id}'", "known": sorted(rt.runtimes())}
     imp = rt.preview(r)
     return {"runtime_id": runtime_id,
-            "command": " ".join(rt.install_command(r)),
+            "command": " ".join(rt.install_command(r, probe=True)),
             # The interpreter this runtime actually installs into -- its own
             # venv when it is `isolated`, not whatever the daemon runs under.
             "interpreter": rt.runtime_python(runtime_id),

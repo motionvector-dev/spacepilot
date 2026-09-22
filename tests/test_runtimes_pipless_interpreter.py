@@ -80,8 +80,13 @@ def test_the_fixture_interpreter_really_has_no_pip(pipless_python):
 
 @needs_uv
 def test_install_command_falls_back_to_uv_for_a_pipless_interpreter(pipless_python):
-    """`-m pip install` cannot run there, so it is not what we claim to run."""
-    argv = rt.install_command(shared_env_runtime(), py=pipless_python)
+    """`-m pip install` cannot run there, so it is not what we claim to run.
+
+    `probe=True` because this is the question a caller about to install
+    asks; the bare call stays pure and nominal (see
+    `test_building_an_install_command_never_shells_out`).
+    """
+    argv = rt.install_command(shared_env_runtime(), py=pipless_python, probe=True)
     assert argv[:5] == [UV, "pip", "install", "--python", pipless_python]
     assert "mlx-lm>=0.31.3" in argv
     assert "-m" not in argv
@@ -204,3 +209,38 @@ def test_an_unlaunchable_interpreter_is_a_guess_and_is_never_remembered():
     missing = "/nonexistent/interpreter/bin/python"
     assert rt.pip_available(missing) is True     # a default, not a measurement
     assert missing not in rt._PIP_PROBE
+
+
+def test_building_an_install_command_never_shells_out(monkeypatch):
+    """Describing an action must not perform one.
+
+    The installer chooser turned `install_command()` from string
+    construction into something that probed an interpreter, and
+    `tools/fly.py`'s dry run calls it purely to print what would happen --
+    so a dry run started executing commands. Caught by test_fly.py, which
+    every lane had been steering around because the file hangs (#159).
+    """
+    def explode(*a, **kw):
+        raise AssertionError("building a command must never shell out")
+
+    # `subprocess.run` only: resolving a name on PATH (`shutil.which`) starts
+    # no process, and `interpreter()` legitimately looks up the console
+    # script. Executing something is the line, not touching the filesystem.
+    monkeypatch.setattr(rt.subprocess, "run", explode)
+    # Cold cache, or a probe answered from `_PIP_PROBE` earlier in the same
+    # process would hide exactly the regression this test exists to catch --
+    # which is likely why it failed in CI and not in a warm local run.
+    monkeypatch.setattr(rt, "_PIP_PROBE", {})
+
+    for r in rt.runtimes().values():
+        argv = rt.install_command(r)        # every runtime, both methods
+        assert argv
+    # And the isolated path, whose interpreter may not exist yet at all.
+    assert rt.install_command(runtimes()["mlx-lm"])[1:4] == ["-m", "pip", "install"]
+    assert rt.install_command(shared_env_runtime(), py="/tmp/python")[0] == "/tmp/python"
+
+
+def test_the_real_install_still_resolves_the_installer_at_dispatch(pipless_python):
+    """Purity is for describing. The dispatch itself must still be right."""
+    argv = rt.install_command(shared_env_runtime(), py=pipless_python, probe=True)
+    assert argv[:5] == [UV, "pip", "install", "--python", pipless_python]

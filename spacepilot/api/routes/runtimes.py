@@ -82,7 +82,7 @@ async def preview_install(runtime_id: str):
     imp = await asyncio.to_thread(rt.preview, r)
     return {
         "runtime_id": runtime_id,
-        "command": " ".join(rt.install_command(r)),
+        "command": " ".join(rt.install_command(r, probe=True)),
         # The interpreter this runtime installs into, which for an
         # `isolated` runtime is its own venv rather than the daemon's.
         "interpreter": rt.runtime_python(runtime_id),

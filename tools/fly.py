@@ -245,7 +245,8 @@ def runtime_needs_model_dir(runtime: "rt.Runtime") -> bool:
 
 
 def install_command_for(runtime: "rt.Runtime",
-                         model_dir: Optional[Path] = None) -> List[str]:
+                         model_dir: Optional[Path] = None,
+                         probe: bool = False) -> List[str]:
     """The real argv fly.py runs to install one runtime -- whatever
     `spacepilot.runtimes.install_command()` would run, prefixed with
     `nice -n 19`. Parallelism is bounded separately, via `install_env()`;
@@ -266,7 +267,8 @@ def install_command_for(runtime: "rt.Runtime",
             f"{runtime.id}: install script needs the fetched model directory "
             f"(install.args={runtime.install.script_args!r}) but none was given"
         )
-    return ["nice", "-n", "19", *rt.install_command(runtime, model_dir=model_dir)]
+    return ["nice", "-n", "19",
+            *rt.install_command(runtime, model_dir=model_dir, probe=probe)]
 
 
 @dataclass(frozen=True)
@@ -319,7 +321,7 @@ def run_runtime_install(
         log(f"  cannot install {runtime.id}: {detail}")
         return RuntimeInstallResult(runtime.id, False, detail, 0.0)
 
-    cmd = install_command_for(runtime, model_dir=model_dir)
+    cmd = install_command_for(runtime, model_dir=model_dir, probe=True)
 
     log(f"  installing {runtime.id}: {' '.join(cmd)}")
     runner = command_runner or (lambda c, **kw: subprocess.run(

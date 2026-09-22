@@ -482,14 +482,15 @@ def _install_isolated(r: Runtime, timeout: int = 900) -> Status:
             return Status(r.id, False, None, note, python_compatible=False,
                           python_note=note, interpreter=str(env_py), external=True)
 
-    proc = subprocess.run(install_command(r), capture_output=True, text=True, timeout=timeout)
+    argv = install_command(r, probe=True)
+    proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         if created_here:
             # An empty venv left behind would shadow a working install in the
             # user's own environment and silently remove a route they had.
             _shutil.rmtree(env_dir, ignore_errors=True)
         _isolated_usable(r, refresh=True)
-        tail = _error_tail(proc, install_command(r))
+        tail = _error_tail(proc, argv)
         return Status(r.id, False, None, tail or f"install exited {proc.returncode}",
                       external=True, external_path=str(env_py))
     _isolated_usable(r, refresh=True)
@@ -740,8 +741,17 @@ def no_installer_error(py: str, specs: List[str]) -> str:
             f"and run: {manual}")
 
 
-def _pip_install_argv(py: str, specs: List[str]) -> List[str]:
-    if pip_available(py):
+def _pip_install_argv(py: str, specs: List[str], probe: bool = False) -> List[str]:
+    """The argv for an install.
+
+    `probe` decides whether this is allowed to measure the world. Without it
+    the nominal pip form comes back and nothing is executed -- describing an
+    action must never perform one, and a dry run that shells out to find out
+    what it would have done has already done something. The real install
+    dispatches with `probe=True`, which is the moment the answer has to be
+    right rather than merely nominal.
+    """
+    if not probe or pip_available(py):
         return [py, "-m", "pip", "install", *specs]
     uv = _uv()
     if uv:
@@ -889,8 +899,16 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
 
 def install_command(r: Runtime, py: Optional[str] = None,
-                     model_dir: Optional[Path | str] = None) -> List[str]:
-    """The exact argv that would run. Callers show this before running it.
+                     model_dir: Optional[Path | str] = None,
+                     probe: bool = False) -> List[str]:
+    """The argv that would run. Callers show this before running it.
+
+    Pure by default: describing an action must not perform one, so this
+    executes nothing and names the nominal `-m pip install` form. On an
+    interpreter with no pip the real install runs `uv pip install --python
+    <interpreter>` instead, and a caller that is about to install (or is
+    otherwise already allowed to shell out, like the preview endpoints)
+    passes `probe=True` to be told which of the two it will really be.
 
     `model_dir` fills a `{model_dir}` placeholder in `install.args` (see
     bitnet-cpp.yaml) -- the directory a flight has already downloaded the
@@ -915,8 +933,8 @@ def install_command(r: Runtime, py: Optional[str] = None,
         # never overrides it, the whole point of `isolated` is that this
         # runtime is never installed into whatever interpreter the caller
         # names.
-        return _pip_install_argv(str(isolated_python(r)), _install_specs(r))
-    return _pip_install_argv(py or interpreter(), _install_specs(r))
+        return _pip_install_argv(str(isolated_python(r)), _install_specs(r), probe)
+    return _pip_install_argv(py or interpreter(), _install_specs(r), probe)
 
 
 def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
@@ -946,7 +964,7 @@ def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
         return Status(r.id, False, None, no_installer_error(py, _install_specs(r)),
                       python_compatible=True, python_note=note or None, interpreter=py)
 
-    argv = install_command(r, py)
+    argv = install_command(r, py, probe=True)
     proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         tail = _error_tail(proc, argv)
