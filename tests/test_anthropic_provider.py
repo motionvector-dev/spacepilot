@@ -124,7 +124,7 @@ def _wire(monkeypatch, fake_client):
     monkeypatch.setattr(inference, "probe_local_device", _profile)
     # Never touch the real record store from a test: a System written here
     # would join the corpus that test_exported_json_matches_the_registry
-    # compares against the shipped web/registry.json.
+    # compares against the shipped spacepilot/web/registry.json.
     monkeypatch.setattr(ms, "write_system", lambda system, root=None: None)
     monkeypatch.setattr(ms, "record", lambda **fields: None)
     monkeypatch.setattr(

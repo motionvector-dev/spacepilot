@@ -130,7 +130,7 @@ def test_variant_id_remains_the_join_key_when_model_id_is_a_legacy_family_name(s
     assert summary["solo_median"] == 10.0
 
 
-# --- The hook that stops web/registry.json rotting ----------------------------
+# --- The hook that stops spacepilot/web/registry.json rotting ----------------------------
 #
 # The staleness assertion in test_registry.py is a gate, not a cure: it catches
 # the drift on a PR, after the author has moved on. `.githooks/pre-commit`
@@ -180,7 +180,7 @@ def test_check_and_sync_agree_with_the_shipped_file(tmp_path):
     exporter = _exporter()
     fresh, _ = exporter.build()
 
-    shipped = json.loads((ROOT / "web" / "registry.json").read_text())
+    shipped = json.loads((ROOT / "spacepilot" / "web" / "registry.json").read_text())
     current = exporter.data_of(shipped) == exporter.data_of(fresh)
 
     result = subprocess.run(
@@ -197,7 +197,7 @@ def test_sync_leaves_a_current_file_alone(tmp_path):
     """A daily rewrite of a generated file is a diff nobody reads.
 
     `generated` moves on its own, so --sync must ignore it — otherwise the hook
-    stages web/registry.json on the first commit of every new day.
+    stages spacepilot/web/registry.json on the first commit of every new day.
     """
     import json
     import subprocess

@@ -152,7 +152,7 @@ tools/install_hooks.sh
 Once per clone. It points `core.hooksPath` at `.githooks/`, which covers every
 worktree of this repo at once.
 
-The one hook regenerates `web/registry.json` when the data behind it moved.
+The one hook regenerates `spacepilot/web/registry.json` when the data behind it moved.
 That file is generated and committed — the public page has no server to ask —
 so it falls behind `spacepilot/registry/` silently, and the thing that used to
 notice was a red CI run on a PR that never touched the registry.
@@ -161,6 +161,19 @@ stops it firing. `--no-verify` skips it when a commit is deliberately
 mid-edit.
 
 ## Conventions
+
+No path resolves inside the installed package tree. What ships lives in the
+package and is found with `importlib.resources` — `spacepilot/registry/` and
+`spacepilot/web/`, never a walk up from `__file__` looking for a repo root.
+What is written goes through `spacepilot/paths.py`: the checkout when there is
+one, `~/Library/Application Support/spacepilot` (XDG equivalent on Linux)
+otherwise. `uv tool upgrade` replaces the install tree, so anything left there
+— renders, checkpoints, `.studio_token` — is destroyed by a routine upgrade.
+v2.8.0 shipped with `web/` outside the wheel and `web_dir` guessed from a repo
+root, and every page the README advertises answered 500 on a clean install;
+`tests/test_wheel_install.py` is the gate, and it runs under `pytest -m
+packaging`. `$SPACEPILOT_WEB_DIR` overrides the frontend location the way
+`$SPACEPILOT_OUTPUTS_DIR` overrides generated output.
 
 Every endpoint that spends compute or money takes `X-SpacePilot-Token` via the
 `require_token` dependency. Read-only routes stay open. Adding a compute route
@@ -172,7 +185,7 @@ can reintroduce a shell. Never `shell=True`, never `os.system`.
 
 Anything reaching the filesystem from a request goes through `resolve_output`,
 which resolves and then checks containment in `OUTPUTS_DIR`. Anything reaching
-`innerHTML` in `web/app.js` goes through `esc()`; there is a regression
+`innerHTML` in `spacepilot/web/app.js` goes through `esc()`; there is a regression
 test that fails if server data is interpolated raw.
 
 Check subprocess return codes and record real failures. The original code sent

@@ -113,15 +113,15 @@ def test_catalog_is_a_view_over_the_registry_including_ternary_patients():
 
 
 def test_exported_json_includes_ternary_patients():
-    """web/registry.json must be regenerated, not just the YAML."""
+    """spacepilot/web/registry.json must be regenerated, not just the YAML."""
     import json
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent
-    shipped = root / "web" / "registry.json"
+    shipped = root / "spacepilot" / "web" / "registry.json"
     data = json.loads(shipped.read_text())
     ids = {m["id"] for m in data["models"]}
     missing = TERNARY_IDS - ids
     assert not missing, (
-        f"web/registry.json is missing {missing} -- run: python tools/export_registry.py"
+        f"spacepilot/web/registry.json is missing {missing} -- run: python tools/export_registry.py"
     )

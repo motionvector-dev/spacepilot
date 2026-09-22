@@ -9,7 +9,7 @@
 //
 //   1. The token is fetched, not read from disk. GET /api/token returns the
 //      studio token to loopback callers only (spacepilot/api/routes/health.py,
-//      gated by is_loopback_client). This is what web/app.js already does.
+//      gated by is_loopback_client). This is what spacepilot/web/app.js already does.
 //      Reading <repo>/.studio_token would need SpaceBar to know where the
 //      checkout is, and there is no reason for it to.
 //

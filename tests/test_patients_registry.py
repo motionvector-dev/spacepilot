@@ -112,17 +112,17 @@ def test_catalog_is_a_view_over_the_registry_including_patients():
 
 
 def test_exported_json_includes_patients(tmp_path):
-    """web/registry.json must be regenerated, not just the YAML."""
+    """spacepilot/web/registry.json must be regenerated, not just the YAML."""
     import json
     import subprocess
     import sys
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent
-    shipped = root / "web" / "registry.json"
+    shipped = root / "spacepilot" / "web" / "registry.json"
     data = json.loads(shipped.read_text())
     ids = {m["id"] for m in data["models"]}
     missing = ALL_NEW_IDS - ids
     assert not missing, (
-        f"web/registry.json is missing {missing} -- run: python tools/export_registry.py"
+        f"spacepilot/web/registry.json is missing {missing} -- run: python tools/export_registry.py"
     )

@@ -21,7 +21,7 @@ Three subcommands:
     fly.py run <model-id> [--dry-run] [--keep] [--push]
         Fly one entry. Checks free disk and AC power, downloads the pinned
         checkpoint, runs the flight command, measures it, writes the
-        registry, regenerates web/registry.json, and commits on
+        registry, regenerates spacepilot/web/registry.json, and commits on
         `flight/<model-id>-<date>`. `--dry-run` (the default) logs every
         step and touches no network, no registry file, and no git ref -- see
         `DryRunDownloader` and the "dry-run: stopping before..." step.
@@ -1072,11 +1072,11 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
     if registry_dir is None:  # only regenerate the real export against the real registry
         subprocess.run([sys.executable, str(root / "tools" / "export_registry.py")],
                         cwd=str(root), capture_output=True, text=True)
-        steps.add("web/registry.json regenerated")
+        steps.add("spacepilot/web/registry.json regenerated")
 
     branch = f"flight/{variant.model_id}-{measured_on}"
     gitr(["git", "checkout", "-b", branch])
-    gitr(["git", "add", str(model_yaml), "web/registry.json"])
+    gitr(["git", "add", str(model_yaml), "spacepilot/web/registry.json"])
     gitr(["git", "commit", "-m", f"registry: flown measurement for {variant.id}"])
     steps.add(f"committed on {branch}")
     if push:

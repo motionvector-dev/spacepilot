@@ -145,7 +145,7 @@ def test_registry_does_not_claim_unmeasured_word_timestamp_quality():
 def test_caveats_reach_the_page():
     """The public page has no server behind it, so an unexported caveat is a
     caveat nobody reads."""
-    data = json.loads((ROOT / "web" / "registry.json").read_text())
+    data = json.loads((ROOT / "spacepilot" / "web" / "registry.json").read_text())
     variants = [v for m in data["models"] for v in m["variants"]]
     distil = next(v for v in variants if v["id"] == "distil-large-v3-ggml")
     assert distil["compromised"] == []
@@ -158,5 +158,5 @@ def test_caveats_reach_the_page():
         "detail": distil["caveats"][0]["detail"],
         "is_safe": True,
     }]
-    assert "${v.caveats" in (ROOT / "web" / "models.html").read_text(), (
+    assert "${v.caveats" in (ROOT / "spacepilot" / "web" / "models.html").read_text(), (
         "registry.json carries caveats that models.html never renders")

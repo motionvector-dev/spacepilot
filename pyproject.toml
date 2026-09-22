@@ -95,10 +95,24 @@ version = {attr = "spacepilot.__version__"}
 # `packages.find` ships .py files and nothing else, which is how the registry
 # — the catalogue the CLI reads at startup — shipped as zero entries and made
 # `spacepilot models list` exit 1 on every clean install.
+# `web/` is the Studio frontend, and it lives inside the package for the same
+# reason the registry does: a wheel without it serves HTTP 500 on every page
+# README.md advertises as the first run.  v2.8.0 shipped exactly that.
 spacepilot = [
     "registry/**/*.yaml",
     "registry/**/*.yml",
     "registry/**/*.md",
+    "web/**/*.html",
+    "web/**/*.js",
+    "web/**/*.mjs",
+    "web/**/*.css",
+    "web/**/*.json",
+    "web/**/*.svg",
+    "web/**/*.png",
+    "web/**/*.ico",
+    "web/**/*.webp",
+    "web/**/*.woff",
+    "web/**/*.woff2",
 ]
 
 [build-system]

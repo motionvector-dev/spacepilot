@@ -194,7 +194,7 @@ Covers:
 ```
 spacepilot/                   The package (flattened from spacepilot/pluto/, #101)
 ├── cli.py                    CLI command router
-├── app.py                    FastAPI app factory — mounts web/ as the served frontend
+├── app.py                    FastAPI app factory — mounts spacepilot/web/ as the frontend
 ├── web_api.py                Studio entry point (python -m spacepilot.web_api)
 ├── mcp_server.py              Native FastMCP tool server, 17 tools
 ├── device_probe.py           Cross-platform hardware profiler
@@ -220,19 +220,21 @@ spacepilot/                   The package (flattened from spacepilot/pluto/, #10
 │                               signed LOG gossip (identity.py, fleet.py, log.py)
 ├── storyboard_decomposer.py   Screenplay-to-shot decomposition
 ├── ltx_worker.py              Remote PyTorch resident worker (EC2/Cloud)
-└── api/routes/                 16 route modules: assets, audio, billing,
-                                checkpoints, compute, engines, generate, gpu,
-                                health, inference, lora, measurements, recipes,
-                                runtimes, storyboard, views
+├── api/routes/                 16 route modules: assets, audio, billing,
+│                               checkpoints, compute, engines, generate, gpu,
+│                               health, inference, lora, measurements, recipes,
+│                               runtimes, storyboard, views
+└── web/                       Zero-build UI actually served by spacepilot/app.py.
+    │                           Inside the package so it ships in the wheel — a
+    │                           `uv tool install` used to serve 500 on every page.
+    ├── index.html / app.js     Director NLE & Asset matrix
+    ├── create.html / create.js Create Studio
+    ├── cockpit.html/cockpit.js Cockpit (legacy, vanilla JS — currently what's live)
+    ├── oven.html               Kanban board
+    └── app.css                 Design system
 ui/                           React 19 cockpit v1 / SpaceBar-web (landed #106/#107).
                                Not wired into spacepilot/app.py's static mount —
                                run separately via Vite, see docs/LOCAL-TEST.md.
-web/                          Zero-build UI actually served by spacepilot/app.py
-├── index.html / app.js       Director NLE & Asset matrix
-├── create.html / create.js    Create Studio
-├── cockpit.html / cockpit.js  Cockpit (legacy, vanilla JS — currently what's live)
-├── oven.html                  Kanban board
-└── app.css                   Design system
 native/SpaceBar/              macOS menu-bar app (Swift), see docs/LOCAL-TEST.md
 infra/                         GPU startup scripts, IAM
 tests/                         Pytest suite — 771 passed, 4 skipped on main as of
