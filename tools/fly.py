@@ -113,6 +113,21 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
         "muse-glimmer-coreai", "executor", None, "text", needs_gate3=True),
     "qwen1-5-moe": FlightPlan(
         "qwen1-5-moe", "transducer", "mlx-lm", "text"),
+    "mimo-v2-6-distill-qwen-9b": FlightPlan(
+        "mimo-v2-6-distill-qwen-9b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "gemma4-26b-a4b": FlightPlan(
+        "gemma4-26b-a4b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "maple-preview": FlightPlan(
+        "maple-preview", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "ternary-bonsai-2-27b": FlightPlan(
+        "ternary-bonsai-2-27b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "lfm2-5-8b-a1b": FlightPlan(
+        "lfm2-5-8b-a1b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
     "qwen3-8-splash": FlightPlan(
         "qwen3-8-splash", "executor", "splash", "text", needs_gate3=True),
     # bitnet-b1-58-2b4t: spacepilot/registry/runtimes/bitnet-cpp.yaml runs

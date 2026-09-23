@@ -1,0 +1,62 @@
+schema: 1
+id: maple-preview
+name: Maple-Preview
+family: deepgrove
+kind: text
+summary: >
+  DeepGrove's 20B-A1B ternary mixture-of-experts reasoner. About 1.5B
+  parameters fire per token. This variant is their 2-bit MLX build.
+homepage: https://huggingface.co/deepgrove/maple-preview
+
+license:
+  id: mit
+  spdx: MIT
+  open_source: true
+  url: https://huggingface.co/deepgrove/maple-preview/blob/main/LICENSE
+
+variants:
+  - id: maple-preview-2bit-mlx
+    name: Maple-Preview 2-bit (MLX)
+    params: 20B
+    precision: 2bit
+    repo: deepgrove/maple-preview-2bit-mlx
+    revision: e8be321fb325c40beb7b621bd98e8e57a324ec42
+    files:
+      - added_tokens.json
+      - chat_template.jinja
+      - config.json
+      - maple.py
+      - merges.txt
+      - model-00001-of-00003.safetensors
+      - model-00002-of-00003.safetensors
+      - model-00003-of-00003.safetensors
+      - model-flashhead.safetensors
+      - model.safetensors.index.json
+      - special_tokens_map.json
+      - tokenizer.json
+      - tokenizer_config.json
+      - vocab.json
+    backends: [metal]
+    download:
+      value: 5330323299
+      source: huggingface-api
+      checked: "2026-09-22"
+      note: >
+        Sum of the 14 files named above from the Hub tree on this date.
+        Excludes README, .gitattributes, and the wheels/ directory.
+        The checkpoint is natively ternary, packed 2-bit, not a 4-bit
+        quant of a bf16 model.
+    working_set:
+      value: 6396387959
+      source: estimated
+      note: >
+        5.33 GB decimal cached payload plus a provisional 20% allowance
+        for a short KV cache and runtime overhead. A later hello on this
+        machine peaked at 6.96 GB. DeepGrove's own M4 table lists about
+        6.5 GB peak with their fork; that number is theirs.
+    notes: >
+      config.json sets model_file to maple.py, and stock mlx-lm 0.31.3
+      loads that file. A hello on this machine (Python 3.11, mlx-lm
+      0.31.3) answered and recorded 132 tok/s, 0.91 s load, 6.96 GB peak
+      on 2026-09-22. The published kernel wheels are cp312 and cp313
+      only; this short run did not need them.

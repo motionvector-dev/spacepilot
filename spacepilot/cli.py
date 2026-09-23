@@ -755,14 +755,17 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
+        last_facts = None
         while thread.is_alive():
             job = catalog_manager.get_download_progress(rid)
             if job:
-                renderer.progress(
-                    "Downloading",
+                facts = (
                     f"{_progress_bar(job.progress_percent)} "
-                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s",
+                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s"
                 )
+                if facts != last_facts:
+                    renderer.progress("Downloading", facts)
+                    last_facts = facts
             time.sleep(0.5)
         thread.join()
         renderer.finish()
@@ -1089,7 +1092,8 @@ def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = N
 
 
 def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
-                                max_kv_size: int, temperature: float) -> list[str]:
+                                max_kv_size: int, temperature: float,
+                                thinking: str = "off") -> list[str]:
     """All material facts shown before a large local text-model allocation."""
     from spacepilot.services.provenance import format_local_speed
 
@@ -1107,6 +1111,7 @@ def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
             f"  output     {output}",
             f"  bounds     max {max_tokens} output tokens · max {max_kv_size} KV tokens",
             f"  sampling   temperature {temperature}",
+            f"  thinking   {thinking}",
             "  memory     working set is an estimate, not a measured peak or ceiling",
             "  network    disabled; only the exact pinned local snapshot may load",
             "  system     one-shot child process; no iogpu.wired_limit_mb change",
@@ -1255,9 +1260,11 @@ def _cmd_run_text(args, cfg=None) -> int:
         return 1
     output_arg = getattr(args, "output", None)
     output = Path(output_arg).expanduser().resolve() if output_arg else default_text_output()
+    thinking = getattr(args, "thinking", "off")
     print("\n".join(text_run_confirmation_lines(
         plan, output, max_tokens=args.max_tokens,
         max_kv_size=args.max_kv_size, temperature=args.temperature,
+        thinking=thinking,
     )))
     if plan.selected is None:
         return 1
@@ -1268,6 +1275,7 @@ def _cmd_run_text(args, cfg=None) -> int:
             workload="text", prompt=args.prompt, output=output,
             max_tokens=args.max_tokens, max_kv_size=args.max_kv_size,
             temperature=args.temperature,
+            thinking=thinking == "on",
         ))
     except Exception as exc:
         print(f"\n  Run failed: {exc}")
@@ -2222,6 +2230,10 @@ def main(argv: list[str] | None = None):
                           help="Maximum KV-cache tokens (safe route limit: 4096)")
     run_text.add_argument("--temperature", type=float, default=0.0,
                           help="Sampling temperature, 0.0..2.0 (default 0)")
+    run_text.add_argument("--thinking", choices=("off", "on"), default="off",
+                          help="Pass enable_thinking to the chat template. "
+                               "Default off. Templates that reject the flag "
+                               "are rendered without it.")
     run_text.add_argument("--yes", action="store_true",
                           help="Execute after printing the plan")
 

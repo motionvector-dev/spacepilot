@@ -35,7 +35,15 @@ def test_a_variant_absent_from_the_local_backend_is_not_served():
 
 def test_served_variants_lists_every_mlx_lm_text_variant_in_runs_order():
     ids = [v.id for v in served_variants("text")]
-    assert ids == ["qwen3-8-27b-4bit", "qwen1-5-moe-a2-7b-chat-4bit"]
+    assert ids == [
+        "qwen3-8-27b-4bit",
+        "qwen1-5-moe-a2-7b-chat-4bit",
+        "mimo-v2-6-distill-qwen-9b-optiq-4bit",
+        "gemma4-26b-a4b-it-4bit",
+        "maple-preview-2bit-mlx",
+        "ternary-bonsai-2-27b-mlx-2bit",
+        "lfm2-5-8b-a1b-mlx-4bit",
+    ]
 
 
 def test_served_variants_for_embedding_is_the_one_embedding_variant():

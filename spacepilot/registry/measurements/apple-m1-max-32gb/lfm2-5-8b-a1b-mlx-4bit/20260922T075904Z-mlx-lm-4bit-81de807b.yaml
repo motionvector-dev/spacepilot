@@ -1,0 +1,28 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: lfm2-5-8b-a1b-mlx-4bit
+metric: tokens_per_second
+value: 2.8225790408905596
+contention: solo
+measured_on: '2026-09-22T07:59:04+00:00'
+variant_id: lfm2-5-8b-a1b-mlx-4bit
+runtime_id: mlx-lm
+model_revision: 2e92b640a63d47ad4dcf81a19a366b902356b3bc
+quantisation: 4bit
+backend: metal
+wall_seconds: 2.8225790408905596
+run_id: eb70fe82fe21417ba75eec02c243a50f
+tokens_in: 21
+tokens_out: 64
+knobs:
+  max_tokens: 64
+  max_kv_size: 1024
+  temperature: 0.0
+  prompt_tokens: 21
+  generation_tokens: 64
+  load_seconds: 1.6979250411968678
+  peak_memory_gb: 4.884313226
+  generation_tps: 128.9277967049521
+  prompt_tps: 43.52374453900543
+note: generation stopped inside an unclosed think block; not an answer
+status: failed
