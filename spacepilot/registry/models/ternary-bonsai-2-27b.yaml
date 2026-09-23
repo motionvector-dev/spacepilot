@@ -1,0 +1,65 @@
+schema: 1
+id: ternary-bonsai-2-27b
+name: Ternary Bonsai 2 27B
+family: prism
+kind: text
+summary: >
+  Prism ML's ternary compression of Qwen3.8-27B. About 1.76 bits per
+  weight. This variant is their MLX pack, language model plus vision tower.
+homepage: https://prismml.com/news/bonsai-2-27b
+
+license:
+  id: apache-2.0
+  spdx: Apache-2.0
+  open_source: true
+  url: https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/main/LICENSE
+
+variants:
+  - id: ternary-bonsai-2-27b-mlx-2bit
+    name: Ternary Bonsai 2 27B 2-bit (MLX)
+    params: 27B
+    precision: 2bit
+    repo: prism-ml/Ternary-Bonsai-2-27B-mlx-2bit
+    revision: 3f926b415992eaa2ae9dd7b573706494d6bbf787
+    files:
+      - PACK-RUNTIME.md
+      - chat_template.jinja
+      - config.json
+      - files.json
+      - generation_config.json
+      - hadamard.json
+      - model.safetensors
+      - preprocessor_config.json
+      - reload-validation.json
+      - runtime/LICENSE
+      - runtime/artifact.py
+      - runtime/codec.py
+      - runtime/requirements.txt
+      - runtime/runtime.py
+      - runtime/vision_artifact.py
+      - tokenizer-validation.json
+      - tokenizer.json
+      - tokenizer_config.json
+    backends: [metal]
+    download:
+      value: 8608698955
+      source: huggingface-api
+      checked: "2026-09-22"
+      note: >
+        Sum of the 18 files named above from the Hub tree on this date.
+        Excludes README, LICENSE, NOTICE, .gitattributes, and the logo.
+        Prism's card says this pack is 8.60 GB because the MLX container
+        stores a scale and a bias per group (about 2.25 bits per weight).
+    working_set:
+      value: 10330438746
+      source: estimated
+      note: >
+        8.61 GB decimal cached payload plus a provisional 20% allowance.
+        Unflown until a spacepilot run records a peak. Prism's own card
+        says ordinary MLX loaders skip the Hadamard activation transform
+        and can return wrong tokens instead of an error. model_type is
+        prism_hadamard_qwen35, which stock mlx-lm 0.31.3 does not ship.
+    notes: >
+      Released 2026-09-17. Prism claims 98.2% of Qwen3.8-27B on their own
+      suite. That figure is theirs. The bundled runtime/ directory is part
+      of the pack.

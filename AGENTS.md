@@ -14,7 +14,7 @@ re-explain it. The short form:
 | CLI + MCP server | this repo | open source |
 | web cockpit, Tauri wrapper later | this repo | open source |
 | macbar (SpaceBar menu bar app) | its own repo, to be created | free by default, paid tier later if the value earns $5/month |
-| spacepilot.dev | `../spacepilot-landing` | site |
+| spacepilot.dev (`landing/` in this repo, deployed on Vercel) | `spacepilot` | open source |
 
 The idea: running AI should be easy, and free when your machine allows it.
 When it does not, provisioning a box (RunPod, Modal, an API provider) should be

@@ -1,0 +1,26 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: mimo-v2-6-distill-qwen-9b-optiq-4bit
+metric: tokens_per_second
+value: 42.1917754344797
+contention: solo
+measured_on: '2026-09-22T06:50:38+00:00'
+variant_id: mimo-v2-6-distill-qwen-9b-optiq-4bit
+runtime_id: mlx-lm
+model_revision: f8642c8eff3159d84518ad005c95d940f359e538
+quantisation: 4bit
+backend: metal
+wall_seconds: 5.533969208132476
+run_id: 9a77a8d366b149658ae4be2a3293a788
+tokens_in: 22
+tokens_out: 29
+knobs:
+  max_tokens: 64
+  max_kv_size: 1024
+  temperature: 0.0
+  prompt_tokens: 22
+  generation_tokens: 29
+  load_seconds: 2.547883874969557
+  peak_memory_gb: 7.277066467
+note: ordinary bounded spacepilot run text success; text artifact verified
+status: ok

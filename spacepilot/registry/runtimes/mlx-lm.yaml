@@ -23,6 +23,11 @@ verify:
 runs:
   - qwen3-8
   - qwen1-5-moe
+  - mimo-v2-6-distill-qwen-9b
+  - gemma4-26b-a4b
+  - maple-preview
+  - ternary-bonsai-2-27b
+  - lfm2-5-8b-a1b
   - qwen3-embedding
 notes: >
   The first SpacePilot route is intentionally one-shot and bounded. It consumes
