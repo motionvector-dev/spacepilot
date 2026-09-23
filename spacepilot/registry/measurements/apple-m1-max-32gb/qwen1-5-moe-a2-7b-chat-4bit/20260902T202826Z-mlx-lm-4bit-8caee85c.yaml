@@ -1,0 +1,26 @@
+schema: 1
+system_id: apple-m1-max-32gb
+model_id: qwen1-5-moe-a2-7b-chat-4bit
+metric: tokens_per_second
+value: 44.27279194793314
+contention: solo
+measured_on: '2026-09-02T20:28:26+00:00'
+variant_id: qwen1-5-moe-a2-7b-chat-4bit
+runtime_id: mlx-lm
+model_revision: cf116003d120c4216cf008eba169f98b95bdf3ee
+quantisation: 4bit
+backend: metal
+wall_seconds: 9.105302583018783
+run_id: 9a7f13c969fc4c838f5820c1974fa198
+tokens_in: 24
+tokens_out: 3
+knobs:
+  max_tokens: 20
+  max_kv_size: 4096
+  temperature: 0.0
+  prompt_tokens: 24
+  generation_tokens: 3
+  load_seconds: 4.837836457998492
+  peak_memory_gb: 8.783514632
+note: ordinary bounded spacepilot run text success; text artifact verified
+status: ok
