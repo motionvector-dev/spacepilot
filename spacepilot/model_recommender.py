@@ -252,8 +252,13 @@ def recommend_models_for_device(profile: Optional[DeviceProfile] = None) -> Dict
             "description": entry.description,
         })
 
+    device = profile.to_dict()
+    # One usable-memory answer, travelled with its source, on every surface
+    # that prints one (BUILD-PLAN: honesty rule, same idiom as cockpit).
+    from spacepilot.device_probe import usable_memory_report
+    device["usable_memory"] = usable_memory_report(profile)
     return {
-        "device": profile.to_dict(),
+        "device": device,
         "recommendations": recommendations,
         "total_models": len(recommendations),
         "cache_dir": str(MODELS_CACHE),

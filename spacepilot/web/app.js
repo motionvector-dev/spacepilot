@@ -744,7 +744,7 @@ function setupEventListeners() {
         window.mvDialog.confirm({
           title: 'Authorize AWS GPU Launch',
           subtitle: 'Start Spot GPU compute & warm VRAM',
-          message: 'Provision Spot GPU instance. Billing starts immediately upon boot (~$0.75/hr).',
+          message: 'Provision Spot GPU instance. Billing starts immediately upon boot. The API reports the live rate at launch.',
           type: 'launch',
           confirmText: 'Authorize & Launch Box',
           onConfirm: doLaunch
@@ -1109,7 +1109,7 @@ async function renderAllStoryboardTakes() {
   elements.btnRenderAllTakes.disabled = false;
   elements.btnRenderAllTakes.innerHTML = `
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-    <span>Render All Scenes (L40S)</span>
+    <span>Render All Scenes (Spot GPU)</span>
   `;
 }
 

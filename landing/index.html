@@ -510,8 +510,24 @@ footer{border-top:1px solid var(--line);padding:30px 0 54px;color:var(--ink4);fo
 
 <footer><div class="wrap frow">
   <span>SpacePilot — an instrument that does not flatter you</span>
-  <span class="m">registry 2026-08-23 · 17 models · 34 variants · 2 flown</span>
+  <span class="m" id="registry-line">registry — loading…</span>
 </div></footer>
+<script type="module">
+  // Footer stat is generated from the same registry file the product serves,
+  // never hand-written. Updates ride the CI regen, same as spacepilot/web.
+  (async () => {
+    const el = document.getElementById("registry-line");
+    try {
+      const r = await fetch("/api/registry-stats");
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      const date = d.generated ? d.generated.slice(0, 10) : "";
+      el.textContent = `registry ${date} · ${d.models} models · ${d.variants} variants · ${d.flown} flown`;
+    } catch {
+      el.textContent = "registry — stat unavailable right now";
+    }
+  })();
+</script>
 
 <script>
 "use strict";

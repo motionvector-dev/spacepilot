@@ -5,6 +5,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnEnhance = document.getElementById('btn-enhance');
   const styleChips = document.querySelectorAll('.style-chip');
 
+// Local toast for create.js — create.html does not load app.js, so the
+// global showToast that used to be assumed here never existed. All eight
+// call sites (7 preexisting + 1 new) were silently broken; this makes them
+// work and no longer depend on a script that is not loaded.
+function showToast(message, kind) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+      + 'background:#18181b;color:#fafafa;border:1px solid rgba(255,255,255,.14);'
+      + 'padding:10px 18px;border-radius:10px;font:14px Geist,sans-serif;'
+      + 'z-index:9999;transition:opacity .3s;opacity:0;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = message;
+  if (kind === 'error') t.style.borderColor = '#f43535';
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+}
+
   const selectComputeTarget = document.getElementById('select-compute-target');
   const computeTargetBadge = document.getElementById('compute-target-badge');
   const selectEngine = document.getElementById('select-engine');
@@ -197,10 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
       costBadgeText = '$0.00 · Local Compute';
       computeQuoteText = 'Local GPU Execution ($0.00 / Zero Cloud Spend)';
     } else if (config.gpuOnline || config.computeTarget === 'spot') {
-      costBadgeText = config.draftMode ? '~$0.01 · Spot Draft' : '~$0.04 · Spot Compute (L40S)';
-      computeQuoteText = config.draftMode
-        ? 'Estimated Spot compute: ~$0.01 (No charge on failure)'
-        : 'Estimated Spot compute: ~$0.04 (No charge on failure)';
+      costBadgeText = 'Spot Compute · rate from the API'
+      computeQuoteText = 'Spot compute — the API quotes the live rate at launch (no charge on failure)';
     } else {
       costBadgeText = '$0.00 · Local Compute';
       computeQuoteText = 'Local GPU Execution ($0.00 / Zero Cloud Spend)';
@@ -220,9 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (compFactSpecs) compFactSpecs.textContent = specsText;
 
     if (compReceipt) {
-      const cost = config.draftMode ? '~$0.01' : '~$0.04';
       const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
-      compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
+      compReceipt.textContent = `1 op applied — ${tier}`;
     }
   }
 
@@ -932,9 +951,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const jobId = jobData.job_id || ('job_' + Math.random().toString(36).substr(2, 9));
       runGenerationTracker(jobId, jobData.patch);
     } catch (err) {
-      console.warn('API error, falling back to animated preview:', err);
-      const mockId = 'mock_' + Math.random().toString(36).substr(2, 8);
-      runGenerationTracker(mockId, null);
+      console.warn('API error:', err);
+      // BUILD-PLAN 0.4: no fake job, no animated preview pretending to be
+      // progress. The API path failed; the user gets the failure, not a
+      // plausible number wearing its clothes.
+      const stageEl = document.getElementById('generation-error');
+      if (stageEl) {
+        stageEl.textContent = `Generation failed: ${err.message || err}. No job started.`;
+        stageEl.style.display = 'block';
+      }
+      showToast(`Generation failed: ${err.message || err}`, 'error');
     }
   }
 
@@ -1090,9 +1116,8 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       if (compReceipt) {
-        const cost = config.draftMode ? '~$0.01' : '~$0.04';
         const tier = config.draftMode ? 'LTX-2.5 Draft' : 'LTX-2.5';
-        compReceipt.textContent = `1 op applied · ${cost} — ${tier} · undo byte-exact`;
+        compReceipt.textContent = `1 op applied — ${tier}`;
       }
     }
 
