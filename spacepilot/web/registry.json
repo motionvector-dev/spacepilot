@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-19",
+ "generated": "2026-09-23",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -3747,7 +3747,19 @@
      "speed": [],
      "caveats": [],
      "compromised": [],
-     "notes": null
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "qwen1-5-moe-a2-7b-chat-4bit",
+       "metric": "tokens_per_second",
+       "solo_median": 44.27279194793314,
+       "solo_samples": 1,
+       "observed_median": 44.27279194793314,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
     }
    ]
   },
@@ -5506,7 +5518,7 @@
    "machine_model": "MacBookPro18,4",
    "backend": "metal",
    "os_name": "macOS",
-   "os_version": "26.6.2",
+   "os_version": "27.0",
    "cpu_cores": 10,
    "gpu_cores": 32,
    "memory_total_bytes": 34359738368,
@@ -5515,7 +5527,7 @@
    "memory_unified": true,
    "vram_total_bytes": null,
    "host_fingerprint": "b0689f2dbc85",
-   "recorded_on": "2026-08-26",
+   "recorded_on": "2026-09-03",
    "unknown": {}
   },
   {
