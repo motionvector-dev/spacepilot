@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `registry`: qwen1-5-moe-a2-7b-chat-4bit on M1 Max 32GB (44.27 tok/s, revision-pinned) with the matching system-yaml refresh.
+- `docs`: CHANGELOG.md, Keep a Changelog format.
+
+## [2.9.0] - 2026-09-23
+
+### Added
+
 - `ci`: gate PRs into `main-<date>` merge trains (CI gate on train PRs).
 - `docs`: landing install switched to `uv tool install`; agent discovery via `llms.txt`, `AGENTS.md`, public `/docs`.
 - `docs`: README first-run section updated to the `uv` quickstart, cites the v2.8.0 release.
