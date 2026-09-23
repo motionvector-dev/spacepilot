@@ -117,7 +117,7 @@ def test_catalog_is_a_view_over_the_registry():
 
 
 def test_exported_json_matches_the_registry(tmp_path):
-    """web/registry.json is what the public page reads.
+    """spacepilot/web/registry.json is what the public page reads.
 
     It is generated, so it can fall behind the YAML it came from — and the page
     has no server to correct it. This fails when someone edits a model and
@@ -129,7 +129,7 @@ def test_exported_json_matches_the_registry(tmp_path):
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent
-    shipped = root / "web" / "registry.json"
+    shipped = root / "spacepilot" / "web" / "registry.json"
     assert shipped.is_file(), "run: python tools/export_registry.py"
 
     fresh = tmp_path / "registry.json"
@@ -143,7 +143,7 @@ def test_exported_json_matches_the_registry(tmp_path):
     a.pop("generated", None)          # the date moves on its own; the data must not
     b.pop("generated", None)
     assert a == b, (
-        "web/registry.json is stale — run: python tools/export_registry.py\n"
+        "spacepilot/web/registry.json is stale — run: python tools/export_registry.py\n"
         "To stop this recurring, install the hook that does it for you: "
         "tools/install_hooks.sh"
     )

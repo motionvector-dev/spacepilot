@@ -21,7 +21,7 @@ Three subcommands:
     fly.py run <model-id> [--dry-run] [--keep] [--push]
         Fly one entry. Checks free disk and AC power, downloads the pinned
         checkpoint, runs the flight command, measures it, writes the
-        registry, regenerates web/registry.json, and commits on
+        registry, regenerates spacepilot/web/registry.json, and commits on
         `flight/<model-id>-<date>`. `--dry-run` (the default) logs every
         step and touches no network, no registry file, and no git ref -- see
         `DryRunDownloader` and the "dry-run: stopping before..." step.
@@ -113,6 +113,21 @@ FLIGHT_PLANS: Dict[str, FlightPlan] = {
         "muse-glimmer-coreai", "executor", None, "text", needs_gate3=True),
     "qwen1-5-moe": FlightPlan(
         "qwen1-5-moe", "transducer", "mlx-lm", "text"),
+    "mimo-v2-6-distill-qwen-9b": FlightPlan(
+        "mimo-v2-6-distill-qwen-9b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "gemma4-26b-a4b": FlightPlan(
+        "gemma4-26b-a4b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "maple-preview": FlightPlan(
+        "maple-preview", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "ternary-bonsai-2-27b": FlightPlan(
+        "ternary-bonsai-2-27b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
+    "lfm2-5-8b-a1b": FlightPlan(
+        "lfm2-5-8b-a1b", "executor", "mlx-lm", "text",
+        needs_gate3=True),
     "qwen3-8-splash": FlightPlan(
         "qwen3-8-splash", "executor", "splash", "text", needs_gate3=True),
     # bitnet-b1-58-2b4t: spacepilot/registry/runtimes/bitnet-cpp.yaml runs
@@ -245,7 +260,8 @@ def runtime_needs_model_dir(runtime: "rt.Runtime") -> bool:
 
 
 def install_command_for(runtime: "rt.Runtime",
-                         model_dir: Optional[Path] = None) -> List[str]:
+                         model_dir: Optional[Path] = None,
+                         probe: bool = False) -> List[str]:
     """The real argv fly.py runs to install one runtime -- whatever
     `spacepilot.runtimes.install_command()` would run, prefixed with
     `nice -n 19`. Parallelism is bounded separately, via `install_env()`;
@@ -266,7 +282,8 @@ def install_command_for(runtime: "rt.Runtime",
             f"{runtime.id}: install script needs the fetched model directory "
             f"(install.args={runtime.install.script_args!r}) but none was given"
         )
-    return ["nice", "-n", "19", *rt.install_command(runtime, model_dir=model_dir)]
+    return ["nice", "-n", "19",
+            *rt.install_command(runtime, model_dir=model_dir, probe=probe)]
 
 
 @dataclass(frozen=True)
@@ -319,7 +336,7 @@ def run_runtime_install(
         log(f"  cannot install {runtime.id}: {detail}")
         return RuntimeInstallResult(runtime.id, False, detail, 0.0)
 
-    cmd = install_command_for(runtime, model_dir=model_dir)
+    cmd = install_command_for(runtime, model_dir=model_dir, probe=True)
 
     log(f"  installing {runtime.id}: {' '.join(cmd)}")
     runner = command_runner or (lambda c, **kw: subprocess.run(
@@ -1072,11 +1089,11 @@ def fly_run(model_id: str, *, dry_run: bool = True, keep: bool = False,
     if registry_dir is None:  # only regenerate the real export against the real registry
         subprocess.run([sys.executable, str(root / "tools" / "export_registry.py")],
                         cwd=str(root), capture_output=True, text=True)
-        steps.add("web/registry.json regenerated")
+        steps.add("spacepilot/web/registry.json regenerated")
 
     branch = f"flight/{variant.model_id}-{measured_on}"
     gitr(["git", "checkout", "-b", branch])
-    gitr(["git", "add", str(model_yaml), "web/registry.json"])
+    gitr(["git", "add", str(model_yaml), "spacepilot/web/registry.json"])
     gitr(["git", "commit", "-m", f"registry: flown measurement for {variant.id}"])
     steps.add(f"committed on {branch}")
     if push:

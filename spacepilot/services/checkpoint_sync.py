@@ -6,7 +6,7 @@ import shutil
 import uuid
 from pathlib import Path
 from dataclasses import dataclass, asdict
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, NoReturn
 
 from fastapi import HTTPException
 
@@ -26,11 +26,38 @@ class CheckpointMetadata:
     timestamp: str
     mock: bool = False
 
+from spacepilot.capability import absent, refuse
+
+GATE_DATE = "2026-09-22"
+
+# GATED 2026-09-22: none of this subsystem stored anything. `create_snapshot`
+# computed a genuine sha256 and copied no bytes, leaving a `remote_uri` pointing
+# at an empty directory it had just created; `restore_snapshot` reported success
+# and wrote nothing; and the records lived in a dict on a process-wide
+# singleton, so a snapshot vanished on restart and was invisible to the other
+# transport — the HTTP server and a stdio MCP server each had their own private
+# universe of snapshots. A successful snapshot_id came back "Snapshot not
+# found". Real checkpoint sync (an S3/R2 upload and download) is a separate,
+# unbuilt feature. Until it exists every entry point refuses rather than
+# pretend, the way LoRA training and model download already do.
+CHECKPOINT_SYNC = absent(
+    "checkpoint_sync", GATE_DATE,
+    "Checkpoint sync is not implemented. It stored nothing: snapshots were "
+    "kept in one process's memory, no bytes were ever uploaded or downloaded, "
+    f"and restore reported success while writing no file. Gated {GATE_DATE}.",
+)
+
+
+def _refuse() -> NoReturn:
+    refuse(CHECKPOINT_SYNC)
+
+
 class CheckpointSyncEngine:
-    """Engine for syncing training checkpoints to remote storage.
-    
-    Manages local and remote checkpoint files, generating metadata
-    and handling the transfer to block storage (S3/R2).
+    """Checkpoint sync, gated: every write and restore refuses.
+
+    Kept as a class rather than deleted so the routes, the MCP tools and the
+    prior work stay legible, and so the refusal is in one place when the real
+    S3/R2 implementation lands.
     """
     _instance = None
     
@@ -51,10 +78,15 @@ class CheckpointSyncEngine:
         Read from settings on every access rather than cached in __init__:
         this class is a process-wide singleton, so a cached value would
         outlive any change to PLUTO_OUTPUTS_DIR.
+
+        Nothing creates the directory any more: an empty `checkpoints/` made
+        the `remote_uri` in every snapshot look like a real location.
         """
-        path = allocate_output("checkpoints")
-        path.mkdir(parents=True, exist_ok=True)
-        return str(path)
+        return str(allocate_output("checkpoints"))
+
+    def store_status(self) -> Dict[str, Any]:
+        """Why a listing is empty — "no store" is not "this job has none"."""
+        return dict(CHECKPOINT_SYNC)
 
     def _compute_checksum(self, paths: List[str]) -> str:
         h = hashlib.sha256()
@@ -75,9 +107,10 @@ class CheckpointSyncEngine:
         return total_bytes / (1024 * 1024)
 
     def create_snapshot(self, job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> CheckpointMetadata:
-        """Create a new checkpoint snapshot.
-        
-        Validates local paths, computes checksums, and syncs to remote storage.
+        """Refuse: nothing was ever uploaded, and the record died with the process.
+
+        The path validation below still runs first, so a caller passing a system
+        path or a traversal still gets that 400 rather than the gate.
         """
         for path in local_paths:
             p = Path(path)
@@ -87,12 +120,14 @@ class CheckpointSyncEngine:
             if resolved.startswith(("/etc", "/var", "/System", "/usr", "/bin", "/sbin", "/private/etc")):
                 raise HTTPException(status_code=400, detail=f"System path not allowed: {path}")
 
+        _refuse()
+
+        # Dead below the gate. Kept so the shape the real implementation has to
+        # produce — and what it must actually do differently — stays readable.
         snapshot_id = f"snap-{uuid.uuid4().hex[:8]}"
         checksum = self._compute_checksum(local_paths)
         size_mb = self._get_size_mb(local_paths)
-        
-        # """Mock implementation — real R2/S3 sync requires boto3 and will be added in a follow-up PR."""
-        # TODO(real-sync): implement real storage upload
+
         storage_provider = "Local"
         remote_uri = f"local://{self.base_dir}/{snapshot_id}"
         if os.environ.get("USE_R2"):
@@ -119,37 +154,33 @@ class CheckpointSyncEngine:
         return meta
 
     def list_snapshots(self, job_id: Optional[str] = None) -> List[CheckpointMetadata]:
-        """List available snapshots, optionally filtered by job_id."""
+        """Always empty while the store is gated.
+
+        Callers pair this with `store_status()`: an empty list on its own said
+        "this job has no snapshots" when the truth is "there is no store".
+        """
         res = list(self.snapshots.values())
         if job_id:
             res = [s for s in res if s.job_id == job_id]
         return sorted(res, key=lambda x: x.timestamp, reverse=True)
 
     def restore_snapshot(self, snapshot_id: str, target_dir: Optional[str] = None) -> dict:
-        """Restore a checkpoint snapshot to a target directory."""
-        if snapshot_id not in self.snapshots:
-            raise ValueError("Snapshot not found")
-        meta = self.snapshots[snapshot_id]
-        
-        # """Mock implementation — real R2/S3 sync requires boto3 and will be added in a follow-up PR."""
-        # TODO(real-sync): implement real storage download
-        return {
-            "status": "success",
-            "snapshot_id": snapshot_id,
-            "target_dir": target_dir or str(allocate_output(snapshot_id, subdir="restores")),
-            "metadata": asdict(meta),
-            "mock": True
-        }
+        """Refuse: this reported success, created no directory, wrote no file.
+
+        It no longer answers "Snapshot not found" first. With no store, every
+        id is unknown, and "not found" would describe a store that does not
+        exist — the same false-precision the gate is here to remove.
+        """
+        _refuse()
 
     def delete_snapshot(self, snapshot_id: str) -> bool:
-        """Delete a snapshot and its associated files."""
-        if snapshot_id in self.snapshots:
-            del self.snapshots[snapshot_id]
-            return True
-        return False
+        """Refuse: deleting from a dict that never held a real checkpoint."""
+        _refuse()
 
     def prune_snapshots(self, job_id: str, keep_best: int = 3, keep_latest: int = 2) -> dict:
-        """Prune old snapshots, keeping the best by loss and the most recent ones."""
+        """Refuse: retention over records that were never persisted."""
+        _refuse()
+
         job_snaps = [s for s in self.snapshots.values() if s.job_id == job_id]
         if not job_snaps:
             return {"deleted": 0, "kept": 0}

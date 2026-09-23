@@ -5,8 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CLIENTS = (
-    "web/app.js", "web/cockpit.js", "web/create.js", "web/docs.html", "web/sidebar.js",
-    "web/onboard-v2.html", "web/onboard.html",
+    "spacepilot/web/app.js", "spacepilot/web/cockpit.js", "spacepilot/web/create.js", "spacepilot/web/docs.html", "spacepilot/web/sidebar.js",
+    "spacepilot/web/onboard-v2.html", "spacepilot/web/onboard.html",
 )
 
 

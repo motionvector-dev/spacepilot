@@ -15,6 +15,8 @@ from typing import Dict, List, Optional, Any
 
 import httpx
 
+from spacepilot.api.contracts import SCENE_COUNT_MAX, SCENE_COUNT_MIN
+
 logger = logging.getLogger("spacepilot.storyboard")
 
 CAMERA_MOTIONS = [
@@ -74,8 +76,16 @@ def decompose_script_rule_based(
     if not cleaned:
         cleaned = "A cinematic voyage across deep space through glowing nebulae into a futuristic cybernetic metropolis."
 
-    # Clamp scene count between 4 and 10
-    scene_count = max(4, min(10, scene_count))
+    # Refuse, never clamp. This used to be max(4, min(10, scene_count)) with
+    # its own hardcoded literals, so an out-of-range request came back as a
+    # different number labelled success — the defect the request contract
+    # fixed at the boundary, surviving one layer down. Both entrances validate
+    # against these same constants now.
+    if not SCENE_COUNT_MIN <= scene_count <= SCENE_COUNT_MAX:
+        raise ValueError(
+            f"scene_count must be between {SCENE_COUNT_MIN} and {SCENE_COUNT_MAX} "
+            f"(got {scene_count})"
+        )
     base_seed = character_seed or (abs(hash(cleaned)) % 1000000)
     per_scene_dur = round(target_duration_sec / scene_count, 1)
 

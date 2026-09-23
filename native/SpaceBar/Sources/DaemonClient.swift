@@ -9,7 +9,7 @@
 //
 //   1. The token is fetched, not read from disk. GET /api/token returns the
 //      studio token to loopback callers only (spacepilot/api/routes/health.py,
-//      gated by is_loopback_client). This is what web/app.js already does.
+//      gated by is_loopback_client). This is what spacepilot/web/app.js already does.
 //      Reading <repo>/.studio_token would need SpaceBar to know where the
 //      checkout is, and there is no reason for it to.
 //
@@ -31,7 +31,11 @@ struct LocalStatus: Decodable, Equatable {
     let deviceName: String?
     let vramUsableGB: Double?
     let vramUsableKnown: Bool?
+    /// Deprecated on the daemon and always empty: it used to list cache
+    /// entries, including 75-byte stub markers that were not weights at all.
     let loadedModels: [String]?
+    /// What the local cache actually holds, weights only.
+    let cachedWeightModelIDs: [String]?
     let isLocalCapable: Bool?
 
     enum CodingKeys: String, CodingKey {
@@ -41,8 +45,12 @@ struct LocalStatus: Decodable, Equatable {
         case vramUsableGB = "vram_usable_gb"
         case vramUsableKnown = "vram_usable_known"
         case loadedModels = "loaded_models"
+        case cachedWeightModelIDs = "cached_weight_model_ids"
         case isLocalCapable = "is_local_capable"
     }
+
+    /// The models this machine has on disk. Never "loaded": nothing is.
+    var cachedModels: [String] { cachedWeightModelIDs ?? [] }
 
     /// The headroom line, or nil when the daemon says it does not know.
     /// `vram_usable_known: false` means the probe could not measure it, and

@@ -20,6 +20,7 @@ guards the one thing that arrangement could hide.
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -38,11 +39,26 @@ A_SHIPPED_MODEL = "kokoro-82m-onnx"
 A_SHIPPED_RUNTIME = "mflux"
 
 
+# setuptools stages package data into `build/lib/` and caches the file list in
+# `*.egg-info/SOURCES.txt`, and it reuses both.  A tree that has been built
+# before therefore ships files the current `pyproject.toml` no longer asks for:
+# deleting a whole `package-data` glob changed nothing until these were gone.
+# That is a false green on exactly the gate this file exists to be, so the
+# wheel is built from a clean copy rather than from the working tree.
+_BUILD_ARTIFACTS = shutil.ignore_patterns(
+    "build", "dist", "*.egg-info", ".git", ".claude", "outputs", "media-scratch",
+    "__pycache__", "*.pyc", ".pytest_cache", "node_modules", ".venv", "venv",
+)
+
+
 @pytest.fixture(scope="module")
 def wheel(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("wheel")
+    source = tmp_path_factory.mktemp("source") / "spacepilot"
+    shutil.copytree(ROOT, source, ignore=_BUILD_ARTIFACTS, symlinks=True)
     proc = subprocess.run(
-        [sys.executable, "-m", "pip", "wheel", "--no-deps", "--wheel-dir", str(out), str(ROOT)],
+        [sys.executable, "-m", "pip", "wheel", "--no-deps", "--no-cache-dir",
+         "--wheel-dir", str(out), str(source)],
         capture_output=True, text=True,
     )
     if proc.returncode != 0:
@@ -84,6 +100,12 @@ def install(tmp_path_factory, wheel):
         return subprocess.run([str(bin_dir / args[0]), *args[1:]],
                               capture_output=True, text=True, cwd=str(cwd), env=env)
 
+    def popen(*args: str) -> subprocess.Popen:
+        """Same environment as `run`, for a command that has to stay up."""
+        return subprocess.Popen([str(bin_dir / args[0]), *args[1:]],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, cwd=str(cwd), env=env)
+
     located = run("python", "-c", "import spacepilot, os; print(os.path.dirname(spacepilot.__file__))")
     assert located.returncode == 0, located.stderr
     package_dir = Path(located.stdout.strip())
@@ -93,6 +115,7 @@ def install(tmp_path_factory, wheel):
 
     inst = Install()
     inst.run = run
+    inst.popen = popen
     inst.venv = venv
     inst.home = home
     inst.package_dir = package_dir
@@ -285,3 +308,181 @@ def test_no_shipped_module_imports_something_undeclared(isolated_install):
         "modules in the wheel that cannot import on a clean install — each is a "
         "dependency that is used but not declared:\n  " + "\n  ".join(missing)
     )
+
+
+# ---------------------------------------------------------------------------
+# The web UI.  v2.8.0 shipped a wheel with no `web/` in it at all, and a
+# `web_dir` resolved from a guessed repo root, so every page the README
+# advertises as the first-run experience answered 500 on a `uv tool install`.
+# ---------------------------------------------------------------------------
+
+# Exactly the paths README.md tells a new user to open.
+ADVERTISED_PAGES = [
+    "/", "/cockpit", "/create", "/studio", "/editor", "/oven",
+    "/settings", "/onboarding", "/blueprint", "/docs", "/documentation",
+]
+
+# Everything above is a `FileResponse` from `api/routes/views.py`. These come
+# through the `StaticFiles` mount in `app.py` instead, which is a second path
+# to `settings.web_dir` and was not covered by curling HTML alone — a page can
+# answer 200 while its stylesheet and its font 404 underneath it.
+STATIC_MOUNT_ASSETS = [
+    "/app.js", "/app.css", "/registry.json", "/theme.js",
+    "/fonts/geist-variable.woff2",
+]
+
+
+def test_the_wheel_carries_every_file_in_the_web_tree(wheel):
+    """The registry's defect, repeated for the frontend: zero `web/` entries.
+
+    Set equality, not a count. The glob list in pyproject.toml is per
+    extension, so a threshold like ">= 15 html files" stays green while a
+    whole file type silently stops shipping — drop `web/**/*.woff2` and the
+    self-hosted font vanishes, every page still answers 200, and only the
+    typeface is wrong. Comparing against the tree covers every extension that
+    exists now and every one somebody adds later, with nothing to remember.
+    """
+    tree = {
+        p.relative_to(ROOT / "spacepilot").as_posix()
+        for p in (ROOT / "spacepilot" / "web").rglob("*")
+        if p.is_file() and not p.name.startswith(".")
+    }
+    assert tree, "no web tree in the checkout to compare against"
+
+    with zipfile.ZipFile(wheel) as z:
+        shipped = {
+            n[len("spacepilot/"):] for n in z.namelist()
+            if n.startswith("spacepilot/web/") and not n.endswith("/")
+        }
+
+    missing = sorted(tree - shipped)
+    assert not missing, (
+        "files in spacepilot/web/ that the wheel does not carry — each one is a "
+        "missing glob in [tool.setuptools.package-data]:\n  " + "\n  ".join(missing))
+    assert not sorted(shipped - tree), f"wheel carries web files not in the tree: {sorted(shipped - tree)}"
+
+
+def test_the_installed_web_dir_is_inside_the_package(install):
+    """`REPO_ROOT / 'web'` lands on site-packages' parent once installed.
+
+    The package knows where it is; the filesystem around it does not.
+    """
+    proc = install.run(
+        "python", "-c",
+        "from spacepilot.core.config import get_settings;"
+        "s = get_settings();"
+        "print(s.web_dir);"
+        "print((s.web_dir / 'index.html').is_file())")
+    assert proc.returncode == 0, proc.stderr
+    web_dir, index_exists = proc.stdout.strip().splitlines()
+    assert Path(web_dir) == install.package_dir / "web", f"web_dir resolved to {web_dir}"
+    assert index_exists == "True", f"no index.html under {web_dir}"
+
+
+def test_the_web_dir_honours_its_env_override(install, tmp_path):
+    """Parity with `$SPACEPILOT_OUTPUTS_DIR`: with no override there was no
+    workaround for the installed-path bug at all."""
+    override = tmp_path / "somewhere-else"
+    override.mkdir()
+    proc = install.run(
+        "python", "-c",
+        "import os; os.environ['SPACEPILOT_WEB_DIR'] = %r;"
+        "from spacepilot.core.config import Settings;"
+        "print(Settings().web_dir)" % str(override))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == str(override)
+
+
+def test_the_installed_server_serves_every_advertised_page(install):
+    """The bug as a user meets it: `spacepilot serve`, then open the README's URLs."""
+    import socket
+    import time
+    import urllib.error
+    import urllib.request
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+
+    server = install.popen("spacepilot", "serve", "--port", str(port))
+    try:
+        base = f"http://127.0.0.1:{port}"
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            if server.poll() is not None:
+                out, err = server.communicate()
+                pytest.fail(f"`spacepilot serve` exited {server.returncode}:\n{out}\n{err}")
+            try:
+                urllib.request.urlopen(base + "/healthz", timeout=2)
+                break
+            except Exception:
+                time.sleep(0.5)
+        else:
+            pytest.fail("the installed server never came up")
+
+        failures = []
+        for path in ADVERTISED_PAGES + STATIC_MOUNT_ASSETS:
+            try:
+                with urllib.request.urlopen(base + path, timeout=10) as r:
+                    body = r.read()
+                    if r.status != 200 or not body:
+                        failures.append(f"{path} -> {r.status}, {len(body)} bytes")
+            except urllib.error.HTTPError as e:
+                failures.append(f"{path} -> {e.code}")
+            except Exception as e:  # pragma: no cover - transport failure
+                failures.append(f"{path} -> {e!r}")
+        assert not failures, "pages the README advertises, on a fresh install:\n  " + "\n  ".join(failures)
+    finally:
+        server.terminate()
+        try:
+            server.communicate(timeout=15)
+        except subprocess.TimeoutExpired:  # pragma: no cover
+            server.kill()
+
+
+def test_nothing_writes_state_into_the_installed_package(install):
+    """`.studio_token` and `.spacepilot_config.json` used to be written beside
+    site-packages, because `REPO_ROOT` in an install is wherever the walk gave
+    up.  Both are per-user state; neither belongs in the install tree."""
+    proc = install.run("python", "-c",
+                       "from spacepilot.core.config import get_settings;"
+                       "print(bool(get_settings().studio_token))")
+    assert proc.returncode == 0, proc.stderr
+
+    tree = install.package_dir.parent.parent  # .../lib/pythonX.Y
+    strays = [p for p in tree.rglob("*")
+              if p.name in (".studio_token", ".spacepilot_config.json", ".pluto_config.json")]
+    assert not strays, f"state written into the install tree: {strays}"
+
+
+def test_no_writable_path_resolves_inside_the_installed_package(install):
+    """`uv tool upgrade` replaces the install tree. Nothing a user produced —
+    renders, checkpoints, the studio token — may live in a directory package
+    tooling treats as disposable.
+
+    Reported from the documented MCP path: `spacepilot-mcp` wired into a
+    desktop client sets no `$SPACEPILOT_OUTPUTS_DIR`, and
+    `spacepilot_create_checkpoint` wrote into
+    `.../uv/tools/spacepilot/lib/python3.13/outputs/`.
+    """
+    proc = install.run(
+        "python", "-c",
+        "from spacepilot.core.config import get_settings;"
+        "from spacepilot import paths;"
+        "s = get_settings();"
+        "print(s.outputs_dir);"
+        "print(paths.outputs_dir());"
+        "print(paths.writable_registry_root());"
+        "print(paths.user_data_dir());"
+        "print(paths.daemon_state_dir())")
+    assert proc.returncode == 0, proc.stderr
+
+    tree = install.package_dir.parent  # site-packages, and everything under it
+    offenders = []
+    for line in proc.stdout.strip().splitlines():
+        path = Path(line)
+        if tree == path or tree in path.parents or install.venv in path.parents:
+            offenders.append(line)
+    assert not offenders, (
+        "paths that resolve inside the install tree, which an upgrade deletes:\n  "
+        + "\n  ".join(offenders))

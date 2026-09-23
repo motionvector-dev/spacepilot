@@ -12,7 +12,12 @@ on:
       - "docs/**"
       - "LICENSE"
   pull_request:
-    branches: [main, dev]
+    # main-<date> merge trains are gated here too. Lane PRs target a train, not
+    # main, so a filter of [main, dev] alone left every lane PR with no checks
+    # at all -- which reads as a quiet green, the one thing a skipped gate must
+    # never do. The train's own PR to main still matches `main` and runs the
+    # full suite once.
+    branches: [main, dev, "main-*"]
     # Kept in sync with the push filter above by hand: GitHub Actions does not
     # support YAML anchors, so this list cannot be shared.
     paths-ignore:

@@ -11,30 +11,75 @@ except ImportError as exc:  # pragma: no cover - import guard
         f"import failed: {exc}"
     ) from exc
 
-from typing import Optional, Dict, Any, List
+from typing import Annotated, Optional, Dict, Any, List
 
-mcp = MCPServer("SpacePilot")
+from pydantic import Field, ValidationError
+
+from spacepilot import __version__ as SERVER_VERSION
+from spacepilot.api import contracts
+
+# An empty serverInfo.version told a client nothing about what it was talking
+# to. It comes from the package, never from Settings: constructing Settings
+# mints `.studio_token` through a default factory, and under `uv tool install`
+# that writes a secret into the install tree (the bug #155 exists to fix).
+# This module deliberately imports no config.
+mcp = MCPServer("SpacePilot", version=SERVER_VERSION)
+
+
+def _refused(exc: ValidationError) -> Dict[str, Any]:
+    """The refusal an MCP caller gets for input HTTP would answer with a 422.
+
+    Carries `error` as well as `status`/`message` so a client has one key to
+    test across every refusal this server can return — unknown ids answer
+    `{"error": ..., "known": [...]}`, and the two shapes were untestable
+    together.
+    """
+    message = contracts.describe(exc)
+    return {"status": "error", "error": message, "message": message}
+
 
 @mcp.tool()
-def spacepilot_decompose_storyboard(script: str, scene_count: int = 6, target_duration_sec: float = 60.0, style: str = "cinematic") -> Dict[str, Any]:
-    """Decompose a high-level narrative script into 6-8 cinematic storyboard scenes with 3D camera vectors.
-    
+def spacepilot_decompose_storyboard(
+    script: str,
+    # Annotated so `tools/list` publishes the range too. Enforcement is the
+    # shared contract below; this is what a schema-validating client reads,
+    # instead of learning the bounds only from a refusal string.
+    scene_count: Annotated[int, Field(
+        ge=contracts.SCENE_COUNT_MIN, le=contracts.SCENE_COUNT_MAX)] = 6,
+    target_duration_sec: Annotated[float, Field(
+        ge=contracts.DURATION_MIN_SEC, le=contracts.DURATION_MAX_SEC)] = 60.0,
+    style: str = "cinematic",
+) -> Dict[str, Any]:
+    """Decompose a high-level narrative script into cinematic storyboard scenes with 3D camera vectors.
+
+    Out-of-range values are refused, not clamped: this used to answer a request
+    for 50 scenes with 10 and the word "success".
+
     Args:
         script (str): The narrative story or high-level video prompt.
-        scene_count (int, optional): Number of scenes (4-10). Defaults to 6.
-        target_duration_sec (float, optional): Total duration in seconds. Defaults to 60.0.
+        scene_count (int, optional): Number of scenes, 4 to 10. Defaults to 6.
+        target_duration_sec (float, optional): Total duration in seconds, 10 to 300. Defaults to 60.0.
         style (str, optional): Visual directing style. Defaults to "cinematic".
-        
+
     Returns:
         Dict[str, Any]: Structured scenes with locked character seed and 3D camera trajectory tokens.
     """
     try:
+        request = contracts.StoryboardDecomposeRequest(
+            script=script,
+            scene_count=scene_count,
+            target_duration_sec=target_duration_sec,
+            style=style,
+        )
+    except ValidationError as exc:
+        return _refused(exc)
+    try:
         from spacepilot.storyboard_decomposer import decompose_storyboard
         return decompose_storyboard(
-            script=script,
-            target_duration_sec=target_duration_sec,
-            scene_count=scene_count,
-            style=style,
+            script=request.script,
+            target_duration_sec=request.target_duration_sec,
+            scene_count=request.scene_count,
+            style=request.style,
         )
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -83,24 +128,17 @@ def spacepilot_recommend_models() -> Dict[str, Any]:
 
 @mcp.tool()
 def spacepilot_get_local_status() -> Dict[str, Any]:
-    """Get live status of local inference workers and loaded models.
-    
+    """Get live status of the local inference cache and hardware.
+
     Returns:
-        Dict[str, Any]: Loaded model weights, current VRAM allocation, and worker availability.
+        Dict[str, Any]: The same dict `GET /api/compute/local-status` returns —
+        one implementation in `spacepilot.local_status`, so the two surfaces
+        cannot answer the same question two ways again. `loaded_models` is
+        deprecated and always empty; read `cached_weight_model_ids`.
     """
     try:
-        from spacepilot.device_probe import probe_local_device
-        from spacepilot.model_recommender import downloaded_model_ids
-        profile = probe_local_device()
-        downloaded = downloaded_model_ids()
-        return {
-            "status": "online",
-            "backend": profile.backend,
-            "vram_usable_gb": profile.vram_usable_gb,
-            "vram_usable_known": profile.usable_memory_known,
-            "loaded_models": downloaded,
-            "is_local_capable": profile.is_local_capable,
-        }
+        from spacepilot.local_status import local_status_payload
+        return local_status_payload()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -108,17 +146,21 @@ def spacepilot_get_local_status() -> Dict[str, Any]:
 
 @mcp.tool()
 def spacepilot_create_checkpoint(job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> Dict[str, Any]:
-    """Create a new training checkpoint snapshot.
-    
+    """GATED 2026-09-22 — checkpoint sync is not implemented; this always errors.
+
+    It stored nothing: a genuine sha256 was computed, no bytes were copied, and
+    the record lived in one process's memory, so it vanished on restart and was
+    invisible to the other transport. Do not call this expecting a snapshot.
+
     Args:
         job_id (str): The ID of the training job.
         step (int): The current training step.
         epoch (int): The current training epoch.
         loss (float): The current loss value.
         local_paths (List[str]): List of local file paths to include in the snapshot.
-        
+
     Returns:
-        Dict[str, Any]: The metadata of the created snapshot.
+        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
@@ -132,32 +174,39 @@ def spacepilot_create_checkpoint(job_id: str, step: int, epoch: int, loss: float
 @mcp.tool()
 def spacepilot_list_checkpoints(job_id: Optional[str] = None) -> Dict[str, Any]:
     """List training checkpoint snapshots.
-    
+
     Args:
         job_id (str, optional): The ID of the training job to filter by.
-        
+
     Returns:
-        Dict[str, Any]: List of snapshot metadata.
+        Dict[str, Any]: Snapshot metadata, plus `store`, which says whether a
+        checkpoint store exists at all. An empty list alone read as "this job
+        has no snapshots"; checkpoint sync is gated, so nothing is stored.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
         from dataclasses import asdict
         engine = CheckpointSyncEngine()
         snapshots = engine.list_snapshots(job_id)
-        return {"status": "success", "snapshots": [asdict(s) for s in snapshots]}
+        return {"status": "success", "snapshots": [asdict(s) for s in snapshots],
+                "store": engine.store_status()}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @mcp.tool()
 def spacepilot_restore_checkpoint(snapshot_id: str, target_dir: Optional[str] = None) -> Dict[str, Any]:
-    """Restore a training checkpoint snapshot.
-    
+    """GATED 2026-09-22 — checkpoint restore is not implemented; this always errors.
+
+    It used to report `"status": "success"` with `target_dir` echoed back while
+    creating no directory and writing no file. Nothing lands on disk; do not
+    proceed as though weights are there.
+
     Args:
         snapshot_id (str): The ID of the snapshot to restore.
         target_dir (str, optional): The local directory to restore to.
-        
+
     Returns:
-        Dict[str, Any]: The restore operation status.
+        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
     """
     try:
         from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
@@ -219,7 +268,7 @@ def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], tr
         base_model (str): Base model ID.
         image_paths (list[str]): List of image paths for training.
         trigger_word (str): Trigger word.
-        rank (int, optional): LoRA rank. Defaults to 16.
+        rank (int, optional): LoRA rank; must be a positive power of 2. Defaults to 16.
         steps (int, optional): Training steps. Defaults to 500.
         lr (float, optional): Learning rate. Defaults to 1e-4.
         
@@ -227,15 +276,22 @@ def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], tr
         Dict[str, Any]: Job details.
     """
     try:
+        request = contracts.TrainLoRARequest(
+            name=name, base_model=base_model, image_paths=image_paths,
+            trigger_word=trigger_word, rank=rank, steps=steps, lr=lr,
+        )
+    except ValidationError as exc:
+        return _refused(exc)
+    try:
         from spacepilot.services.lora import lora_manager
         job = lora_manager.create_training_job(
-            name=name,
-            base_model=base_model,
-            image_paths=image_paths,
-            trigger_word=trigger_word,
-            rank=rank,
-            steps=steps,
-            lr=lr
+            name=request.name,
+            base_model=request.base_model,
+            image_paths=request.image_paths,
+            trigger_word=request.trigger_word,
+            rank=request.rank,
+            steps=request.steps,
+            lr=request.lr
         )
         return {"status": "success", "job": job}
     except Exception as e:
@@ -269,8 +325,14 @@ def spacepilot_list_runtimes() -> dict:
                            and st.python_compatible,
             "reason": st.reason, "python_note": st.python_note,
             "runs": r.runs, "license": r.license,
+            # An isolated runtime does not live in the interpreter named
+            # below, so each row carries the one it is actually checked in.
+            "interpreter": st.interpreter or rt.interpreter(),
+            "isolated": r.install.isolated,
         })
-    return {"backend": profile.backend, "interpreter": rt.interpreter(), "runtimes": out}
+    return {"backend": profile.backend,
+            # The shared interpreter; see each runtime's own field above.
+            "interpreter": rt.interpreter(), "runtimes": out}
 
 
 @mcp.tool()
@@ -288,8 +350,11 @@ def spacepilot_preview_runtime_install(runtime_id: str) -> dict:
         return {"error": f"no runtime '{runtime_id}'", "known": sorted(rt.runtimes())}
     imp = rt.preview(r)
     return {"runtime_id": runtime_id,
-            "command": " ".join(rt.install_command(r)),
-            "interpreter": rt.interpreter(), **imp.to_dict()}
+            "command": " ".join(rt.install_command(r, probe=True)),
+            # The interpreter this runtime actually installs into -- its own
+            # venv when it is `isolated`, not whatever the daemon runs under.
+            "interpreter": rt.runtime_python(runtime_id),
+            "isolated": r.install.isolated, **imp.to_dict()}
 
 
 @mcp.tool()
@@ -308,7 +373,7 @@ def spacepilot_install_runtime(runtime_id: str, allow_downgrade: bool = False) -
 
     imp = rt.preview(r)
     if imp.error:
-        return {"installed": False, "error": imp.error}
+        return {"installed": False, "blocked": True, "error": imp.error}
     if imp.is_disruptive and not allow_downgrade:
         return {"installed": False, "refused": "would downgrade a package",
                 "downgrades": imp.downgrades,
@@ -339,12 +404,18 @@ def spacepilot_measurements(variant_id: Optional[str] = None) -> dict:
 
     ``variant_id`` is an exact registry identifier when supplied; it is a
     filter over loaded records, never a filesystem path or a fuzzy model name.
+    An unknown id is an error naming what is known — a typo and "nothing
+    measured yet" are different answers, and both used to come back as [].
     """
-    from spacepilot.services.corpus import CorpusReadError, measurement_payload
+    from spacepilot.services import corpus
 
     try:
-        payload = measurement_payload()
-    except CorpusReadError as exc:
+        if variant_id is not None:
+            known = corpus.known_variant_ids()
+            if variant_id not in known:
+                return {"error": f"no such variant_id '{variant_id}'", "known": known}
+        payload = corpus.measurement_payload()
+    except corpus.CorpusReadError as exc:
         return {"error": str(exc)}
     if variant_id is not None:
         payload["measurements"] = [
@@ -355,12 +426,20 @@ def spacepilot_measurements(variant_id: Optional[str] = None) -> dict:
 
 @mcp.tool()
 def spacepilot_system_summary(system_id: Optional[str] = None) -> dict:
-    """Return flown two-stream summaries with associated capability caveats."""
-    from spacepilot.services.corpus import CorpusReadError, summary_payload
+    """Return flown two-stream summaries with associated capability caveats.
+
+    An unknown ``system_id`` is an error naming the known ids, never an empty
+    list: a caller cannot otherwise tell a typo from an unmeasured machine.
+    """
+    from spacepilot.services import corpus
 
     try:
-        return summary_payload(system_id=system_id)
-    except CorpusReadError as exc:
+        if system_id is not None:
+            known = corpus.known_system_ids()
+            if system_id not in known:
+                return {"error": f"no such system_id '{system_id}'", "known": known}
+        return corpus.summary_payload(system_id=system_id)
+    except corpus.CorpusReadError as exc:
         return {"error": str(exc)}
 
 

@@ -60,3 +60,53 @@ def test_check_alias_dispatches_to_doctor_with_resolved_output_mode(argv):
     ) as doctor:
         assert cli.main(argv) == 0
     assert doctor.call_args.args[0].output_mode == "plain"
+
+
+def _runtime_rows():
+    return [
+        {"state": "installed (external env)", "id": "desert-ant",
+         "serves": ["transcription", "audio", "text"], "backends": ["cpu", "metal"],
+         "version": "0.1.1 (desert-ant-core 3.1.0)", "note": None},
+        {"state": "installed", "id": "llama-cpp", "serves": ["text", "vision"],
+         "backends": ["metal", "cuda", "cpu"], "version": "0.3.35", "note": None},
+        {"state": "n/a here", "id": "bitnet-cpp", "serves": ["text"],
+         "backends": ["cpu"], "version": None, "note": None},
+    ]
+
+
+def test_runtimes_table_columns_never_collide():
+    """`transcription,audio,text` ran straight into `cpu,metal`.
+
+    SERVES had a fixed 16-character width and no guard, so the table stopped
+    being a table on the one row a reader most needed to read.
+    """
+    lines = cli._runtimes_table(_runtime_rows())
+    header = lines[0]
+    starts = {name: header.index(name)
+              for name in ("STATE", "RUNTIME", "SERVES", "BACKENDS", "VERSION")}
+
+    for row, line in zip(_runtime_rows(), lines[1:]):
+        for name, cell in (("RUNTIME", row["id"]),
+                           ("SERVES", ",".join(row["serves"])),
+                           ("BACKENDS", ",".join(row["backends"])),
+                           ("VERSION", row["version"] or "-")):
+            assert line[starts[name]:].startswith(cell), (
+                f"{name} cell {cell!r} does not begin at its header column:\n"
+                f"{header}\n{line}"
+            )
+
+
+def test_runtimes_table_row_cells_stay_in_their_own_column():
+    lines = cli._runtimes_table(_runtime_rows())
+    header = lines[0]
+    long_row = lines[1]
+    # Nothing may be written in the gutter before the next column begins.
+    assert long_row[header.index("BACKENDS") - 1] == " "
+    assert long_row[header.index("VERSION") - 1] == " "
+
+
+def test_runtimes_table_notes_hang_under_the_row_they_belong_to():
+    rows = _runtime_rows()
+    rows[2]["note"] = "needs Python >=3.10,<3.11; this interpreter is 3.11.15"
+    lines = cli._runtimes_table(rows)
+    assert lines[-1].strip() == rows[2]["note"]

@@ -10,7 +10,7 @@ So the *constants* travel with the data. The JS reads the thresholds from here
 rather than repeating them as literals, and a change to the reserve fraction or
 the footprint bands moves both at once.
 
-    python tools/export_registry.py [--out web/registry.json]
+    python tools/export_registry.py [--out spacepilot/web/registry.json]
 
 Being generated, the file rots: edit a model and the page keeps publishing the
 old one until somebody remembers this command. Three modes share one comparison
@@ -149,7 +149,7 @@ def summarise_write(out: Path, payload: dict, measured_variants: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="web/registry.json")
+    ap.add_argument("--out", default="spacepilot/web/registry.json")
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true",
                       help="exit 1 if the file no longer matches its sources; write nothing")

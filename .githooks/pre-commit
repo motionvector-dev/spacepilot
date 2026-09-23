@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Keep web/registry.json from rotting.
+# Keep spacepilot/web/registry.json from rotting.
 #
 # The file is generated from spacepilot/registry/ and from constants in three
 # Python modules, and it is committed because the public page has no server to
@@ -24,7 +24,7 @@ if [ -z "$python" ]; then
   exit 0
 fi
 
-before="$(git hash-object web/registry.json 2>/dev/null || echo none)"
+before="$(git hash-object spacepilot/web/registry.json 2>/dev/null || echo none)"
 
 if ! "$python" tools/export_registry.py --sync >/dev/null; then
   echo "pre-commit: tools/export_registry.py failed — the registry does not load." >&2
@@ -32,9 +32,9 @@ if ! "$python" tools/export_registry.py --sync >/dev/null; then
   exit 1
 fi
 
-after="$(git hash-object web/registry.json 2>/dev/null || echo none)"
+after="$(git hash-object spacepilot/web/registry.json 2>/dev/null || echo none)"
 
 if [ "$before" != "$after" ]; then
-  git add web/registry.json
-  echo "pre-commit: web/registry.json was stale; regenerated and staged."
+  git add spacepilot/web/registry.json
+  echo "pre-commit: spacepilot/web/registry.json was stale; regenerated and staged."
 fi

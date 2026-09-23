@@ -20,19 +20,26 @@ class RestoreSnapshotRequest(BaseModel):
 
 @router.get("/snapshots")
 def list_snapshots(job_id: Optional[str] = None, _: None = Depends(require_token)):
-    return engine.list_snapshots(job_id)
+    """The listing, and why it is empty.
+
+    A bare `[]` said "this job has no snapshots"; the truth is that there is no
+    store at all, so `store` travels with every listing.
+    """
+    return {"snapshots": engine.list_snapshots(job_id), "store": engine.store_status()}
 
 @router.post("/snapshot")
 def create_snapshot(req: CreateSnapshotRequest, _: None = Depends(require_token)):
     update_activity()
-    meta = engine.create_snapshot(
-        job_id=req.job_id,
-        step=req.step,
-        epoch=req.epoch,
-        loss=req.loss,
-        local_paths=req.local_paths
-    )
-    return meta
+    try:
+        return engine.create_snapshot(
+            job_id=req.job_id,
+            step=req.step,
+            epoch=req.epoch,
+            loss=req.loss,
+            local_paths=req.local_paths
+        )
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
 
 @router.post("/restore/{snapshot_id}")
 def restore_snapshot(snapshot_id: str, req: Optional[RestoreSnapshotRequest] = None, _: None = Depends(require_token)):
@@ -42,11 +49,16 @@ def restore_snapshot(snapshot_id: str, req: Optional[RestoreSnapshotRequest] = N
         return engine.restore_snapshot(snapshot_id, target_dir)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except NotImplementedError as e:
+        # 501, never a green 200: restore writes nothing and must say so.
+        raise HTTPException(status_code=501, detail=str(e))
 
 @router.delete("/snapshots/{snapshot_id}")
 def delete_snapshot(snapshot_id: str, _: None = Depends(require_token)):
     update_activity()
-    success = engine.delete_snapshot(snapshot_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Snapshot not found")
+    try:
+        engine.delete_snapshot(snapshot_id)
+    except NotImplementedError as e:
+        # Not 404: "not found" would describe a store that does not exist.
+        raise HTTPException(status_code=501, detail=str(e))
     return {"status": "deleted"}

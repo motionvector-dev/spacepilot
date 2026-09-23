@@ -31,11 +31,32 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from spacepilot.paths import env_value, fleet_orders_path
+from spacepilot.paths import env_value, fleet_orders_path, outputs_dir, state_root
 
-OUTPUTS_DIR = Path(env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(REPO_ROOT / "outputs")))
-CONFIG_FILE = REPO_ROOT / ".spacepilot_config.json"
-LEGACY_CONFIG_FILE = REPO_ROOT / ".pluto_config.json"
+# Anything read-and-written follows `spacepilot.paths`: the checkout when there
+# is one, the user data directory otherwise. `REPO_ROOT` in an installed copy is
+# site-packages, so deriving these from it wrote the config and the studio token
+# into the install tree, where they are unbackuped and wiped by the next upgrade.
+STATE_ROOT = state_root()
+OUTPUTS_DIR = outputs_dir()
+# The config carries provider credentials and is machine-local. It is
+# redirectable for the same reason $SPACEPILOT_OUTPUTS_DIR is: without that,
+# anything that exercises `save_config` — the test suite included — overwrites
+# the developer's real credentials and AWS profile. The legacy name follows the
+# canonical one into whatever directory it was pointed at, so the fallback in
+# `load_config` keeps working.
+#
+# An empty value is not a path: `Path("")` is `Path(".")`, which would make
+# CONFIG_FILE a directory and fail `save_config` on os.replace. Every helper in
+# paths.py strips and falls back for the same reason.
+_CONFIG_OVERRIDE = (env_value("SPACEPILOT_CONFIG_FILE", "PLUTO_CONFIG_FILE", default="") or "").strip()
+CONFIG_FILE = (
+    Path(_CONFIG_OVERRIDE).expanduser()
+    if _CONFIG_OVERRIDE
+    else STATE_ROOT / ".spacepilot_config.json"
+)
+LEGACY_CONFIG_FILE = CONFIG_FILE.parent / ".pluto_config.json"
+STUDIO_TOKEN_FILE = STATE_ROOT / ".studio_token"
 KEY_FILE_DEFAULT = Path(
     env_value(
         "SPACEPILOT_SSH_KEY",
@@ -532,15 +553,18 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     print(f"  Backend  : {profile.backend.upper()}")
     if profile.device_name:
         print(f"  Device   : {profile.device_name}")
-    from spacepilot.device_probe import ACCELERATED_BACKENDS
+    # One computation and one format for every capacity this command prints
+    # (`usable_memory_report`, GiB): three surfaces used to print three numbers
+    # for one machine, and this block used to mix GB labels into GiB maths.
+    from spacepilot.device_probe import ACCELERATED_BACKENDS, format_gib, usable_memory_report
     if profile.accelerator_memory_bytes is None:
         # Never print system RAM on this line. A machine whose GPU we could not
         # read has unknown accelerator memory, and saying "12.5GB usable" there
         # is a number the user cannot check and we cannot defend.
         print("  VRAM     : unknown — not measured (system RAM is not a substitute)")
     elif profile.backend not in ACCELERATED_BACKENDS:
-        print(f"  VRAM     : {profile.vram_total_gb:.1f}GB present, 0GB usable "
-              "— no compute runtime SpacePilot can use was detected")
+        print(f"  VRAM     : {format_gib(profile.accelerator_memory_bytes)} present, "
+              "0 GiB usable — no compute runtime SpacePilot can use was detected")
         # "can reach this card" stated a negative detection as a fact about the
         # hardware. The probe only knows that it looked and found nothing it
         # can route through — which on the Lenovo is a card Vulkan reaches fine.
@@ -548,10 +572,14 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print(f"  Runtime  : {profile.compute_runtime} present but unrouted "
                   f"— {profile.compute_runtime_detail}")
     else:
-        source = getattr(profile, "memory_limit_source", None) or "unknown"
-        print(f"  VRAM     : {profile.vram_usable_gb:.1f}GB usable / {profile.vram_total_gb:.1f}GB total "
-              f"(limit source: {source}; Safety Headroom: {profile.vram_total_gb - profile.vram_usable_gb:.1f}GB)")
-    print(f"  RAM      : {profile.ram_free_gb:.1f}GB free / {profile.ram_total_gb:.1f}GB total")
+        memory = usable_memory_report(profile)
+        reserved = (profile.accelerator_memory_bytes or 0) - (memory["usable_memory_bytes"] or 0)
+        print(f"  VRAM     : {format_gib(memory['usable_memory_bytes'])} usable / "
+              f"{format_gib(profile.accelerator_memory_bytes)} total "
+              f"(source: {memory['memory_limit_source']}; reserved: {format_gib(reserved)})")
+    # GiB here too: this line sat two lines under a GiB figure and said GB.
+    print(f"  RAM      : {format_gib(profile.memory_free_bytes)} free / "
+          f"{format_gib(profile.memory_total_bytes)} total")
     for gpu in (profile.gpus if isinstance(profile.gpus, list) else []):
         vram = f"{gpu['vram_total_bytes'] / (1024 ** 3):.2f}GB" if gpu.get("vram_total_bytes") else "VRAM unknown"
         print(f"  GPU      : {gpu.get('name') or gpu.get('node')} · {vram} · driver {gpu.get('driver') or 'unknown'}")
@@ -610,7 +638,7 @@ def cmd_doctor(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             print(f"             {line}")
 
     # 5. Studio Token check
-    token_path = REPO_ROOT / ".studio_token"
+    token_path = STUDIO_TOKEN_FILE
     if token_path.exists():
         print(f"  Session  : ✅ Token found (.studio_token)")
     else:
@@ -727,14 +755,17 @@ def cmd_recipes(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
+        last_facts = None
         while thread.is_alive():
             job = catalog_manager.get_download_progress(rid)
             if job:
-                renderer.progress(
-                    "Downloading",
+                facts = (
                     f"{_progress_bar(job.progress_percent)} "
-                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s",
+                    f"{job.progress_percent:5.1f}%  {job.speed_mb_s:6.1f} MB/s"
                 )
+                if facts != last_facts:
+                    renderer.progress("Downloading", facts)
+                    last_facts = facts
             time.sleep(0.5)
         thread.join()
         renderer.finish()
@@ -1061,7 +1092,8 @@ def audio_run_confirmation_lines(plan, output: Path, extra: list[str] | None = N
 
 
 def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
-                                max_kv_size: int, temperature: float) -> list[str]:
+                                max_kv_size: int, temperature: float,
+                                thinking: str = "off") -> list[str]:
     """All material facts shown before a large local text-model allocation."""
     from spacepilot.services.provenance import format_local_speed
 
@@ -1079,6 +1111,7 @@ def text_run_confirmation_lines(plan, output: Path, *, max_tokens: int,
             f"  output     {output}",
             f"  bounds     max {max_tokens} output tokens · max {max_kv_size} KV tokens",
             f"  sampling   temperature {temperature}",
+            f"  thinking   {thinking}",
             "  memory     working set is an estimate, not a measured peak or ceiling",
             "  network    disabled; only the exact pinned local snapshot may load",
             "  system     one-shot child process; no iogpu.wired_limit_mb change",
@@ -1218,7 +1251,7 @@ def _cmd_run_text(args, cfg=None) -> int:
         return 1
     print(f"  model       {variant_id}" + ("" if requested else " (default — pass --model to pick another)"))
 
-    driver = MlxLmDriver(python_bin=rt.interpreter(cfg))
+    driver = MlxLmDriver(python_bin=rt.runtime_python("mlx-lm", cfg))
     service = TextExecutionService(driver=driver)
     try:
         plan = service.plan("text", variant_id=variant_id)
@@ -1227,9 +1260,11 @@ def _cmd_run_text(args, cfg=None) -> int:
         return 1
     output_arg = getattr(args, "output", None)
     output = Path(output_arg).expanduser().resolve() if output_arg else default_text_output()
+    thinking = getattr(args, "thinking", "off")
     print("\n".join(text_run_confirmation_lines(
         plan, output, max_tokens=args.max_tokens,
         max_kv_size=args.max_kv_size, temperature=args.temperature,
+        thinking=thinking,
     )))
     if plan.selected is None:
         return 1
@@ -1240,6 +1275,7 @@ def _cmd_run_text(args, cfg=None) -> int:
             workload="text", prompt=args.prompt, output=output,
             max_tokens=args.max_tokens, max_kv_size=args.max_kv_size,
             temperature=args.temperature,
+            thinking=thinking == "on",
         ))
     except Exception as exc:
         print(f"\n  Run failed: {exc}")
@@ -1510,13 +1546,54 @@ def cmd_fleet(args: argparse.Namespace, cfg: Dict[str, Any] | None = None) -> in
     return 2
 
 
+RUNTIME_COLUMN_CAP = 30
+
+
+def _fit_cell(text: str, cap: int) -> str:
+    """Trim a cell to its cap, saying so, rather than running into the next one."""
+    return text if len(text) <= cap else text[: cap - 1] + "…"
+
+
+def _runtimes_table(rows: list[dict]) -> list[str]:
+    """Render the runtimes table with every column sized to its own content.
+
+    SERVES used to be a flat 16 characters with no guard, so `desert-ant`'s
+    `transcription,audio,text` ran straight into the BACKENDS column and the
+    row stopped being readable. Widths now come from the data, capped so one
+    pathological value cannot push VERSION off the screen either.
+    """
+    columns = [
+        ("STATE", lambda row: row["state"]),
+        ("RUNTIME", lambda row: row["id"]),
+        ("SERVES", lambda row: ",".join(row["serves"])),
+        ("BACKENDS", lambda row: ",".join(row["backends"])),
+        ("VERSION", lambda row: row["version"] or "-"),
+    ]
+    cells = [[_fit_cell(read(row), RUNTIME_COLUMN_CAP) for _header, read in columns]
+             for row in rows]
+    widths = [
+        max([len(header)] + [len(line[index]) for line in cells]) + 2
+        for index, (header, _read) in enumerate(columns)
+    ]
+
+    lines = ["  " + "".join(f"{header:{width}s}" for (header, _), width
+                            in zip(columns, widths)).rstrip()]
+    indent = len("  ") + sum(widths[:2])
+    for row, line in zip(rows, cells):
+        lines.append(("  " + "".join(f"{cell:{width}s}" for cell, width
+                                     in zip(line, widths))).rstrip())
+        if row.get("note"):
+            lines.append(" " * indent + row["note"])
+    return lines
+
+
 def cmd_runtimes(args, cfg=None) -> int:
     """List, check or install the packages that execute a model."""
     from spacepilot.device_probe import probe_local_device
     from spacepilot import runtimes as rt
 
     reg = rt.runtimes()
-    runtime_python = rt.interpreter(cfg)
+    shared_python = rt.interpreter(cfg)
     action = getattr(args, "runtimes_action", None) or "list"
 
     if action == "list":
@@ -1552,21 +1629,19 @@ def cmd_runtimes(args, cfg=None) -> int:
                 })
             print(json.dumps({
                 "system": {"chip": profile.chip, "backend": backend,
-                           "interpreter": runtime_python},
+                           "interpreter": shared_python},
                 "runtimes": rows,
             }, indent=2, default=str))
             return 0
 
         print(f"{profile.chip or 'this machine'} · {backend or 'unknown backend'} "
-              f"· {runtime_python}\n")
-        width = max(11, max(len(_state_of(r, st)) for r, st in checked) + 2)
-        print(f"  {'STATE':{width}s}{'RUNTIME':20s}{'SERVES':16s}{'BACKENDS':20s}VERSION")
-        for r, st in checked:
-            state = _state_of(r, st)
-            print(f"  {state:{width}s}{r.id:20s}{','.join(r.serves):16s}"
-                  f"{','.join(r.backends):20s}{st.version or '-'}")
-            if not st.python_compatible:
-                print(f"  {'':{width}s}{'':20s}{st.python_note}")
+              f"· {shared_python}\n")
+        print("\n".join(_runtimes_table([
+            {"state": _state_of(r, st), "id": r.id, "serves": r.serves,
+             "backends": r.backends, "version": st.version,
+             "note": None if st.python_compatible else st.python_note}
+            for r, st in checked
+        ])))
         print("\n  `spacepilot runtimes check <id>` for detail, `install <id>` to add one.")
         print("  n/a here means it needs silicon this machine does not have.")
         return 0
@@ -1615,19 +1690,20 @@ def cmd_runtimes(args, cfg=None) -> int:
             print(f"Cannot install {r.name}: {st.python_note}")
             return 1
 
-        argv = rt.install_command(r, py=runtime_python)
+        # About to install, and already resolving; show the real command.
+        argv = rt.install_command(r, py=shared_python, probe=True)
         print(f"{r.name} — {r.summary}\n")
         print(f"  will run   {' '.join(argv)}")
         if r.install.isolated:
             print(f"  into       its own environment -- {rt.isolated_env_dir(r)}")
         else:
-            print(f"  into       {runtime_python}")
+            print(f"  into       {shared_python}")
         print(f"  licence    {r.license}")
         if r.notes:
             print(f"  note       {r.notes}")
 
         print("\n  resolving what this would change...")
-        imp = rt.preview(r, py=runtime_python)
+        imp = rt.preview(r, py=shared_python)
         if imp.error:
             print(f"  could not resolve: {imp.error}")
             return 1
@@ -1660,7 +1736,7 @@ def cmd_runtimes(args, cfg=None) -> int:
                 return 1
 
         print(f"\n  installing {r.install.package}...")
-        st = rt.install(r, py=runtime_python)
+        st = rt.install(r, py=shared_python)
         if st.installed and not st.below_minimum:
             print(f"  {r.name} {st.version} installed and imports cleanly.")
             return 0
@@ -1977,10 +2053,16 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         if system.memory_total_bytes:
             unified = " unified" if system.memory_unified else ""
             print(f"  memory    : {gib(system.memory_total_bytes)}{unified}")
-        if system.memory_limit_bytes is not None:
-            src = system.memory_limit_source or "unknown"
-            print(f"  usable    : {gib(system.memory_limit_bytes)} (source: {src})")
-        elif profile.accelerator_memory_bytes is None:
+        # Same helper `doctor` and the status surfaces use. Reading
+        # system.memory_limit_bytes directly was a second implementation, and a
+        # profile whose platform limit is unknown printed nothing here while
+        # `doctor` printed a heuristic number.
+        from spacepilot.device_probe import format_gib, usable_memory_report
+        memory = usable_memory_report(profile)
+        if memory["usable_memory_known"]:
+            print(f"  usable    : {format_gib(memory['usable_memory_bytes'])} usable "
+                  f"(source: {memory['memory_limit_source']})")
+        else:
             print("  usable    : unknown — accelerator memory not measured")
         if system.vram_total_bytes:
             print(f"  vram      : {gib(system.vram_total_bytes)} present")
@@ -2148,6 +2230,10 @@ def main(argv: list[str] | None = None):
                           help="Maximum KV-cache tokens (safe route limit: 4096)")
     run_text.add_argument("--temperature", type=float, default=0.0,
                           help="Sampling temperature, 0.0..2.0 (default 0)")
+    run_text.add_argument("--thinking", choices=("off", "on"), default="off",
+                          help="Pass enable_thinking to the chat template. "
+                               "Default off. Templates that reject the flag "
+                               "are rendered without it.")
     run_text.add_argument("--yes", action="store_true",
                           help="Execute after printing the plan")
 

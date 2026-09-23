@@ -18,6 +18,25 @@ RESULT_PREFIX = "SPACEPILOT_RESULT "
 CHUNK_PREFIX = "SPACEPILOT_CHUNK "
 
 
+def apply_chat(tokenizer, messages, *, thinking: bool) -> str:
+    """Render the chat template. Thinking is off unless the caller asks.
+
+    Templates that take ``enable_thinking`` (Qwen, MiMo, Gemma) honor it.
+    A template that rejects the argument is rendered without it. LFM2.5 is
+    one of those: the weights still open ``<think>`` on their own.
+    """
+    plain = dict(tokenize=False, add_generation_prompt=True)
+    try:
+        return tokenizer.apply_chat_template(
+            messages, enable_thinking=thinking, **plain)
+    except TypeError:
+        return tokenizer.apply_chat_template(messages, **plain)
+    except Exception as exc:
+        if "enable_thinking" not in str(exc):
+            raise
+        return tokenizer.apply_chat_template(messages, **plain)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
@@ -25,6 +44,7 @@ def main(argv=None) -> int:
     parser.add_argument("--max-tokens", required=True, type=int)
     parser.add_argument("--max-kv-size", required=True, type=int)
     parser.add_argument("--temperature", required=True, type=float)
+    parser.add_argument("--thinking", choices=("off", "on"), default="off")
     parser.add_argument("--stream", action="store_true")
     parser.add_argument("--messages", action="store_true")
     args = parser.parse_args(argv)
@@ -53,9 +73,9 @@ def main(argv=None) -> int:
     load_seconds = time.perf_counter() - load_started
 
     if tokenizer.has_chat_template:
-        prompt = tokenizer.apply_chat_template(
-            messages or [{"role": "user", "content": prompt}], tokenize=False,
-            add_generation_prompt=True,
+        prompt = apply_chat(
+            tokenizer, messages or [{"role": "user", "content": prompt}],
+            thinking=args.thinking == "on",
         )
 
     text_parts = []

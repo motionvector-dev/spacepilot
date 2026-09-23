@@ -92,3 +92,46 @@ def test_fleet_admin_sends_only_selectors_over_the_mocked_local_uds_client():
             "fleet_id": "fleet-uuid",
         }),
     ]
+
+
+def test_a_missing_daemon_socket_is_named_as_such_not_as_errno_2(tmp_path):
+    """`[Errno 2] No such file or directory` never said which file, or what to do."""
+    import pytest
+
+    from spacepilot.substrate import DaemonClient, SubstrateError
+
+    client = DaemonClient(tmp_path / "never-created.sock")
+    with pytest.raises(SubstrateError) as caught:
+        client.health()
+    message = str(caught.value)
+    assert "daemon is not running" in message
+    assert "spacepilot daemon install" in message
+    assert str(tmp_path / "never-created.sock") in message
+
+
+def test_fleet_list_against_an_absent_daemon_exits_non_zero_with_that_message(
+    monkeypatch, capsys, tmp_path
+):
+    """A failed command that exits 0 is undetectable from a script or a CI step."""
+    socket_path = tmp_path / "absent.sock"
+    monkeypatch.setattr("spacepilot.paths.daemon_socket_path", lambda: socket_path)
+
+    assert cli.main(["fleet", "list"]) == 1
+    out = capsys.readouterr().out
+    assert "daemon is not running" in out
+    assert "spacepilot daemon install" in out
+    assert "Errno 2" not in out
+
+
+def test_every_daemon_backed_fleet_action_exits_non_zero_when_the_daemon_is_absent(
+    monkeypatch, tmp_path
+):
+    socket_path = tmp_path / "absent.sock"
+    monkeypatch.setattr("spacepilot.paths.daemon_socket_path", lambda: socket_path)
+
+    assert cli.main(["fleet", "init", "home-ship"]) == 1
+    assert cli.main(["fleet", "add", "aurora-tailnet"]) == 1
+    assert cli.main(["fleet", "list", "--json"]) == 1
+    assert cli.main([
+        "fleet", "join", "--author-key-id", "a", "--author-selector", "b",
+    ]) == 1

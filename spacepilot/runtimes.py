@@ -278,6 +278,49 @@ def interpreter(cfg: Optional[Dict[str, Any]] = None) -> str:
     return _spacepilot_console_python() or sys.executable
 
 
+def runtime_python(runtime_id: str, cfg: Optional[Dict[str, Any]] = None) -> str:
+    """The interpreter that can actually run one runtime's code.
+
+    For an `install.isolated` runtime this is its own venv -- installing it
+    there and then looking for it in the shared interpreter would report "no
+    route" for something that is installed.
+
+    The venv has to *work*, not merely exist. `_install_isolated` creates the
+    venv before it installs into it, so a failed install leaves an empty one
+    behind; preferring it on existence alone would let that empty venv shadow
+    a working install in someone's own environment and take away a route they
+    had. So the runtime must actually import there. Otherwise -- and for every
+    non-isolated runtime -- the shared interpreter is the answer.
+    """
+    r = runtimes().get(runtime_id)
+    if r is not None and r.install.isolated and _isolated_usable(r):
+        return str(isolated_python(r))
+    return interpreter(cfg)
+
+
+_ISOLATED_OK: Dict[str, bool] = {}
+
+
+def _isolated_usable(r: Runtime, refresh: bool = False) -> bool:
+    """Whether this runtime really imports inside its own venv."""
+    env_py = isolated_python(r)
+    key = str(env_py)
+    if refresh:
+        _ISOLATED_OK.pop(key, None)
+    elif key in _ISOLATED_OK:
+        return _ISOLATED_OK[key]
+    if not env_py.is_file():
+        return False  # not cached: the venv may appear at any moment
+    try:
+        proc = subprocess.run([str(env_py), "-c", f"import {r.verify_import}"],
+                              capture_output=True, text=True, timeout=60)
+        ok = proc.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ok = False
+    _ISOLATED_OK[key] = ok
+    return ok
+
+
 def python_ok(r: Runtime, py: Optional[str] = None) -> tuple[bool, str]:
     """Whether this interpreter satisfies the runtime's declared requirement."""
     if not r.python_requires:
@@ -416,9 +459,12 @@ def _install_isolated(r: Runtime, timeout: int = 900) -> Status:
     Idempotent: an existing venv is reused so a re-run only updates the pin,
     it does not rebuild the environment from scratch every time.
     """
+    import shutil as _shutil
+
     env_dir = isolated_env_dir(r)
     env_py = isolated_python(r)
-    if not env_py.is_file():
+    created_here = not env_py.is_file()
+    if created_here:
         env_dir.parent.mkdir(parents=True, exist_ok=True)
         proc = subprocess.run([sys.executable, "-m", "venv", str(env_dir)],
                                capture_output=True, text=True, timeout=timeout)
@@ -427,13 +473,27 @@ def _install_isolated(r: Runtime, timeout: int = 900) -> Status:
             return Status(r.id, False, None,
                           tail[-1] if tail else f"venv creation exited {proc.returncode}",
                           external=True)
+        compatible, note = python_ok(r, str(env_py))
+        if not compatible:
+            # The shared path checks this before installing; so does this one,
+            # or a runtime with an upper Python bound resolves into a venv
+            # built from an interpreter it never supported.
+            _shutil.rmtree(env_dir, ignore_errors=True)
+            return Status(r.id, False, None, note, python_compatible=False,
+                          python_note=note, interpreter=str(env_py), external=True)
 
-    proc = subprocess.run(install_command(r), capture_output=True, text=True, timeout=timeout)
+    argv = install_command(r, probe=True)
+    proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "").strip().splitlines()
-        return Status(r.id, False, None,
-                      tail[-1] if tail else f"pip exited {proc.returncode}",
+        if created_here:
+            # An empty venv left behind would shadow a working install in the
+            # user's own environment and silently remove a route they had.
+            _shutil.rmtree(env_dir, ignore_errors=True)
+        _isolated_usable(r, refresh=True)
+        tail = _error_tail(proc, argv)
+        return Status(r.id, False, None, tail or f"install exited {proc.returncode}",
                       external=True, external_path=str(env_py))
+    _isolated_usable(r, refresh=True)
     return check(r)
 
 
@@ -578,13 +638,168 @@ class Impact:
     error: Optional[str] = None
 
     @property
+    def blocked(self) -> bool:
+        """The install cannot proceed as resolved. `error` says why.
+
+        A caller that only reads `is_disruptive` used to see `false` next to a
+        fatal error and go ahead -- MCP agents read this dict directly, so the
+        stop signal has to be in the dict, not only in prose.
+        """
+        return self.error is not None
+
+    @property
     def is_disruptive(self) -> bool:
-        return bool(self.downgrades)
+        return bool(self.downgrades) or self.blocked
 
     def to_dict(self) -> Dict[str, Any]:
         return {"new": self.new, "upgrades": self.upgrades,
                 "downgrades": self.downgrades, "error": self.error,
-                "is_disruptive": self.is_disruptive}
+                "blocked": self.blocked, "is_disruptive": self.is_disruptive}
+
+
+# --- Installing from an interpreter that may have no pip -------------------
+#
+# The documented first run is `uv tool install spacepilot`, and a uv-managed
+# venv ships no pip at all. Every install here used to be
+# `[python, "-m", "pip", "install", ...]`, so on the released artifact every
+# `method: pip` runtime was uninstallable -- including mlx-lm, the runtime
+# behind every model that carries a route. So: use pip when it is there, `uv
+# pip install --python <interpreter>` when it is not, `ensurepip` as a last
+# resort, and a named command when none of the three is possible.
+
+_PIP_PROBE: Dict[str, bool] = {}
+
+
+def pip_available(py: str) -> bool:
+    """Whether `py -m pip` actually runs.
+
+    An interpreter we cannot even launch is reported as having pip -- that is
+    the default form, and nothing is learned by guessing otherwise -- but that
+    guess is never cached. `install_command` is legitimately called for an
+    isolated venv before it is created (the CLI prints the command it will
+    run), and remembering "that path has pip" from a path that did not exist
+    yet would answer for the real interpreter that appears there later.
+    """
+    if py in _PIP_PROBE:
+        return _PIP_PROBE[py]
+    try:
+        proc = subprocess.run([py, "-m", "pip", "--version"],
+                              capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return True  # a guess, so it is not remembered as a measurement
+    ok = proc.returncode == 0
+    _PIP_PROBE[py] = ok
+    return ok
+
+
+def _error_tail(proc: Any, argv: Optional[List[str]] = None) -> str:
+    """The useful part of a failed installer's output.
+
+    pip puts everything on one `ERROR:` line, so its last line is the message.
+    uv draws a box: the last line is only `... your requirements are
+    unsatisfiable.` and the package that could not be resolved is several
+    lines above it. Taking one line from uv loses the only part worth reading.
+    """
+    lines = [ln.rstrip() for ln in
+             (proc.stderr or proc.stdout or "").strip().splitlines() if ln.strip()]
+    if not lines:
+        return ""
+    is_uv = bool(argv) and "uv" in Path(str(argv[0])).name
+    if not is_uv:
+        return lines[-1]
+    return " ".join(ln.strip() for ln in lines[-6:])
+
+
+def _uv() -> Optional[str]:
+    return shutil.which("uv")
+
+
+def _ensurepip(py: str, timeout: int = 300) -> bool:
+    """Last resort: ask the interpreter to install pip into itself."""
+    try:
+        proc = subprocess.run([py, "-m", "ensurepip", "--upgrade"],
+                              capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if proc.returncode != 0:
+        return False
+    _PIP_PROBE.pop(py, None)
+    return pip_available(py)
+
+
+def no_installer_error(py: str, specs: List[str]) -> str:
+    """What to tell someone whose interpreter can install nothing at all.
+
+    Leads with the command that works on the machine as it stands. Naming a
+    `uv` command in the same breath as "uv is not installed" gives someone
+    something they cannot paste.
+    """
+    manual = f"uv pip install --python {py} " + " ".join(shlex.quote(s) for s in specs)
+    return (f"{py} has no pip (uv-managed environments ship without one) and `uv` is "
+            f"not on PATH. Add pip with: {py} -m ensurepip --upgrade — then re-run. "
+            f"Or install uv (https://docs.astral.sh/uv/getting-started/installation/) "
+            f"and run: {manual}")
+
+
+def _pip_install_argv(py: str, specs: List[str], probe: bool = False) -> List[str]:
+    """The argv for an install.
+
+    `probe` decides whether this is allowed to measure the world. Without it
+    the nominal pip form comes back and nothing is executed -- describing an
+    action must never perform one, and a dry run that shells out to find out
+    what it would have done has already done something. The real install
+    dispatches with `probe=True`, which is the moment the answer has to be
+    right rather than merely nominal.
+    """
+    if not probe or pip_available(py):
+        return [py, "-m", "pip", "install", *specs]
+    uv = _uv()
+    if uv:
+        return [uv, "pip", "install", "--python", py, *specs]
+    # Neither is here. The uv form is still the command worth showing, since
+    # it is the one that will work once uv is installed; `install()` and
+    # `preview()` refuse with `no_installer_error` rather than running it.
+    return ["uv", "pip", "install", "--python", py, *specs]
+
+
+def _impact_from_uv_dry_run(text: str) -> Impact:
+    """Read `uv pip install --dry-run` output into the same Impact shape.
+
+    uv prints one line per package: `+ name==version` for what would land and
+    `- name==version` for what would be removed first, so a version change
+    shows up as a pair.
+    """
+    removed: Dict[str, str] = {}
+    added: List[tuple] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line[0] not in "+-~" or "==" not in line:
+            continue
+        sign, rest = line[0], line[1:].strip()
+        name, _, ver = rest.partition("==")
+        name, ver = name.strip(), ver.split()[0].strip() if ver else ""
+        if not name or not ver:
+            continue
+        if sign == "-":
+            removed[name] = ver
+        else:
+            added.append((name, ver))
+
+    imp = Impact()
+    for name, ver in added:
+        cur = removed.get(name)
+        if cur is None:
+            imp.new.append((name, ver))
+        elif cur == ver:
+            continue
+        else:
+            try:
+                from packaging.version import Version
+                target = imp.upgrades if Version(ver) > Version(cur) else imp.downgrades
+            except Exception:
+                target = imp.upgrades
+            target.append((name, cur, ver))
+    return imp
 
 
 def _install_specs(r: Runtime) -> List[str]:
@@ -619,6 +834,21 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
     py = py or interpreter()
     specs = _install_specs(r)
+
+    if not pip_available(py):
+        uv = _uv()
+        if not uv and not _ensurepip(py):
+            return Impact(error=no_installer_error(py, specs))
+        if uv and not pip_available(py):
+            proc = subprocess.run(
+                [uv, "pip", "install", "--python", py, "--dry-run", *specs],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            if proc.returncode != 0:
+                tail = _error_tail(proc, [uv])
+                return Impact(error=tail or f"uv exited {proc.returncode}")
+            # uv writes the plan to stderr on some versions, stdout on others.
+            return _impact_from_uv_dry_run((proc.stdout or "") + "\n" + (proc.stderr or ""))
 
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
         report = fh.name
@@ -669,8 +899,16 @@ def preview(r: Runtime, py: Optional[str] = None, timeout: int = 300) -> Impact:
 
 
 def install_command(r: Runtime, py: Optional[str] = None,
-                     model_dir: Optional[Path | str] = None) -> List[str]:
-    """The exact argv that would run. Callers show this before running it.
+                     model_dir: Optional[Path | str] = None,
+                     probe: bool = False) -> List[str]:
+    """The argv that would run. Callers show this before running it.
+
+    Pure by default: describing an action must not perform one, so this
+    executes nothing and names the nominal `-m pip install` form. On an
+    interpreter with no pip the real install runs `uv pip install --python
+    <interpreter>` instead, and a caller that is about to install (or is
+    otherwise already allowed to shell out, like the preview endpoints)
+    passes `probe=True` to be told which of the two it will really be.
 
     `model_dir` fills a `{model_dir}` placeholder in `install.args` (see
     bitnet-cpp.yaml) -- the directory a flight has already downloaded the
@@ -695,8 +933,8 @@ def install_command(r: Runtime, py: Optional[str] = None,
         # never overrides it, the whole point of `isolated` is that this
         # runtime is never installed into whatever interpreter the caller
         # names.
-        return [str(isolated_python(r)), "-m", "pip", "install", *_install_specs(r)]
-    return [py or interpreter(), "-m", "pip", "install", *_install_specs(r)]
+        return _pip_install_argv(str(isolated_python(r)), _install_specs(r), probe)
+    return _pip_install_argv(py or interpreter(), _install_specs(r), probe)
 
 
 def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
@@ -720,11 +958,17 @@ def install(r: Runtime, py: Optional[str] = None, timeout: int = 900,
         return Status(r.id, False, None, note, python_compatible=False,
                       python_note=note, interpreter=py)
 
-    proc = subprocess.run(install_command(r, py), capture_output=True, text=True, timeout=timeout)
+    if not pip_available(py) and not _uv() and not _ensurepip(py):
+        # Nothing here can install anything. Say so with the command that
+        # would, rather than dispatching one that cannot run.
+        return Status(r.id, False, None, no_installer_error(py, _install_specs(r)),
+                      python_compatible=True, python_note=note or None, interpreter=py)
+
+    argv = install_command(r, py, probe=True)
+    proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "").strip().splitlines()
-        return Status(r.id, False, None,
-                      tail[-1] if tail else f"pip exited {proc.returncode}",
+        tail = _error_tail(proc, argv)
+        return Status(r.id, False, None, tail or f"install exited {proc.returncode}",
                       python_compatible=True, python_note=note or None, interpreter=py)
     return check(r, py)
 

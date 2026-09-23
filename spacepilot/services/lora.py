@@ -9,7 +9,18 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
 
+from spacepilot.capability import absent, refuse
+
 logger = logging.getLogger(__name__)
+
+# One capability-absence shape across every gated subsystem — see
+# spacepilot/capability.py for why a gate and a bad id are not the same answer.
+LORA_TRAINING = absent(
+    "lora_training", "2026-08-24",
+    "LoRA training is not implemented; the previous job was a "
+    "simulation (fake loss curve, no real checkpoint). Gated 2026-08-24.",
+)
+
 
 @dataclass
 class LoRAAdapterSpec:
@@ -71,10 +82,7 @@ class LoRAManager:
         # Real LoRA training (an mflux/diffusers run producing a real
         # checkpoint) is a separate, unbuilt feature. Until it exists this
         # raises rather than pretend.
-        raise NotImplementedError(
-            "LoRA training is not implemented; the previous job was a "
-            "simulation (fake loss curve, no real checkpoint). Gated 2026-08-24."
-        )
+        refuse(LORA_TRAINING)
         job_id = f"job-{uuid.uuid4().hex[:8]}"
         self._jobs[job_id] = {
             "job_id": job_id,

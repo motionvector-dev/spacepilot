@@ -53,12 +53,12 @@ enum SpacePilotInstructions {
     reading, which comes from this Mac directly.
 
     EXAMPLE EXCHANGE:
-    Telemetry: ship=Apple M1 Max, thermal=Nominal, backend=mlx, headroom=20.5 GB usable, loaded=none, spacepilot=running
+    Telemetry: ship=Apple M1 Max, thermal=Nominal, backend=mlx, headroom=20.5 GB usable, cached=none, spacepilot=running
     User: How's the machine?
-    SpacePilot: Apple M1 Max · nominal · mlx · 20.5 GB usable · nothing loaded.
+    SpacePilot: Apple M1 Max · nominal · mlx · 20.5 GB usable · nothing cached.
 
     EXAMPLE EXCHANGE:
-    Telemetry: ship=no reading, thermal=Nominal, backend=no reading, headroom=no reading, loaded=none, spacepilot=not running
+    Telemetry: ship=no reading, thermal=Nominal, backend=no reading, headroom=no reading, cached=none, spacepilot=not running
     User: How much headroom do I have?
     SpacePilot: No reading — SpacePilot is not running. Thermals are nominal.
 
@@ -117,16 +117,18 @@ enum SpacePilotInstructions {
         thermalState: String,
         backend: String,
         headroom: String,
-        loadedModels: [String],
+        cachedModels: [String],
         daemonReachable: Bool
     ) -> String {
-        let loaded = loadedModels.isEmpty ? "none" : loadedModels.joined(separator: "/")
+        // `cached` on the wire too: telling a model a weight is "loaded" when
+        // it is merely on disk is the same claim the daemon stopped making.
+        let cached = cachedModels.isEmpty ? "none" : cachedModels.joined(separator: "/")
         return """
         Telemetry: ship=\(shipName), \
         thermal=\(thermalState), \
         backend=\(backend), \
         headroom=\(headroom), \
-        loaded=\(loaded), \
+        cached=\(cached), \
         spacepilot=\(daemonReachable ? "running" : "not running")
         """
     }

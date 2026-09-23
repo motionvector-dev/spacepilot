@@ -760,9 +760,11 @@ struct SpaceBarPopoverView: View {
         VStack(alignment: .leading, spacing: 3) {
             row("backend", daemon.backend ?? "no reading")
             row("headroom", daemon.headroomLine ?? "no reading")
-            row("loaded", (daemon.loadedModels?.isEmpty ?? true)
+            // "loaded" was never true — the daemon was listing cache entries,
+            // stub markers included. Say what this actually is.
+            row("cached", daemon.cachedModels.isEmpty
                 ? "nothing"
-                : (daemon.loadedModels ?? []).joined(separator: ", "))
+                : daemon.cachedModels.joined(separator: ", "))
         }
     }
 
@@ -1021,7 +1023,7 @@ actor AppleFoundationModelManager {
             thermalState: telemetry.thermal,
             backend: daemon?.backend ?? "no reading",
             headroom: daemon?.headroomLine ?? "no reading",
-            loadedModels: daemon?.loadedModels ?? [],
+            cachedModels: daemon?.cachedModels ?? [],
             daemonReachable: daemon != nil
         )
         let response = try await activeSession().respond(to: "\(block)\n\n\(userText)")

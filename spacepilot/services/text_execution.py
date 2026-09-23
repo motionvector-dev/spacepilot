@@ -29,6 +29,18 @@ MAX_SAFE_TOKENS = 256
 MAX_SAFE_KV_SIZE = 4096
 
 
+def stopped_inside_think(text: str) -> bool:
+    """True when a ``<think>`` block is still open at the end of the text.
+
+    A closed think followed by an answer is a real reply. An unclosed one
+    means the token cap died inside the trace and the sentence never came.
+    """
+    start = text.rfind("<think>")
+    if start < 0:
+        return False
+    return text.find("</think>", start) < 0
+
+
 @dataclass(frozen=True)
 class TextCandidate:
     variant: Variant
@@ -61,6 +73,9 @@ class TextRequest:
     max_tokens: int = MAX_SAFE_TOKENS
     max_kv_size: int = MAX_SAFE_KV_SIZE
     temperature: float = 0.0
+    # Off unless the caller asks. Passed to chat templates that accept
+    # enable_thinking. A template that ignores it can still emit <think>.
+    thinking: bool = False
     # Supplied by a caller that already told someone else this id — the /v1
     # routes do, so the response and the record name the same run. Minted here
     # when absent.
@@ -143,7 +158,7 @@ class TextExecutionService:
         result = self.driver.infer(
             prompt=request.prompt, out_path=str(output), variant_id=candidate.variant.id,
             max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
-            temperature=request.temperature,
+            temperature=request.temperature, thinking=request.thinking,
             messages=list(request.messages) if request.messages else None,
         )
         return self._finish(plan, request, candidate, output, before,
@@ -162,7 +177,7 @@ class TextExecutionService:
         for event in self.driver.stream(
             prompt=request.prompt, out_path=str(output), variant_id=candidate.variant.id,
             max_tokens=request.max_tokens, max_kv_size=request.max_kv_size,
-            temperature=request.temperature,
+            temperature=request.temperature, thinking=request.thinking,
             messages=list(request.messages) if request.messages else None,
         ):
             if event.get("type") == "chunk":
@@ -195,6 +210,8 @@ class TextExecutionService:
             raise LocalExecutionError("MLX-LM produced no non-empty text artifact")
         if before is not None and output.stat() == before:
             raise LocalExecutionError("MLX-LM did not produce a new text artifact")
+        text = output.read_text()
+        unfinished = stopped_inside_think(text)
         numeric = ("wall_seconds", "load_seconds", "generation_tps", "prompt_tps",
                    "peak_memory_gb")
         if any(not isinstance(result.get(key), (int, float)) or result[key] <= 0 for key in numeric):
@@ -210,6 +227,36 @@ class TextExecutionService:
         run_id = request.run_id or uuid.uuid4().hex
         variant_id = candidate.variant.id
         self.system_writer(plan.system)
+        knobs = {
+            "max_tokens": request.max_tokens,
+            "max_kv_size": request.max_kv_size,
+            "temperature": request.temperature,
+            "thinking": "on" if request.thinking else "off",
+            "prompt_tokens": result["prompt_tokens"],
+            "generation_tokens": result["generation_tokens"],
+            "load_seconds": float(result["load_seconds"]),
+            "peak_memory_gb": float(result["peak_memory_gb"]),
+            "generation_tps": float(result["generation_tps"]),
+        }
+        if unfinished:
+            # The speed is real and is stored. It is not an answer, so the
+            # row is failed and stays out of the speed summary.
+            self.measurement_recorder(
+                system=plan.system, model_id=variant_id, variant_id=variant_id,
+                metric="tokens_per_second", value=float(result["wall_seconds"]),
+                contention=contention, runtime_id=RUNTIME_ID,
+                quantisation=candidate.variant.precision,
+                wall_seconds=float(result["wall_seconds"]),
+                resolved_revision=resolved_revision,
+                run_id=run_id, status="failed",
+                tokens_in=result["prompt_tokens"],
+                tokens_out=result["generation_tokens"],
+                knobs=knobs,
+                note="generation stopped inside an unclosed think block; not an answer",
+            )
+            raise LocalExecutionError(
+                "generation stopped inside an unclosed <think> block; "
+                "the token cap ended before an answer")
         measurement_path = self.measurement_recorder(
             system=plan.system, model_id=variant_id, variant_id=variant_id,
             metric="tokens_per_second", value=float(result["generation_tps"]),
@@ -220,15 +267,7 @@ class TextExecutionService:
             run_id=run_id,
             tokens_in=result["prompt_tokens"],
             tokens_out=result["generation_tokens"],
-            knobs={
-                "max_tokens": request.max_tokens,
-                "max_kv_size": request.max_kv_size,
-                "temperature": request.temperature,
-                "prompt_tokens": result["prompt_tokens"],
-                "generation_tokens": result["generation_tokens"],
-                "load_seconds": float(result["load_seconds"]),
-                "peak_memory_gb": float(result["peak_memory_gb"]),
-            },
+            knobs=knobs,
             note="ordinary bounded spacepilot run text success; text artifact verified",
         )
         # A second row, same run_id: prefill and decode are different phases
@@ -244,15 +283,7 @@ class TextExecutionService:
             run_id=run_id,
             tokens_in=result["prompt_tokens"],
             tokens_out=result["generation_tokens"],
-            knobs={
-                "max_tokens": request.max_tokens,
-                "max_kv_size": request.max_kv_size,
-                "temperature": request.temperature,
-                "prompt_tokens": result["prompt_tokens"],
-                "generation_tokens": result["generation_tokens"],
-                "load_seconds": float(result["load_seconds"]),
-                "peak_memory_gb": float(result["peak_memory_gb"]),
-            },
+            knobs=knobs,
             note="ordinary bounded spacepilot run text success; text artifact verified",
         )
         return TextRunResult(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Sources/Tokens.swift from web/spacebar/tokens.css.
+"""Generate Sources/Tokens.swift from spacepilot/web/spacebar/tokens.css.
 
 One source of colour. The CSS file is authored; the Swift file is not.
 Run after editing tokens.css:
@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-CSS = REPO / "web" / "spacebar" / "tokens.css"
+CSS = REPO / "spacepilot" / "web" / "spacebar" / "tokens.css"
 SWIFT = REPO / "native" / "SpaceBar" / "Sources" / "Tokens.swift"
 
 # Dark is the product (DESIGN.md, "Obsidian Dark Precision"), so it lives on
@@ -59,7 +59,7 @@ EXPORT = [
 
 HEADER = """// Tokens.swift — GENERATED. Do not edit.
 //
-// Source:    web/spacebar/tokens.css
+// Source:    spacepilot/web/spacebar/tokens.css
 // Generator: native/SpaceBar/tools/gen_tokens.py
 //
 // Every colour in SpaceBar is written down once, in the CSS file, so the

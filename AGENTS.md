@@ -14,7 +14,7 @@ re-explain it. The short form:
 | CLI + MCP server | this repo | open source |
 | web cockpit, Tauri wrapper later | this repo | open source |
 | macbar (SpaceBar menu bar app) | its own repo, to be created | free by default, paid tier later if the value earns $5/month |
-| spacepilot.dev | `../spacepilot-landing` | site |
+| spacepilot.dev (`landing/` in this repo, deployed on Vercel) | `spacepilot` | open source |
 
 The idea: running AI should be easy, and free when your machine allows it.
 When it does not, provisioning a box (RunPod, Modal, an API provider) should be
@@ -96,6 +96,22 @@ A test that passes against the broken code is not a test. When fixing a bug,
 check the new test actually fails against the original behaviour before
 believing it.
 
+Before believing any local packaging result, move `build/` and `*.egg-info`
+aside. setuptools stages package data into `build/lib/` and reuses it, so a
+stale one ships files the current `pyproject.toml` no longer asks for. For
+wheels `build/lib/` is the one that matters — clearing only `*.egg-info` still
+gives you the false pass — but move both, since `SOURCES.txt` drives sdists.
+`pip wheel` builds in place and leaves both behind, so the trap arms itself on
+first use.
+
+Measured, not assumed: on a tree built once, deleting every package-data glob
+from `pyproject.toml` produced a wheel with the same 107 data files and the
+same CRCs. Clearing `build/` dropped it to zero. A real packaging hole was
+nearly reported as non-reproducible this way. CI is safe because
+`actions/checkout` defaults to `clean: true` and runs `git clean -ffdx` — not
+because the runner is fresh; it is a persistent self-hosted workspace, so if
+anyone disables that flag for speed, CI is exposed too.
+
 ## Money and hardware
 
 `spacepilot launch` starts a g6e.2xlarge spot instance at roughly $0.75/hour that
@@ -152,7 +168,7 @@ tools/install_hooks.sh
 Once per clone. It points `core.hooksPath` at `.githooks/`, which covers every
 worktree of this repo at once.
 
-The one hook regenerates `web/registry.json` when the data behind it moved.
+The one hook regenerates `spacepilot/web/registry.json` when the data behind it moved.
 That file is generated and committed — the public page has no server to ask —
 so it falls behind `spacepilot/registry/` silently, and the thing that used to
 notice was a red CI run on a PR that never touched the registry.
@@ -161,6 +177,19 @@ stops it firing. `--no-verify` skips it when a commit is deliberately
 mid-edit.
 
 ## Conventions
+
+No path resolves inside the installed package tree. What ships lives in the
+package and is found with `importlib.resources` — `spacepilot/registry/` and
+`spacepilot/web/`, never a walk up from `__file__` looking for a repo root.
+What is written goes through `spacepilot/paths.py`: the checkout when there is
+one, `~/Library/Application Support/spacepilot` (XDG equivalent on Linux)
+otherwise. `uv tool upgrade` replaces the install tree, so anything left there
+— renders, checkpoints, `.studio_token` — is destroyed by a routine upgrade.
+v2.8.0 shipped with `web/` outside the wheel and `web_dir` guessed from a repo
+root, and every page the README advertises answered 500 on a clean install;
+`tests/test_wheel_install.py` is the gate, and it runs under `pytest -m
+packaging`. `$SPACEPILOT_WEB_DIR` overrides the frontend location the way
+`$SPACEPILOT_OUTPUTS_DIR` overrides generated output.
 
 Every endpoint that spends compute or money takes `X-SpacePilot-Token` via the
 `require_token` dependency. Read-only routes stay open. Adding a compute route
@@ -172,7 +201,7 @@ can reintroduce a shell. Never `shell=True`, never `os.system`.
 
 Anything reaching the filesystem from a request goes through `resolve_output`,
 which resolves and then checks containment in `OUTPUTS_DIR`. Anything reaching
-`innerHTML` in `web/app.js` goes through `esc()`; there is a regression
+`innerHTML` in `spacepilot/web/app.js` goes through `esc()`; there is a regression
 test that fails if server data is interpolated raw.
 
 Check subprocess return codes and record real failures. The original code sent

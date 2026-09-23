@@ -25,7 +25,7 @@ landed this doc. Two things changed underneath it since it was written:
 
 **Spot-check against current main, not a re-run of the 12-agent audit:** Phase
 0.1-0.3 are done (marked below, with the commit that closed each). Phase
-0.4/0.5's cited lines were re-checked and still match current `web/*.js`
+0.4/0.5's cited lines were re-checked and still match current `spacepilot/web/*.js`
 exactly. Phases 1, 3, 4, 5, 6 keep their original file:line citations from the
 2026-08-25 audit — treat line numbers there as approximate and re-grep before
 acting, per the doc's own "evidence expires" standard.
@@ -70,7 +70,7 @@ half and violated wholesale in the old half.
 The seven MCP tools deleted in #67/#68 were symptoms. Items 0.1-0.3 below are
 now **done** on main (verified 2026-09-02) — kept here as the record of what
 was wrong and why, since the doc is a handoff, not a live task board. 0.4 and
-0.5 are still open; both were re-checked against current `web/*` and match the
+0.5 are still open; both were re-checked against current `spacepilot/web/*` and match the
 cited lines exactly.
 
 **0.1 DONE — fake video engines gated.** `spacepilot/api/routes/engines.py`'s
@@ -94,6 +94,29 @@ for a box that's already running. The fix already forward-references this doc
 by name (`spacepilot/cli.py`, the `_refuse_legacy_aws` docstring) — whoever
 landed it was already treating BUILD-PLAN.md as the Phase 4 pointer, which is
 one more reason to merge this doc rather than leave it orphaned as a PR.
+
+**0.6 DONE (2026-09-22) — three surfaces stopped reporting state that was not
+real.** All three were verified against installed v2.8.0 the same day.
+- `loaded_models` listed 75-byte marker files left by the gated mock downloader
+  as loaded models, while `doctor` correctly said the weights were missing —
+  and the MCP tool and `GET /api/compute/local-status` answered the same
+  question differently at the same instant, because each walked the cache
+  itself. One builder now serves both (`spacepilot/local_status.py`);
+  `loaded_models` is deprecated and always empty, and the cache is reported as
+  `cached_weight_model_ids` / `stub_marker_ids`.
+- Checkpoint sync is gated. It stored nothing: `create_snapshot` computed a
+  genuine sha256 and copied no bytes, `restore_snapshot` reported success and
+  wrote no file, and the records lived in one process's memory, so a snapshot
+  survived neither a restart nor the hop between HTTP and stdio MCP. Every
+  entry point now refuses; a listing carries `store` so an empty list does not
+  read as "this job has no snapshots".
+- Usable memory was computed and printed independently by `doctor`, `probe` and
+  the two status surfaces — 25.0 GB, 24.96 GiB and 28.8 GB for one 32 GB M1 Max
+  at one instant, feeding every fit verdict. One helper
+  (`device_probe.usable_memory_report`), one format (GiB), and the source
+  (`metal` or `heuristic`) now travels with the number on every surface. A
+  process without torch cannot ask Metal and falls back to the heuristic, so
+  that difference is now visible instead of silent.
 
 **0.4 Cockpit fabrications — the first-run page lies first.** All fixes are
 small; the pages themselves are Saurabh's in the design session, so **touch
@@ -251,12 +274,14 @@ Owned decisions, not build items yet:
 - **React frontend fate — resolved differently than expected.** The React
   migration (formerly PR #14) landed in main via #106 (SpaceBar v1) and #107
   (cockpit v1), as the `ui/` tree. It is **not** what the app currently serves:
-  `spacepilot/app.py` mounts only `web/` (`StaticFiles` on `settings.web_dir`),
-  so the vanilla pages this doc's Phase 0.4/0.5 refer to
+  `spacepilot/app.py` mounts only `spacepilot/web/` (`StaticFiles` on
+  `settings.web_dir`), so the vanilla pages this doc's Phase 0.4/0.5 refer to
   (onboarding.html, create.js, cockpit.js, sidebar.js) are still what a real
-  request hits. Whether `ui/` replaces `web/` as the served frontend, and when,
-  is still Saurabh's call — flagged for the docs-freshness sweep too, since
-  README.md's architecture section describes the old `web/`-only layout.
+  request hits. That tree moved from the repo root into the package in #155,
+  because a wheel cannot carry what sits outside it — `settings.web_dir` now
+  resolves through `importlib.resources`, with `$SPACEPILOT_WEB_DIR` as the
+  override. Whether `ui/` replaces it as the served frontend, and when, is
+  still Saurabh's call.
 - **Marketing copy** in home/create/oven/blueprint.html (SkyPilot arbitrage,
   Polar/x402) — Saurabh is redoing these in the design session. **No agent
   touches copy.**

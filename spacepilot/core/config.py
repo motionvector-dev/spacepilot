@@ -2,26 +2,58 @@
 
 import os
 import secrets
+from importlib import resources
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
-from spacepilot.paths import env_value
+from spacepilot import __version__
+from spacepilot.paths import checkout_root, env_value, outputs_dir, state_root
 
 
 def _resolve_repo_root() -> Path:
-    current = Path(__file__).resolve().parent
-    while current != current.parent:
-        if (current / "spacepilot").exists() and ((current / "web").exists() or (current / "pyproject.toml").exists()):
-            return current
-        current = current.parent
-    return Path(__file__).resolve().parent.parent.parent.parent
+    """The checkout this package was imported from, or its own parent.
+
+    In an install there is no repo root at all, and the walk used to stop on
+    `site-packages/`'s parent — which is how `.studio_token` was written into
+    `lib/python3.13/` and `web_dir` pointed at a directory that never existed.
+    Nothing that ships or that gets written may derive from this any more; it
+    remains only for the repo-local scripts (`infra/gpu-box.sh`) that genuinely
+    have no meaning outside a checkout.
+    """
+    root = checkout_root()
+    if root is not None:
+        return root
+    return Path(__file__).resolve().parent.parent.parent
 
 
 REPO_ROOT = _resolve_repo_root()
 
 
+def _package_web_dir() -> Path:
+    """The frontend, found the way the registry is: by asking the package.
+
+    `resources.files` is the package's own answer to "where am I" and stays
+    right when it is installed, moved, or vendored. `REPO_ROOT / "web"` was a
+    guess, and on `uv tool install` it guessed `lib/python3.13/web` — so every
+    page the README advertises answered 500.
+    """
+    override = env_value("SPACEPILOT_WEB_DIR", "PLUTO_WEB_DIR", default="").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(str(resources.files("spacepilot"))) / "web"
+
+
 def _get_or_create_studio_token(root: Path) -> str:
+    # An explicit token skips the file entirely, so nothing that merely imports
+    # the settings mints one into the checkout. The test suite relies on this.
+    explicit = env_value("SPACEPILOT_STUDIO_TOKEN", "PLUTO_STUDIO_TOKEN", default="").strip()
+    if explicit:
+        return explicit
     token_file = root / ".studio_token"
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
     if token_file.exists():
         try:
             tok = token_file.read_text().strip()
@@ -42,17 +74,17 @@ class Settings(BaseModel):
     """Consolidated SpacePilot Settings."""
 
     app_name: str = "SpacePilot Studio"
-    version: str = "2.8.0"
+    version: str = __version__
 
     root_dir: Path = Field(default_factory=lambda: REPO_ROOT)
-    outputs_dir: Path = Field(
-        default_factory=lambda: Path(
-            env_value("SPACEPILOT_OUTPUTS_DIR", "PLUTO_OUTPUTS_DIR", default=str(REPO_ROOT / "outputs"))
-        ).resolve()
-    )
-    web_dir: Path = Field(default_factory=lambda: REPO_ROOT / "web")
+    # `spacepilot.paths.outputs_dir` already answers this for the CLI and the
+    # services: the override, then the checkout, then the user data directory.
+    # Answering it a second time here is what made an installed server write
+    # renders into site-packages' parent.
+    outputs_dir: Path = Field(default_factory=outputs_dir)
+    web_dir: Path = Field(default_factory=_package_web_dir)
 
-    studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(REPO_ROOT))
+    studio_token: str = Field(default_factory=lambda: _get_or_create_studio_token(state_root()))
     local_worker_token: Optional[str] = Field(default_factory=lambda: os.environ.get("LOCAL_WORKER_TOKEN"))
 
     # Loopback by default. This server hands out a token that unlocks a shell
