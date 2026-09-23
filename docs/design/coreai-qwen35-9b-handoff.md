@@ -10,7 +10,9 @@ Read the spec for the rules. This page is where the work stopped.
 
 Do not register the variant. Do not add `coreai` to `WIRED_RUNTIMES`. The train gate failed on a wrong number.
 
-The open question is why int8 turned 133 minutes into "2 hours and 11 minutes". 133 minutes is 2 hours and 13 minutes. The MLX 4-bit sibling of this checkpoint got 2 hours 13 minutes on the same prompt. A wrong number fails the bundle, by the spec.
+The wrong number is not a bundle defect. On 2026-09-22 the Hugging Face fp16 checkpoint itself answered the identical G2 prompt (token ids verified equal to the bundle's, see `gates/g2_hf_ref.py`) with "2 hours and 11 minutes" — same three lines, same off-by-two. The record is `gates/g2_hf.json` and `gates/g2_hf_rendered.txt`. The failure is in the base model's minutes-to-h/m step, not in the int8 export, and no quantization change fixes it. Why the MLX 4-bit run got 2 h 13 min is a separate open question and stays open: the 4-bit blobs are 79-byte stubs, so a rerun means a fresh download.
+
+Int4 is not the next export. The spec keeps int8 as the ship until a long gate passes, and this int8 bundle has not passed — but the failing item fails the checkpoint itself, not just the bundle.
 
 Int4 is not the next export. The spec keeps int8 as the ship until a long gate passes, and this int8 bundle has not passed.
 
@@ -64,7 +66,7 @@ Greedy, thinking off, one model at a time. The engine refused `--save-logits`, s
 | --- | --- |
 | G1 | Pass. Same text as Hugging Face. Decode 35.7 tok/s on 16 tokens. Prefill 6.6 tok/s on 17 tokens. |
 | G2 code | Pass. `second_largest` is correct. 11.2 tok/s, 51 tokens. |
-| G2 train | Fail. 133 minutes, then "2 hours and 11 minutes". |
+| G2 train | Fail. 133 minutes, then "2 hours and 11 minutes". HF fp16 gives the same wrong answer (`gates/g2_hf.json`), so this item fails the base model, not the bundle. |
 | G2 NVIDIA | Pass. Refused. No invented close. |
 | G3 | Pass. 692-token prompt, next 16 tokens match Hugging Face. Prefill 16.7 tok/s, decode 17.7 tok/s. |
 

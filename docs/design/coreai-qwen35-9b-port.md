@@ -1,6 +1,6 @@
 # Core AI port: Qwen3.5-9B
 
-**Status:** gated 2026-09-22. Not served. The train answer failed.
+**Status:** gated 2026-09-22. Not served. The train item fails at fp16 too (checked 2026-09-22), so that specific failure is a base-model limitation, not a bundle defect. The bundle stays unserved.
 **Date:** 2026-09-22
 **Review:** 2026-09-22. Swift subprocess, context 8192, a 512-token state gate before serving, no MLX registry row, thinking flag explicit.
 **Builds on:** `docs/design/INFERENCE-SURFACE.md` milestone M3, `docs/design/VISION.md`
@@ -90,7 +90,7 @@ The bundle is not done when the file exists. It is served only when all three ga
 
 **G1. Tokens.** Teacher-forced top-1 against the Hugging Face model for 16 decode steps, plus one greedy continuation of at least 12 tokens. Same bar the zoo published for this script family. A mismatch fails the bundle. Record the prompt ids, both token lists, and the revision in the note.
 
-**G2. The three prompts already run on MLX.** A Python function `second_largest(nums)`. A train from 14:40 to 17:05 with a 12 minute stop (answer 2 h 13 min). A request for the NVIDIA close on 2026-09-18, which must refuse. The Core AI answer has to agree with the MLX answer on the facts. Wording can differ. A wrong number, or a made-up close, fails the bundle.
+**G2. The three prompts already run on MLX.** A Python function `second_largest(nums)`. A train from 14:40 to 17:05 with a 12 minute stop (answer 2 h 13 min). A request for the NVIDIA close on 2026-09-18, which must refuse. The Core AI answer has to agree with the MLX answer on the facts. Wording can differ. A wrong number, or a made-up close, fails the bundle — but the correct answer is checked against Hugging Face first. Checked 2026-09-22: the fp16 checkpoint itself answers this item wrong ("2 hours and 11 minutes", `gates/g2_hf.json` in the export dir). The item fails the base model, and no re-export fixes it. If the gate is rerun, the expectation for this item is already known-bad on both sides, and the comparison should proceed on the other two G2 items.
 
 **G3. State at 512.** A prompt of at least 512 tokens, counted by this tokenizer, then 16 teacher-forced top-1 steps against the Hugging Face model. By then the KV cache and the linear-attention `conv_state` / `rec_state` have both moved. A top-1 miss fails the bundle. This gate runs against the runner directly. It does not raise `MAX_SAFE_TOKENS`. Served generations stay capped at 256.
 
