@@ -402,7 +402,8 @@
         config: {
           region:            sbRegion.value,
           instance_type:     sbInstance.value,
-          spot_hourly_rate:  it ? it.rate : 0.75,
+          // rate is the API's to confirm; the client sends nothing invented
+          spot_hourly_rate:  it ? it.rate : null,
           key_file:          sbKeyFile.value,
           default_duration:  parseFloat(sbDuration.value),
           default_stg:       parseFloat(sbStg.value),
@@ -501,7 +502,7 @@
           if (inst.launch_time) {
             currentLaunchTime = inst.launch_time;
             currentInstanceType = inst.type || sbInstance.value;
-            currentSpotRate = data.config?.spot_hourly_rate || 0.75;
+            currentSpotRate = data.config?.spot_hourly_rate ?? null;
             if (!liveTickerInterval) {
                tickLiveOdometer();
                liveTickerInterval = setInterval(tickLiveOdometer, 1000);

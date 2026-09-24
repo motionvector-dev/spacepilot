@@ -51,12 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSaveCfg = document.getElementById('btn-save-cfg');
 
   // Spot rate lookup — mirrors sidebar.js INSTANCE_TYPES catalogue
-  const SPOT_RATES = {
-    'g4dn.xlarge': 0.16, 'g4dn.2xlarge': 0.23, 'g4dn.4xlarge': 0.38, 'g4dn.12xlarge': 1.48,
-    'g5.xlarge': 0.51,   'g5.2xlarge': 0.76,   'g5.4xlarge': 1.21,   'g5.12xlarge': 4.23,
-    'g6e.xlarge': 0.75,  'g6e.2xlarge': 1.10,  'g6e.4xlarge': 1.60,  'g6e.8xlarge': 2.35, 'g6e.12xlarge': 4.80,
-    'p4d.24xlarge': 9.83, 'p5.48xlarge': 43.04,
-  };
+  // Spot rate: the API owns this number. Nothing hardcoded here — if the
+// backend has no rate, the UI shows "—" rather than an invented quote.
+// (BUILD-PLAN 0.4: hardcoded SPOT_RATES rendered as live quotes was a lie.)
+const SPOT_RATES = null;
 
   const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toast-msg');
@@ -136,24 +134,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (worker.ok || worker.loaded) {
         badgeWorker.className = 'badge-status badge-online';
         badgeWorker.textContent = 'Resident Ready';
-        const used = worker.vram_used_gib || 28.4;
-        const total = worker.vram_total_gib || 48.0;
-        valVram.textContent = `${used.toFixed(1)} / ${total.toFixed(1)} GiB`;
-        const pct = Math.min(100, Math.round((used / total) * 100));
-        barVramFill.style.width = `${pct}%`;
-        valDevice.textContent = worker.device_name || 'NVIDIA L40S';
+        if (used != null && total > 0) {
+          valVram.textContent = `${used.toFixed(1)} / ${total.toFixed(1)} GiB`;
+          barVramFill.style.width = `${Math.min(100, Math.round((used / total) * 100))}%`;
+        } else {
+          valVram.textContent = '— / — GiB';
+          barVramFill.style.width = '0%';
+        }
+        valDevice.textContent = worker.device_name || 'unknown device';
       } else {
         badgeWorker.className = 'badge-status badge-offline';
         badgeWorker.textContent = isRunning ? 'Starting...' : 'Offline';
-        valVram.textContent = '0.0 / 48.0 GiB';
+        valVram.textContent = '— / — GiB';
         barVramFill.style.width = '0%';
-        valDevice.textContent = isRunning ? 'NVIDIA L40S' : 'None';
+        valDevice.textContent = isRunning ? 'starting…' : 'None';
       }
 
       // Billing Card
       /* valCost handled by global ticker */
       /* valUptime handled by global ticker */
-      valRate.textContent = `$${(data.config?.spot_hourly_rate || 0.75).toFixed(2)} / hr`;
+      const rate = data.config?.spot_hourly_rate;
+      valRate.textContent = (rate != null) ? `$${rate.toFixed(2)} / hr` : '— / hr';
 
       currentSshCmd = data.ssh_command;
     } catch (e) {
@@ -192,11 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function openLaunchModal() {
     const selectedType = cfgInstanceType?.value || 'g6e.xlarge';
     const selectedRegion = cfgRegion?.value || 'us-east-1';
-    const rate = SPOT_RATES[selectedType] || 0.75;
+    const rate = null; // rate comes from the API on confirm, never a client-side table
 
     if (modalLaunchType) modalLaunchType.textContent = `${selectedType}`;
     if (modalLaunchRegion) modalLaunchRegion.textContent = selectedRegion;
-    if (modalLaunchRate) modalLaunchRate.textContent = `~$${rate.toFixed(2)} / hr`;
+    if (modalLaunchRate) modalLaunchRate.textContent = (rate != null) ? `~$${rate.toFixed(2)} / hr` : 'rate: asks the API at launch';
 
     modalLaunch.classList.add('open');
   }
@@ -731,13 +732,23 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeBackend.textContent = dev.backend === 'metal_mps' ? 'Apple Metal (MPS)' : (dev.backend === 'cuda' ? 'NVIDIA CUDA' : 'CPU Only');
       }
       if (badgeUsable) {
-        badgeUsable.textContent = `${dev.vram_usable_gb || 0} GB Usable`;
+        const um = dev.usable_memory || {};
+        badgeUsable.textContent = um.usable_memory_gib != null
+          ? `${um.usable_memory_gib} GB Usable (${um.usable_memory_source || 'probed'})`
+          : 'Usable memory unknown';
       }
       if (devName) {
         devName.textContent = dev.device_name || 'Host Compute';
       }
       if (memStats) {
-        memStats.textContent = `${dev.ram_total_gb || 0} GB Total / ${dev.ram_free_gb || 0} GB Free`;
+        const tot = dev.memory_total_bytes ? (dev.memory_total_bytes / (1024**3)).toFixed(1) : null;
+        const free = dev.ram_free_gb;
+        if (tot != null && free != null) {
+          memStats.textContent = `${tot} GB Total / ${free} GB Free`;
+        } else {
+          // Unknown is a fact; 64.0/40.2 was not.
+          memStats.textContent = '— GB Total / — GB Free';
+        }
       }
       if (isaStats) {
         isaStats.textContent = dev.isa_flags || 'Standard SIMD';
