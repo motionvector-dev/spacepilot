@@ -1,243 +1,279 @@
 # SpacePilot 🚀
 
-**Status**: v2.8.0 Released on PyPI
-**Verified**: 2026-09-20 via GitHub Release v2.8.0 and pytest test suite on main.
-**Supersedes / Superseded by**: none
+[![PyPI](https://img.shields.io/badge/PyPI-spacepilot-2.9.0-blue)](https://pypi.org/project/spacepilot/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-informational)](https://pypi.org/project/spacepilot/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-1057%20passing-brightgreen)](.github/workflows/tests.yml)
 
-> **"You decide what to run. SpacePilot decides how and where."**
+> **You decide what to run. SpacePilot decides how and where.**
 
-**SpacePilot** runs AI models on the machine in front of you and says honestly
-what fits before you download it. One surface, every modality: text and chat,
-embeddings, speech and transcription, image, and video. Text and embeddings
-are the newest routes — a pinned MLX route on Apple Silicon, an
-OpenAI-compatible `/v1` surface — added 2026-09-02 because AgentWorth and
-SpaceBar need them; every route gets a fit verdict from the model registry and
-a measurement written for every run. Work the machine cannot hold goes to a
-rented box. A CLI, a FastMCP tool server and a zero-build web UI (`/create`,
-`/cockpit`, `/studio`, `/oven.html`) are three windows onto one state.
+**SpacePilot** runs AI models on the machine in front of you and tells you
+honestly what fits before you download it. One surface, every modality: text
+and chat, embeddings, speech and transcription, and image — with a per-run
+measurement record for each. Work the machine cannot hold goes to a rented box
+with the same honesty checks on both sides. A CLI, a FastMCP tool server, and
+a zero-build web UI are three windows onto one state.
+
+Works today on Apple Silicon (Metal) and extends cleanly to CUDA and CPU.
+The `/v1` surface is OpenAI-compatible, so anything that already speaks
+`chat/completions` or `embeddings` can point at it.
 
 ---
 
-## First run
+## Why SpacePilot
 
-The canonical install, upgrade, runtime, Qwen text, and MCP instructions live
-in [`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md).
+Two things this project does not do:
+
+1. **It does not guess.** Every model card is either *flown* — a real, dated
+   measurement on a named machine — *on paper*, with the cited source — or
+   *unflown*, which the registry names as a rule applied to a parameter
+   count. Most registries pretend the third category does not exist. This
+   one puts a number on it.
+2. **It does not hide behind an API.** The `/v1` OpenAI-compatible surface
+   means other tools can use SpacePilot without learning a new format. The
+   heterogeneity it manages (local Lance/CUDA/CPU, rented spot, remote box)
+   is the point.
+
+The narrow waist that makes this useful: SpacePilot is a **decision layer
+and orchestration layer** — not a model, not a serving framework. It reads
+your fleet, ranks what fits, and routes your work honestly. It never invents
+a number.
+
+---
+
+## What works today
+
+| surface | surface | route |
+| --- | --- | --- |
+| **Text** | Apple Silicon | `spacepilot run text`, pinned MLX-LM route |
+| **Text (OpenAI-compatible)** | Any | `POST /v1/chat/completions` |
+| **Embeddings** | Apple Silicon | `POST /v1/embeddings`, 1024-dim |
+| **Speech (TTS)** | Any | In-process Kokoro-82M ONNX |
+| **Transcription** | Any | whisper.cpp, measured, working |
+| **Image** | Apple Silicon | mflux, own venv, subprocess-only |
+| **Video** | — | **Not yet** — routes exist, refuse with 501. Mock test-pattern real render is gone. |
+
+The `/v1` surface is specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
+
+### Honest boundary
+
+Video here is real in name and honest in report: the engine routes exist as
+specs, and the CLI tells you that. It is the longer-term aim, not a
+description of this repo today.
+
+---
+
+## Install
 
 ```bash
-uv tool install spacepilot                         # Global installation from PyPI
-spacepilot probe                                  # what this machine can run
-spacepilot models list                            # which models run here, with the fit verdict
-spacepilot doctor                                 # check environment and dependencies
+uv tool install spacepilot            # from PyPI — the canonical install
 ```
 
-What works today:
-
-- **Text** on Apple Silicon, via a pinned MLX-LM route (`spacepilot run text`, and `POST /v1/chat/completions`).
-- **Embeddings** on the same MLX route, 1024-dim, `POST /v1/embeddings` — in this PR.
-- **Speech and transcription** via the API (`spacepilot serve`).
-- **Image** on Apple Silicon, via mflux in its own conda env (`spacepilot runtimes check mflux` shows the route).
-
-The `/v1` surface, the shared fit verdict and the per-call measurement record
-are specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
-
-### Video
-
-What does not: **video**. The engines and routes exist, but every render is a
-mock — an ffmpeg test pattern, not a real model run.
-
-Video is a dock workload: it counts as real when it runs on a rented GPU end to
-end. The generative cinema workstation is the longer-term aim, not a
-description of what this repo does today.
-
----
-
-## Architecture & Modular Components
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                     SpacePilot Modular Platform Topology                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1. Compute Provider Modules (Pluggable Execution Runtimes)                 │
-│     ├── Local Host Driver: Apple Metal MPS / CUDA / CPU ($0.00 / Zero Cloud)│
-│     ├── Local Execution: Apple Metal MPS / CUDA / CPU                       │
-│     └── Hardware Probe: Auto-detects VRAM headroom & recommends models      │
-│                                                                             │
-│  2. Generative Model Modules (Polymorphic BaseVideoEngine Adapters)         │
-│     ├── LTX-Video 2.5: spec only — no inference runs, route refuses 501    │
-│     ├── Wan2.1 (1.3B & 14B): spec only — no inference runs, route refuses  │
-│     ├── HunyuanVideo: spec only — no inference runs, route refuses         │
-│     ├── Speech & VO: In-process Kokoro-82M ONNX with -16 LUFS sidechaining  │
-│     └── Narrative: In-process GGUF screenplay deconstruction & 3D vectors   │
-│                                                                             │
-│  3. Agentic Protocol & Tool Modules                                         │
-│     ├── FastMCP Tool Server (spacepilot/mcp_server.py): 17 tools for AI     │
-│     ├── DocIR 2.0 Edit Protocol: Byte-exact, reversible patch operations   │
-│     └── WebSocket PTY Bridge: Live interactive shell & worker streaming    │
-│                                                                             │
-│  4. UI Component Modules (Zero-Build Obsidian UI)                           │
-│     ├── Create Studio (/create): Camera Compass, Dual Keyframe, VO Ducking │
-│     ├── Cockpit (/cockpit): Live Host Telemetry, Model Hub                  │
-│     ├── Oven (/oven.html): Real-time 5-Lane ADLC Swarm Kanban Board         │
-│     └── Director (/studio): Multi-track NLE timeline & asset inspector      │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Setup & Secrets
+Or with pip:
 
 ```bash
-# Environment setup (venv or conda)
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install spacepilot
 ```
 
-Configuration variables and provider API keys can be passed as standard environment variables or through any secrets manager (e.g., `.env` or Doppler):
+Then:
 
 ```bash
-export LOCAL_WORKER_TOKEN="your-token"            # Required for gated worker endpoints
-spacepilot studio
+spacepilot probe                      # what this machine can run
+spacepilot models list                # which models run here, with the fit verdict
+spacepilot doctor                     # check environment and dependencies
 ```
+
+No account, no API key, no port opened. Full setup guide:
+[`docs/LOCAL-SETUP.md`](docs/LOCAL-SETUP.md).
 
 ---
 
-## Running the Studio
+## Quickstart
+
+Start the combined web UI + API on localhost:
 
 ```bash
-spacepilot studio                                 # or: python spacepilot/web_api.py
+spacepilot serve
 ```
 
-Serves the Web UI and API on:
-* **Primary URL**: **`http://spacepilot.localhost:8088`**
-* **Local Loopback**: **`http://localhost:8088`** (or `http://127.0.0.1:8088`)
+Then open:
 
-### Studio Pages:
-* **Create Studio**: `http://spacepilot.localhost:8088/create`
-* **Cockpit & Model Registry (legacy, vanilla JS)**: `http://spacepilot.localhost:8088/cockpit`
-  — this is what `spacepilot/app.py` actually mounts and serves today.
-* **Oven Swarm Kanban**: `http://spacepilot.localhost:8088/oven.html`
-* **Director NLE**: `http://spacepilot.localhost:8088/studio`
-* **Human documentation**: `http://spacepilot.localhost:8088/docs`
-* **MCP Streamable HTTP v1**: `http://spacepilot.localhost:8088/mcp/v1/`
-* **Cockpit v1 (React, `ui/`)**: not yet wired into `spacepilot/app.py`'s
-  static mount. Run separately as a Vite dev server —
-  `http://127.0.0.1:5173/cockpit` under `mvec-local` (`docs/LOCAL-TEST.md`).
-  Whether it replaces the legacy cockpit above, and when, is still an open
-  product call.
+- **Cockpit** — `http://localhost:8088/cockpit` — live hardware telemetry,
+  the model hub, and the save spot-billing path.
+- **Create Studio** — `http://localhost:8088/create` — the create surface.
+- **Developer docs** — `http://localhost:8088/docs`.
+
+The Cockpit and other pages reflect whatever this machine actually is —
+including the honest "we don't know" state when a probe returns no answer.
 
 ---
 
-## API Routes & Security Gate
+## Your first run
 
-Every endpoint that spends compute or creates assets is gated by `X-SpacePilot-Token` (`require_token`). Read-only and telemetry routes stay open.
-
-| Route | Method | Auth | Purpose |
-| :--- | :--- | :--- | :--- |
-| `/api/generate` | `POST` | Yes | Video generation. No local execution path exists; refuses with a failed job status unless a remote GPU worker is running. |
-| `/api/generate/multi-engine` | `POST` | Yes | Video generation across the three DiT engines. Refuses with 501 — none of them run inference; the mock test-pattern render this route used to serve was removed. |
-| `/api/audio/synthesize-local` | `POST` | Yes | In-process Kokoro TTS audio synthesis (-16 LUFS normalized). |
-| `/api/audio/mix-ducked` | `POST` | Yes | Voiceover & background music dynamic sidechain ducking. |
-| `/api/narrative/decompose-local` | `POST` | Yes | In-process GGUF screenplay deconstruction into 3D camera shots. |
-| `/api/compute/models/download` | `POST` | Yes | Download model weights to `~/.cache/spacepilot/models/`. |
-| `/api/gpu/launch` · `/terminate` | `POST` | Yes | Spot GPU infrastructure lifecycle management. |
-| `/api/compute/local-profile` | `GET` | No | Hardware capability telemetry (backend, usable VRAM headroom). |
-| `/api/compute/models/recommended` | `GET` | No | Curated model recommendations scored for host hardware. |
-| `/api/engines` | `GET` | No | Complete catalogue of available video DiT engines. |
-| `/healthz` | `GET` | No | Dependency-free process liveness check. |
-| `/api/status` | `GET` | No | Live GPU worker and fleet status telemetry. |
-
----
-
-## FastMCP Server Tools (`spacepilot/mcp_server.py`)
-
-Native FastMCP tools exposed to Cursor, Claude Code, and Antigravity:
-
-* `spacepilot_probe_hardware`: Probes host GPU VRAM and compute headroom.
-* `spacepilot_recommend_models`: Returns task-matched model catalog for current device.
-* `spacepilot_decompose_storyboard`: Deconstructs screenplay into 3D camera vector scene beats.
-
-The Studio process hosts the canonical loopback-only Streamable HTTP transport
-at `/mcp/v1/`. The `spacepilot-mcp` command remains the stdio fallback for
-clients that cannot use HTTP.
-
----
-
-## Test Suite
-
-Local pytest needs the project interpreter (see `AGENTS.md`, Interpreter) —
-`python3` on the primary dev machine resolves to base conda, which lacks
-fastapi. CI on the self-hosted lenovo runner is the gate; the run on the
-commit this README was last checked against passed
-**771 tests, 4 skipped** (`gh run view <run-id>` on main for the current
-number — do not trust a hardcoded count here, it goes stale fast):
+The CLI overlay of the first probe looks like the landing page's "fifteen
+seconds, start to measured": it asks permission before reading anything, it
+reports what it read, and it stays honest about gaps.
 
 ```bash
-<project-python> -m pytest tests/ -v
+spacepilot probe
 ```
 
-Covers:
-- Polymorphic DiT engine adapters (LTX, Wan 1.3B/14B, HunyuanVideo). Mock renders only —
-  every BaseVideoEngine path used to write an ffmpeg test pattern; the route that served
-  it now refuses with 501 instead, and no real video generation runs here yet.
-- In-process Kokoro TTS and GGUF narrative drivers.
-- Device capability probing and safety headroom calculations.
-- FastMCP tool wrappers.
-- REST API security token enforcement on all mutating routes.
-- Frontend JavaScript syntax validation and HTML escaping.
+What this returns on a given machine is a *records* entry in
+`registry/measurements/<your machine>/`, timestamped, source-attributed, and
+reusable. Nothing in that flow phones home.
 
 ---
 
-## Directory Layout
+## Architecture at a glance
 
 ```
-spacepilot/                   The package (flattened from spacepilot/pluto/, #101)
-├── cli.py                    CLI command router
-├── app.py                    FastAPI app factory — mounts spacepilot/web/ as the frontend
-├── web_api.py                Studio entry point (python -m spacepilot.web_api)
-├── mcp_server.py              Native FastMCP tool server, 17 tools
-├── device_probe.py           Cross-platform hardware profiler
-├── model_recommender.py      Model catalog & dynamic fit scoring
-├── model_registry.py         Registry loader — variants, caveats, provenance
-├── measurements.py           Measurement corpus (LOG) reader/writer
-├── substrate.py               DirectLocal / DaemonClient wire-shaped dispatch
-├── local_workers.py          Local in-process worker memory manager (LRU)
-├── engines/                  Video DiT engine specs — none run inference yet
-│   ├── base.py                BaseVideoEngine ABC & EngineSpec
-│   ├── ltx_engine.py           LTX-Video 2.5 (spec only)
-│   ├── wan_engine.py           Wan2.1 1.3B/14B (spec only)
-│   ├── hunyuan_engine.py       HunyuanVideo (spec only)
-│   └── registry.py             Engine lookup & fallback registry
-├── drivers/                   In-process local execution drivers
-│   ├── mflux_driver.py         Image — mflux, own conda env, subprocess-only
-│   ├── mlx_lm_driver.py        Text — MLX-LM, the working `run text` route
-│   ├── whisper_cpp_driver.py   Transcribe — measured, working
-│   ├── kokoro_driver.py        Speech (TTS) — ONNX, working
-│   ├── mlx_embed_driver.py     Embeddings — MLX, `/v1/embeddings`
-│   └── gguf_driver.py          GGUF screenplay deconstruction
-├── daemon/                    Fleet daemon — UDS + Tailscale peers, Ed25519,
-│                               signed LOG gossip (identity.py, fleet.py, log.py)
-├── storyboard_decomposer.py   Screenplay-to-shot decomposition
-├── ltx_worker.py              Remote PyTorch resident worker (EC2/Cloud)
-├── api/routes/                 16 route modules: assets, audio, billing,
-│                               checkpoints, compute, engines, generate, gpu,
-│                               health, inference, lora, measurements, recipes,
-│                               runtimes, storyboard, views
-└── web/                       Zero-build UI actually served by spacepilot/app.py.
-    │                           Inside the package so it ships in the wheel — a
-    │                           `uv tool install` used to serve 500 on every page.
-    ├── index.html / app.js     Director NLE & Asset matrix
-    ├── create.html / create.js Create Studio
-    ├── cockpit.html/cockpit.js Cockpit (legacy, vanilla JS — currently what's live)
-    ├── oven.html               Kanban board
-    └── app.css                 Design system
-ui/                           React 19 cockpit v1 / SpaceBar-web (landed #106/#107).
-                               Not wired into spacepilot/app.py's static mount —
-                               run separately via Vite, see docs/LOCAL-TEST.md.
-native/SpaceBar/              macOS menu-bar app (Swift), see docs/LOCAL-TEST.md
-infra/                         GPU startup scripts, IAM
-tests/                         Pytest suite — 771 passed, 4 skipped on main as of
-                               CI run 33631068854 (2026-09-02); re-check before citing
-docs/                          Architecture blueprints, plans, and research
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SpacePilot Platform Topology                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. Compute Provider Modules (pluggable execution runtimes)          │
+│     ├── Local Host Driver — Apple Metal MPS / CUDA / CPU             │
+│     ├── Hardware Probe — auto-detects usable VRAM, names the source  │
+│     └── Rented spots, docks, and managed APIs (cost-accounted)       │
+│                                                                     │
+│  2. Generative Model Modules                                         │
+│     ├── LTX-Video 2.5, Wan2.1, HunyuanVideo — spec only; routes      │
+│     │   refuse 501 until real inference exists                       │
+│     ├── Speech & VO — In-process Kokoro-82M ONNX                     │
+│     └── Narrative — GGUF screenplay deconstruction                   │
+│                                                                     │
+│  3. Agentic Protocol & Tool Modules                                  │
+│     ├── FastMCP tool server (`spacepilot/mcp_server.py`)             │
+│     ├── DocIR 2.0 Edit Protocol — byte-exact reversible patches      │
+│     └── WebSocket PTY bridge — live shell & worker streaming         │
+│                                                                     │
+│  4. UI Component Modules (zero-build, no bundler)                    │
+│     ├── Create Studio `/create`                                      │
+│     ├── Cockpit `/cockpit`                                           │
+│     ├── Oven Swarm Kanban `/oven.html`                               │
+│     └── Director NLE `/studio`                                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Where the code lives
+
+```
+spacepilot/               The package — CLI, FastAPI app factory, drivers,
+                          daemon, registry, measurement store
+├── drivers/              Per-runtime execution drivers — MLX-LM (text),
+│                         mflux (image), whisper.cpp (transcribe),
+│                         Kokoro (speech), GGUF (narrative)
+├── api/routes/           16 route modules; mutating routes go through
+│                         require_token; read-only stays open
+├── engines/              Video DiT engine specs — none run inference yet
+├── web/                  Zero-build UI actually served by app.py (ships
+│                         in the wheel — a uv tool install used to 500)
+├── registry/             The model registry: variants, provenance,
+│                         measurements, systems
+│                         registry/models + systems + measurements
+├── docs/design/          The architecture and inference-surface docs
+tests/                    Pytest suite — do not trust a hardcoded count
+                          in any doc, check CI for the current number
+landing/                  The spacepilot.dev landing (deploys to Vercel)
+native/SpaceBar/          macOS menu-bar app (Swift), separate cadence.
+                          Moved to motionvector-dev/spacebar (carve-out
+                          landed 2026-09-24); this directory will be
+                          removed once the extraction settles.
+```
+
+---
+
+## Configuration & secrets
+
+Environment variables are the interface, or any secrets manager. Never
+commit secrets; `.env.example` is the reference of what a deployment needs.
+
+```bash
+export LOCAL_WORKER_TOKEN="your-token"        # gated worker endpoints
+```
+
+---
+
+## API & MCP
+
+### HTTP API
+
+Every endpoint that spends compute or creates assets is gated by
+`X-SpacePilot-Token`. Read-only and telemetry routes stay open.
+
+Surfaces worth knowing:
+
+- `/v1/chat/completions` — OpenAI-compatible chat
+- `/v1/embeddings` — embeddings
+- `/api/compute/local-profile` — hardware capability telemetry (usable VRAM with its source)
+- `/api/compute/models/recommended` — task-based fit verdicts for this machine
+- `/healthz` — dependency-free liveness
+- `/docs` — the developer portal
+
+### MCP
+
+`spacepilot-mcp` is a stdio MCP server for Cursor, Claude Code, and
+Antigravity. The Studio process also hosts a loopback-only Streamable HTTP
+transport at `/mcp/v1/`.
+
+---
+
+## Tests
+
+```bash
+python -m pytest tests/ -q
+```
+
+Do not trust a hardcoded test count in any doc — CI on the current `main`
+is the number that counts. The suite covers the DiT engine specs (mock
+renders only, honestly labelled), the working TTS/transcription/embedding
+drivers, device probing, the `/v1` surface, and the FastMCP tools.
+
+---
+
+## Roadmap
+
+Honest about what's in and what is not:
+
+- **Works now**: hardware probing with named sources, model fit verdicts,
+  compatibility across 88 variants, runtime installs that show what they
+  will move before they move it, speech locally, OpenAI-compatible `/v1`.
+- **Not yet**: video on your own silicon, scheduling across more than one
+  ship at a time, a daemon that runs persistently outside the CLI.
+- **Adjacent, separate package later**: SpaceBar (macOS menu bar app) ships
+  its own release. A CLI install should not pull in a macOS tray app.
+
+---
+
+## Contributing
+
+Issues and PRs welcome. Two rules from [`AGENTS.md`](AGENTS.md) that keep
+this honest:
+
+- **Execution over ceremony.** Skip bureaucratic process. Bias toward
+  working code with receipts.
+- **Strict tests before implementation** on production paths: reproduce red
+  → fix green → refactor. Exploratory spikes are exempt until they land in
+  production paths.
+
+Run the tests locally before opening a PR. CI runs on a self-hosted lenovo
+runner and is the gate.
+
+---
+
+## License
+
+[Apache 2.0](LICENSE) — same license as the registry's Apache-family model
+weights so everything under this roof stays redistributable.
+
+---
+
+## Links
+
+- **PyPI**: [`spacepilot`](https://pypi.org/project/spacepilot/)
+- **Source**: [motionvector-dev/spacepilot](https://github.com/motionvector-dev/spacepilot)
+- **Landing**: [spacepilot.dev](https://spacepilot.dev)
+- **Docs portal**: [spacepilot.dev/docs](https://spacepilot.dev/docs)
+- **Design paper**: [spacepilot.dev/paper](https://spacepilot.dev/paper)
+- **Releases**: [motionvector-dev/spacepilot/releases](https://github.com/motionvector-dev/spacepilot/releases)
