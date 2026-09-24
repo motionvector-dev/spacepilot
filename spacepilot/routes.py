@@ -36,7 +36,7 @@ LOCAL_BACKEND = "metal"
 # `/v1/embeddings` actually call. Adding llama-cpp (or any runtime) here
 # before `gguf_driver.py` becomes a real chat driver would make `/v1/models`
 # advertise a route that 502s.
-WIRED_RUNTIMES: Sequence[str] = ("mlx-lm",)
+WIRED_RUNTIMES: Sequence[str] = ("mlx-lm", "coreai")
 
 
 def route_for(variant_id: str, *, wired: Sequence[str] = WIRED_RUNTIMES,
