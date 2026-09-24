@@ -167,8 +167,14 @@ class EmbeddingsRequest(BaseModel):
     input: str | List[str]
 
 
-def _resolve(model_id: str, profile) -> tuple[str, Dict[str, Any]]:
-    """Map a requested model to a served variant, or refuse with the reason."""
+def _resolve(model_id: str, profile) -> tuple[str, Dict[str, Any], str]:
+    """Map a requested model to a served variant, or refuse with the reason.
+
+    Returns the resolved runtime id alongside the model and verdict — the
+    same lookup `/v1/models` reports as `x_spacepilot.runtime` — so callers
+    never have to re-derive or hardcode which runtime actually served the
+    request.
+    """
     variants = _served_variants()
     if model_id not in variants:
         raise _error(404, f"no model {model_id!r}; see GET /v1/models",
@@ -181,19 +187,20 @@ def _resolve(model_id: str, profile) -> tuple[str, Dict[str, Any]]:
     if verdict["level"] == "wont_fit":
         raise _error(409, f"{model_id} will not run on this machine: {verdict['reason']}",
                      "insufficient_capacity", "wont_fit", {"verdict": verdict})
-    if _route_for(model_id) is None:
+    route = _route_for(model_id)
+    if route is None:
         raise _error(409, f"{model_id} has no wired local route yet; "
                           f"see GET /v1/models for the ones that do",
                      "insufficient_capacity", "no_route", {"verdict": verdict})
-    return model_id, verdict
+    return model_id, verdict, route
 
 
 def _extensions(verdict, system_id, revision, run_id, tokens_in, tokens_out,
-                wall_seconds) -> Dict[str, Any]:
+                wall_seconds, runtime) -> Dict[str, Any]:
     return {
         "verdict": verdict,
         "system_id": system_id,
-        "runtime": "mlx-lm",
+        "runtime": runtime,
         "revision": revision,
         "run_id": run_id,
         # None, never a guess. A token count derived from characters would read
@@ -455,7 +462,7 @@ def chat_completions(body: ChatCompletionRequest, _: None = Depends(require_toke
         return _chat_completions_anthropic(body)
 
     profile = probe_local_device()
-    model_id, verdict = _resolve(body.model, profile)
+    model_id, verdict, runtime = _resolve(body.model, profile)
     if body.x_spacepilot and body.x_spacepilot.dry_run:
         return _dry_run_local(model_id, body, profile)
     service, plan = _plan_text(model_id, verdict)
@@ -471,7 +478,7 @@ def chat_completions(body: ChatCompletionRequest, _: None = Depends(require_toke
 
     if body.stream:
         return StreamingResponse(
-            _stream_chat(service, plan, request, model_id, verdict,
+            _stream_chat(service, plan, request, model_id, verdict, runtime,
                          plan.system.id, run_id, created),
             media_type="text/event-stream",
         )
@@ -503,6 +510,7 @@ def chat_completions(body: ChatCompletionRequest, _: None = Depends(require_toke
         "x_spacepilot": _extensions(
             verdict, plan.system.id, result.resolved_revision, result.run_id,
             result.prompt_tokens, result.generation_tokens, result.wall_seconds,
+            runtime,
         ),
     }
 
@@ -511,7 +519,7 @@ def _sse(payload: Dict[str, Any]) -> str:
     return "data: " + json.dumps(payload, separators=(",", ":")) + "\n\n"
 
 
-def _stream_chat(service, plan, request, model_id, verdict, system_id, run_id, created):
+def _stream_chat(service, plan, request, model_id, verdict, runtime, system_id, run_id, created):
     """SSE chunks as the driver produces them, then usage, then `[DONE]`.
 
     Usage and the extensions block ride on the last chunk because the numbers
@@ -538,7 +546,8 @@ def _stream_chat(service, plan, request, model_id, verdict, system_id, run_id, c
                     },
                     "x_spacepilot": _extensions(
                         verdict, system_id, value.resolved_revision, value.run_id,
-                        value.prompt_tokens, value.generation_tokens, value.wall_seconds),
+                        value.prompt_tokens, value.generation_tokens, value.wall_seconds,
+                        runtime),
                 })
     except Exception as exc:
         # The stream has already returned 200, so the failure has to travel in
@@ -557,7 +566,7 @@ def embeddings(body: EmbeddingsRequest, _: None = Depends(require_token)):
 
     update_activity()
     profile = probe_local_device()
-    model_id, verdict = _resolve(body.model, profile)
+    model_id, verdict, runtime = _resolve(body.model, profile)
     inputs = tuple([body.input] if isinstance(body.input, str) else body.input)
 
     service = EmbeddingExecutionService()
@@ -591,7 +600,8 @@ def embeddings(body: EmbeddingsRequest, _: None = Depends(require_token)):
         "usage": {"prompt_tokens": result.tokens_in, "total_tokens": result.tokens_in},
         "x_spacepilot": {
             **_extensions(verdict, plan.system.id, result.resolved_revision,
-                          result.run_id, result.tokens_in, 0, result.wall_seconds),
+                          result.run_id, result.tokens_in, 0, result.wall_seconds,
+                          runtime),
             "dimensions": result.dimensions,
         },
     }
