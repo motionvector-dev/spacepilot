@@ -4,6 +4,10 @@ Cross-tool agent instructions. `CLAUDE.md` is a symlink to this file, so Claude
 Code, Codex, Cursor, Copilot, Antigravity and the rest all read the same rules.
 Edit this file, never the symlink.
 
+## Voice stack, read before proposing any wake word or push-to-talk
+
+`voice/src/space_voice/` already has an on-device wake word (`wake_word.py`, openWakeWord ONNX, gates the live duplex stream), transcription, and the CLI. SpaceBar holds to talk by choice (`docs/design/SPACEBAR.md`); the live show wakes on a name. Extend these, never re-derive them.
+
 ## What ships, and where it is going
 
 Read `docs/design/VISION.md` first; it holds the grand vision so nobody has to
