@@ -1,0 +1,86 @@
+# Publish workflow — makes every future release one click.
+# Author Saurabh (2026-09-24): no token stored = the PyPI trusted publisher
+# flow sends an OIDC token per run.
+#
+# PyPI one-time setup (does NOT live in this repo):
+#   1. Go to pypi.org/manage/project/spacepilot/settings/publishing
+#   2. Add a pending publisher with:
+#        owner  = motionvector-dev
+#        repo   = spacepilot
+#        workflow = publish.yml
+#        environment = pypi   (only if you gate by env; optional)
+#   3. Done. This workflow NEVER stores a token.
+#
+# Tag a release (git tag v2.10.0 && git push origin v2.10.0) and this runs.
+
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:  # manual trigger for emergency republish
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      # Stale build guard — the build/lib trap bit us on PR 167 (build/ from a
+      # pre-flatten tree shipped deleted modules into a fresh wheel).
+      - name: Clear stale build artifacts
+        run: rm -rf build/ dist/ -- *.egg-info
+      - name: Install build backend
+        run: python -m pip install --upgrade pip build
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Sanity — version and no ghost modules in the wheel
+        run: |
+          python - <<'PY'
+          import importlib.metadata, zipfile, pathlib
+          whl = next(__import__('pathlib').Path('dist').glob('*.whl'))
+          z = zipfile.ZipFile(whl)
+          names = z.namelist()
+          ghosts = [n for n in names if 'pluto' in n or 'enhance_prompt' in n]
+          assert not ghosts, f"ghost modules in wheel: {ghosts}"
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    environment: pypi   # matches the PyPI trusted-publisher environment, if configured
+    permissions:
+      id-token: write   # OIDC for PyPI trusted publishing, no token stored
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI (trusted publisher)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No password/config. PyPI authenticates via the OIDC token.
+        # If you see 'Publisher verification failed' check the one-time
+        # PyPI settings at pypi.org/manage/project/spacepilot/settings/publishing
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4    # v4 is the current stable major
+        with:
+          name: dist
+          path: dist/
+      - name: Create the GitHub release with the wheel attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NOTES="RELEASE_NOTES_${TAG}.md"
+          gh release create "$TAG" --title "SpacePilot $TAG" --notes-file "$NOTES" dist/*
