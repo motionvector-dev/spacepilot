@@ -29,11 +29,13 @@ on:
 # release branches are never cancelled: their result is the record of whether
 # that commit was good.
 #
-# pytest and packaging both run on lenovo-spacepilot, the one self-hosted
-# runner for this repo (private repo only — never attach a self-hosted runner
-# to a public one). A single runner only executes one job at a time, so the
-# two already queue rather than race each other; this group additionally
-# drops a superseded run instead of leaving it queued behind a newer push.
+# All three jobs run on GitHub-hosted ubuntu-latest as of 2026-09-25.
+# The repo is PUBLIC, and AGENTS.md's standing rule forbids attaching a
+# self-hosted runner to a public repo — fork PRs would execute arbitrary
+# code on the box. The lenovo runner was removed from this repo the same
+# day the inconsistency was noticed. Free-tier minutes absorb this at the
+# current CI cadence; the paths filters and the PR/push scoping below keep
+# waste low. Superseded runs still get cancelled rather than queueing.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev' }}
@@ -43,7 +45,7 @@ concurrency:
 # starts depending on those encoders needs a macOS job instead.
 jobs:
   pytest:
-    runs-on: [self-hosted, lenovo]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
@@ -53,20 +55,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      # No sudo here, ever. lenovo-spacepilot's runner account has no
-      # NOPASSWD sudoers entry, so `sudo apt-get ...` blocks on a tty
-      # password prompt the Actions log can't show — confirmed live on the
-      # host 2026-09-02 after it silently ate two job timeouts. ffmpeg and
-      # libsndfile1 are already installed on lenovo-spacepilot; this step
-      # only verifies that and fails with the exact commands to run by hand
-      # if either is ever missing.
+      # github-hosted ubuntu-latest images ship ffmpeg and libsndfile1;
+      # verify anyway and error with the fix to run if that ever changes.
       - name: Verify system packages are present
         run: |
           missing=""
           command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
           ldconfig -p 2>/dev/null | grep -q libsndfile || dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
           if [ -n "$missing" ]; then
-            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
+            echo "::error::Missing on this runner:${missing}. For ubuntu-latest, add 'sudo apt-get install -y --no-install-recommends${missing}' as a step." >&2
             exit 1
           fi
 
@@ -89,7 +86,7 @@ jobs:
   # a venv, and because a red here means "the release is broken", not "a test
   # is broken".
   packaging:
-    runs-on: [self-hosted, lenovo]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
@@ -99,8 +96,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      # See the pytest job's identical step above: no sudo here, ever —
-      # verified present, or fails with the exact command for Saurabh.
+      # See the pytest job's identical system-package verify step.
       - name: Verify system packages are present
         run: |
           missing=""
@@ -126,7 +122,7 @@ jobs:
   # moved to lenovo-spacepilot: measured across several runs this job takes
   # ~30-35s end to end, under the bar for moving it (2026-09-02).
   security:
-    runs-on: [self-hosted, lenovo]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
