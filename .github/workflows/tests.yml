@@ -55,17 +55,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      # github-hosted ubuntu-latest images ship ffmpeg and libsndfile1;
-      # verify anyway and error with the fix to run if that ever changes.
-      - name: Verify system packages are present
-        run: |
-          missing=""
-          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
-          ldconfig -p 2>/dev/null | grep -q libsndfile || dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing on this runner:${missing}. For ubuntu-latest, add 'sudo apt-get install -y --no-install-recommends${missing}' as a step." >&2
-            exit 1
-          fi
+      # ubuntu-latest images do NOT ship ffmpeg/libsndfile by default
+      # (measured 2026-09-25 on this repo's first hosted-ubuntu run: both
+      # missing). Install rather than assert-and-fail.
+      - name: Install system packages
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
 
       # Install from the declared file, never a hand-typed list. Two PRs in a
       # row added a dependency, declared it correctly, and still went red here
@@ -96,16 +90,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      # See the pytest job's identical system-package verify step.
-      - name: Verify system packages are present
-        run: |
-          missing=""
-          command -v ffmpeg >/dev/null 2>&1 || missing="$missing ffmpeg"
-          ldconfig -p 2>/dev/null | grep -q libsndfile || dpkg -s libsndfile1 >/dev/null 2>&1 || missing="$missing libsndfile1"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing on this runner:${missing}. Install by hand (never via sudo in CI): sudo apt-get install -y --no-install-recommends${missing}" >&2
-            exit 1
-          fi
+      # Same packages as the pytest job; shared runner image, same install.
+      - name: Install system packages
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg libsndfile1
 
       - name: Install dependencies
         run: |

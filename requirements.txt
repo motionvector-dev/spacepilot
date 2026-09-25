@@ -61,3 +61,4 @@ flask>=3.0
 
 # Tests
 pytest
+uv
