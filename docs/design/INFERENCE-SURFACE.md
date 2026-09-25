@@ -1,6 +1,8 @@
 # SpacePilot — the inference surface
 
-**Status**: Spec, partly built
+> **CANONICAL SPEC** for the HTTP /v1 surface. Status: Spec, partly built; the three /v1 routes and the fit-verdict contract are live (last verified 2026-09-25 against v2.9.0).
+
+**Written**: 2026-09-02
 **Written**: 2026-09-02
 **Builds on**: `docs/design/CONCEPT.md` (honesty rules), `docs/design/VISION.md`
 

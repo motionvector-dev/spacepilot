@@ -1,5 +1,8 @@
 # Local setup and upgrades
 
+> **CANONICAL** — this is the authoritative install + upgrade guide as of
+> 2026-09-25. Trust this over any blog, README quote, or chat log.
+
 This is the canonical operator guide for installing SpacePilot on a developer
 machine, selecting inference interpreters, and exposing its MCP server to local
 agent clients.

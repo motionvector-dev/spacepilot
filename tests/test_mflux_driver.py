@@ -83,11 +83,22 @@ def test_command_for_alias_routes_flux2_klein_to_its_own_entry_point():
 
 
 def test_bin_dir_prefers_env_var(monkeypatch):
-    monkeypatch.setenv("PLUTO_MFLUX_BIN", "/opt/custom-mflux/bin")
+    monkeypatch.setenv("SPACEPILOT_MFLUX_BIN", "/opt/custom-mflux/bin")
     assert mflux_bin_dir() == "/opt/custom-mflux/bin"
 
 
+def test_bin_dir_prefers_the_legacy_pluto_env_name_too(monkeypatch):
+    """PLUTO_MFLUX_BIN was the pre-rename env name; it is kept as a silent
+    alias so an existing setup does not break on upgrade. The canonical name
+    must be REMOVED, not empty — env_value reads the empty string as a real
+    value and stops there."""
+    monkeypatch.delenv("SPACEPILOT_MFLUX_BIN", raising=False)
+    monkeypatch.setenv("PLUTO_MFLUX_BIN", "/opt/pluto-mflux/bin")
+    assert mflux_bin_dir() == "/opt/pluto-mflux/bin"
+
+
 def test_bin_dir_falls_back_to_config(monkeypatch):
+    monkeypatch.delenv("SPACEPILOT_MFLUX_BIN", raising=False)
     monkeypatch.delenv("PLUTO_MFLUX_BIN", raising=False)
     assert mflux_bin_dir({"mflux_bin_dir": "/opt/other/bin"}) == "/opt/other/bin"
 
