@@ -2512,6 +2512,81 @@
    ]
   },
   {
+   "id": "gemma4-26b-a4b",
+   "name": "Gemma 4 26B-A4B",
+   "family": "gemma",
+   "kind": "text",
+   "summary": "MoE instruction-tuned multimodal model (text+image in, text out), 26B total with about 3.8B\u20134B active, 256K context, thinking mode.",
+   "homepage": "https://huggingface.co/google/gemma-4-26B-A4B-it",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://ai.google.dev/gemma/docs/gemma_4_license",
+    "restrictions": [
+     "the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release"
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "gemma4-26b-a4b-it-4bit",
+     "model_id": "gemma4-26b-a4b",
+     "name": "Gemma 4 26B-A4B Instruct 4-bit (MLX)",
+     "kind": "text",
+     "family": "gemma",
+     "params": "26B",
+     "precision": "4bit",
+     "repo": "mlx-community/gemma-4-26B-A4B-it-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00003.safetensors",
+      "model-00002-of-00003.safetensors",
+      "model-00003-of-00003.safetensors",
+      "model.safetensors.index.json",
+      "processor_config.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "0d77464eeb233a2da68ebf9d7dc4edaac7db956d",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 15373586252.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-22",
+      "note": "Sum of the 10 inference files named above, statted from the local Hugging Face snapshot blobs for revision 0d77464eeb233a2da68ebf9d7dc4edaac7db956d (cached Hub snapshot sizes, not a live API response); excludes README.md and .gitattributes.",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 18448303502.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "14.32 GiB (15,373,586,252 bytes) 4-bit cached payload plus a provisional 20% allowance for KV cache, activations, and runtime overhead (MoE gemma4, about 3.8B\u20134B active of 26B total); estimated, not a measured peak or hard limit. The informal bake-off did not record peak memory.",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://ai.google.dev/gemma/docs/gemma_4_license",
+      "restrictions": [
+       "the Apache 2.0 grant incorporates Google's Gemma Prohibited Use Policy by reference (see the license page above); not a pure unencumbered Apache release"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Google's model card for google/gemma-4-26B-A4B-it (read 2026-09-22) lists 25.2B total parameters and 3.8B active (8 of 128 experts, plus 1 shared expert) and also describes inference as activating about a 4B subset. The params field stays 26B, the published size name. Local config.json at this revision has num_experts 128, top_k_experts 8, 30 text layers, and max_position_embeddings 262144. Speed is unflown; no spacepilot run text record is stored here."
+    }
+   ]
+  },
+  {
    "id": "gemma4-31b",
    "name": "Gemma 4 31B",
    "family": "gemma",
@@ -2941,6 +3016,90 @@
    ]
   },
   {
+   "id": "lfm2-5-8b-a1b",
+   "name": "LFM2.5 8B-A1B",
+   "family": "liquid",
+   "kind": "text",
+   "summary": "Liquid AI's small mixture-of-experts. About 8.3B total and 1.5B active. This variant is their MLX 4-bit build, converted with mlx-lm 0.31.3.\n",
+   "homepage": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+   "license": {
+    "id": "lfm-1.0",
+    "open_source": false,
+    "spdx": null,
+    "url": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-MLX-4bit/blob/main/LICENSE",
+    "restrictions": [
+     "LFM Open License v1.0. Commercial use is limited to organizations under $10M annual revenue. Confirm the license file before shipping a product on it."
+    ],
+    "is_permissive": false
+   },
+   "variants": [
+    {
+     "id": "lfm2-5-8b-a1b-mlx-4bit",
+     "model_id": "lfm2-5-8b-a1b",
+     "name": "LFM2.5 8B-A1B 4-bit (MLX)",
+     "kind": "text",
+     "family": "liquid",
+     "params": "8B",
+     "precision": "4bit",
+     "repo": "LiquidAI/LFM2.5-8B-A1B-MLX-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model.safetensors",
+      "model.safetensors.index.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "2e92b640a63d47ad4dcf81a19a366b902356b3bc",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 4851982764.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-22",
+      "note": "Sum of the seven files named above from the Hub tree on this date. Excludes README, LICENSE, and .gitattributes. model_type is lfm2_moe, which mlx-lm 0.31.3 ships.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 5822379317.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "4.85 GB decimal cached payload plus a provisional 20% allowance for a short KV cache and runtime overhead. Unflown until a spacepilot run records a peak.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "lfm-1.0",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-MLX-4bit/blob/main/LICENSE",
+      "restrictions": [
+       "LFM Open License v1.0. Commercial use is limited to organizations under $10M annual revenue. Confirm the license file before shipping a product on it."
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "The 24B-A2B sibling is about 14 GB at 4-bit and is not this entry. This 8B is the one that fits beside a normal desktop.\n",
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "lfm2-5-8b-a1b-mlx-4bit",
+       "metric": "tokens_per_second",
+       "solo_median": null,
+       "solo_samples": 0,
+       "observed_median": null,
+       "observed_samples": 0,
+       "failed_samples": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "ltx-video",
    "name": "LTX Video",
    "family": "lightricks",
@@ -3079,6 +3238,185 @@
      "caveats": [],
      "compromised": [],
      "notes": "FP8 has no Metal path and fails rather than falling back, so this is CUDA on Ada or newer. Reported independently at https://lilting.ch/en/articles/ltx2-wan22-mac-local-video-gen\n"
+    }
+   ]
+  },
+  {
+   "id": "maple-preview",
+   "name": "Maple-Preview",
+   "family": "deepgrove",
+   "kind": "text",
+   "summary": "DeepGrove's 20B-A1B ternary mixture-of-experts reasoner. About 1.5B parameters fire per token. This variant is their 2-bit MLX build.\n",
+   "homepage": "https://huggingface.co/deepgrove/maple-preview",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://huggingface.co/deepgrove/maple-preview/blob/main/LICENSE",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "maple-preview-2bit-mlx",
+     "model_id": "maple-preview",
+     "name": "Maple-Preview 2-bit (MLX)",
+     "kind": "text",
+     "family": "deepgrove",
+     "params": "20B",
+     "precision": "2bit",
+     "repo": "deepgrove/maple-preview-2bit-mlx",
+     "files": [
+      "added_tokens.json",
+      "chat_template.jinja",
+      "config.json",
+      "maple.py",
+      "merges.txt",
+      "model-00001-of-00003.safetensors",
+      "model-00002-of-00003.safetensors",
+      "model-00003-of-00003.safetensors",
+      "model-flashhead.safetensors",
+      "model.safetensors.index.json",
+      "special_tokens_map.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.json"
+     ],
+     "revision": "e8be321fb325c40beb7b621bd98e8e57a324ec42",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 5330323299.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-22",
+      "note": "Sum of the 14 files named above from the Hub tree on this date. Excludes README, .gitattributes, and the wheels/ directory. The checkpoint is natively ternary, packed 2-bit, not a 4-bit quant of a bf16 model.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 6396387959.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "5.33 GB decimal cached payload plus a provisional 20% allowance for a short KV cache and runtime overhead. A later hello on this machine peaked at 6.96 GB. DeepGrove's own M4 table lists about 6.5 GB peak with their fork; that number is theirs.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://huggingface.co/deepgrove/maple-preview/blob/main/LICENSE",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "config.json sets model_file to maple.py, and stock mlx-lm 0.31.3 loads that file. A hello on this machine (Python 3.11, mlx-lm 0.31.3) answered and recorded 132 tok/s, 0.91 s load, 6.96 GB peak on 2026-09-22. The published kernel wheels are cp312 and cp313 only; this short run did not need them.\n",
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "maple-preview-2bit-mlx",
+       "metric": "prompt_tokens_per_second",
+       "solo_median": 20.06667684252504,
+       "solo_samples": 1,
+       "observed_median": 20.06667684252504,
+       "observed_samples": 1,
+       "failed_samples": 0
+      },
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "maple-preview-2bit-mlx",
+       "metric": "tokens_per_second",
+       "solo_median": 132.4506615450983,
+       "solo_samples": 1,
+       "observed_median": 132.4506615450983,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mimo-v2-6-distill-qwen-9b",
+   "name": "MiMo-V2.6 Distill Qwen 9B",
+   "family": "xiaomi",
+   "kind": "text",
+   "summary": "Xiaomi's 9B agent student. Supervised fine-tune of Qwen3.5-9B on MiMo-V2.6 traces, served here as an MLX mixed 4/8-bit OptiQ build.\n",
+   "homepage": "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B",
+   "license": {
+    "id": "mit",
+    "open_source": true,
+    "spdx": "MIT",
+    "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B/blob/main/LICENSE",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "mimo-v2-6-distill-qwen-9b-optiq-4bit",
+     "model_id": "mimo-v2-6-distill-qwen-9b",
+     "name": "MiMo-V2.6 Distill Qwen 9B OptiQ 4-bit (MLX)",
+     "kind": "text",
+     "family": "xiaomi",
+     "params": "9B",
+     "precision": "4bit",
+     "repo": "mlx-community/MiMo-V2.6-Distill-Qwen-9B-OptiQ-4bit",
+     "files": [
+      "chat_template.jinja",
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00002.safetensors",
+      "model-00002-of-00002.safetensors",
+      "model.safetensors.index.json",
+      "optiq/metadata.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "f8642c8eff3159d84518ad005c95d940f359e538",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 7120891874.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-22",
+      "note": "Sum of the nine files named above from the Hub tree on this date. Excludes README and .gitattributes. OptiQ assigns 4 or 8 bits per tensor; 4-bit is the predominant width, not a uniform quant.\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 9268375522.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "7.121 GB decimal cached payload plus a provisional 2 GiB allowance for a short KV cache, activations, and runtime overhead. Unflown, not a measured peak.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "mit",
+      "open_source": true,
+      "spdx": "MIT",
+      "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B/blob/main/LICENSE",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": null,
+     "measurements": [
+      {
+       "system_id": "apple-m1-max-32gb",
+       "model_id": "mimo-v2-6-distill-qwen-9b-optiq-4bit",
+       "metric": "tokens_per_second",
+       "solo_median": 42.1917754344797,
+       "solo_samples": 1,
+       "observed_median": 42.1917754344797,
+       "observed_samples": 1,
+       "failed_samples": 0
+      }
+     ]
     }
    ]
   },
@@ -4689,6 +5027,85 @@
    ]
   },
   {
+   "id": "ternary-bonsai-2-27b",
+   "name": "Ternary Bonsai 2 27B",
+   "family": "prism",
+   "kind": "text",
+   "summary": "Prism ML's ternary compression of Qwen3.8-27B. About 1.76 bits per weight. This variant is their MLX pack, language model plus vision tower.\n",
+   "homepage": "https://prismml.com/news/bonsai-2-27b",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/main/LICENSE",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "ternary-bonsai-2-27b-mlx-2bit",
+     "model_id": "ternary-bonsai-2-27b",
+     "name": "Ternary Bonsai 2 27B 2-bit (MLX)",
+     "kind": "text",
+     "family": "prism",
+     "params": "27B",
+     "precision": "2bit",
+     "repo": "prism-ml/Ternary-Bonsai-2-27B-mlx-2bit",
+     "files": [
+      "PACK-RUNTIME.md",
+      "chat_template.jinja",
+      "config.json",
+      "files.json",
+      "generation_config.json",
+      "hadamard.json",
+      "model.safetensors",
+      "preprocessor_config.json",
+      "reload-validation.json",
+      "runtime/LICENSE",
+      "runtime/artifact.py",
+      "runtime/codec.py",
+      "runtime/requirements.txt",
+      "runtime/runtime.py",
+      "runtime/vision_artifact.py",
+      "tokenizer-validation.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+     ],
+     "revision": "3f926b415992eaa2ae9dd7b573706494d6bbf787",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 8608698955.0,
+      "source": "huggingface-api",
+      "checked": "2026-09-22",
+      "note": "Sum of the 18 files named above from the Hub tree on this date. Excludes README, LICENSE, NOTICE, .gitattributes, and the logo. Prism's card says this pack is 8.60 GB because the MLX container stores a scale and a bias per group (about 2.25 bits per weight).\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 10330438746.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "8.61 GB decimal cached payload plus a provisional 20% allowance. Unflown until a spacepilot run records a peak. Prism's own card says ordinary MLX loaders skip the Hadamard activation transform and can return wrong tokens instead of an error. model_type is prism_hadamard_qwen35, which stock mlx-lm 0.31.3 does not ship.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/main/LICENSE",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Released 2026-09-17. Prism claims 98.2% of Qwen3.8-27B on their own suite. That figure is theirs. The bundled runtime/ directory is part of the pack.\n"
+    }
+   ]
+  },
+  {
    "id": "ternary-bonsai-8b",
    "name": "Ternary Bonsai 8B",
    "family": "bonsai",
@@ -5527,7 +5944,7 @@
    "memory_unified": true,
    "vram_total_bytes": null,
    "host_fingerprint": "b0689f2dbc85",
-   "recorded_on": "2026-09-03",
+   "recorded_on": "2026-09-22",
    "unknown": {}
   },
   {
