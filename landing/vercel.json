@@ -1,23 +1,49 @@
 {
   "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  },
   "rewrites": [
-    { "source": "/docs", "destination": "/docs.html" },
-    { "source": "/((?!api/|docs|llms\\.txt|AGENTS\\.md|robots\\.txt|sitemap\\.xml|.*\\..*).*)", "destination": "/index.html" }
+    {
+      "source": "/docs",
+      "destination": "/docs.html"
+    },
+    {
+      "source": "/((?!api/|docs|llms\\.txt|AGENTS\\.md|robots\\.txt|sitemap\\.xml|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://unfoundbox.com https://*.unfoundbox.com https://*.vercel.app http://localhost:*" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://unfoundbox.com https://*.unfoundbox.com https://*.vercel.app http://localhost:*"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     },
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     }
   ]
