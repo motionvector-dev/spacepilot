@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-23",
+ "generated": "2026-09-24",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -4221,6 +4221,66 @@
      "caveats": [],
      "compromised": [],
      "notes": "Reference base for edge0-35b-a3b-preview (this registry). Architecture: hidden layout 10 x (3 x (Gated DeltaNet -> MoE) -> 1 x (Gated Attention -> MoE)); Gated DeltaNet has 32 linear attention heads for V, 16 for QK, head dim 128; Gated Attention has 16 heads for Q, 2 for KV, head dim 256. Qwen3.5-Flash is the hosted/production version of this base with 1M context by default and built-in tools -- not relevant to local execution. Status: unflown.\n"
+    }
+   ]
+  },
+  {
+   "id": "qwen3-5-9b",
+   "name": "Qwen3.5 9B (Core AI)",
+   "family": "qwen",
+   "kind": "text",
+   "summary": "Qwen3.5 9B, the text decoder of the dense bf16 checkpoint, exported as the first Core AI `.aimodel` bundle SpacePilot ships. Registered here with the gate history on record: G1 (16-token greedy match to the Hugging Face continuation) and G3 (512-token state gate) pass on the int8hu bundle; the G2 train-arithmetic item fails with thinking off and passes with thinking on \u2014 checked against the Hugging Face checkpoint itself, so the failure is the checkpoint's, not the bundle's. Thinking-on is the default for this runtime. Not served by default until the long gate passes; the bundle is gated 2026-09-22, the honesty checks were re-run 2026-09-24.\n",
+   "homepage": "https://huggingface.co/Qwen/Qwen3.5-9B",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "qwen3-5-9b-coreai-int8",
+     "model_id": "qwen3-5-9b",
+     "name": "Qwen3.5 9B (Core AI int8, pipelined)",
+     "kind": "text",
+     "family": "qwen",
+     "params": "9B",
+     "precision": null,
+     "repo": "Qwen/Qwen3.5-9B",
+     "files": null,
+     "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 10469493277.0,
+      "source": "measured",
+      "checked": "2026-09-22",
+      "note": "10,469,493,277 bytes for main.mlirb, the exported int8hu Core AI bundle (block32 symmetric, --head-sym --max-ctx 8192), at ~/code/unfoundbox/ml-ai/qwen35-9b-coreai-exports/qwen3_5_9b_decode_int8hu_block32_sym .\n",
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 10469493277.0,
+      "source": "measured",
+      "checked": "2026-09-22",
+      "note": "The int8 bundle's resident weight footprint; Core AI KV cache adds a small per-context amount on top, unflown as a peak.\n",
+      "is_measured": true
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Serves through runtime `coreai` via the patched llm-runner. Thinking flag defaults ON for this runtime: with `enable_thinking=False` the checkpoint answers 2h11m on the train-arithmetic step; the correct 2h13m needs the think budget on both the int8 bundle and the HF fp16 reference. Warmup must be off for this bundle \u2014 the engine's default warmup crashes on batch-256 shape substitution against a 1-token prefill graph (checked 2026-09-22, CoreAIPipelinedEngine warmup). The runner has no working stop-token path in the pipelined engine, generation is capped only by --max-tokens (checked 2026-09-22).\n"
     }
    ]
   },

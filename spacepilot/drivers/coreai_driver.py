@@ -177,7 +177,7 @@ class CoreAIDriver:
         variant_id: Optional[str] = None,
         timeout: Optional[float] = None,
         messages: Optional[list] = None,
-        thinking: bool = False,
+        thinking: bool = True,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         del variant_id, max_kv_size, timeout, kwargs
