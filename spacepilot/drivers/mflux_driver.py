@@ -69,7 +69,7 @@ def _default_bin_dir() -> str:
 
 def mflux_bin_dir(cfg: Optional[Dict[str, Any]] = None) -> str:
     """Where the mflux CLI entry points live. Configurable because the path is
-    this-machine-specific: env var wins, then .pluto_config.json, then the
+    this-machine-specific: env var wins, then .spacepilot_config.json, then the
     conda env layout this Mac actually uses."""
     from spacepilot.paths import env_value
     return (
@@ -128,8 +128,8 @@ class MfluxDriver(InferenceDriver):
         if not exe.is_file() or not os.access(exe, os.X_OK):
             raise MfluxSubprocessError(
                 f"mflux executable not found or not executable: {exe}. "
-                f"Set SPACEPILOT_MFLUX_BIN (or PLUTO_MFLUX_BIN) or "
-                f"\"mflux_bin_dir\" in .pluto_config.json to the bin/ directory "
+                f"Set SPACEPILOT_MFLUX_BIN or "
+                f"\"mflux_bin_dir\" in .spacepilot_config.json to the bin/ directory "
                 f"of the mflux conda env."
             )
         return str(exe)

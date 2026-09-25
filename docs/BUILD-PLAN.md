@@ -1,5 +1,12 @@
 # SpacePilot — Build Plan
 
+> **STATUS: partially stale.** Phases 0.1–0.3 done; the 0.4/0.5 fixes are
+> landed as of 2026-09-24 (the honesty pass); Phase 1/3/4/5/6 line numbers
+> below were written 2026-08-25 and are approximate — re-grep before
+> citing. The doc's own line: 'do not trust a hardcoded count anywhere
+> in the tree, check CI for the current number.'
+
+
 **Status:** proposed · **Written:** 2026-08-25 · **Verified against:** main `e4b7910`
 (after PRs #66/#67/#68) · **Audit:** 12 read-only agents, every claim below carries
 file:line evidence · **Supersedes:** the SpacePilot Build Board artifact
