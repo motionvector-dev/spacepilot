@@ -58,7 +58,7 @@ jobs:
       id-token: write   # OIDC for PyPI trusted publishing, no token stored
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4    # v4 is the current stable major
+      - uses: actions/download-artifact@v8    # v4 is the current stable major
         with:
           name: dist
           path: dist/
