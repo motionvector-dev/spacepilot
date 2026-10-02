@@ -66,3 +66,25 @@ lives now. This file restarts empty except for the entry below.
   from this number, which is why it is a decision and not a nit.
 - **Close when**: Saurabh picks — cache it with an age, or keep naming the
   source and let the two numbers differ honestly.
+
+### Which buyer leads: the developer's local lane, or the team that needs inference owned?
+
+- **Raised 2026-10-02.** Two framings came out of one day's work. The
+  positioning scan recommended *the local lane for your coding agent*:
+  developers on big Macs, MLX and llama.cpp, a savings ledger, free with a
+  possible $5/month tier. Saurabh's session summary proposes *autonomous
+  model-to-production infrastructure*: startups that need someone to own
+  inference, vLLM/SGLang on cloud GPUs, open core plus inference engineering
+  as a service. Both are written up in
+  `docs/gtm/model-to-production-thesis.md`.
+- **What they share.** Registry, fit verdict, measured-not-quoted numbers,
+  receipts, MCP tools. That core gets built either way.
+- **Where they split.** What comes next. The local lane needs a ledger and a
+  one-command install. Model to production needs vLLM and SGLang runtime
+  entries, a serving load generator, and datacenter-GPU measurements, none of
+  which exist. On the current AWS quota that means one L40S
+  (`AGENTS.md`, "Money and hardware").
+- **What waits on this.** `docs/design/VISION.md`, the README, and the
+  "From model to production" line on spacepilot.dev.
+- **Close when**: Saurabh names the lead buyer, or sequences them (one now,
+  the other after a named milestone).
