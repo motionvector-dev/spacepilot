@@ -362,6 +362,9 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
+from spacepilot.services.user_preferences import get_default_gpu, set_default_gpu
+
+
 def _refuse_legacy_aws(verb: str) -> int:
     """The retired single-box AWS path refuses instead of half-working.
 
@@ -382,7 +385,126 @@ def _refuse_legacy_aws(verb: str) -> int:
 
 
 def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
-    return _refuse_legacy_aws("launch")
+    """Launch an AWS GPU instance tailored to a selected model variant."""
+    from spacepilot.model_registry import registry
+    from spacepilot.services.gpu_recommender import recommend_gpus
+    from spacepilot.services.aws_fleet_launcher import request_spot_instance
+
+    reg = registry()
+
+    # Step 1: Model Selection
+    model_arg = getattr(args, "model", None)
+    chosen_variant = None
+
+    if model_arg:
+        matching = [v for v in reg.variants if v.id.lower() == model_arg.strip().lower()]
+        if not matching:
+            matching = [v for v in reg.variants if v.model_id.lower() == model_arg.strip().lower()]
+        if not matching:
+            matching = [v for v in reg.variants if model_arg.strip().lower() in v.id.lower() or model_arg.strip().lower() in v.name.lower()]
+        if not matching:
+            print(f"  Error: Model '{model_arg}' not found in registry.")
+            return 1
+        chosen_variant = matching[0]
+    else:
+        video_variants = reg.by_kind("video")
+        pool = video_variants if video_variants else reg.variants
+        print("\n  Available Video Models:")
+        for idx, var in enumerate(pool, start=1):
+            ws_gb = (var.working_set.value / (1024 ** 3)) if var.working_set else 0.0
+            print(f"    [{idx}] {var.id} ({var.name}) - {var.precision or 'unknown'} (~{ws_gb:.1f}GB)")
+        
+        try:
+            choice = input("\n  Select model [1]: ").strip()
+        except EOFError:
+            choice = ""
+        
+        if not choice:
+            chosen_variant = pool[0]
+        elif choice.isdigit() and 1 <= int(choice) <= len(pool):
+            chosen_variant = pool[int(choice) - 1]
+        else:
+            matching = [v for v in pool if choice.lower() in v.id.lower()]
+            if matching:
+                chosen_variant = matching[0]
+            else:
+                print(f"  Invalid selection: {choice}")
+                return 1
+
+    model_key = chosen_variant.model_id or chosen_variant.id
+    print(f"\n  Selected Model: {chosen_variant.id} ({chosen_variant.name})")
+
+    # Step 2: GPU Recommendation & Selection
+    recs = recommend_gpus(chosen_variant)
+    if not recs:
+        print(f"  Error: No GPU instance found in catalog that can fit {chosen_variant.id} within quota.")
+        return 1
+
+    saved_default_gpu = get_default_gpu(model_key)
+    default_rec = next((r for r in recs if r.instance_spec.instance_type == saved_default_gpu), recs[0])
+
+    gpu_arg = getattr(args, "gpu", None)
+    if gpu_arg:
+        chosen_gpu = gpu_arg.strip()
+    elif getattr(args, "yes", False):
+        chosen_gpu = default_rec.instance_spec.instance_type
+    else:
+        print("\n  Recommended AWS GPU Tiers:")
+        for idx, rec in enumerate(recs[:4], start=1):
+            spec = rec.instance_spec
+            pref_tag = " [Default]" if spec.instance_type == saved_default_gpu else ""
+            print(f"    [{idx}] {spec.instance_type} - {spec.gpu_count}x {spec.gpu_name} (${spec.spot_hourly_usd:.2f}/hr spot) ~{rec.generation_speed_s_per_step:.2f}s/step - {rec.notes}{pref_tag}")
+        
+        prompt_default = saved_default_gpu or default_rec.instance_spec.instance_type
+        try:
+            gpu_prompt = input(f"\n  Select GPU tier [{prompt_default}]: ").strip()
+        except EOFError:
+            gpu_prompt = ""
+        
+        if not gpu_prompt:
+            chosen_gpu = prompt_default
+        elif gpu_prompt.isdigit() and 1 <= int(gpu_prompt) <= len(recs):
+            chosen_gpu = recs[int(gpu_prompt) - 1].instance_spec.instance_type
+        else:
+            chosen_gpu = gpu_prompt
+
+        try:
+            save_pref = input(f"  Save {chosen_gpu} as default for {model_key}? (y/n) [n]: ").strip().lower()
+        except EOFError:
+            save_pref = "n"
+        if save_pref in ("y", "yes"):
+            set_default_gpu(model_key, chosen_gpu)
+            print(f"  Saved default GPU {chosen_gpu} for {model_key}.")
+
+    # Step 3: Market Type and Launch Execution
+    market_type = "ondemand" if getattr(args, "on_demand", False) else "spot"
+    dry_run = getattr(args, "dry_run", False)
+    key_name = cfg.get("key_name", "spacepilot-key")
+    key_file = cfg.get("key_file")
+
+    print(f"\n  Launching {chosen_gpu} ({market_type}) for {chosen_variant.id}...")
+    try:
+        telemetry = request_spot_instance(
+            instance_type=chosen_gpu,
+            key_name=key_name,
+            key_file=key_file,
+            market_type=market_type,
+            dry_run=dry_run,
+        )
+    except Exception as e:
+        print(f"  Error during instance provisioning: {e}")
+        return 1
+
+    print("\n  ================================================================")
+    print(f"  INSTANCE PROVISIONED: {telemetry.instance_id} ({telemetry.state})")
+    print(f"  Type      : {telemetry.instance_type}")
+    print(f"  Public IP : {telemetry.public_ip or 'pending'}")
+    if telemetry.ssh_command:
+        print(f"  SSH       : {telemetry.ssh_command}")
+    if telemetry.tunnel_command:
+        print(f"  Tunnel    : {telemetry.tunnel_command}")
+    print("  ================================================================\n")
+    return 0
 
 
 def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
@@ -426,12 +548,64 @@ def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
                     "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"]).returncode
 
 
-def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
-    return _refuse_legacy_aws("generate")
+def cmd_download(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Download model weights to disk cache using staged filters."""
+    from spacepilot.services.model_downloader import download_weights
+
+    variant = args.model
+    dest = Path(args.dest) if getattr(args, "dest", None) else None
+    stage = getattr(args, "stage", "all")
+    concurrency = getattr(args, "concurrency", 16)
+
+    print(f"Downloading model '{variant}' (stage: {stage})...")
+    path = download_weights(
+        variant=variant,
+        dest_dir=dest,
+        stage=stage,
+        concurrency=concurrency,
+    )
+    print(f"Weights downloaded to: {path}")
+    return 0
 
 
-def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
-    return _refuse_legacy_aws("sync")
+def cmd_load(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Load model weights from local disk into active runtime daemon."""
+    from spacepilot.services.runtime_manager import load_model
+
+    model_id = args.model
+    weights_dir = Path(args.weights_dir)
+    backend = getattr(args, "backend", "sglang")
+    port = getattr(args, "port", 30010)
+    tp = getattr(args, "tp", 1)
+    skip_healthcheck = getattr(args, "skip_healthcheck", False)
+
+    print(f"Loading '{model_id}' via {backend} on port {port} (TP={tp})...")
+    res = load_model(
+        model_id=model_id,
+        weights_dir=weights_dir,
+        backend=backend,
+        port=port,
+        tp=tp,
+        skip_healthcheck=skip_healthcheck,
+    )
+    print(f"Model loaded successfully! PID={res.get('pid')}, Port={res.get('port')}")
+    return 0
+
+
+def cmd_unload(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Unload model from active runtime and reclaim memory/VRAM."""
+    from spacepilot.services.runtime_manager import unload_model
+
+    model_id = getattr(args, "model", None)
+    port = getattr(args, "port", None)
+    all_models = getattr(args, "all", False)
+
+    res = unload_model(model_id=model_id, port=port, all_models=all_models)
+    if res.get("status") == "ok":
+        print(f"Unloaded {res.get('unloaded_count')} runtime(s).")
+        return 0
+    print(f"Error unloading runtime: {res.get('errors')}")
+    return 1
 
 
 def studio_python(cfg):
