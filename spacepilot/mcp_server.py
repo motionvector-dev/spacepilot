@@ -145,76 +145,117 @@ def spacepilot_get_local_status() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def spacepilot_create_checkpoint(job_id: str, step: int, epoch: int, loss: float, local_paths: List[str]) -> Dict[str, Any]:
-    """GATED 2026-09-22 — checkpoint sync is not implemented; this always errors.
-
-    It stored nothing: a genuine sha256 was computed, no bytes were copied, and
-    the record lived in one process's memory, so it vanished on restart and was
-    invisible to the other transport. Do not call this expecting a snapshot.
+def spacepilot_download_weights(
+    model: str,
+    stage: str = "all",
+    dest: Optional[str] = None,
+    concurrency: int = 16,
+) -> Dict[str, Any]:
+    """Download model weights to disk cache using staged filters.
 
     Args:
-        job_id (str): The ID of the training job.
-        step (int): The current training step.
-        epoch (int): The current training epoch.
-        loss (float): The current loss value.
-        local_paths (List[str]): List of local file paths to include in the snapshot.
+        model: Model or variant ID to download (e.g. 'minimax-h3', 'minimax-h3-fl2va-fp8').
+        stage: Staging filter ('all', 'stage1', 'stage2'). Defaults to 'all'.
+        dest: Destination directory (defaults to ~/.cache/spacepilot/models/<model>).
+        concurrency: Number of download worker threads. Defaults to 16.
 
     Returns:
-        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
+        Dict[str, Any]: Download metadata including local path.
     """
-    try:
-        from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
-        from dataclasses import asdict
-        engine = CheckpointSyncEngine()
-        meta = engine.create_snapshot(job_id, step, epoch, loss, local_paths)
-        return {"status": "success", "snapshot": asdict(meta)}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    from pathlib import Path
+    from spacepilot.services.model_downloader import download_weights
+
+    target_dest = Path(dest) if dest else Path.home() / ".cache" / "spacepilot" / "models" / model
+    path = download_weights(
+        variant=model,
+        dest_dir=target_dest,
+        stage=stage,
+        concurrency=concurrency,
+    )
+    return {
+        "status": "success",
+        "model": model,
+        "stage": stage,
+        "dest": str(path),
+    }
+
 
 @mcp.tool()
-def spacepilot_list_checkpoints(job_id: Optional[str] = None) -> Dict[str, Any]:
-    """List training checkpoint snapshots.
+def spacepilot_load_runtime(
+    model_id: str,
+    weights_dir: str,
+    backend: str = "sglang",
+    port: int = 30010,
+    tp: int = 1,
+) -> Dict[str, Any]:
+    """Load model weights from local disk into active inference runtime daemon.
 
     Args:
-        job_id (str, optional): The ID of the training job to filter by.
+        model_id: Model or variant ID.
+        weights_dir: Local filesystem path where weights are stored.
+        backend: Runtime backend engine ('sglang', 'vllm'). Defaults to 'sglang'.
+        port: HTTP port to serve the model. Defaults to 30010.
+        tp: Tensor parallelism degree. Defaults to 1.
 
     Returns:
-        Dict[str, Any]: Snapshot metadata, plus `store`, which says whether a
-        checkpoint store exists at all. An empty list alone read as "this job
-        has no snapshots"; checkpoint sync is gated, so nothing is stored.
+        Dict[str, Any]: Runtime process metadata and health status.
     """
-    try:
-        from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
-        from dataclasses import asdict
-        engine = CheckpointSyncEngine()
-        snapshots = engine.list_snapshots(job_id)
-        return {"status": "success", "snapshots": [asdict(s) for s in snapshots],
-                "store": engine.store_status()}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    from pathlib import Path
+    from spacepilot.services.runtime_manager import load_model
+
+    runtime_info = load_model(
+        model_id=model_id,
+        weights_dir=Path(weights_dir),
+        backend=backend,
+        port=port,
+        tp=tp,
+    )
+    return {
+        "status": "success",
+        "runtime": runtime_info,
+    }
+
 
 @mcp.tool()
-def spacepilot_restore_checkpoint(snapshot_id: str, target_dir: Optional[str] = None) -> Dict[str, Any]:
-    """GATED 2026-09-22 — checkpoint restore is not implemented; this always errors.
-
-    It used to report `"status": "success"` with `target_dir` echoed back while
-    creating no directory and writing no file. Nothing lands on disk; do not
-    proceed as though weights are there.
+def spacepilot_unload_runtime(
+    model_id: Optional[str] = None,
+    port: Optional[int] = None,
+    all_models: bool = False,
+) -> Dict[str, Any]:
+    """Unload active model runtime and reclaim GPU memory/VRAM.
 
     Args:
-        snapshot_id (str): The ID of the snapshot to restore.
-        target_dir (str, optional): The local directory to restore to.
+        model_id: Model ID to unload.
+        port: Port of the running backend.
+        all_models: If True, terminates all resident runtimes.
 
     Returns:
-        Dict[str, Any]: `{"status": "error", "message": ...}` naming the gate.
+        Dict[str, Any]: Unload summary with count of stopped processes.
     """
-    try:
-        from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
-        engine = CheckpointSyncEngine()
-        res = engine.restore_snapshot(snapshot_id, target_dir)
-        return res
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    from spacepilot.services.runtime_manager import unload_model
+
+    return unload_model(
+        model_id=model_id,
+        port=port,
+        all_models=all_models,
+    )
+
+
+@mcp.tool()
+def spacepilot_get_resident_models() -> Dict[str, Any]:
+    """Get list of active resident models currently loaded in memory/VRAM.
+
+    Returns:
+        Dict[str, Any]: Active resident models with PID, port, backend, and health.
+    """
+    from spacepilot.services.runtime_manager import get_resident_models
+
+    models = get_resident_models()
+    return {
+        "status": "success",
+        "models": models,
+    }
+
 
 @mcp.tool()
 def spacepilot_list_model_recipes() -> Dict[str, Any]:
@@ -223,20 +264,6 @@ def spacepilot_list_model_recipes() -> Dict[str, Any]:
         from spacepilot.services.model_catalog import catalog_manager
         recipes = catalog_manager.get_all_recipes()
         return {"status": "success", "recipes": [r.model_dump() if hasattr(r, 'model_dump') else r.__dict__ for r in recipes]}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@mcp.tool()
-def spacepilot_download_model_recipe(recipe_id: str) -> Dict[str, Any]:
-    """Queue background weight download for a specific model recipe.
-    
-    Args:
-        recipe_id (str): The ID of the model recipe to download.
-    """
-    try:
-        from spacepilot.services.model_catalog import catalog_manager
-        job_id = catalog_manager.download_recipe(recipe_id)
-        return {"status": "success", "job_id": job_id}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -257,47 +284,6 @@ def spacepilot_list_lora_adapters(base_model: str = None) -> Dict[str, Any]:
         adapters = lora_manager.list_adapters(base_model)
         return {"adapters": [dataclasses.asdict(a) for a in adapters]}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@mcp.tool()
-def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], trigger_word: str, rank: int = 16, steps: int = 500, lr: float = 1e-4) -> Dict[str, Any]:
-    """Queue a LoRA training job.
-    
-    Args:
-        name (str): The name of the adapter.
-        base_model (str): Base model ID.
-        image_paths (list[str]): List of image paths for training.
-        trigger_word (str): Trigger word.
-        rank (int, optional): LoRA rank; must be a positive power of 2. Defaults to 16.
-        steps (int, optional): Training steps. Defaults to 500.
-        lr (float, optional): Learning rate. Defaults to 1e-4.
-        
-    Returns:
-        Dict[str, Any]: Job details.
-    """
-    try:
-        request = contracts.TrainLoRARequest(
-            name=name, base_model=base_model, image_paths=image_paths,
-            trigger_word=trigger_word, rank=rank, steps=steps, lr=lr,
-        )
-    except ValidationError as exc:
-        return _refused(exc)
-    try:
-        from spacepilot.services.lora import lora_manager
-        job = lora_manager.create_training_job(
-            name=request.name,
-            base_model=request.base_model,
-            image_paths=request.image_paths,
-            trigger_word=request.trigger_word,
-            rank=request.rank,
-            steps=request.steps,
-            lr=request.lr
-        )
-        return {"status": "success", "job": job}
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.exception("Failed to train LoRA")
         return {"status": "error", "message": str(e)}
 
 
