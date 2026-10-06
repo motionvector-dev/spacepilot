@@ -548,6 +548,14 @@ def cmd_logs(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
                     "tail -f /scratch/worker/worker.log 2>/dev/null || tail -f /tmp/worker.log"]).returncode
 
 
+def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("generate")
+
+
+def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    return _refuse_legacy_aws("sync")
+
+
 def cmd_download(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     """Download model weights to disk cache using staged filters."""
     from spacepilot.services.model_downloader import download_weights
@@ -1465,6 +1473,104 @@ def _cmd_run_text(args, cfg=None) -> int:
     return 0
 
 
+def _cmd_run_video(args, cfg=None) -> int:
+    from spacepilot.services.video_client import VideoClient
+
+    if cfg is None:
+        cfg = load_config()
+
+    prompt = args.prompt
+    model = getattr(args, "model", None)
+    if not model:
+        # Check resident models if available
+        try:
+            from spacepilot.services.runtime_manager import get_resident_models
+            residents = get_resident_models()
+            if residents:
+                model = residents[0].get("model_id") or residents[0].get("model_path")
+        except Exception:
+            pass
+        if not model:
+            model = "minimax-h3"
+
+    # Endpoint discovery
+    box = getattr(args, "box", None)
+    if box:
+        if ":" in box:
+            endpoint = f"http://{box}" if not box.startswith("http") else box
+        else:
+            endpoint = f"http://{box}:30010"
+    else:
+        inst = get_instance_info(cfg)
+        if inst and inst.get("ip") and inst.get("state") == "running":
+            endpoint = f"http://{inst['ip']}:30010"
+        else:
+            endpoint = "http://localhost:30010"
+
+    steps = getattr(args, "steps", 30) or 30
+    seconds = getattr(args, "seconds", 4.0) or 4.0
+
+    res_arg = getattr(args, "resolution", None)
+    if res_arg and len(res_arg) == 2:
+        resolution = (int(res_arg[0]), int(res_arg[1]))
+    else:
+        cfg_res = cfg.get("default_resolution", [1024, 576])
+        resolution = (int(cfg_res[0]), int(cfg_res[1]))
+
+    out_arg = getattr(args, "output", None)
+    if out_arg:
+        output_path = Path(out_arg).expanduser().resolve()
+    else:
+        ts = int(time.time())
+        safe_model = model.replace("/", "-")
+        output_path = OUTPUTS_DIR / f"{safe_model}-{ts}-{uuid.uuid4().hex[:8]}.mp4"
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"  prompt      {prompt}")
+    print(f"  model       {model}")
+    print(f"  endpoint    {endpoint}")
+    print(f"  resolution  {resolution[0]}x{resolution[1]}")
+    print(f"  steps       {steps}")
+    print(f"  seconds     {seconds:.1f}s")
+    print(f"  destination {output_path}")
+
+    client = VideoClient(endpoint_url=endpoint)
+    try:
+        def on_progress(step, total):
+            print(f"\r  progress    [{step}/{total}] steps completed", end="", flush=True)
+
+        result = client.generate_video(
+            prompt=prompt,
+            model_id=model,
+            output_path=output_path,
+            steps=steps,
+            seconds=seconds,
+            resolution=resolution,
+            progress_callback=on_progress,
+        )
+        print()
+    except Exception as exc:
+        print(f"\n  Run failed: {exc}")
+        return 1
+    finally:
+        client.close()
+
+    print(f"\n  completed   {result.model_id}")
+    print(f"  artifact    {result.output_path}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    print(f"  steps       {result.steps}")
+    print(f"  step speed  {result.seconds_per_step:.3f}s/step")
+
+    if getattr(args, "open", False):
+        try:
+            subprocess.run(["open", str(result.output_path)], check=False)
+        except Exception as exc:
+            logger.warning("Could not open video file: %s", exc)
+
+    return 0
+
+
 def cmd_run(args, cfg=None) -> int:
     """Plan, confirm and execute one real local workload."""
     from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
@@ -1479,6 +1585,8 @@ def cmd_run(args, cfg=None) -> int:
         return _cmd_run_transcribe(args, cfg)
     if workload == "text":
         return _cmd_run_text(args, cfg)
+    if workload == "video":
+        return _cmd_run_video(args, cfg)
     service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
     try:
         plan = service.plan(workload)
@@ -2257,8 +2365,8 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None):
-    cfg = load_config()
+def build_parser() -> argparse.ArgumentParser:
+    """Build and return the SpacePilot CLI argument parser."""
     parser = argparse.ArgumentParser(
         prog="spacepilot",
         description="SpacePilot — inference orchestration across the machines you can reach.",
@@ -2410,6 +2518,18 @@ def main(argv: list[str] | None = None):
                                "are rendered without it.")
     run_text.add_argument("--yes", action="store_true",
                           help="Execute after printing the plan")
+    run_video = run_sub.add_parser(
+        "video", help="Generate a video through remote or local diffusion model backend"
+    )
+    run_video.add_argument("--prompt", required=True, help="Text scene prompt for video generation")
+    run_video.add_argument("--model", default=None, help="Model ID (e.g. minimax-h3, wan-2.1-t2v-14b)")
+    run_video.add_argument("--box", default=None, help="Target box IP or host:port (defaults to active EC2 box or localhost:30010)")
+    run_video.add_argument("--steps", type=int, default=30, help="Inference diffusion steps (default 30)")
+    run_video.add_argument("--seconds", type=float, default=4.0, help="Video duration in seconds (default 4.0)")
+    run_video.add_argument("--resolution", nargs=2, type=int, default=None, metavar=("WIDTH", "HEIGHT"),
+                           help="Resolution as width height (e.g. 1024 576)")
+    run_video.add_argument("--output", "--out", "-o", dest="output", default=None, help="Output MP4 file path")
+    run_video.add_argument("--open", action="store_true", help="Open generated video in default media player when done")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
@@ -2479,9 +2599,14 @@ def main(argv: list[str] | None = None):
     # sync
     subparsers.add_parser("sync", help="Sync all generated videos from box to local outputs/")
 
-    # terminate
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+    return parser
+
+
+def main(argv: list[str] | None = None):
+    cfg = load_config()
+    parser = build_parser()
 
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:
