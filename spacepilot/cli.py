@@ -2565,7 +2565,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
     # launch
-    subparsers.add_parser("launch", help="Launch AWS Spot GPU instance and deploy worker")
+    launch_p = subparsers.add_parser("launch", help="Launch AWS Spot GPU instance and deploy worker")
+    launch_p.add_argument("--model", type=str, default=None, help="Target model variant ID (e.g. minimax-h3-fl2va-fp8)")
+    launch_p.add_argument("--gpu", type=str, default=None, help="Explicit AWS GPU instance type (e.g. g6e.4xlarge)")
+    launch_p.add_argument("--on-demand", action="store_true", help="Launch on-demand instance instead of spot")
+    launch_p.add_argument("--dry-run", action="store_true", help="Simulate provisioning without requesting AWS EC2 resources")
+    launch_p.add_argument("-y", "--yes", action="store_true", help="Accept recommended defaults without interactive prompts")
 
     # deploy
     subparsers.add_parser("deploy", help="Deploy latest worker code to running box")
