@@ -52,6 +52,9 @@ class AWSClientInterface:
         raise NotImplementedError
 
 
+logger = logging.getLogger(__name__)
+
+
 class SubprocessAWSClient(AWSClientInterface):
     """Executes AWS CLI commands via subprocess."""
 
@@ -66,11 +69,14 @@ class SubprocessAWSClient(AWSClientInterface):
         if self.region:
             base.extend(["--region", self.region])
         full_cmd = base + cmd
+        logger.debug("Executing AWS command: %s", " ".join(full_cmd))
         res = subprocess.run(full_cmd, capture_output=True, text=True, check=False)
         if check and res.returncode != 0:
+            logger.error("AWS command failed (%d): %s\nStderr: %s", res.returncode, " ".join(full_cmd), res.stderr.strip())
             raise RuntimeError(
                 f"AWS command failed ({res.returncode}): {' '.join(full_cmd)}\n{res.stderr.strip()}"
             )
+        logger.debug("AWS command stdout (%d bytes): %s", len(res.stdout), res.stdout[:200].strip())
         return res.stdout.strip()
 
 

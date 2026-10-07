@@ -159,10 +159,11 @@ def output_renderer(args: argparse.Namespace, cfg: Mapping[str, Any] | None = No
     return OutputRenderer(resolve_output_mode(explicit, cfg))
 
 
-def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
-    """Allow --plain/--live either side of a subcommand, but never after --."""
+def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None, bool]:
+    """Allow --plain/--live/--verbose either side of a subcommand, but never after --."""
     selected: list[str] = []
     cleaned: list[str] = []
+    verbose = False
     passthrough = False
     for arg in argv:
         if arg == "--":
@@ -170,11 +171,13 @@ def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
             cleaned.append(arg)
         elif not passthrough and arg in ("--live", "--plain"):
             selected.append(arg[2:])
+        elif not passthrough and arg in ("-v", "--verbose"):
+            verbose = True
         else:
             cleaned.append(arg)
     if len(set(selected)) > 1:
         raise ValueError("--live and --plain are mutually exclusive")
-    return cleaned, (selected[0] if selected else None)
+    return cleaned, (selected[0] if selected else None), verbose
 
 
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
@@ -2376,6 +2379,8 @@ def build_parser() -> argparse.ArgumentParser:
                               help="Render live terminal updates")
     output_group.add_argument("--plain", dest="output_mode", action="store_const", const="plain",
                               help="Render plain newline-delimited output")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose debug logging and stack traces")
     subparsers = parser.add_subparsers(dest="command")
 
     # doctor/check
@@ -2615,7 +2620,7 @@ def main(argv: list[str] | None = None):
 
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:
-        parse_argv, explicit_mode = _extract_output_mode_flags(raw_argv)
+        parse_argv, explicit_mode, explicit_verbose = _extract_output_mode_flags(raw_argv)
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -2625,6 +2630,16 @@ def main(argv: list[str] | None = None):
 
     args = parser.parse_args(parse_argv)
     args.output_mode = resolve_output_mode(explicit_mode or args.output_mode, cfg)
+    if explicit_verbose:
+        args.verbose = True
+
+    import logging
+    log_level = logging.DEBUG if getattr(args, "verbose", False) else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
     dispatch = {
         "doctor": cmd_doctor,
