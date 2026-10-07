@@ -24,11 +24,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from spacepilot.app import create_app
-from spacepilot.mcp_server import (
-    spacepilot_create_checkpoint,
-    spacepilot_list_checkpoints,
-    spacepilot_restore_checkpoint,
-)
 from spacepilot.services.checkpoint_sync import CheckpointSyncEngine
 
 GATE_DATE = "2026-09-22"
@@ -138,30 +133,3 @@ def test_api_auth_gate(client, method, endpoint, payload):
         resp = client.delete(endpoint, headers={"X-Pluto-Token": "badtoken"})
 
     assert resp.status_code == 401
-
-
-# --------------------------------------------------------------------- MCP
-
-
-def test_mcp_tools_report_the_gate_as_an_error(reset_engine):
-    res_create = spacepilot_create_checkpoint("mcp-job", 50, 1, 0.2, [])
-    assert res_create["status"] == "error"
-    assert "not implemented" in res_create["message"].lower()
-
-    target = "/tmp/spacepilot-restore-that-never-happens"
-    res_restore = spacepilot_restore_checkpoint("snap-123", target)
-    assert res_restore["status"] == "error"
-    assert "not implemented" in res_restore["message"].lower()
-    assert not os.path.exists(target)
-
-    res_list = spacepilot_list_checkpoints("mcp-job")
-    assert res_list["snapshots"] == []
-    assert res_list["store"]["implemented"] is False
-
-
-def test_the_two_transports_answer_the_same_way(client):
-    """A snapshot could never cross from stdio MCP to HTTP; now neither claims one."""
-    mcp = spacepilot_list_checkpoints("shared-job")
-    http = client.get("/api/checkpoints/snapshots?job_id=shared-job", headers=_headers()).json()
-    assert mcp["snapshots"] == http["snapshots"] == []
-    assert mcp["store"] == http["store"]

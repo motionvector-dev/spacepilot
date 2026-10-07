@@ -31,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+from spacepilot import __version__
 from spacepilot.paths import env_value, fleet_orders_path, outputs_dir, state_root
 
 # Anything read-and-written follows `spacepilot.paths`: the checkout when there
@@ -2381,11 +2382,11 @@ def build_parser() -> argparse.ArgumentParser:
                               help="Render plain newline-delimited output")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Enable verbose debug logging and stack traces")
+    parser.add_argument("--version", action="version", version=f"spacepilot {__version__}")
     subparsers = parser.add_subparsers(dest="command")
 
-    # doctor/check
+    # doctor
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
-    subparsers.add_parser("check", help="Alias for doctor")
 
     # probe
     probe_p = subparsers.add_parser(
@@ -2438,26 +2439,12 @@ def build_parser() -> argparse.ArgumentParser:
     fleet_list.add_argument("--interval", type=float, default=argparse.SUPPRESS,
                             help="Seconds between daemon snapshot requests (default: 2)")
 
-    # lora
-    lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
-    lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
-    lora_subparsers.add_parser("list", help="List LoRA models")
-    lora_subparsers.add_parser("train", help="Train a new LoRA model")
-
-    # recipes
-    recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
-    recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
-    recipes_list_p = recipes_subparsers.add_parser("list", help="List recipes")
-    recipes_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
-    recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
-    recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
-
     # studio
     studio_p = subparsers.add_parser("studio", help="Launch interactive SpacePilot Studio Web UI")
     studio_p.add_argument("--port", type=int, default=8088, help="Port to bind (default: 8088)")
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
-    # status
+    # runtimes
     rt_p = subparsers.add_parser("runtimes", help="Packages that execute models")
     rt_sub = rt_p.add_subparsers(dest="runtimes_action")
     rt_list_p = rt_sub.add_parser("list", help="What is installed and what is available")
@@ -2475,12 +2462,7 @@ def build_parser() -> argparse.ArgumentParser:
                           help="`list` for the table (the default), or a variant id for detail")
     models_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
 
-    sil_p = subparsers.add_parser(
-        "silicon", help="Parts that exist, whether or not this project has one")
-    sil_p.add_argument("part_id", nargs="?",
-                       help="`list` for the table (the default), or a part id for detail")
-    sil_p.add_argument("--json", action="store_true",
-                       help="Print the registry as JSON, sources and dates included")
+    # run
     run_p = subparsers.add_parser("run", help="Run a real workload on this machine")
     run_sub = run_p.add_subparsers(dest="run_workload", required=True)
     run_image = run_sub.add_parser("image", help="Generate one image through an exact local route")
@@ -2536,7 +2518,18 @@ def build_parser() -> argparse.ArgumentParser:
     run_video.add_argument("--output", "--out", "-o", dest="output", default=None, help="Output MP4 file path")
     run_video.add_argument("--open", action="store_true", help="Open generated video in default media player when done")
 
-    meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
+    # bench (consolidates research tools: measure, sweep, silicon)
+    bench_p = subparsers.add_parser("bench", help="Hardware diagnostics, benchmark sweeps, and measurement tools")
+    bench_sub = bench_p.add_subparsers(dest="bench_action", required=True)
+
+    sil_p = bench_sub.add_parser(
+        "silicon", help="Parts that exist, whether or not this project has one")
+    sil_p.add_argument("part_id", nargs="?",
+                       help="`list` for the table (the default), or a part id for detail")
+    sil_p.add_argument("--json", action="store_true",
+                       help="Print the registry as JSON, sources and dates included")
+
+    meas_p = bench_sub.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
     meas_p.add_argument("--metric", required=True,
                         help="seconds_per_image, tokens_per_second, realtime_factor, "
@@ -2551,8 +2544,7 @@ def build_parser() -> argparse.ArgumentParser:
     meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
                         help="The command to run, after --")
 
-    # sweep
-    sweep_p = subparsers.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
+    sweep_p = bench_sub.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
     sweep_sub = sweep_p.add_subparsers(dest="sweep_action")
     sweep_run = sweep_sub.add_parser("run", help="Run (or dry-run) a sweep spec")
     sweep_run.add_argument("spec", help="Path to a spec, e.g. spacepilot/registry/sweeps/flux-schnell-4bit.yaml")
@@ -2604,6 +2596,17 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def cmd_bench(args, cfg) -> int:
+    action = getattr(args, "bench_action", None)
+    if action == "silicon":
+        return cmd_silicon(args, cfg)
+    if action == "measure":
+        return cmd_measure(args, cfg)
+    if action == "sweep":
+        return cmd_sweep(args, cfg)
+    return 1
+
+
 def main(argv: list[str] | None = None):
     cfg = load_config()
     parser = build_parser()
@@ -2633,20 +2636,15 @@ def main(argv: list[str] | None = None):
 
     dispatch = {
         "doctor": cmd_doctor,
-        "check": cmd_doctor,
         "probe": cmd_probe,
         "serve": cmd_serve,
         "daemon": cmd_daemon,
         "fleet": cmd_fleet,
-        "lora": cmd_lora,
-        "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
-        "silicon": cmd_silicon,
         "run": cmd_run,
         "runtimes": cmd_runtimes,
-        "measure": cmd_measure,
-        "sweep": cmd_sweep,
+        "bench": cmd_bench,
         "status": cmd_status,
         "launch": cmd_launch,
         "download": cmd_download,
