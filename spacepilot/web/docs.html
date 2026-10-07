@@ -363,9 +363,10 @@
                 </ul>
             </div>
             <div class="nav-group">
-                <div class="nav-title">Integration</div>
+                <div class="nav-title">Integration & Reference</div>
                 <ul class="nav-list">
                     <li class="nav-item"><a href="#fastmcp" class="nav-link">Agentic FastMCP</a></li>
+                    <li class="nav-item"><a href="#cli-reference" class="nav-link">CLI Reference</a></li>
                     <li class="nav-item"><a href="#rest-api" class="nav-link">REST API & Auth</a></li>
                     <li class="nav-item"><a href="#economics" class="nav-link">Economics</a></li>
                 </ul>
@@ -580,9 +581,65 @@ spacepilot serve --port 8088</code></pre>
             </div>
         </section>
 
+        <section id="cli-reference" class="doc-section">
+            <h2>6. CLI Command Reference</h2>
+            <p>Every verb in the SpacePilot CLI is atomic and composable:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                        <th>Action</th>
+                        <th>Key Flags</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>spacepilot doctor</code></td>
+                        <td>Audit local accelerator, RAM, disk, dependencies, and AWS auth</td>
+                        <td><code>--live</code>, <code>--plain</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot probe</code></td>
+                        <td>Detect GPU/VRAM topology and record system telemetry</td>
+                        <td><code>--save</code>, <code>--json</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot launch</code></td>
+                        <td>Request AWS Spot GPU instance tailored to model working set</td>
+                        <td><code>--model</code>, <code>--gpu</code>, <code>--dry-run</code>, <code>-y</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot run video</code></td>
+                        <td>Generate video clip on active GPU box or localhost daemon</td>
+                        <td><code>--prompt</code>, <code>--steps</code>, <code>--seconds</code>, <code>--open</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot download</code></td>
+                        <td>Staged model weights download to local/attached cache</td>
+                        <td><code>--model</code>, <code>--stage</code>, <code>--dest</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot load</code></td>
+                        <td>Supervise and launch resident SGLang/vLLM runtime daemon</td>
+                        <td><code>--model</code>, <code>--backend</code>, <code>--port</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot unload</code></td>
+                        <td>Terminate resident daemon and reclaim GPU memory</td>
+                        <td><code>--model</code>, <code>--all</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>spacepilot terminate</code></td>
+                        <td>Terminate active EC2 instance to stop cloud billing</td>
+                        <td><code>-y</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
         <section id="rest-api" class="doc-section">
-            <h2>6. REST API & Auth Matrix</h2>
-            <p>Direct HTTP access requires the <code>X-SpacePilot-Token</code> header. API interactions are strictly typed.</p>
+            <h2>7. REST API Reference</h2>
+            <p>Direct HTTP access requires the <code>X-SpacePilot-Token</code> header. The server also serves OpenAI-compatible endpoints under <code>/v1</code>.</p>
             <table>
                 <thead>
                     <tr>
@@ -593,27 +650,47 @@ spacepilot serve --port 8088</code></pre>
                 </thead>
                 <tbody>
                     <tr>
+                        <td><code>/v1/chat/completions</code></td>
+                        <td>POST</td>
+                        <td>OpenAI-compatible text generation (MLX-LM / remote).</td>
+                    </tr>
+                    <tr>
+                        <td><code>/v1/embeddings</code></td>
+                        <td>POST</td>
+                        <td>OpenAI-compatible 1024-dim embedding extraction.</td>
+                    </tr>
+                    <tr>
                         <td><code>/api/compute/local-profile</code></td>
                         <td>GET</td>
-                        <td>Returns host hardware constraints.</td>
+                        <td>Host hardware constraints and VRAM headroom.</td>
                     </tr>
                     <tr>
-                        <td><code>/api/render/submit</code></td>
-                        <td>POST</td>
-                        <td>Accepts DocIR 2.0 payload.</td>
-                    </tr>
-                    <tr>
-                        <td><code>/api/render/status/:id</code></td>
+                        <td><code>/api/compute/local-status</code></td>
                         <td>GET</td>
-                        <td>Polling endpoint for job completion.</td>
+                        <td>Active GPU memory usage and cached model weights.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/generate</code></td>
+                        <td>POST</td>
+                        <td>Direct generation endpoint for image/speech models.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/storyboard/decompose</code></td>
+                        <td>POST</td>
+                        <td>Decompose narrative script into cinematic shot sequences.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/docs</code></td>
+                        <td>GET</td>
+                        <td>Interactive OpenAPI / Swagger documentation.</td>
                     </tr>
                 </tbody>
             </table>
         </section>
 
         <section id="economics" class="doc-section">
-            <h2>7. Economics</h2>
-            <p>Work runs on the machine you are sitting at, or on one AWS g6e.2xlarge spot instance you launch by hand with <code>spacepilot launch</code> and terminate yourself. There is no automatic overflow router: nothing decides on your behalf that a request exceeds local headroom and sends it to a cloud. The SkyPilot spot-mesh arbitrage this section used to describe was never built, and its API surface has been removed.</p>
+            <h2>8. Economics</h2>
+            <p>Work runs on the machine you are sitting at, or on an AWS spot instance (e.g. <code>g6e.4xlarge</code> at ~$1.15-$2.38/hr) provisioned via <code>spacepilot launch</code>. There is no automated SaaS markup and no hidden egress fees.</p>
         </section>
         
         <div style="height: 100px;"></div>
