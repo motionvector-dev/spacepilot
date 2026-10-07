@@ -111,6 +111,7 @@ def test_resolve_dlami_id_fallback_to_describe_images():
 def test_request_spot_instance_dry_run():
     """Dry run validates request and produces mock telemetry with zero cost."""
     mock_client = MockAWSClient()
+    mock_client.set_response("ssm get-parameter", "ami-dlami-mock123")
     # AWS returns DryRunOperation error when dry-run succeeds
     mock_client.set_response(
         "--dry-run",
@@ -153,8 +154,8 @@ def test_request_spot_instance_live_launch():
 
     telem = request_spot_instance(
         instance_type="g6e.4xlarge",
-        key_name="pluto-gpu-key-2026-07-26",
-        key_file="/Users/saurabh/.ssh/pluto-gpu-key-2026-07-26.pem",
+        key_name="test-gpu-key",
+        key_file="/home/user/.ssh/test-gpu-key.pem",
         dry_run=False,
         aws_client=mock_client,
     )
@@ -162,8 +163,8 @@ def test_request_spot_instance_live_launch():
     assert telem.instance_id == "i-0987654321fedcba0"
     assert telem.state == "pending"
     assert telem.public_ip == "34.201.55.99"
-    assert telem.ssh_command == "ssh -i /Users/saurabh/.ssh/pluto-gpu-key-2026-07-26.pem ubuntu@34.201.55.99"
-    assert telem.tunnel_command == "ssh -i /Users/saurabh/.ssh/pluto-gpu-key-2026-07-26.pem -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@34.201.55.99"
+    assert telem.ssh_command == "ssh -i /home/user/.ssh/test-gpu-key.pem ubuntu@34.201.55.99"
+    assert telem.tunnel_command == "ssh -i /home/user/.ssh/test-gpu-key.pem -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@34.201.55.99"
     assert telem.dry_run is False
 
     # Check that Spot market options and block device mapping were included

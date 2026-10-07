@@ -1,7 +1,7 @@
 # Technical Specification: SpacePilot AWS Launch & MiniMax-H3 Registry Integration
 
 ## 1. Objective
-Enable end-to-end interactive model selection, GPU tier recommendation, deployment, lifecycle management, and clip generation for `minimax-h3` on AWS within SpacePilot (`/Users/saurabh/code/crew/spacepilot`).
+Enable end-to-end interactive model selection, GPU tier recommendation, deployment, lifecycle management, and clip generation for `minimax-h3` on AWS within SpacePilot.
 
 ## 2. Architecture & Components
 

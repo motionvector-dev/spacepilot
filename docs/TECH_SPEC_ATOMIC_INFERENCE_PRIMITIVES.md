@@ -1,7 +1,7 @@
 # Tech Spec: Atomic Inference Primitives (`download`, `load`, `unload`) & Workflow Integration
 
 **Date**: 2026-10-07  
-**Branch**: `feat/h3-aws-launch` in `/Users/saurabh/code/crew/spacepilot`  
+**Branch**: `feat/h3-aws-launch`  
 **Status**: APPROVED FOR TDD IMPLEMENTATION  
 
 ---
