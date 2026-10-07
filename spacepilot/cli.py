@@ -2524,7 +2524,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_video.add_argument("--prompt", required=True, help="Text scene prompt for video generation")
     run_video.add_argument("--model", default=None, help="Model ID (e.g. minimax-h3, wan-2.1-t2v-14b)")
     run_video.add_argument("--box", default=None, help="Target box IP or host:port (defaults to active EC2 box or localhost:30010)")
-    run_video.add_argument("--steps", type=int, default=30, help="Inference diffusion steps (default 30)")
+    run_video.add_argument("--steps", type=int, default=20, help="Inference diffusion steps (default 20)")
     run_video.add_argument("--seconds", type=float, default=4.0, help="Video duration in seconds (default 4.0)")
     run_video.add_argument("--resolution", nargs=2, type=int, default=None, metavar=("WIDTH", "HEIGHT"),
                            help="Resolution as width height (e.g. 1024 576)")

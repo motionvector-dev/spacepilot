@@ -50,7 +50,7 @@ class VideoClient:
         prompt: str,
         model_id: str,
         output_path: Path,
-        steps: int = 30,
+        steps: int = 20,
         seconds: float = 4.0,
         resolution: Tuple[int, int] = (1024, 576),
         seed: Optional[int] = None,
