@@ -409,19 +409,22 @@
 
         <section id="quickstart" class="doc-section">
             <h2>1. Quickstart</h2>
-            <p>Zero-configuration local setup. We rely on Doppler for secrets management. Bypass the $0.30 SaaS markup and run your first $0.00 local inference in under 60 seconds.</p>
+            <p>Zero-configuration local setup. Run models locally on Apple Silicon/CUDA or launch verified Spot instances on AWS without markup.</p>
             
             <div class="code-block" data-snippet-id="quickstart">
                 <div class="code-header">
                     <button class="code-lang-btn active" data-lang="bash">Terminal</button>
                     <button class="copy-btn">Copy</button>
                 </div>
-                <pre><code class="language-bash"># Install CLI and pull config
-npm i -g @spacepilot/cli
-doppler setup -p spacepilot -c dev
+                <pre><code class="language-bash"># 1. Install CLI globally via uv
+uv tool install spacepilot
 
-# Run local hardware diagnostics and start daemon
-doppler run -- spacepilot daemon start --port 8080</code></pre>
+# 2. Run diagnostics & probe host hardware
+spacepilot doctor
+spacepilot probe
+
+# 3. Launch interactive studio & local API
+spacepilot serve --port 8088</code></pre>
             </div>
         </section>
 
@@ -493,15 +496,15 @@ doppler run -- spacepilot daemon start --port 8080</code></pre>
                     <text x="515" y="65" text-anchor="middle" class="svg-text" font-weight="600" font-size="12">Topology</text>
 
                     <!-- Row 1 -->
-                    <text x="85" y="110" text-anchor="middle" class="svg-text" font-size="12">LTX-Video 2.5</text>
-                    <text x="225" y="110" text-anchor="middle" class="svg-sub" font-size="12">13B DiT</text>
-                    <text x="375" y="110" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">24 GB</text>
-                    <text x="515" y="110" text-anchor="middle" class="svg-sub" font-size="12">3D Causal VAE</text>
+                    <text x="85" y="110" text-anchor="middle" class="svg-text" font-size="12">MiniMax-H3</text>
+                    <text x="225" y="110" text-anchor="middle" class="svg-sub" font-size="12">33B Dense DiT</text>
+                    <text x="375" y="110" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">32-48 GB</text>
+                    <text x="515" y="110" text-anchor="middle" class="svg-sub" font-size="12">FL2VA / SGLang</text>
 
                     <!-- Row 2 -->
-                    <text x="85" y="160" text-anchor="middle" class="svg-text" font-size="12">HunyuanVideo</text>
-                    <text x="225" y="160" text-anchor="middle" class="svg-sub" font-size="12">Dual-Stream DiT</text>
-                    <text x="375" y="160" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">40 GB+</text>
+                    <text x="85" y="160" text-anchor="middle" class="svg-text" font-size="12">Wan 2.1</text>
+                    <text x="225" y="160" text-anchor="middle" class="svg-sub" font-size="12">14B DiT</text>
+                    <text x="375" y="160" text-anchor="middle" class="svg-text" font-family="monospace" font-size="12">24 GB</text>
                     <text x="515" y="160" text-anchor="middle" class="svg-sub" font-size="12">Flow Matching</text>
                 </svg>
             </div>
@@ -537,36 +540,43 @@ doppler run -- spacepilot daemon start --port 8080</code></pre>
         
         <section id="fastmcp" class="doc-section">
             <h2>5. Agentic FastMCP Reference</h2>
-            <p>Expose SpacePilot capabilities to your agent via FastMCP. The server provides robust schema validation for rendering DocIR 2.0 specs.</p>
+            <p>Expose SpacePilot primitives directly to your agent via MCP. The server provides live tools for hardware probing, staging model weights, and supervising resident GPU runtimes.</p>
 
             <div class="code-block" data-snippet-id="fastmcp">
                 <div class="code-header">
                     <button class="code-lang-btn active" data-lang="json">JSON Schema</button>
-                    <button class="code-lang-btn" data-lang="python">Python Config</button>
+                    <button class="code-lang-btn" data-lang="python">Python Client</button>
                     <button class="copy-btn">Copy</button>
                 </div>
                 <pre class="snippet-content" data-lang="json"><code class="language-json">{
-  "name": "render_video",
-  "description": "Submits a DocIR 2.0 payload to the rendering queue.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "prompt": { "type": "string" },
-      "engine": { "type": "string", "enum": ["ltx-2.5", "hunyuan"] },
-      "aspect_ratio": { "type": "string", "default": "16:9" }
+  "tools": [
+    {
+      "name": "spacepilot_probe_hardware",
+      "description": "Probe host hardware capabilities and VRAM headroom for local inference."
     },
-    "required": ["prompt"]
+    {
+      "name": "spacepilot_download_weights",
+      "description": "Download model weights to disk cache using staged filters (stage1/stage2/all)."
+    },
+    {
+      "name": "spacepilot_load_runtime",
+      "description": "Load model weights into active SGLang/vLLM runtime daemon on target port."
+    },
+    {
+      "name": "spacepilot_get_resident_models",
+      "description": "Query active models currently resident in GPU memory/VRAM."
+    }
+  ]
+}</code></pre>
+                <pre class="snippet-content" data-lang="python" style="display:none;"><code class="language-python"># Connect Claude, Cursor, or Codex to SpacePilot MCP:
+# In ~/.config/Claude/claude_desktop_config.json:
+{
+  "mcpServers": {
+    "spacepilot": {
+      "command": "spacepilot-mcp"
+    }
   }
 }</code></pre>
-                <pre class="snippet-content" data-lang="python" style="display:none;"><code class="language-python">from fastmcp import FastMCP
-
-mcp = FastMCP("SpacePilot")
-
-@mcp.tool()
-def render_video(prompt: str, engine: str = "ltx-2.5", aspect_ratio: str = "16:9") -> str:
-    """Submits a DocIR 2.0 payload to the rendering queue."""
-    # Internal routing logic
-    return f"Job queued for {engine} at {aspect_ratio}"</code></pre>
             </div>
         </section>
 
