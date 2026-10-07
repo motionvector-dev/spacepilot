@@ -2577,37 +2577,27 @@ def build_parser() -> argparse.ArgumentParser:
     launch_p.add_argument("--dry-run", action="store_true", help="Simulate provisioning without requesting AWS EC2 resources")
     launch_p.add_argument("-y", "--yes", action="store_true", help="Accept recommended defaults without interactive prompts")
 
-    # deploy
-    subparsers.add_parser("deploy", help="Deploy latest worker code to running box")
+    # download
+    down_p = subparsers.add_parser("download", help="Download model weights to disk cache using staged filters")
+    down_p.add_argument("--model", required=True, help="Model or variant ID (e.g. minimax-h3-fl2va-fp8)")
+    down_p.add_argument("--stage", choices=["all", "stage1", "stage2"], default="all", help="Staged download filter (default: all)")
+    down_p.add_argument("--dest", default=None, help="Destination directory (defaults to ~/.cache/spacepilot/models/<model>)")
+    down_p.add_argument("--concurrency", type=int, default=16, help="Download thread concurrency (default: 16)")
 
-    # ssh
-    subparsers.add_parser("ssh", help="Open SSH terminal to GPU box")
+    # load
+    load_p = subparsers.add_parser("load", help="Load model weights from local disk into active runtime daemon")
+    load_p.add_argument("--model", required=True, help="Model or variant ID to load")
+    load_p.add_argument("--weights-dir", default=None, help="Path to downloaded weights directory")
+    load_p.add_argument("--backend", default="sglang", choices=["sglang", "vllm"], help="Inference backend (default: sglang)")
+    load_p.add_argument("--port", type=int, default=30010, help="Runtime port (default: 30010)")
+    load_p.add_argument("--tp", type=int, default=1, help="Tensor parallelism degree (default: 1)")
+    load_p.add_argument("--skip-healthcheck", action="store_true", help="Do not poll /health before returning")
 
-    # logs
-    subparsers.add_parser("logs", help="Stream live worker inference logs")
-
-    # generate
-    gen_p = subparsers.add_parser("generate", help="Generate a video from prompt")
-    gen_p.add_argument("prompt", type=str, help="Text description of the scene")
-    gen_p.add_argument("--seconds", type=float, default=4.0, help="Duration in seconds (default: 4.0)")
-    gen_p.add_argument("--fps", type=int, default=24, help="Frame rate (default: 24)")
-    gen_p.add_argument("--resolution", type=int, nargs=2, default=[1024, 576], help="Width Height (e.g. 1024 576)")
-    gen_p.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
-    gen_p.add_argument("--steps", type=int, default=30, help="Inference steps (default: 30)")
-    gen_p.add_argument("--image", type=str, default=None, help="Path to local image for image-to-video generation")
-    gen_p.add_argument("--negative-prompt", type=str, default=None, help="Negative prompt")
-    gen_p.add_argument("--stg", type=float, default=0.0, help="Spatio-Temporal Guidance scale (0.0 - 2.0, default: 0.0)")
-    gen_p.add_argument("--modality-scale", type=float, default=1.0, help="Audio-Visual synchronization scale (default: 1.0)")
-    gen_p.add_argument("--guidance-scale", type=float, default=1.0, help="Classifier-Free Guidance scale (default: 1.0)")
-    gen_p.add_argument("--audio-guidance-scale", type=float, default=1.0, help="Audio CFG scale (default: 1.0)")
-    gen_p.add_argument("--guidance-rescale", type=float, default=0.0, help="Guidance rescale factor (default: 0.0)")
-    gen_p.add_argument("--conditioning-scale", type=float, default=1.0, help="I2V anchor scale (default: 1.0)")
-    gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
-    gen_p.add_argument("--output", "-o", type=str, default=None, help="Target path to save downloaded MP4")
-    gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
-
-    # sync
-    subparsers.add_parser("sync", help="Sync all generated videos from box to local outputs/")
+    # unload
+    unload_p = subparsers.add_parser("unload", help="Unload active model runtime and reclaim GPU memory/VRAM")
+    unload_p.add_argument("--model", default=None, help="Model ID to unload")
+    unload_p.add_argument("--port", type=int, default=None, help="Port of running backend to unload")
+    unload_p.add_argument("--all", action="store_true", help="Unload all resident model runtimes")
 
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
@@ -2659,11 +2649,11 @@ def main(argv: list[str] | None = None):
         "sweep": cmd_sweep,
         "status": cmd_status,
         "launch": cmd_launch,
-        "deploy": cmd_deploy,
+        "download": cmd_download,
+        "load": cmd_load,
+        "unload": cmd_unload,
         "ssh": cmd_ssh,
         "logs": cmd_logs,
-        "generate": cmd_generate,
-        "sync": cmd_sync,
         "terminate": cmd_terminate,
     }
 
