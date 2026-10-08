@@ -2645,7 +2645,7 @@ def build_parser() -> argparse.ArgumentParser:
     # load
     load_p = subparsers.add_parser("load", help="Load model weights from local disk into active runtime daemon")
     load_p.add_argument("--model", required=True, help="Model or variant ID to load")
-    load_p.add_argument("--weights-dir", default=None, help="Path to downloaded weights directory")
+    load_p.add_argument("--weights-dir", required=True, help="Path to downloaded weights directory")
     load_p.add_argument("--backend", default="sglang", choices=["sglang", "vllm"], help="Inference backend (default: sglang)")
     load_p.add_argument("--port", type=int, default=30010, help="Runtime port (default: 30010)")
     load_p.add_argument("--tp", type=int, default=1, help="Tensor parallelism degree (default: 1)")

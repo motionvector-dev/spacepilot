@@ -124,3 +124,10 @@ def test_text_loader_refuses_video_before_spawning(tmp_path):
     with pytest.raises(ValueError, match="video"):
         load_model("minimax-h3", tmp_path / "weights", runner=runner, state_path=tmp_path / "resident.json")
     runner.assert_not_called()
+
+
+def test_load_requires_weights_directory():
+    result = subprocess.run([sys.executable, "-m", "spacepilot.cli", "load", "qwen3-8"], capture_output=True, text=True)
+    assert result.returncode == 2
+    assert "--weights-dir" in result.stderr
+    assert "Traceback" not in result.stderr
