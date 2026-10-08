@@ -51,15 +51,13 @@ a number.
 | **Speech (TTS)** | Any | In-process Kokoro-82M ONNX |
 | **Transcription** | Any | whisper.cpp, measured, working |
 | **Image** | Apple Silicon | mflux, own venv, subprocess-only |
-| **Video** | — | **Not yet** — routes exist, refuse with 501. Mock test-pattern real render is gone. |
+| **Video client** | Separately deployed HTTP backend | `spacepilot run video --box ...`; client plumbing, unflown here |
 
 The `/v1` surface is specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
 
 ### Honest boundary
 
-Video here is real in name and honest in report: the engine routes exist as
-specs, and the CLI tells you that. It is the longer-term aim, not a
-description of this repo today.
+Video needs a separately deployed compatible HTTP backend. SpacePilot has no verified end-to-end video run in its measurement corpus. `spacepilot launch --dry-run` validates an AWS plan; paid launch and worker deployment remain gated until a dock budget exists.
 
 ---
 

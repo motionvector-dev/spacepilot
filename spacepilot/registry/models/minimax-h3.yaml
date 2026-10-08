@@ -1,0 +1,72 @@
+schema: 1
+id: minimax-h3
+name: MiniMax-H3
+family: minimax
+kind: video
+summary: >
+  MiniMax-H3 general video generation model (FL2VA / Ref2VA). SGLang serves
+  FP8, BF16 with host offload, and multi-GPU tensor parallel configurations.
+homepage: https://huggingface.co/MiniMaxAI/MiniMax-H3
+
+license:
+  id: minimax-h3-community-license-agreement
+  open_source: false
+  url: https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE
+  restrictions:
+    - "Custom community license; review territory, commercial-use and acceptable-use conditions before use."
+
+
+variants:
+  - id: minimax-h3-fl2va-fp8
+    name: MiniMax-H3 FL2VA FP8
+    precision: fp8
+    repo: MiniMaxAI/MiniMax-H3
+    revision: 42ed227ee7df40d41602854ae760620d6eb651fe
+    files: ["model_index.json", "FL2VA/**", "tokenizer*", "*.json"]
+    backends: [cuda]
+    download:
+      value: 115964116992
+      source: estimated
+      note: "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)"
+    working_set:
+      value: 34359738368
+      source: estimated
+      note: "32GB working set in FP8 with 50 resident layers; recommended for AWS g6e.4xlarge or g6e.8xlarge (1x L40S 48GB)"
+    notes: >
+      Hardware planning estimate (unflown; default AWS quota is 8 vCPU): g6e.4xlarge, g6e.8xlarge. 32GB working set in FP8 precision.
+
+  - id: minimax-h3-fl2va-bf16-offload
+    name: MiniMax-H3 FL2VA BF16 Offload
+    precision: bf16
+    repo: MiniMaxAI/MiniMax-H3
+    revision: 42ed227ee7df40d41602854ae760620d6eb651fe
+    files: ["model_index.json", "FL2VA/**", "tokenizer*", "*.json"]
+    backends: [cuda]
+    download:
+      value: 115964116992
+      source: estimated
+      note: "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)"
+    working_set:
+      value: 47244640256
+      source: estimated
+      note: "44GB VRAM working set with 128GB host RAM offloading (24 resident layers); recommended for AWS g6e.8xlarge"
+    notes: >
+      Hardware planning estimate (unflown; default AWS quota is 8 vCPU): g6e.8xlarge. 44GB VRAM + 128GB RAM offload.
+
+  - id: minimax-h3-fl2va-bf16-tp4
+    name: MiniMax-H3 FL2VA BF16 TP4
+    precision: bf16
+    repo: MiniMaxAI/MiniMax-H3
+    revision: 42ed227ee7df40d41602854ae760620d6eb651fe
+    files: ["model_index.json", "FL2VA/**", "tokenizer*", "*.json"]
+    backends: [cuda]
+    download:
+      value: 115964116992
+      source: estimated
+      note: "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)"
+    working_set:
+      value: 68719476736
+      source: estimated
+      note: "64GB aggregate VRAM working set across 4 GPUs with tensor parallelism (TP=4, zero offload); recommended for AWS g6e.12xlarge (4x L40S 192GB)"
+    notes: >
+      Hardware planning estimate (unflown; default AWS quota is 8 vCPU): g6e.12xlarge. 64GB aggregate VRAM across 4 GPUs.

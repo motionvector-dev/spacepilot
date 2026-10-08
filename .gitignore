@@ -10,6 +10,9 @@ scratch/
 .studio_token
 .spacepilot_config.json
 .pluto_config.json
+.env.local
+.pi/
+.vercel/
 
 # tooling / os
 .DS_Store
