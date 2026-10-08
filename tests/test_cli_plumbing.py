@@ -12,9 +12,9 @@ from spacepilot import cli
 
 
 def test_cmd_download_calls_model_downloader(tmp_path):
-    """spacepilot download --model minimax-h3-fl2va-fp8 --stage stage1 --dest /tmp/test calls download_weights."""
+    """spacepilot download --model qwen3-8-27b-4bit --stage stage1 --dest /tmp/test calls download_weights."""
     args = argparse.Namespace(
-        model="minimax-h3-fl2va-fp8",
+        model="qwen3-8-27b-4bit",
         stage="stage1",
         dest=str(tmp_path / "test"),
         concurrency=8,
@@ -27,7 +27,7 @@ def test_cmd_download_calls_model_downloader(tmp_path):
 
         assert rc == 0
         mock_download.assert_called_once_with(
-            variant="minimax-h3-fl2va-fp8",
+            variant="qwen3-8-27b-4bit",
             dest_dir=Path(tmp_path / "test"),
             stage="stage1",
             concurrency=8,
@@ -35,12 +35,12 @@ def test_cmd_download_calls_model_downloader(tmp_path):
 
 
 def test_cmd_load_calls_runtime_manager(tmp_path):
-    """spacepilot load --model minimax-h3-fl2va-fp8 --backend sglang --port 30010 calls load_model."""
+    """spacepilot load --model qwen3-8-27b-4bit --backend sglang --port 30010 calls load_model."""
     weights_path = tmp_path / "weights"
     weights_path.mkdir(parents=True, exist_ok=True)
 
     args = argparse.Namespace(
-        model="minimax-h3-fl2va-fp8",
+        model="qwen3-8-27b-4bit",
         weights_dir=str(weights_path),
         backend="sglang",
         port=30010,
@@ -51,7 +51,7 @@ def test_cmd_load_calls_runtime_manager(tmp_path):
 
     with patch("spacepilot.services.runtime_manager.load_model") as mock_load:
         mock_load.return_value = {
-            "model_id": "minimax-h3-fl2va-fp8",
+            "model_id": "qwen3-8-27b-4bit",
             "weights_dir": str(weights_path),
             "backend": "sglang",
             "port": 30010,
@@ -62,7 +62,7 @@ def test_cmd_load_calls_runtime_manager(tmp_path):
 
         assert rc == 0
         mock_load.assert_called_once_with(
-            model_id="minimax-h3-fl2va-fp8",
+            model_id="qwen3-8-27b-4bit",
             weights_dir=Path(weights_path),
             backend="sglang",
             port=30010,
@@ -72,9 +72,9 @@ def test_cmd_load_calls_runtime_manager(tmp_path):
 
 
 def test_cmd_unload_specific_model():
-    """spacepilot unload --model minimax-h3-fl2va-fp8 calls unload_model with model_id."""
+    """spacepilot unload --model qwen3-8-27b-4bit calls unload_model with model_id."""
     args = argparse.Namespace(
-        model="minimax-h3-fl2va-fp8",
+        model="qwen3-8-27b-4bit",
         port=None,
         all=False,
     )
@@ -84,13 +84,13 @@ def test_cmd_unload_specific_model():
         mock_unload.return_value = {
             "status": "ok",
             "unloaded_count": 1,
-            "unloaded": [{"model_id": "minimax-h3-fl2va-fp8", "pid": 1234}],
+            "unloaded": [{"model_id": "qwen3-8-27b-4bit", "pid": 1234}],
         }
         rc = cli.cmd_unload(args, cfg)
 
         assert rc == 0
         mock_unload.assert_called_once_with(
-            model_id="minimax-h3-fl2va-fp8",
+            model_id="qwen3-8-27b-4bit",
             port=None,
             all_models=False,
         )

@@ -44,8 +44,8 @@ def test_load_and_get_resident_models(tmp_path, monkeypatch):
     fake_runner = MagicMock(return_value=FakeProcess(pid=fake_pid))
 
     res = runtime_manager.load_model(
-        model_id="minimax-h3",
-        weights_dir=Path("/data/weights/minimax-h3"),
+        model_id="qwen3-8",
+        weights_dir=Path("/data/weights/qwen3-8"),
         backend="sglang",
         port=30010,
         tp=1,
@@ -54,16 +54,16 @@ def test_load_and_get_resident_models(tmp_path, monkeypatch):
         skip_healthcheck=True,
     )
 
-    assert res["model_id"] == "minimax-h3"
+    assert res["model_id"] == "qwen3-8"
     assert res["port"] == 30010
     assert res["pid"] == fake_pid
-    assert res["healthy"] is True
+    assert res["healthy"] is None
     assert fake_runner.called
 
     # Verify resident.json content
     residents = runtime_manager.get_resident_models(state_path=state_file)
     assert len(residents) == 1
-    assert residents[0]["model_id"] == "minimax-h3"
+    assert residents[0]["model_id"] == "qwen3-8"
     assert residents[0]["port"] == 30010
 
 

@@ -243,19 +243,10 @@ def request_spot_instance(
             if "DryRunOperation" not in str(exc):
                 raise
 
-        mock_id = "i-dryrun" + "0" * 11
-        mock_ip = None
-        ssh_cmd = f"ssh -i {key_file} ubuntu@{mock_ip}" if key_file else f"ssh ubuntu@{mock_ip}"
-        tunnel_cmd = (
-            f"ssh -i {key_file} -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@{mock_ip}"
-            if key_file
-            else f"ssh -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@{mock_ip}"
-        )
-
         return InstanceConnectionTelemetry(
-            instance_id=mock_id,
+            instance_id="",
             state="dry_run",
-            public_ip=mock_ip,
+            public_ip=None,
             instance_type=instance_type,
             ssh_user="ubuntu",
             ssh_command=None,

@@ -115,3 +115,12 @@ def test_video_rejects_download_redirect(tmp_path):
             client.generate_video("test", "model", tmp_path / "out.mp4")
         assert client._client.get.call_args.kwargs["follow_redirects"] is False
         assert not (tmp_path / "out.mp4").exists()
+
+
+
+def test_text_loader_refuses_video_before_spawning(tmp_path):
+    from spacepilot.services.runtime_manager import load_model
+    runner = MagicMock()
+    with pytest.raises(ValueError, match="video"):
+        load_model("minimax-h3", tmp_path / "weights", runner=runner, state_path=tmp_path / "resident.json")
+    runner.assert_not_called()

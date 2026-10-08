@@ -160,7 +160,7 @@ def output_renderer(args: argparse.Namespace, cfg: Mapping[str, Any] | None = No
     return OutputRenderer(resolve_output_mode(explicit, cfg))
 
 
-def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None, bool]:
+def _extract_cli_flags(argv: list[str]) -> tuple[list[str], str | None, bool]:
     """Allow --plain/--live/--verbose either side of a subcommand, but never after --."""
     selected: list[str] = []
     cleaned: list[str] = []
@@ -238,6 +238,12 @@ def save_config(cfg):
             temp_path.unlink()
         except FileNotFoundError:
             pass
+
+
+def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
+    """Retain the shipped output-helper contract; verbose extraction is separate."""
+    cleaned, mode, _ = _extract_cli_flags(argv)
+    return cleaned, mode
 
 
 def run_cmd(cmd, check=True, capture=False, stdin_text=None, timeout=None):
@@ -2673,7 +2679,7 @@ def main(argv: list[str] | None = None):
 
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:
-        parse_argv, explicit_mode, explicit_verbose = _extract_output_mode_flags(raw_argv)
+        parse_argv, explicit_mode, explicit_verbose = _extract_cli_flags(raw_argv)
     except ValueError as exc:
         parser.error(str(exc))
 

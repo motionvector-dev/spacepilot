@@ -190,6 +190,13 @@ def load_model(
     Returns:
         Dict containing model metadata, pid, port, backend, and health status.
     """
+    from spacepilot.model_registry import registry
+    reg = registry()
+    variant = reg.variant(model_id)
+    model = reg.model(model_id)
+    kind = variant.kind if variant else (model.kind if model else None)
+    if kind is not None and kind != "text":
+        raise ValueError("This loader supports text runtimes; video deployment is not implemented")
     path = state_path or DEFAULT_RESIDENT_PATH
     residents = get_resident_models(path, verify_alive=True)
 
@@ -218,7 +225,7 @@ def load_model(
     if pid is None:
         pid = -1
 
-    healthy = True
+    healthy = None
     if not skip_healthcheck:
         healthy = wait_for_healthcheck(
             port=port,
