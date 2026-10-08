@@ -2677,6 +2677,26 @@ def main(argv: list[str] | None = None):
     cfg = load_config()
     parser = build_parser()
 
+    # generate
+    gen_p = subparsers.add_parser("generate", help="Retired AWS generation command (refuses; use run)")
+    gen_p.add_argument("prompt", type=str, help="Text description of the scene")
+    gen_p.add_argument("--seconds", type=float, default=4.0, help="Duration in seconds (default: 4.0)")
+    gen_p.add_argument("--fps", type=int, default=24, help="Frame rate (default: 24)")
+    gen_p.add_argument("--resolution", type=int, nargs=2, default=[1024, 576], help="Width Height (e.g. 1024 576)")
+    gen_p.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    gen_p.add_argument("--steps", type=int, default=30, help="Inference steps (default: 30)")
+    gen_p.add_argument("--image", type=str, default=None, help="Path to local image for image-to-video generation")
+    gen_p.add_argument("--negative-prompt", type=str, default=None, help="Negative prompt")
+    gen_p.add_argument("--stg", type=float, default=0.0, help="Spatio-Temporal Guidance scale (0.0 - 2.0, default: 0.0)")
+    gen_p.add_argument("--modality-scale", type=float, default=1.0, help="Audio-Visual synchronization scale (default: 1.0)")
+    gen_p.add_argument("--guidance-scale", type=float, default=1.0, help="Classifier-Free Guidance scale (default: 1.0)")
+    gen_p.add_argument("--audio-guidance-scale", type=float, default=1.0, help="Audio CFG scale (default: 1.0)")
+    gen_p.add_argument("--guidance-rescale", type=float, default=0.0, help="Guidance rescale factor (default: 0.0)")
+    gen_p.add_argument("--conditioning-scale", type=float, default=1.0, help="I2V anchor scale (default: 1.0)")
+    gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
+    gen_p.add_argument("--output", "-o", type=str, default=None, help="Target path to save downloaded MP4")
+    gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
+
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:
         parse_argv, explicit_mode, explicit_verbose = _extract_cli_flags(raw_argv)
@@ -2701,6 +2721,7 @@ def main(argv: list[str] | None = None):
     )
 
     dispatch = {
+        "generate": cmd_generate,
         "doctor": cmd_doctor,
         "check": cmd_doctor,
         "recipes": cmd_recipes,
