@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No merged changes after tag `v2.9.0` as of 2026-10-08. Candidate work is tracked in
-[the roadmap](docs/ROADMAP.md).
+Candidate v2.10.0; not published. The 2026-10-08 artifact audit found that
+published v2.9.0 wheels precede the current v2.9.0 tag. See [ROADMAP.md](docs/ROADMAP.md).
+
+### Added
+
+- Gated Qwen3.5-9B CoreAI route with thinking enabled by default; long soak outstanding.
+- MiniCPM5-2B BF16 and MLX 4-bit registry measurements.
+- Tag-triggered PyPI trusted publishing and release recovery with explicit tag/version verification.
+
+### Fixed
+
+- Cockpit configuration, runtime selection, Spotlight indexing and registry test isolation.
+- Hosted CI system dependencies and repository contribution documentation.
 
 ## [2.9.0] - 2026-09-23
 
@@ -17,18 +28,13 @@ No merged changes after tag `v2.9.0` as of 2026-10-08. Candidate work is tracked
 - `registry`: qwen1-5-moe-a2-7b-chat-4bit on M1 Max 32GB (44.27 tok/s, revision-pinned) with the matching system-yaml refresh.
 - `docs`: CHANGELOG.md, Keep a Changelog format.
 
-- `coreai`: gated Qwen3.5-9B route through llm-runner, with thinking enabled by default; long soak remains outstanding.
-- `registry`: MiniCPM5-2B BF16 and MLX 4-bit measurements.
-- `ci`: tag-triggered PyPI trusted publishing (publisher setup remains blocked).
 - `ci`: gate PRs into `main-<date>` merge trains (CI gate on train PRs).
 - `docs`: landing install switched to `uv tool install`; agent discovery via `llms.txt`, `AGENTS.md`, public `/docs`.
 - `docs`: README first-run section updated to the `uv` quickstart, cites the v2.8.0 release.
 
 ### Changed
 
-- `ci`: tests moved to GitHub-hosted runners with ffmpeg and libsndfile installed.
 - `landing`: generated registry snapshot and explicit main deployment policy.
-- `docs`: OSS contribution and repository hygiene updates.
 - `fix(mlx-lm)`: install into its own venv and serve from it.
 - `fix(runtimes)`: install runtimes from a pip-less (uv-managed) interpreter.
 - `fix(runtimes)`: describing an install must not perform one; a failed isolated install must not take away a working route.

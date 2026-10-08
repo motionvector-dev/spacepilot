@@ -1,3 +1,9 @@
+> Artifact audit, 2026-10-08: PyPI v2.9.0 was published on 2026-09-24.
+> Its package code/data match the GitHub draft wheel; only README metadata and
+> RECORD differ. The shipped package tree matches `dea46bd`, while the current
+> v2.9.0 tag resolves to `9bc8a2d` and contains later changes. These notes describe
+> the shipped wheels. CoreAI serving and later main changes belong to v2.10.0.
+
 # SpacePilot v2.9.0 Release Notes
 
 **Local-first inference you can verify, not just believe.**
@@ -31,12 +37,11 @@ SpacePilot runs generative AI on hardware you already own — Mac, engine box, G
 
 - The MCP server and the HTTP API now **match**: same routes, same semantics, and — when something goes wrong — the same honest error text instead of an MCP-shaped shrug.
 
-#### 5. Gated Core AI route
+#### 5. Core AI groundwork (not served yet, and honest about that)
 
-- Qwen3.5-9B is registered and wired through the macOS Core AI pipelined `llm-runner` route. The runner and exported bundle must be configured locally.
-- Thinking is enabled by default for this runtime. The arithmetic check passes with thinking enabled; thinking off failed on both the bundle and the base checkpoint.
-- The route remains non-default. The long soak gate has not run. Warmup must stay off, and generation needs a token cap because the runner has no working stop-token path.
-- Five other models are registered: MiMo-V2.6 distill, Gemma 4 26B-A4B, Maple, Bonsai 2 27B, and LFM2.5-8B-A1B.
+- The **Core AI tokenizer** ships here: renders a Qwen chat prompt to raw token ids with a **pinned sentinel revision**, lazy transformers import (imports cleanly without transformers installed). CI green.
+- The **Qwen3.5-9B Core AI port** is specced and gated (`docs/design/coreai-qwen35-9b-port.md` for the detail). The int8 bundle exists, G1/G3 gates pass, and the train-arithmetic gate item fails — checked, and it fails the **base model**, not the bundle. The bundle answers it correctly when thinking is on. **It is not served in this release**; the spec keeps int8 as the ship until a long gate passes on it.
+- **Five new registered models:** MiMo-V2.6 distill, Gemma 4 26B-A4B, Maple, Bonsai 2 27B, LFM2.5-8B-A1B.
 
 #### 6. Registry
 
@@ -46,9 +51,6 @@ SpacePilot runs generative AI on hardware you already own — Mac, engine box, G
 
 ### Also in this release
 
-- MiniCPM5-2B includes BF16 and MLX 4-bit measurements.
-- Hosted CI installs ffmpeg and libsndfile; repository contribution docs were updated.
-- Landing and cockpit report measured registry and backend values.
 - Merge trains (`main-<date>`) are now CI-gated for PRs.
 - Reference docs (AgentWorth contract, build plan, remote pipeline sketch) refreshed in-tree.
 - CHANGELOG.md now exists (Keep a Changelog format) — this file ends its solo run as the only release record.

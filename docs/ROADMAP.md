@@ -1,59 +1,74 @@
 # SpacePilot roadmap
 
-Status: release preparation · Checked: 2026-10-08 · Scope: local branch audit and GitHub release metadata.
-Code baseline: main and tag `v2.9.0` at `9bc8a2d1a25016f6f4d7740f482eef5b589fcf2d`.
+Status: release preparation · Checked: 2026-10-08 · Scope: published artifacts, local worktrees, GitHub CI and Vercel configuration.
+Main baseline: `9bc8a2d1a25016f6f4d7740f482eef5b589fcf2d`.
 This roadmap supersedes BUILD-PLAN's release sequencing; that document retains historical task detail.
 
-## Next release decision
+## Release decision
 
-The public GitHub release is v2.8.0. v2.9.0 is a draft with a wheel and source archive attached.
-The package version is 2.9.0. Main contains no commits after the v2.9.0 tag.
-Finish v2.9.0 before widening scope is the working sequence for the 2026-10-08 preparation.
-PR #188 is a separate candidate for v2.10.0, not part of v2.9.0.
+Prepare **v2.10.0** with a new immutable tag after CI and founder review.
+Do not rebuild or republish v2.9.0. Do not move the existing v2.9.0 tag.
+The founder assigned the release blockers for completion on 2026-10-08; this is the working release scope, pending final publication approval.
+
+## What is published
+
+PyPI v2.9.0 was uploaded on 2026-09-24 at 16:47 UTC. GitHub v2.9.0 remains a draft; its public latest release is v2.8.0.
+The earlier [publish failure](https://github.com/motionvector-dev/spacepilot/actions/runs/36110141436) reports `invalid-publisher`, but it is historical evidence, not proof that PyPI has no package today. Current trusted-publisher settings are not confirmed.
+
+The PyPI and draft wheels have identical package code/data. Only dist-info/METADATA (the README) and RECORD differ. Both wheels leave CoreAI unwired. Every package file in the PyPI wheel matches source at `dea46bd`; the current v2.9.0 tag points at `9bc8a2d`, whose package files differ. Version alone is insufficient provenance for this release.
+
+| Wheel | SHA256 |
+| --- | --- |
+| PyPI v2.9.0 | bc60ce001c516defacb83c42591e896c81fba4a1967e275fbe90a683bc212dc9 |
+| GitHub draft v2.9.0 | 24ccf211c72d60b2df332fc4dae382fa6dbbddc72f9e35397ea2ece78ee3f5a5 |
+
+Treat the v2.9.0 draft as historical until its tag/artifact discrepancy is explicitly resolved. The next release uses a distinct version and tag, preserving existing records.
+
+## v2.10.0 scope
+
+1. Include later main changes: gated CoreAI serving, MiniCPM5 registry evidence, board fixes, hosted CI and OSS documentation. CoreAI remains non-default with the long soak outstanding.
+2. Include repaired PR #188 primitives: pinned staged downloads, loopback text runtime loading, selected runtime unload, resident-model inspection, verbose/version CLI flags and bench commands. Keep shipped aliases available.
+3. Include image registry additions carried by PR #188 (Qwen-Image 2.1 and Ideogram) and H3 planning metadata with its actual community license.
+4. Include the video HTTP client as unflown plumbing for a separately deployed compatible backend. Do not claim a measured SpacePilot video render or automatic worker deployment.
+5. Permit AWS dry-run validation only. Paid launch stays gated pending a dock budget and worker deployment; see DECISION-INBOX.md.
 
 ## Release gates
 
-1. Configure the PyPI trusted publisher for owner `motionvector-dev`, repository `spacepilot`, workflow `publish.yml`, environment `pypi`. Publishing run [36110141436](https://github.com/motionvector-dev/spacepilot/actions/runs/36110141436) failed with `invalid-publisher`; current account settings are not confirmed.
-2. Review corrected v2.9.0 notes against the tagged source. CoreAI is wired but non-default; the long soak is outstanding. Registry measurements belong to v2.9.0, not Unreleased.
-3. Obtain approval for public branch/PR publication. Merge through the agreed release branch; do not move or replace tag v2.9.0. The instructed `~/code/motionvector/docs/GIT-FLOW.md` is absent, so train procedure needs confirmation before a push. Remote branches include `main-2026-09-22` and `main-2026-09-23`; neither has an open PR in the inspected list.
-4. Verify artifacts before PyPI publication. Main CI [36108122821](https://github.com/motionvector-dev/spacepilot/actions/runs/36108122821) passed at `9bc8a2d`; this audit did not rerun hardware inference or rebuild the draft assets.
-5. Publish from an approved ref and verify PyPI plus GitHub installation artifacts. The workflow change in this preparation branch does not change the workflow frozen at tag v2.9.0. The preparation workflow accepts an explicit existing tag on manual dispatch, builds that tag after checking the package version, and finalizes the existing draft with corrected notes from the workflow ref. After approval and PyPI setup, dispatch `publish.yml` from the preparation branch with `release_tag=v2.9.0`. Do not move the tag or rerun its old workflow.
+1. Approve the exact public branch pushes and PR updates. Prepare a `main-2026-10-08` train from main, combining the release-preparation branch and repaired PR #188. The founder alone merges the train to main.
+2. Run full pytest, packaging and security checks on the combined train. Main CI [36108122821](https://github.com/motionvector-dev/spacepilot/actions/runs/36108122821) passed at `9bc8a2d`; it does not validate PR #188. Focused regressions first failed against the original PR and passed after repair. Lenovo SSH timed out on 2026-10-08, so full validation moves to hosted CI after push approval.
+3. Verify Vercel previews for the combined commit. Both existing projects now use the landing Vite app. The ignore command is `git diff --quiet HEAD^ HEAD -- ':(top)landing/'`, independent of working directory. These setting repairs have not yet been verified by a successful new preview.
+4. Review package version 2.10.0, CHANGELOG.md and RELEASE_NOTES_v2.10.0.md against the final train. Inspect clean wheel/sdist contents and run the installed-wheel CLI gate.
+5. Verify PyPI publishing access for the exact repo `motionvector-dev/spacepilot`, workflow `publish.yml`, environment `pypi`. Chrome reached a login page; current publisher configuration is not confirmed. Obtain action-time approval before a new publishing grant.
+6. After the founder merges the train, obtain package/release publication approval and tag that exact commit as v2.10.0. The workflow validates tag/version equality, publishes through OIDC, and creates or finalizes the matching GitHub release. Verify public installation and artifact hashes.
+
+The instructed `~/code/motionvector/docs/GIT-FLOW.md` is absent. Existing AGENTS.md supplies the train rule; no default-branch merge is delegated. Remote historical trains are `main-2026-09-22` and `main-2026-09-23`; neither has an open PR in the inspected list.
 
 ## Branch and worktree inventory
 
-Counts are unique commits relative to main `9bc8a2d`, ahead / behind.
+Counts use main `9bc8a2d`, before the audit repairs (ahead / behind).
 
-| Branch | Count | Release treatment |
+| Branch | Count | Treatment |
 | --- | --- | --- |
-| feat/h3-aws-launch | 20 / 0 | PR #188: atomic inference, AWS launch, video client; unmerged. Security and Vercel checks failed; pytest and packaging were pending at inspection. |
-| feat/qwen-image-2-1-registry | 2 / 0 | Qwen-Image 2.1 and Ideogram registry changes; review separately. |
-| feat/registry-sept-2026-models | 3 / 86 | Old work includes GTM and registry changes; reconcile with main before reuse. |
-| spec/docs-surface-v3 | 1 / 2 | PR #182, design only; does not ship generated docs. |
-| spec/litert-lm-runtime | 1 / 2 | PR #181, design only; does not ship a runtime. |
-| main-2026-09-22 | 0 / 39 | Historical train, not a release baseline. |
+| feat/h3-aws-launch | 20 / 0 | PR #188, repaired in codex/pr188-release-fixes. Original CI had 32 pytest failures and 3 new Bandit findings; packaging was cancelled. |
+| feat/qwen-image-2-1-registry | 2 / 0 | Both commits already occur in PR #188; do not merge twice. |
+| feat/registry-sept-2026-models | 3 / 86 | Old GTM and registry work; reconcile before reuse. |
+| spec/docs-surface-v3 | 1 / 2 | PR #182, design only. |
+| spec/litert-lm-runtime | 1 / 2 | PR #181, design only. |
+| main-2026-09-22 | 0 / 39 | Historical train. |
 
-The other local feature/chore branches have no commits unique to main. Preserve all branches.
+The other original local branches have no commits unique to main. Preserve all branches.
 The root worktree is clean on `feat/h3-aws-launch` at `3abdd9b`.
 The positioning worktree is clean and detached at `9bc8a2d`.
-The two detached worktrees under `~/code/.mvec-local/worktrees/main/` were repaired on 2026-10-08 with `git worktree repair`. `cockpit` at `f45110b` is clean. `spacepilot` at `3d43e93` holds the Qwen1.5 measurement already shipped on main (byte-identical) and an older system record superseded by main’s 2026-09-22 record. Preserve the worktrees; no unique release change remains unaccounted for.
+The two detached worktrees under `~/code/.mvec-local/worktrees/main/` were repaired with `git worktree repair` on 2026-10-08. `cockpit` at `f45110b` is clean. `spacepilot` at `3d43e93` holds a Qwen1.5 measurement byte-identical to main and a system record older than main's 2026-09-22 record. No unique release change is unaccounted for; leave the worktrees intact.
 
-Open dependency PRs #184–#186 and GTM PR #187 need separate review. Do not infer readiness from an open PR.
+## Repair evidence
 
-## After v2.9.0
+PR #188 fixes remove the CLI/preferences circular import, restore shipped CLI aliases and output-helper behavior, bind text servers to loopback, reject arbitrary backend modules, require confirmation and cache containment for MCP mutations, pin and narrow downloads, reject cross-origin video URLs/redirects, and fail unfinished video jobs. Unchecked runtime health stays unknown; text loaders refuse video deployment.
 
-1. Decide v2.10.0 scope for PR #188. Require passing security, packaging and pytest checks; inspect cloud spend authorization, token checks, download containment and real failure reporting before acceptance. Do not launch a rented instance to validate readiness.
-2. Reconcile the image registry branch and old September branch; retain only changes still missing from main.
-3. Implement docs generation and LiteRT-LM only after reviewing their design PRs. Keep proposed features separate from shipped behavior.
-4. Revalidate BUILD-PLAN phases against code before using them as implementation tasks. Keep SpaceBar read-only; keep video claims tied to measured model output.
+AWS STS and service-quotas confirmed account `842954813809`, profile `antigravity-dev-user`, region `us-east-1`, and G-family Spot quota 8 on 2026-10-08. No paid instance was started. H3 hardware costs and speed rankings remain planning estimates, not measured or live quotes.
 
-## Limits of this audit
+## Later work
 
-Local refs match the inspected remote main SHA. GitHub metadata and CI results were read directly on 2026-10-08. PyPI account configuration and current live inference are not confirmed. Repaired worktree edits were inspected and reconciled with main. No branch was merged, no release was published, and no paid compute was started.
-
-## Repair work on 2026-10-08
-
-The founder assigned the release blockers for completion. The PR #188 repair branch fixes the CLI/preferences circular import, restores shipped CLI aliases, binds text runtimes to loopback, rejects arbitrary runtime modules, requires confirmation and cache containment for MCP mutations, pins and narrows staged downloads, blocks cross-origin video downloads, and refuses unfinished video jobs. New regression tests first failed on the original branch.
-
-AWS STS and service-quotas confirmed account 842954813809 and quota 8 on 2026-10-08. Paid launch stays gated until the dock budget and worker deployment exist; dry-run planning is the candidate release scope. H3 license metadata is corrected from Apache-2.0 to the upstream community license. No H3/video flight is claimed.
-
-Vercel preview failures were diagnosed: project `spacepilot` incorrectly selects FastAPI at the repo root; `spacepilot.dev` uses an ignore command that interprets landing/ as a revision/path from the wrong directory. Project configuration repairs are prepared for the existing landing/ Vite app.
+1. Reconcile dependency PRs #184–#186, GTM PR #187 and the old September branch separately.
+2. Implement docs generation and LiteRT-LM after their design reviews; do not call design PRs shipped features.
+3. Revalidate BUILD-PLAN against code before implementation. Keep SpaceBar read-only and video claims tied to measured output.
