@@ -12,7 +12,8 @@ license:
   id: minimax-h3-community-license-agreement
   open_source: false
   url: https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE
-  restrictions: "Custom community license; review territory, commercial-use and acceptable-use conditions before use."
+  restrictions:
+    - "Custom community license; review territory, commercial-use and acceptable-use conditions before use."
 
 
 variants:
