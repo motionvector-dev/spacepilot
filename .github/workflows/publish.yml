@@ -69,6 +69,8 @@ jobs:
         # PyPI settings at pypi.org/manage/project/spacepilot/settings/publishing
 
   release:
+    permissions:
+      contents: write
     needs: publish
     runs-on: ubuntu-latest
     steps:
@@ -83,4 +85,9 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           NOTES="RELEASE_NOTES_${TAG}.md"
-          gh release create "$TAG" --title "SpacePilot $TAG" --notes-file "$NOTES" dist/*
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --title "SpacePilot $TAG" --notes-file "$NOTES" --draft=false
+          else
+            gh release create "$TAG" --verify-tag --title "SpacePilot $TAG" --notes-file "$NOTES" dist/*
+          fi

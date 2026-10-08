@@ -1,3 +1,8 @@
+> Status checked 2026-10-08: the serve restriction below is superseded by
+> commit `d60b21c` (PR #176), included in tag `v2.9.0`. The route is registered
+> and wired, thinking defaults on, and the long soak remains outstanding.
+> Earlier gate results below are historical evidence, not current route status.
+
 # Handoff: Qwen3.5-9B Core AI port
 
 **Date:** 2026-09-22

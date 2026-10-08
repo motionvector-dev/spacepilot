@@ -1,3 +1,8 @@
+> Status checked 2026-10-08: the serve restriction below is superseded by
+> commit `d60b21c` (PR #176), included in tag `v2.9.0`. The route is registered
+> and wired, thinking defaults on, and the long soak remains outstanding.
+> Earlier gate results below are historical evidence, not current route status.
+
 # Core AI port: Qwen3.5-9B
 
 **Status:** gated 2026-09-22. Not served. The train item fails at fp16 too (checked 2026-09-22), so that specific failure is a base-model limitation, not a bundle defect. The bundle stays unserved.
