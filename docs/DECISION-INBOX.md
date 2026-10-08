@@ -17,6 +17,14 @@ lives now. This file restarts empty except for the entry below.
 
 ## Open
 
+### Paid AWS launch after the 2026-10-08 release audit
+
+- **Raised 2026-10-08.** PR #188 requests a bare EC2 instance without a worker bootstrap or a cumulative spend ceiling. Main's Phase 4 requires a dock budget before paid launch.
+- **Verified.** STS account `842954813809`, profile `antigravity-dev-user`, region `us-east-1`; G-family Spot quota `L-3819A6DF` is 8 vCPU. H3 configurations requiring 16–48 vCPU do not fit that quota. A single g6e.2xlarge has 8 vCPU.
+- **Release treatment.** The repair keeps live launch gated and permits dry-run validation. No paid instance was started. The runtime loader serves text; remote video requires a separately deployed compatible backend and has no flown record here.
+- **Close when.** The founder approves the dock budget and deployment scope, the implementation enforces the budget, and a measured backend run verifies the path.
+
+
 ### AgentWorth loop: SpacePilot is the inference layer AgentWorth calls; AgentWorth is a trajectory producer for the registry
 
 - **Decided 2026-09-02.** One platform, two products, each runnable alone.

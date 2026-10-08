@@ -7,14 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Candidate v2.10.0; not published. The 2026-10-08 artifact audit found that
+published v2.9.0 wheels precede the current v2.9.0 tag. See [ROADMAP.md](docs/ROADMAP.md).
+
 ### Added
 
-- `registry`: qwen1-5-moe-a2-7b-chat-4bit on M1 Max 32GB (44.27 tok/s, revision-pinned) with the matching system-yaml refresh.
-- `docs`: CHANGELOG.md, Keep a Changelog format.
+- Gated Qwen3.5-9B CoreAI route with thinking enabled by default; long soak outstanding.
+- MiniCPM5-2B BF16 and MLX 4-bit registry measurements.
+- Tag-triggered PyPI trusted publishing and release recovery with explicit tag/version verification.
+
+### Changed
+
+- Text runtime processes bind to loopback and use the current interpreter; MCP mutations require confirmation and canonical cache paths.
+- AWS recommendations respect the verified 8 vCPU Spot quota; live provisioning remains gated pending budget and worker deployment.
+- MiniMax H3 uses its custom license metadata; video support is an endpoint client, with no claimed GPU flight.
+- Model downloads enforce registry revisions, bounded concurrency and variant file filters.
+
+### Fixed
+
+- CLI circular import and compatibility aliases; explicit weights directory validation.
+- Video polling timeout, response URL origin checks and redirect refusal.
+- Generated registry snapshots match the registry.
+- Cockpit configuration, runtime selection, Spotlight indexing and registry test isolation.
+- Hosted CI system dependencies and repository contribution documentation.
+- Locked dependency security updates from PR #186: PyJWT 2.15.0, urllib3 2.8.0 and Accelerate 1.15.0.
 
 ## [2.9.0] - 2026-09-23
 
 ### Added
+
+- `registry`: qwen1-5-moe-a2-7b-chat-4bit on M1 Max 32GB (44.27 tok/s, revision-pinned) with the matching system-yaml refresh.
+- `docs`: CHANGELOG.md, Keep a Changelog format.
 
 - `ci`: gate PRs into `main-<date>` merge trains (CI gate on train PRs).
 - `docs`: landing install switched to `uv tool install`; agent discovery via `llms.txt`, `AGENTS.md`, public `/docs`.
@@ -22,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `landing`: generated registry snapshot and explicit main deployment policy.
 - `fix(mlx-lm)`: install into its own venv and serve from it.
 - `fix(runtimes)`: install runtimes from a pip-less (uv-managed) interpreter.
 - `fix(runtimes)`: describing an install must not perform one; a failed isolated install must not take away a working route.

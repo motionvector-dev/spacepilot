@@ -217,8 +217,8 @@ broken renders for weeks.
 
 ## Publishing
 
-The cross-repo rule in `~/code/AGENTS.md` applies: this is a private repo, so
-push, open the PR, edit its body, and report the URL. Merging to main still
+The cross-repo rule in `~/code/AGENTS.md` applies: GitHub confirmed this repo is public on 2026-10-08. Draft changes locally
+and ask before pushing branches, opening PRs, or publishing releases. Merging to main still
 needs a yes. Saurabh can narrow this for one session or task ("hand me the
 command", "park it") and that override lasts only for that session or task.
 

@@ -1,5 +1,9 @@
 # SpacePilot — Build Plan
 
+> Release status and current sequencing: [ROADMAP.md](ROADMAP.md), checked
+> 2026-10-08 against main `9bc8a2d`. This plan retains historical task detail;
+> its old phase statements do not define the next release scope.
+
 > **STATUS: partially stale.** Phases 0.1–0.3 done; the 0.4/0.5 fixes are
 > landed as of 2026-09-24 (the honesty pass); Phase 1/3/4/5/6 line numbers
 > below were written 2026-08-25 and are approximate — re-grep before
