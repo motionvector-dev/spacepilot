@@ -12,6 +12,7 @@ import logging
 import os
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -133,32 +134,28 @@ def build_backend_command(
     tp: int = 1,
 ) -> List[str]:
     """Build the CLI command to launch the given inference backend."""
+    if not 1 <= port <= 65535 or not 1 <= tp <= 8:
+        raise ValueError("port must be 1..65535 and tp must be 1..8")
     weights_path = str(weights_dir)
     b = backend.lower()
     if b == "sglang":
         cmd = [
-            "python", "-m", "sglang.launch_server",
+            sys.executable, "-m", "sglang.launch_server",
             "--model-path", weights_path,
             "--port", str(port),
             "--tp", str(tp),
-            "--host", "0.0.0.0",
+            "--host", "127.0.0.1",
         ]
     elif b == "vllm":
         cmd = [
-            "python", "-m", "vllm.entrypoints.openai.api_server",
+            sys.executable, "-m", "vllm.entrypoints.openai.api_server",
             "--model", weights_path,
             "--port", str(port),
             "--tensor-parallel-size", str(tp),
-            "--host", "0.0.0.0",
+            "--host", "127.0.0.1",
         ]
     else:
-        cmd = [
-            "python", "-m", f"{b}.launch",
-            "--model-path", weights_path,
-            "--port", str(port),
-            "--tp", str(tp),
-            "--host", "0.0.0.0",
-        ]
+        raise ValueError("Unsupported backend; use sglang or vllm")
     return cmd
 
 

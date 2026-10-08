@@ -51,7 +51,7 @@ def test_resolve_model_repo_from_registry():
     repo, revision, files = resolve_model_repo_and_revision("minimax-h3-fl2va-fp8")
     assert repo == "MiniMaxAI/MiniMax-H3"
     assert revision == "42ed227ee7df40d41602854ae760620d6eb651fe"
-    assert files is None
+    assert "FL2VA/**" in files
 
 
 def test_resolve_model_repo_from_direct_string():
@@ -118,39 +118,35 @@ def test_download_weights_stage1(tmp_path):
     assert not any("Ref2VA/**" in pat for pat in call["allow_patterns"])
 
 
-def test_download_weights_stage2(tmp_path):
-    """Downloads with stage2 filter matching Ref2VA."""
+def test_download_weights_stage2_refuses_wrong_variant(tmp_path):
     engine = MockEngine()
-    out = download_weights(
-        variant="minimax-h3-fl2va-fp8",
-        dest_dir=tmp_path / "models",
-        stage="stage2",
-        concurrency=16,
-        download_engine=engine,
-    )
-    assert out == (tmp_path / "models").resolve()
-    assert len(engine.calls) == 1
-    call = engine.calls[0]
-    assert call["repo_id"] == "MiniMaxAI/MiniMax-H3"
-    assert any("Ref2VA/**" in pat for pat in call["allow_patterns"])
-    assert not any("FL2VA/**" in pat for pat in call["allow_patterns"])
+    with pytest.raises(ValueError, match="stage"):
+        download_weights("minimax-h3-fl2va-fp8", tmp_path / "models", stage="stage2", download_engine=engine)
+    assert engine.calls == []
 
 
-def test_download_weights_all(tmp_path):
-    """Downloads all repository files when stage is 'all'."""
+def test_download_weights_all_keeps_registry_files_and_pin(tmp_path):
     engine = MockEngine()
-    out = download_weights(
-        variant="MiniMaxAI/MiniMax-H3",
-        dest_dir=tmp_path / "models",
-        stage="all",
-        concurrency=32,
-        download_engine=engine,
-    )
-    assert out == (tmp_path / "models").resolve()
+    download_weights("minimax-h3", tmp_path / "models", stage="all", concurrency=16, download_engine=engine)
     call = engine.calls[0]
-    assert call["repo_id"] == "MiniMaxAI/MiniMax-H3"
-    assert call["allow_patterns"] is None
-    assert call["max_workers"] == 32
+    assert call["revision"] == "42ed227ee7df40d41602854ae760620d6eb651fe"
+    assert "FL2VA/**" in call["allow_patterns"]
+    assert call["max_workers"] == 16
+
+
+@pytest.mark.parametrize("concurrency", [0, 17, 32])
+def test_download_rejects_unbounded_concurrency(tmp_path, concurrency):
+    engine = MockEngine()
+    with pytest.raises(ValueError, match="concurrency"):
+        download_weights("minimax-h3", tmp_path / "models", concurrency=concurrency, download_engine=engine)
+    assert engine.calls == []
+
+
+def test_download_refuses_unpinned_repo(tmp_path):
+    engine = MockEngine()
+    with pytest.raises(ValueError, match="pinned"):
+        download_weights("arbitrary/repo", tmp_path / "models", download_engine=engine)
+    assert engine.calls == []
 
 
 def test_download_weights_idempotence(tmp_path):

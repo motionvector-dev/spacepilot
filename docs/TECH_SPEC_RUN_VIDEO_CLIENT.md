@@ -1,3 +1,9 @@
+> Status checked 2026-10-08: design context, not a shipped capability claim.
+> Live AWS launch is gated pending a dock budget and worker deployment.
+> Default G-family Spot quota is 8 vCPU (account 842954813809, us-east-1).
+> Download/load/unload are explicit primitives; the loader serves text on loopback.
+> Video requires a separately deployed compatible HTTP backend and remains unflown here.
+
 # Tech Spec: `spacepilot run video` & Video Execution Client
 
 **Date**: 2026-10-07  

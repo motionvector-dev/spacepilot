@@ -394,6 +394,10 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     from spacepilot.services.gpu_recommender import recommend_gpus
     from spacepilot.services.aws_fleet_launcher import request_spot_instance
 
+    if not getattr(args, "dry_run", False):
+        print("  Live launch is gated until a dock budget and worker deployment exist.")
+        print("  Use --dry-run to validate a plan. Nothing was started or billed.")
+        return 2
     reg = registry()
 
     # Step 1: Model Selection
@@ -457,7 +461,7 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
         for idx, rec in enumerate(recs[:4], start=1):
             spec = rec.instance_spec
             pref_tag = " [Default]" if spec.instance_type == saved_default_gpu else ""
-            print(f"    [{idx}] {spec.instance_type} - {spec.gpu_count}x {spec.gpu_name} (${spec.spot_hourly_usd:.2f}/hr spot) ~{rec.generation_speed_s_per_step:.2f}s/step - {rec.notes}{pref_tag}")
+            print(f"    [{idx}] {spec.instance_type} - {spec.gpu_count}x {spec.gpu_name} (estimated ${spec.spot_hourly_usd:.2f}/hr spot) ~{rec.generation_speed_s_per_step:.2f}s/step - {rec.notes}{pref_tag}")
         
         prompt_default = saved_default_gpu or default_rec.instance_spec.instance_type
         try:
@@ -480,13 +484,17 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             set_default_gpu(model_key, chosen_gpu)
             print(f"  Saved default GPU {chosen_gpu} for {model_key}.")
 
+    if chosen_gpu not in {r.instance_type for r in recs}:
+        print("  GPU must fit the selected variant and the verified 8-vCPU quota.")
+        return 1
+
     # Step 3: Market Type and Launch Execution
     market_type = "ondemand" if getattr(args, "on_demand", False) else "spot"
     dry_run = getattr(args, "dry_run", False)
     key_name = cfg.get("key_name", "spacepilot-key")
     key_file = cfg.get("key_file")
 
-    print(f"\n  Launching {chosen_gpu} ({market_type}) for {chosen_variant.id}...")
+    print(f"\n  Validating dry-run plan for {chosen_gpu} ({market_type}) for {chosen_variant.id}...")
     try:
         telemetry = request_spot_instance(
             instance_type=chosen_gpu,
@@ -494,13 +502,15 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
             key_file=key_file,
             market_type=market_type,
             dry_run=dry_run,
+            profile=cfg.get("aws_profile", "antigravity-dev-user"),
+            region=cfg.get("aws_region", "us-east-1"),
         )
     except Exception as e:
         print(f"  Error during instance provisioning: {e}")
         return 1
 
     print("\n  ================================================================")
-    print(f"  INSTANCE PROVISIONED: {telemetry.instance_id} ({telemetry.state})")
+    print(f"  DRY RUN VALIDATED: {telemetry.instance_type}; no instance created")
     print(f"  Type      : {telemetry.instance_type}")
     print(f"  Public IP : {telemetry.public_ip or 'pending'}")
     if telemetry.ssh_command:
@@ -2388,6 +2398,8 @@ def build_parser() -> argparse.ArgumentParser:
     # doctor
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
 
+    subparsers.add_parser("check", help="Compatibility alias for doctor")
+
     # probe
     probe_p = subparsers.add_parser(
         "probe", help="Detect this machine and print its system record")
@@ -2561,8 +2573,56 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
+    # recipes
+    recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
+    recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
+    recipes_list_p = recipes_subparsers.add_parser("list", help="List recipes")
+    recipes_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
+    recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
+    recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
+
+
+    sil_p = subparsers.add_parser(
+        "silicon", help="Parts that exist, whether or not this project has one")
+    sil_p.add_argument("part_id", nargs="?",
+                       help="`list` for the table (the default), or a part id for detail")
+    sil_p.add_argument("--json", action="store_true",
+                       help="Print the registry as JSON, sources and dates included")
+
+    meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
+    meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
+    meas_p.add_argument("--metric", required=True,
+                        help="seconds_per_image, tokens_per_second, realtime_factor, "
+                             "seconds_per_second_of_video")
+    meas_p.add_argument("--runtime", default=None, help="Runtime id, e.g. mflux")
+    meas_p.add_argument("--quantisation", default=None, help="e.g. 4bit, 8bit, bf16")
+    meas_p.add_argument("--units", type=float, default=None,
+                        help="Divide wall time by this many units (images, seconds of "
+                             "video) to get a per-unit rate")
+    meas_p.add_argument("--knob", action="append", metavar="KEY=VALUE",
+                        help="Record a setting that changes the number (repeatable)")
+    meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
+                        help="The command to run, after --")
+
+    # sweep
+    sweep_p = subparsers.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
+    sweep_sub = sweep_p.add_subparsers(dest="sweep_action")
+    sweep_run = sweep_sub.add_parser("run", help="Run (or dry-run) a sweep spec")
+    sweep_run.add_argument("spec", help="Path to a spec, e.g. spacepilot/registry/sweeps/flux-schnell-4bit.yaml")
+    sweep_run.add_argument("--dry-run", action="store_true",
+                           help="Print the job grid and exit without running anything")
+    sweep_run.add_argument("--max-jobs", type=int, default=None,
+                           help="Override the spec's runner.max_jobs")
+    sweep_run.add_argument("--max-wall-seconds", type=float, default=None,
+                           help="Override the spec's runner.max_wall_seconds")
+    sweep_run.add_argument("--outputs-dir", default=None,
+                           help="Override where generated images land (default: outputs/)")
+    sweep_run.add_argument("--no-caffeinate", action="store_true",
+                           help="Do not keep the Mac awake (for debugging only)")
+
+
     # launch
-    launch_p = subparsers.add_parser("launch", help="Launch AWS Spot GPU instance and deploy worker")
+    launch_p = subparsers.add_parser("launch", help="Validate an AWS GPU plan (live launch is gated)")
     launch_p.add_argument("--model", type=str, default=None, help="Target model variant ID (e.g. minimax-h3-fl2va-fp8)")
     launch_p.add_argument("--gpu", type=str, default=None, help="Explicit AWS GPU instance type (e.g. g6e.4xlarge)")
     launch_p.add_argument("--on-demand", action="store_true", help="Launch on-demand instance instead of spot")
@@ -2636,6 +2696,11 @@ def main(argv: list[str] | None = None):
 
     dispatch = {
         "doctor": cmd_doctor,
+        "check": cmd_doctor,
+        "recipes": cmd_recipes,
+        "silicon": cmd_silicon,
+        "measure": cmd_measure,
+        "sweep": cmd_sweep,
         "probe": cmd_probe,
         "serve": cmd_serve,
         "daemon": cmd_daemon,

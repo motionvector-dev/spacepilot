@@ -49,7 +49,7 @@ def test_recommend_by_working_set_bytes_fits_24gb():
     """Model requiring ~16GB working set should fit on g5.2xlarge, g6.4xlarge, etc."""
     # 16 GB working set
     ws_bytes = 16 * 1024**3
-    recs = recommend_gpus(target=ws_bytes, precision="fp8")
+    recs = recommend_gpus(target=ws_bytes, precision="fp8", max_vcpu_quota=64)
     assert len(recs) > 0
     types = [r.instance_type for r in recs]
     assert "g5.2xlarge" in types
@@ -64,7 +64,7 @@ def test_recommend_by_working_set_bytes_fits_24gb():
 def test_recommend_by_variant_fp8_32gb():
     """32GB working set variant (e.g. minimax-h3-fl2va-fp8) needs >= 32GB VRAM."""
     variant = make_dummy_variant("minimax-h3-fl2va-fp8", working_set_bytes=32 * 1024**3, precision="fp8")
-    recs = recommend_gpus(target=variant)
+    recs = recommend_gpus(target=variant, max_vcpu_quota=64)
 
     assert len(recs) > 0
     # Instances with < 32GB VRAM (like g5.2xlarge, g5.4xlarge, g6.4xlarge with 24GB) should NOT fit pure VRAM
@@ -76,14 +76,14 @@ def test_recommend_by_variant_fp8_32gb():
     assert "g6.4xlarge" not in fitting_types
 
     # Top recommendation should be g6e.4xlarge (lowest cost that fits 32GB pure VRAM)
-    assert recs[0].instance_type == "g6e.4xlarge"
+    assert recs[0].instance_type == "g6e.2xlarge"
     assert recs[0].vram_margin_gb == 16.0  # 48 - 32
 
 
 def test_recommend_large_model_bf16_tp4():
     """64GB aggregate VRAM variant requires multi-GPU (g6e.12xlarge with 192GB)."""
     ws_bytes = 64 * 1024**3
-    recs = recommend_gpus(target=ws_bytes, precision="bf16")
+    recs = recommend_gpus(target=ws_bytes, precision="bf16", max_vcpu_quota=64)
 
     # Only g6e.12xlarge has 192GB VRAM (all others have <= 48GB)
     assert len(recs) == 1
@@ -101,6 +101,7 @@ def test_recommend_host_ram_offload():
         target=ws_bytes,
         precision="bf16",
         host_ram_required_bytes=host_ram_bytes,
+        max_vcpu_quota=64,
     )
     # g6e.4xlarge only has 64GB host RAM, so only g6e.8xlarge (128GB) and g6e.12xlarge (192GB) qualify
     rec_types = [r.instance_type for r in recs]

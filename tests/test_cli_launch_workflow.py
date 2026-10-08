@@ -62,7 +62,7 @@ def test_cmd_launch_non_interactive_bypasses_prompts(mock_aws_fleet, tmp_path, m
 
     args = argparse.Namespace(
         model="minimax-h3",
-        gpu="g6e.4xlarge",
+        gpu="g6e.2xlarge",
         on_demand=False,
         dry_run=True,
         yes=True,
@@ -73,92 +73,22 @@ def test_cmd_launch_non_interactive_bypasses_prompts(mock_aws_fleet, tmp_path, m
 
     assert exit_code == 0
     assert len(mock_aws_fleet) == 1
-    assert mock_aws_fleet[0]["instance_type"] == "g6e.4xlarge"
+    assert mock_aws_fleet[0]["instance_type"] == "g6e.2xlarge"
     assert mock_aws_fleet[0]["market_type"] == "spot"
     assert mock_aws_fleet[0]["dry_run"] is True
 
 
-def test_cmd_launch_interactive_flow_with_custom_gpu_and_save_default(mock_aws_fleet, tmp_path, monkeypatch):
-    """Interactive flow prompts for model, shows recommendations, accepts custom GPU, and saves preference."""
-    config_file = tmp_path / ".spacepilot_config.json"
-    monkeypatch.setattr(cli, "CONFIG_FILE", config_file)
-
-    # 1. Model selection prompt -> choose "minimax-h3" (or substring)
-    # 2. GPU prompt -> select "g6e.8xlarge"
-    # 3. Save default prompt -> "y"
-    user_inputs = iter(["minimax-h3", "g6e.8xlarge", "y"])
-
-    monkeypatch.setattr("builtins.input", lambda prompt="": next(user_inputs))
-
-    args = argparse.Namespace(
-        model=None,
-        gpu=None,
-        on_demand=False,
-        dry_run=False,
-        yes=False,
-    )
-    cfg = {"key_name": "test-key", "key_file": "/path/to/key.pem"}
-
-    exit_code = cli.cmd_launch(args, cfg)
-
-    assert exit_code == 0
-    assert len(mock_aws_fleet) == 1
-    assert mock_aws_fleet[0]["instance_type"] == "g6e.8xlarge"
-    assert mock_aws_fleet[0]["market_type"] == "spot"
-
-    # Verify default GPU was saved to config
-    saved_gpu = cli.get_default_gpu("minimax-h3")
-    assert saved_gpu == "g6e.8xlarge"
+@pytest.mark.parametrize("gpu", ["g6e.4xlarge", "unknown"])
+def test_explicit_gpu_cannot_bypass_quota(mock_aws_fleet, gpu):
+    args = argparse.Namespace(model="minimax-h3", gpu=gpu, dry_run=True, yes=True, on_demand=False)
+    assert cli.cmd_launch(args, {}) == 1
+    assert mock_aws_fleet == []
 
 
-def test_cmd_launch_interactive_uses_persisted_default_when_empty_input(mock_aws_fleet, tmp_path, monkeypatch):
-    """Interactive flow recommends persisted default GPU and accepts pressing Enter."""
-    config_file = tmp_path / ".spacepilot_config.json"
-    monkeypatch.setattr(cli, "CONFIG_FILE", config_file)
-    cli.set_default_gpu("minimax-h3", "g6e.8xlarge")
-
-    # 1. Model selection -> select "minimax-h3"
-    # 2. GPU selection -> select default (Enter -> "")
-    # 3. Save preference -> "n"
-    user_inputs = iter(["minimax-h3", "", "n"])
-    monkeypatch.setattr("builtins.input", lambda prompt="": next(user_inputs))
-
-    args = argparse.Namespace(
-        model=None,
-        gpu=None,
-        on_demand=False,
-        dry_run=False,
-        yes=False,
-    )
-    cfg = {"key_name": "test-key"}
-
-    exit_code = cli.cmd_launch(args, cfg)
-
-    assert exit_code == 0
-    assert len(mock_aws_fleet) == 1
-    assert mock_aws_fleet[0]["instance_type"] == "g6e.8xlarge"
-
-
-def test_cmd_launch_on_demand_flag(mock_aws_fleet, tmp_path, monkeypatch):
-    """Passing --on-demand requests on-demand market type."""
-    config_file = tmp_path / ".spacepilot_config.json"
-    monkeypatch.setattr(cli, "CONFIG_FILE", config_file)
-
-    args = argparse.Namespace(
-        model="minimax-h3-fl2va-fp8",
-        gpu="g6e.4xlarge",
-        on_demand=True,
-        dry_run=False,
-        yes=True,
-    )
-    cfg = {}
-
-    exit_code = cli.cmd_launch(args, cfg)
-
-    assert exit_code == 0
-    assert len(mock_aws_fleet) == 1
-    assert mock_aws_fleet[0]["instance_type"] == "g6e.4xlarge"
-    assert mock_aws_fleet[0]["market_type"] == "ondemand"
+def test_live_launch_refuses_even_with_yes(mock_aws_fleet):
+    args = argparse.Namespace(model="minimax-h3", gpu="g6e.2xlarge", dry_run=False, yes=True)
+    assert cli.cmd_launch(args, {}) == 2
+    assert mock_aws_fleet == []
 
 
 def test_cmd_launch_unknown_model_returns_error(mock_aws_fleet, tmp_path, monkeypatch, capsys):
@@ -170,7 +100,7 @@ def test_cmd_launch_unknown_model_returns_error(mock_aws_fleet, tmp_path, monkey
         model="non-existent-fantasy-model",
         gpu=None,
         on_demand=False,
-        dry_run=False,
+        dry_run=True,
         yes=False,
     )
     cfg = {}

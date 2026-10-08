@@ -18,7 +18,7 @@ class MockAWSClient(AWSClientInterface):
 
     def __init__(self):
         self.commands_run = []
-        self.responses = {}
+        self.responses = {"sts get-caller-identity": json.dumps({"Account": "842954813809"})}
 
     def set_response(self, prefix: str, output: str):
         self.responses[prefix] = output
@@ -109,67 +109,40 @@ def test_resolve_dlami_id_fallback_to_describe_images():
 
 
 def test_request_spot_instance_dry_run():
-    """Dry run validates request and produces mock telemetry with zero cost."""
     mock_client = MockAWSClient()
     mock_client.set_response("ssm get-parameter", "ami-dlami-mock123")
-    # AWS returns DryRunOperation error when dry-run succeeds
-    mock_client.set_response(
-        "--dry-run",
-        RuntimeError("An error occurred (DryRunOperation) when calling the RunInstances operation: Request would have succeeded"),
-    )
-
-    telem = request_spot_instance(
-        instance_type="g6e.4xlarge",
-        key_name="my-key",
-        key_file="/path/to/my-key.pem",
-        dry_run=True,
-        aws_client=mock_client,
-    )
-
-    assert isinstance(telem, InstanceConnectionTelemetry)
-    assert telem.dry_run is True
-    assert telem.state == "dry_run"
-    assert telem.public_ip == "198.51.100.1"
-    assert "ssh -i /path/to/my-key.pem ubuntu@198.51.100.1" in telem.ssh_command
-    assert "-L 5000:localhost:5000" in telem.tunnel_command
+    mock_client.set_response("--dry-run", RuntimeError("DryRunOperation"))
+    result = request_spot_instance("g6e.2xlarge", "key", dry_run=True, aws_client=mock_client)
+    assert result.state == "dry_run"
+    assert result.public_ip is None
+    assert result.ssh_command is None
+    assert "sts" in mock_client.commands_run[0]
+    assert all("--dry-run" in cmd for cmd in mock_client.commands_run if "run-instances" in cmd)
 
 
-def test_request_spot_instance_live_launch():
-    """Live launch issues ec2 run-instances and returns connection telemetry."""
+def test_dry_run_rejects_wrong_account():
     mock_client = MockAWSClient()
-    mock_client.set_response("ssm get-parameter", "ami-dlami-live")
+    mock_client.set_response("sts get-caller-identity", json.dumps({"Account": "529738799911"}))
+    with pytest.raises(ValueError, match="account"):
+        request_spot_instance("g6e.2xlarge", "key", dry_run=True, aws_client=mock_client)
+    assert not any("run-instances" in cmd for cmd in mock_client.commands_run)
 
-    run_instances_payload = {
-        "Instances": [
-            {
-                "InstanceId": "i-0987654321fedcba0",
-                "InstanceType": "g6e.4xlarge",
-                "State": {"Name": "pending"},
-                "PublicIpAddress": "34.201.55.99",
-                "LaunchTime": "2026-10-06T20:05:00.000Z",
-            }
-        ]
-    }
-    mock_client.set_response("run-instances", json.dumps(run_instances_payload))
 
-    telem = request_spot_instance(
-        instance_type="g6e.4xlarge",
-        key_name="test-gpu-key",
-        key_file="/home/user/.ssh/test-gpu-key.pem",
-        dry_run=False,
-        aws_client=mock_client,
-    )
+def test_live_launch_is_gated():
+    mock_client = MockAWSClient()
+    with pytest.raises(ValueError, match="budget"):
+        request_spot_instance("g6e.2xlarge", "key", dry_run=False, aws_client=mock_client)
+    assert not mock_client.commands_run
 
-    assert telem.instance_id == "i-0987654321fedcba0"
-    assert telem.state == "pending"
-    assert telem.public_ip == "34.201.55.99"
-    assert telem.ssh_command == "ssh -i /home/user/.ssh/test-gpu-key.pem ubuntu@34.201.55.99"
-    assert telem.tunnel_command == "ssh -i /home/user/.ssh/test-gpu-key.pem -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@34.201.55.99"
-    assert telem.dry_run is False
 
-    # Check that Spot market options and block device mapping were included
-    launch_cmd = [c for c in mock_client.commands_run if "run-instances" in c][0]
-    assert "--instance-market-options" in launch_cmd
-    assert "--block-device-mappings" in launch_cmd
-    assert "--image-id" in launch_cmd
-    assert "ami-dlami-live" in launch_cmd
+def test_subprocess_always_names_profile_and_region(monkeypatch):
+    from types import SimpleNamespace
+    calls = []
+    def run(cmd, **kwargs):
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="{}", stderr="")
+    monkeypatch.setattr("spacepilot.services.aws_fleet_launcher.subprocess.run", run)
+    SubprocessAWSClient().run_aws_command(["sts", "get-caller-identity"])
+    assert calls[0][:5] == ["aws", "--profile", "antigravity-dev-user", "--region", "us-east-1"]
+    with pytest.raises(ValueError, match="profile"):
+        SubprocessAWSClient(profile="katana")

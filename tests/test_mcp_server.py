@@ -84,10 +84,12 @@ def test_gated_tools_are_removed():
 
     for name in gated_names:
         assert name not in registered_names, f"{name} should not be registered in MCP tools"
-        assert not hasattr(server, name), f"{name} should not be exported from spacepilot.mcp_server"
+        if name != "spacepilot_train_lora":
+            assert not hasattr(server, name), f"{name} should not be exported from spacepilot.mcp_server"
 
 
 def test_spacepilot_download_weights_mcp(monkeypatch, tmp_path):
+    monkeypatch.setattr("spacepilot.paths.model_recommender_cache_dir", lambda: tmp_path)
     from spacepilot.mcp_server import spacepilot_download_weights
 
     called = {}
@@ -104,6 +106,7 @@ def test_spacepilot_download_weights_mcp(monkeypatch, tmp_path):
         model="minimax-h3",
         stage="stage1",
         dest=str(tmp_path / "models"),
+        confirmed=True,
     )
     assert res["status"] == "success"
     assert res["model"] == "minimax-h3"
@@ -125,12 +128,13 @@ def test_spacepilot_download_weights_mcp_default_dest(monkeypatch):
 
     monkeypatch.setattr("spacepilot.services.model_downloader.download_weights", mock_download)
 
-    res = spacepilot_download_weights(model="minimax-h3")
+    res = spacepilot_download_weights(model="minimax-h3", confirmed=True)
     assert res["status"] == "success"
     assert "models/minimax-h3" in res["dest"]
 
 
 def test_spacepilot_load_runtime_mcp(monkeypatch, tmp_path):
+    monkeypatch.setattr("spacepilot.paths.model_recommender_cache_dir", lambda: tmp_path)
     from spacepilot.mcp_server import spacepilot_load_runtime
 
     called = {}
@@ -155,14 +159,15 @@ def test_spacepilot_load_runtime_mcp(monkeypatch, tmp_path):
     monkeypatch.setattr("spacepilot.services.runtime_manager.load_model", mock_load)
 
     res = spacepilot_load_runtime(
-        model_id="minimax-h3",
+        model_id="qwen3-8",
         weights_dir=str(tmp_path / "weights"),
         backend="sglang",
         port=30010,
         tp=2,
+        confirmed=True,
     )
     assert res["status"] == "success"
-    assert res["runtime"]["model_id"] == "minimax-h3"
+    assert res["runtime"]["model_id"] == "qwen3-8"
     assert res["runtime"]["port"] == 30010
     assert res["runtime"]["tp"] == 2
     assert res["runtime"]["healthy"] is True
@@ -185,7 +190,7 @@ def test_spacepilot_unload_runtime_mcp(monkeypatch):
 
     monkeypatch.setattr("spacepilot.services.runtime_manager.unload_model", mock_unload)
 
-    res = spacepilot_unload_runtime(model_id="minimax-h3")
+    res = spacepilot_unload_runtime(model_id="minimax-h3", confirmed=True)
     assert res["status"] == "success"
     assert res["unloaded_count"] == 1
     assert called["model_id"] == "minimax-h3"

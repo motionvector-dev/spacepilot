@@ -51,15 +51,13 @@ a number.
 | **Speech (TTS)** | Any | In-process Kokoro-82M ONNX |
 | **Transcription** | Any | whisper.cpp, measured, working |
 | **Image** | Apple Silicon | mflux, own venv, subprocess-only |
-| **Video** | AWS Spot / Local CUDA | `spacepilot launch` (EC2 L40S spot) + `spacepilot run video` (MiniMax-H3 / Wan 2.1) |
+| **Video client** | Separately deployed HTTP backend | `spacepilot run video --box ...`; client plumbing, unflown here |
 
 The `/v1` surface is specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
 
 ### Honest boundary
 
-Video generation runs on remote AWS GPU instances (e.g. `g6e.4xlarge` L40S spot)
-managed directly via `spacepilot launch` and `spacepilot run video`, or locally on
-machines with >=24GB VRAM. It is not emulated on undersized local hardware.
+Video needs a separately deployed compatible HTTP backend. SpacePilot has no verified end-to-end video run in its measurement corpus. `spacepilot launch --dry-run` validates an AWS plan; paid launch and worker deployment remain gated until a dock budget exists.
 
 ---
 

@@ -410,7 +410,7 @@
 
         <section id="quickstart" class="doc-section">
             <h2>1. Quickstart</h2>
-            <p>Zero-configuration local setup. Run models locally on Apple Silicon/CUDA or launch verified Spot instances on AWS without markup.</p>
+            <p>Zero-configuration local setup. Run models locally on Apple Silicon/CUDA or validate AWS plans with <code>launch --dry-run</code>. Paid launch remains gated.</p>
             
             <div class="code-block" data-snippet-id="quickstart">
                 <div class="code-header">
@@ -605,7 +605,7 @@ spacepilot serve --port 8088</code></pre>
                     </tr>
                     <tr>
                         <td><code>spacepilot launch</code></td>
-                        <td>Request AWS Spot GPU instance tailored to model working set</td>
+                        <td>Validate an AWS GPU plan; live launch is gated</td>
                         <td><code>--model</code>, <code>--gpu</code>, <code>--dry-run</code>, <code>-y</code></td>
                     </tr>
                     <tr>
@@ -690,7 +690,7 @@ spacepilot serve --port 8088</code></pre>
 
         <section id="economics" class="doc-section">
             <h2>8. Economics</h2>
-            <p>Work runs on the machine you are sitting at, or on an AWS spot instance (e.g. <code>g6e.4xlarge</code> at ~$1.15-$2.38/hr) provisioned via <code>spacepilot launch</code>. There is no automated SaaS markup and no hidden egress fees.</p>
+            <p>Local workloads use an installed compatible runtime. Remote video needs a separately deployed backend. AWS plans can be checked with <code>spacepilot launch --dry-run</code>; paid launch remains gated pending a dock budget and worker deployment.</p>
         </section>
         
         <div style="height: 100px;"></div>

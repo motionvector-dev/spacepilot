@@ -1,3 +1,9 @@
+> Status checked 2026-10-08: design context, not a shipped capability claim.
+> Live AWS launch is gated pending a dock budget and worker deployment.
+> Default G-family Spot quota is 8 vCPU (account 842954813809, us-east-1).
+> Download/load/unload are explicit primitives; the loader serves text on loopback.
+> Video requires a separately deployed compatible HTTP backend and remains unflown here.
+
 # Technical Specification: SpacePilot AWS Launch & MiniMax-H3 Registry Integration
 
 ## 1. Objective
@@ -31,7 +37,7 @@ Enable end-to-end interactive model selection, GPU tier recommendation, deployme
 
 ### 3.2 GPU Recommender Engine (`spacepilot/services/gpu_recommender.py`)
 - Given model `working_set_bytes` and required precision (`fp8`, `bf16`), filters candidate AWS instance types (`g6e.*`, `g5.*`, `g6.*`).
-- Evaluates against active account quota (64 vCPUs for `L-DB2E81BA`).
+- Evaluates against active account quota (8 vCPUs for G-family Spot `L-3819A6DF`).
 - Ranks candidate instances by:
   - Latency / resident layer capability (L40S > A10G > L4).
   - Spot price vs On-Demand price ratio.

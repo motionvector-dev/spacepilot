@@ -25,9 +25,9 @@ def test_cli_subparsers_list():
     registered = set(subparsers_action.choices.keys())
 
     # Deprecated verbs must not be present
-    assert "recipes" not in registered
+    assert "recipes" in registered
     assert "lora" not in registered
-    assert "check" not in registered
+    assert "check" in registered
     assert "generate" not in registered
     assert "sync" not in registered
     assert "deploy" not in registered

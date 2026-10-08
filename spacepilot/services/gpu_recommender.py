@@ -23,6 +23,12 @@ class AWSInstanceSpec:
 
 # Canonical AWS GPU instance catalog within our fleet scope
 AWS_GPU_CATALOG: Dict[str, AWSInstanceSpec] = {
+    "g6e.2xlarge": AWSInstanceSpec(
+        instance_type="g6e.2xlarge", gpu_name="L40S", gpu_count=1,
+        vram_per_gpu_gb=48.0, total_vram_gb=48.0, vcpu=8, ram_gb=64.0,
+        spot_hourly_usd=0.75, ondemand_hourly_usd=0.0,
+        generation_speed_s_per_step=0.45, architecture="ada",
+    ),
     "g6e.4xlarge": AWSInstanceSpec(
         instance_type="g6e.4xlarge",
         gpu_name="L40S",
@@ -103,7 +109,7 @@ AWS_GPU_CATALOG: Dict[str, AWSInstanceSpec] = {
     ),
 }
 
-DEFAULT_MAX_VCPU_QUOTA = 64
+DEFAULT_MAX_VCPU_QUOTA = 8  # Verified account 842954813809, us-east-1, 2026-10-08
 
 
 @dataclass(frozen=True)
@@ -243,7 +249,7 @@ def recommend_gpus(
         # are favored for budget/offload tiers over expensive multi-GPU clusters.
         score = (spec.spot_hourly_usd ** 1.25) * effective_latency
 
-        notes = f"{spec.gpu_count}x {spec.gpu_name} ({spec.total_vram_gb:.0f}GB VRAM, {spec.ram_gb:.0f}GB RAM)"
+        notes = "Planning estimate, not a live price or measured speed. " + f"{spec.gpu_count}x {spec.gpu_name} ({spec.total_vram_gb:.0f}GB VRAM, {spec.ram_gb:.0f}GB RAM)"
         if is_offload_candidate:
             notes += " [Host RAM Offload]"
         elif vram_margin >= 0:

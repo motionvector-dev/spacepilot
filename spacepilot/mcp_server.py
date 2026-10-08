@@ -87,7 +87,7 @@ def spacepilot_decompose_storyboard(
 @mcp.tool()
 def spacepilot_probe_hardware() -> Dict[str, Any]:
     """Probe host hardware capabilities and VRAM headroom for local inference.
-    
+
     Returns:
         Dict[str, Any]: Device telemetry including backend (MPS/CUDA/CPU), total VRAM, and usable headroom.
     """
@@ -101,7 +101,7 @@ def spacepilot_probe_hardware() -> Dict[str, Any]:
 @mcp.tool()
 def spacepilot_recommend_models() -> Dict[str, Any]:
     """Recommend task-based models (TTS, Storyboard, Video Diffusion) matched to host hardware.
-    
+
     Returns:
         Dict[str, Any]: Every registry variant graded by the shared fit verdict
         (`runs_well`, `runs_slowly`, `wont_fit`, `unknown` — the same words
@@ -144,101 +144,75 @@ def spacepilot_get_local_status() -> Dict[str, Any]:
 
 
 
-@mcp.tool()
-def spacepilot_download_weights(
-    model: str,
-    stage: str = "all",
-    dest: Optional[str] = None,
-    concurrency: int = 16,
-) -> Dict[str, Any]:
-    """Download model weights to disk cache using staged filters.
+def _confirmed_model(model: str, confirmed: bool):
+    """Resolve a registered model only after the caller confirms the action."""
+    if not confirmed:
+        raise ValueError("Show the plan to the person and obtain approval before setting confirmed=True")
+    from spacepilot.model_registry import registry
+    reg = registry()
+    variant = reg.variant(model)
+    if variant is None:
+        item = reg.model(model)
+        variant = item.variants[0] if item and item.variants else None
+    if variant is None:
+        raise ValueError("Model must be a registered model or variant ID")
+    return variant
 
-    Args:
-        model: Model or variant ID to download (e.g. 'minimax-h3', 'minimax-h3-fl2va-fp8').
-        stage: Staging filter ('all', 'stage1', 'stage2'). Defaults to 'all'.
-        dest: Destination directory (defaults to ~/.cache/spacepilot/models/<model>).
-        concurrency: Number of download worker threads. Defaults to 16.
 
-    Returns:
-        Dict[str, Any]: Download metadata including local path.
-    """
+def _model_cache_path(path: str):
     from pathlib import Path
+    from spacepilot.paths import model_recommender_cache_dir
+    root = model_recommender_cache_dir().resolve()
+    target = Path(path).expanduser().resolve()
+    if not target.is_relative_to(root) or target == root:
+        raise ValueError("Model path must remain inside the SpacePilot model cache")
+    return target
+
+
+@mcp.tool()
+def spacepilot_download_weights(model: str, stage: str = "all", dest: Optional[str] = None,
+                                concurrency: int = 16, confirmed: bool = False) -> Dict[str, Any]:
+    """Download pinned registered weights after human approval; destination stays in the model cache."""
+    from spacepilot.paths import model_recommender_cache_dir
     from spacepilot.services.model_downloader import download_weights
-
-    target_dest = Path(dest) if dest else Path.home() / ".cache" / "spacepilot" / "models" / model
-    path = download_weights(
-        variant=model,
-        dest_dir=target_dest,
-        stage=stage,
-        concurrency=concurrency,
-    )
-    return {
-        "status": "success",
-        "model": model,
-        "stage": stage,
-        "dest": str(path),
-    }
+    try:
+        variant = _confirmed_model(model, confirmed)
+        if not 1 <= concurrency <= 16:
+            raise ValueError("concurrency must be 1..16")
+        target = _model_cache_path(dest or str(model_recommender_cache_dir() / variant.id))
+        path = download_weights(variant=model, dest_dir=target, stage=stage, concurrency=concurrency)
+        return {"status": "success", "model": model, "stage": stage, "dest": str(path)}
+    except (ValueError, OSError, RuntimeError) as exc:
+        return {"status": "error", "message": str(exc)}
 
 
 @mcp.tool()
-def spacepilot_load_runtime(
-    model_id: str,
-    weights_dir: str,
-    backend: str = "sglang",
-    port: int = 30010,
-    tp: int = 1,
-) -> Dict[str, Any]:
-    """Load model weights from local disk into active inference runtime daemon.
-
-    Args:
-        model_id: Model or variant ID.
-        weights_dir: Local filesystem path where weights are stored.
-        backend: Runtime backend engine ('sglang', 'vllm'). Defaults to 'sglang'.
-        port: HTTP port to serve the model. Defaults to 30010.
-        tp: Tensor parallelism degree. Defaults to 1.
-
-    Returns:
-        Dict[str, Any]: Runtime process metadata and health status.
-    """
-    from pathlib import Path
-    from spacepilot.services.runtime_manager import load_model
-
-    runtime_info = load_model(
-        model_id=model_id,
-        weights_dir=Path(weights_dir),
-        backend=backend,
-        port=port,
-        tp=tp,
-    )
-    return {
-        "status": "success",
-        "runtime": runtime_info,
-    }
+def spacepilot_load_runtime(model_id: str, weights_dir: str, backend: str = "sglang",
+                            port: int = 30010, tp: int = 1, confirmed: bool = False) -> Dict[str, Any]:
+    """Start a loopback text server after human approval, using registered cached weights."""
+    from spacepilot.services.runtime_manager import build_backend_command, load_model
+    try:
+        variant = _confirmed_model(model_id, confirmed)
+        if variant.kind != "text":
+            raise ValueError("This loader supports text runtimes; video backend deployment is not implemented")
+        target = _model_cache_path(weights_dir)
+        build_backend_command(backend, target, port, tp)
+        info = load_model(model_id=model_id, weights_dir=target, backend=backend, port=port, tp=tp)
+        return {"status": "success", "runtime": info}
+    except (ValueError, OSError, RuntimeError) as exc:
+        return {"status": "error", "message": str(exc)}
 
 
 @mcp.tool()
-def spacepilot_unload_runtime(
-    model_id: Optional[str] = None,
-    port: Optional[int] = None,
-    all_models: bool = False,
-) -> Dict[str, Any]:
-    """Unload active model runtime and reclaim GPU memory/VRAM.
-
-    Args:
-        model_id: Model ID to unload.
-        port: Port of the running backend.
-        all_models: If True, terminates all resident runtimes.
-
-    Returns:
-        Dict[str, Any]: Unload summary with count of stopped processes.
-    """
+def spacepilot_unload_runtime(model_id: Optional[str] = None, port: Optional[int] = None,
+                              all_models: bool = False, confirmed: bool = False) -> Dict[str, Any]:
+    """Stop selected recorded runtime processes after human approval; all_models stops all of them."""
     from spacepilot.services.runtime_manager import unload_model
-
-    return unload_model(
-        model_id=model_id,
-        port=port,
-        all_models=all_models,
-    )
+    if not confirmed:
+        return {"status": "error", "message": "Obtain human approval before setting confirmed=True"}
+    if not all_models and model_id is None and port is None:
+        return {"status": "error", "message": "Select a model, port, or all_models"}
+    return unload_model(model_id=model_id, port=port, all_models=all_models)
 
 
 @mcp.tool()
@@ -271,10 +245,10 @@ def spacepilot_list_model_recipes() -> Dict[str, Any]:
 @mcp.tool()
 def spacepilot_list_lora_adapters(base_model: str = None) -> Dict[str, Any]:
     """List trained LoRA adapters.
-    
+
     Args:
         base_model (str, optional): Filter by base model.
-        
+
     Returns:
         Dict[str, Any]: List of available adapters.
     """
@@ -284,6 +258,48 @@ def spacepilot_list_lora_adapters(base_model: str = None) -> Dict[str, Any]:
         adapters = lora_manager.list_adapters(base_model)
         return {"adapters": [dataclasses.asdict(a) for a in adapters]}
     except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+
+def spacepilot_train_lora(name: str, base_model: str, image_paths: list[str], trigger_word: str, rank: int = 16, steps: int = 500, lr: float = 1e-4) -> Dict[str, Any]:
+    """Queue a LoRA training job.
+
+    Args:
+        name (str): The name of the adapter.
+        base_model (str): Base model ID.
+        image_paths (list[str]): List of image paths for training.
+        trigger_word (str): Trigger word.
+        rank (int, optional): LoRA rank; must be a positive power of 2. Defaults to 16.
+        steps (int, optional): Training steps. Defaults to 500.
+        lr (float, optional): Learning rate. Defaults to 1e-4.
+
+    Returns:
+        Dict[str, Any]: Job details.
+    """
+    try:
+        request = contracts.TrainLoRARequest(
+            name=name, base_model=base_model, image_paths=image_paths,
+            trigger_word=trigger_word, rank=rank, steps=steps, lr=lr,
+        )
+    except ValidationError as exc:
+        return _refused(exc)
+    try:
+        from spacepilot.services.lora import lora_manager
+        job = lora_manager.create_training_job(
+            name=request.name,
+            base_model=request.base_model,
+            image_paths=request.image_paths,
+            trigger_word=request.trigger_word,
+            rank=request.rank,
+            steps=request.steps,
+            lr=request.lr
+        )
+        return {"status": "success", "job": job}
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to train LoRA")
         return {"status": "error", "message": str(e)}
 
 

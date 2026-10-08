@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from spacepilot.cli import CONFIG_FILE, load_config, save_config
 
 PREFERENCES_KEY = "user_preferences"
 DEFAULT_GPUS_KEY = "default_gpus"
@@ -44,7 +43,8 @@ def get_default_gpu(model_id: str, *, config_path: Optional[Path] = None) -> Opt
     Returns:
         The configured GPU type string if present, otherwise None.
     """
-    target = config_path if config_path is not None else CONFIG_FILE
+    from spacepilot import cli
+    target = config_path if config_path is not None else cli.CONFIG_FILE
     raw = _read_raw_config(target)
     # Check under "user_preferences" -> "default_gpus"
     prefs = raw.get(PREFERENCES_KEY, {})
@@ -60,9 +60,9 @@ def get_default_gpu(model_id: str, *, config_path: Optional[Path] = None) -> Opt
         if isinstance(gpu, str) and gpu.strip():
             return gpu.strip()
 
-    # Fallback to load_config() if config_path was None
+    # Fallback to cli.load_config() if config_path was None
     if config_path is None:
-        full_cfg = load_config()
+        full_cfg = cli.load_config()
         full_prefs = full_cfg.get(PREFERENCES_KEY, {})
         if isinstance(full_prefs, dict):
             gpu = full_prefs.get(DEFAULT_GPUS_KEY, {}).get(model_id)
@@ -85,12 +85,13 @@ def set_default_gpu(model_id: str, gpu_type: str, *, config_path: Optional[Path]
         gpu_type: Target GPU type name (e.g. 'a100-80gb', 'l40s', 'h100').
         config_path: Optional explicit configuration file path (defaults to CLI CONFIG_FILE).
     """
-    target = config_path if config_path is not None else CONFIG_FILE
+    from spacepilot import cli
+    target = config_path if config_path is not None else cli.CONFIG_FILE
     raw = _read_raw_config(target)
 
-    # If raw is empty and file doesn't exist, seed with load_config() to preserve expected defaults
+    # If raw is empty and file doesn't exist, seed with cli.load_config() to preserve expected defaults
     if not raw and not target.exists():
-        raw = load_config()
+        raw = cli.load_config()
 
     if PREFERENCES_KEY not in raw or not isinstance(raw[PREFERENCES_KEY], dict):
         raw[PREFERENCES_KEY] = {}
@@ -133,4 +134,4 @@ def set_default_gpu(model_id: str, gpu_type: str, *, config_path: Optional[Path]
             except FileNotFoundError:
                 pass
     else:
-        save_config(raw)
+        cli.save_config(raw)

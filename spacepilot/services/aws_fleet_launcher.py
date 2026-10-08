@@ -58,7 +58,9 @@ logger = logging.getLogger(__name__)
 class SubprocessAWSClient(AWSClientInterface):
     """Executes AWS CLI commands via subprocess."""
 
-    def __init__(self, profile: Optional[str] = None, region: Optional[str] = None):
+    def __init__(self, profile: str = "antigravity-dev-user", region: str = "us-east-1"):
+        if profile not in {"default", "antigravity-dev-user"}:
+            raise ValueError("AWS profile is not permitted")
         self.profile = profile
         self.region = region
 
@@ -76,7 +78,7 @@ class SubprocessAWSClient(AWSClientInterface):
             raise RuntimeError(
                 f"AWS command failed ({res.returncode}): {' '.join(full_cmd)}\n{res.stderr.strip()}"
             )
-        logger.debug("AWS command stdout (%d bytes): %s", len(res.stdout), res.stdout[:200].strip())
+        logger.debug("AWS command completed (%d bytes)", len(res.stdout))
         return res.stdout.strip()
 
 
@@ -197,9 +199,22 @@ def request_spot_instance(
     dry_run: bool = False,
     market_type: str = "spot",
     aws_client: Optional[AWSClientInterface] = None,
+    profile: str = "antigravity-dev-user",
+    region: str = "us-east-1",
 ) -> InstanceConnectionTelemetry:
     """Request an EC2 Spot (or On-Demand) instance with Deep Learning AMI and key."""
-    client = aws_client or SubprocessAWSClient()
+    if not dry_run:
+        raise ValueError("Live launch is gated until a dock budget and worker deployment exist")
+    from spacepilot.services.gpu_recommender import AWS_GPU_CATALOG, DEFAULT_MAX_VCPU_QUOTA
+    spec = AWS_GPU_CATALOG.get(instance_type)
+    if spec is None or spec.vcpu > DEFAULT_MAX_VCPU_QUOTA:
+        raise ValueError("Instance type exceeds the verified 8-vCPU quota or is unknown")
+    if profile not in {"default", "antigravity-dev-user"} or region != "us-east-1":
+        raise ValueError("AWS profile or region is not permitted")
+    client = aws_client or SubprocessAWSClient(profile=profile, region=region)
+    identity = json.loads(client.run_aws_command(["sts", "get-caller-identity", "--output", "json"]))
+    if identity.get("Account") != "842954813809":
+        raise ValueError("AWS account must be 842954813809")
 
     resolved_ami = ami_id or resolve_dlami_id(aws_client=client)
 
@@ -229,7 +244,7 @@ def request_spot_instance(
                 raise
 
         mock_id = "i-dryrun" + "0" * 11
-        mock_ip = "198.51.100.1"
+        mock_ip = None
         ssh_cmd = f"ssh -i {key_file} ubuntu@{mock_ip}" if key_file else f"ssh ubuntu@{mock_ip}"
         tunnel_cmd = (
             f"ssh -i {key_file} -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@{mock_ip}"
@@ -243,83 +258,8 @@ def request_spot_instance(
             public_ip=mock_ip,
             instance_type=instance_type,
             ssh_user="ubuntu",
-            ssh_command=ssh_cmd,
-            tunnel_command=tunnel_cmd,
+            ssh_command=None,
+            tunnel_command=None,
             dry_run=True,
             details={"ami_id": resolved_ami, "market_type": market_type, "disk_gb": disk_gb},
         )
-
-    # Live launch execution
-    cmd = [
-        "ec2",
-        "run-instances",
-        "--image-id",
-        resolved_ami,
-        "--instance-type",
-        instance_type,
-        "--key-name",
-        key_name,
-        "--count",
-        "1",
-        "--block-device-mappings",
-        (
-            f'[{{"DeviceName":"/dev/sda1","Ebs":{{"VolumeSize":{disk_gb},'
-            f'"VolumeType":"gp3","Throughput":500,"DeleteOnTermination":true}}}}]'
-        ),
-        "--tag-specifications",
-        (
-            f'ResourceType=instance,Tags=[{{Key=Name,Value={instance_name}}},'
-            f'{{Key=ManagedBy,Value=spacepilot}},{{Key=Purpose,Value=video-inference}}]'
-        ),
-        "--metadata-options",
-        "HttpTokens=required,HttpEndpoint=enabled",
-        "--output",
-        "json",
-    ]
-
-    if security_group_ids:
-        cmd.extend(["--security-group-ids", *security_group_ids])
-
-    if market_type == "spot":
-        cmd.extend(["--instance-market-options", '{"MarketType":"spot"}'])
-
-    if user_data_script:
-        cmd.extend(["--user-data", user_data_script])
-
-    raw_resp = client.run_aws_command(cmd)
-    data = json.loads(raw_resp) if raw_resp else {}
-    instances = data.get("Instances", [])
-    if not instances:
-        raise RuntimeError(f"run-instances succeeded but returned no instance records: {raw_resp}")
-
-    inst = instances[0]
-    inst_id = inst.get("InstanceId", "")
-    state = inst.get("State", {}).get("Name", "pending")
-    public_ip = inst.get("PublicIpAddress")
-
-    ssh_cmd = (
-        f"ssh -i {key_file} ubuntu@{public_ip}"
-        if key_file and public_ip
-        else (f"ssh ubuntu@{public_ip}" if public_ip else None)
-    )
-    tunnel_cmd = (
-        f"ssh -i {key_file} -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@{public_ip}"
-        if key_file and public_ip
-        else (
-            f"ssh -L 5000:localhost:5000 -L 8088:localhost:8088 ubuntu@{public_ip}"
-            if public_ip
-            else None
-        )
-    )
-
-    return InstanceConnectionTelemetry(
-        instance_id=inst_id,
-        state=state,
-        public_ip=public_ip,
-        instance_type=instance_type,
-        ssh_user="ubuntu",
-        ssh_command=ssh_cmd,
-        tunnel_command=tunnel_cmd,
-        dry_run=False,
-        details=inst,
-    )

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import logging
+from urllib.parse import urljoin, urlsplit
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +33,9 @@ class VideoClient:
     """HTTP client for video generation services."""
 
     def __init__(self, endpoint_url: str, timeout: float = 300.0):
+        parsed = urlsplit(endpoint_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("Video endpoint must be an HTTP URL without credentials")
         self.endpoint_url = endpoint_url.rstrip("/")
         self.timeout = timeout
         self._client = httpx.Client(timeout=timeout)
@@ -127,17 +131,6 @@ class VideoClient:
         try:
             data = resp.json()
         except Exception:
-            # Fallback: write raw content if non-empty
-            if resp.content:
-                output_path.write_bytes(resp.content)
-                wall_time = time.perf_counter() - start_time
-                return VideoGenerationResult(
-                    output_path=output_path,
-                    wall_seconds=wall_time,
-                    steps=steps,
-                    seconds_per_step=wall_time / steps if steps > 0 else 0.0,
-                    model_id=model_id,
-                )
             raise RuntimeError("Unexpected empty or non-JSON response from server")
 
         # 1. Base64 video embedded in JSON
@@ -161,6 +154,8 @@ class VideoClient:
         # 2. Worker asynchronous job pattern: job_id
         if "job_id" in data:
             job_id = data["job_id"]
+            if not isinstance(job_id, str) or not job_id or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for c in job_id):
+                raise ValueError("Invalid worker job ID")
             return self._poll_and_download_worker(
                 job_id=job_id,
                 output_path=output_path,
@@ -173,7 +168,14 @@ class VideoClient:
         # 3. Direct URL to download
         if "url" in data or "video_url" in data:
             dl_url = data.get("url") or data.get("video_url")
-            dl_resp = self._client.get(dl_url)
+            dl_url = urljoin(self.endpoint_url + "/", dl_url)
+            origin = urlsplit(self.endpoint_url)
+            target = urlsplit(dl_url)
+            if (target.scheme, target.hostname, target.port) != (origin.scheme, origin.hostname, origin.port) or target.username or target.password:
+                raise ValueError("Video download URL must use the endpoint origin")
+            dl_resp = self._client.get(dl_url, follow_redirects=False)
+            if 300 <= dl_resp.status_code < 400:
+                raise ValueError("Video download redirects are not allowed")
             dl_resp.raise_for_status()
             output_path.write_bytes(dl_resp.content)
             wall_time = float(data.get("wall_seconds", time.perf_counter() - start_time))
@@ -207,7 +209,7 @@ class VideoClient:
         final_steps = steps
 
         for _ in range(max_polls):
-            time.sleep(0.01)  # small delay before poll
+            time.sleep(poll_interval)  # small delay before poll
             resp = self._client.get(status_url)
             if resp.status_code != 200:
                 raise RuntimeError(f"Failed to check job status: {resp.status_code} {resp.text}")
@@ -225,6 +227,9 @@ class VideoClient:
                 break
             elif state in ("failed", "error"):
                 raise RuntimeError(f"Job failed on remote worker: {st.get('error', 'unknown error')}")
+
+        else:
+            raise TimeoutError(f"Video job {job_id} did not complete within {self.timeout}s")
 
         download_url = f"{self.endpoint_url}/download/{job_id}"
         dl_resp = self._client.get(download_url)

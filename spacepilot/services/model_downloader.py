@@ -129,10 +129,15 @@ def download_weights(
     Returns:
         Path to the downloaded model directory.
     """
+    if not 1 <= concurrency <= 16:
+        raise ValueError("concurrency must be 1..16")
     dest_dir = Path(dest_dir).expanduser().resolve()
-    dest_dir.mkdir(parents=True, exist_ok=True)
 
     repo_id, revision, variant_files = resolve_model_repo_and_revision(variant)
+    if not revision:
+        raise ValueError("Download requires a registered model with a pinned revision")
+    if stage == "stage2" and variant_files and "FL2VA/**" in variant_files:
+        raise ValueError("Selected stage has no files for this FL2VA variant")
     stage_patterns = get_stage_patterns(stage)
 
     # Combine variant allowed files and stage patterns if both exist
@@ -148,6 +153,9 @@ def download_weights(
     elif variant_files is not None:
         allow_patterns = list(variant_files)
 
+    if allow_patterns == []:
+        raise ValueError("Selected stage has no files for this variant")
+    dest_dir.mkdir(parents=True, exist_ok=True)
     engine = download_engine or default_huggingface_download_engine
 
     logger.info(
