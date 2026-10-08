@@ -63,7 +63,7 @@ The two detached worktrees under `~/code/.mvec-local/worktrees/main/` were repai
 
 ## Repair evidence
 
-PR #188 fixes remove the CLI/preferences circular import, restore shipped CLI aliases and output-helper behavior, bind text servers to loopback, reject arbitrary backend modules, require confirmation and cache containment for MCP mutations, pin and narrow downloads, reject cross-origin video URLs/redirects, and fail unfinished video jobs. Unchecked runtime health stays unknown; text loaders refuse video deployment. Loading requires an explicit weights directory. The focused release-boundary suite passes 18 tests in 1.14 seconds; full combined CI remains outstanding.
+PR #188 fixes remove the CLI/preferences circular import, restore shipped CLI aliases and output-helper behavior, bind text servers to loopback, reject arbitrary backend modules, require confirmation and cache containment for MCP mutations, pin and narrow downloads, reject cross-origin video URLs/redirects, and fail unfinished video jobs. Unchecked runtime health stays unknown; text loaders refuse video deployment. Loading requires an explicit weights directory. The focused release-boundary suite passes 18 tests; the combined runtime, CLI and H3 registry selection passes 32 tests in 1.66 seconds. Full combined CI remains outstanding.
 
 AWS STS and service-quotas confirmed account `842954813809`, profile `antigravity-dev-user`, region `us-east-1`, and G-family Spot quota 8 on 2026-10-08. No paid instance was started. H3 hardware costs and speed rankings remain planning estimates, not measured or live quotes.
 
