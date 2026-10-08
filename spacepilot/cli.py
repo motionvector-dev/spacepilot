@@ -31,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # because the first form is what a path in a doc or a launch config looks like.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+from spacepilot import __version__
 from spacepilot.paths import env_value, fleet_orders_path, outputs_dir, state_root
 
 # Anything read-and-written follows `spacepilot.paths`: the checkout when there
@@ -159,10 +160,11 @@ def output_renderer(args: argparse.Namespace, cfg: Mapping[str, Any] | None = No
     return OutputRenderer(resolve_output_mode(explicit, cfg))
 
 
-def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
-    """Allow --plain/--live either side of a subcommand, but never after --."""
+def _extract_cli_flags(argv: list[str]) -> tuple[list[str], str | None, bool]:
+    """Allow --plain/--live/--verbose either side of a subcommand, but never after --."""
     selected: list[str] = []
     cleaned: list[str] = []
+    verbose = False
     passthrough = False
     for arg in argv:
         if arg == "--":
@@ -170,11 +172,13 @@ def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
             cleaned.append(arg)
         elif not passthrough and arg in ("--live", "--plain"):
             selected.append(arg[2:])
+        elif not passthrough and arg in ("-v", "--verbose"):
+            verbose = True
         else:
             cleaned.append(arg)
     if len(set(selected)) > 1:
         raise ValueError("--live and --plain are mutually exclusive")
-    return cleaned, (selected[0] if selected else None)
+    return cleaned, (selected[0] if selected else None), verbose
 
 
 WORKER_TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
@@ -234,6 +238,12 @@ def save_config(cfg):
             temp_path.unlink()
         except FileNotFoundError:
             pass
+
+
+def _extract_output_mode_flags(argv: list[str]) -> tuple[list[str], str | None]:
+    """Retain the shipped output-helper contract; verbose extraction is separate."""
+    cleaned, mode, _ = _extract_cli_flags(argv)
+    return cleaned, mode
 
 
 def run_cmd(cmd, check=True, capture=False, stdin_text=None, timeout=None):
@@ -362,6 +372,9 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
+from spacepilot.services.user_preferences import get_default_gpu, set_default_gpu
+
+
 def _refuse_legacy_aws(verb: str) -> int:
     """The retired single-box AWS path refuses instead of half-working.
 
@@ -382,7 +395,136 @@ def _refuse_legacy_aws(verb: str) -> int:
 
 
 def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
-    return _refuse_legacy_aws("launch")
+    """Launch an AWS GPU instance tailored to a selected model variant."""
+    from spacepilot.model_registry import registry
+    from spacepilot.services.gpu_recommender import recommend_gpus
+    from spacepilot.services.aws_fleet_launcher import request_spot_instance
+
+    if not getattr(args, "dry_run", False):
+        print("  Live launch is gated until a dock budget and worker deployment exist.")
+        print("  Use --dry-run to validate a plan. Nothing was started or billed.")
+        return 2
+    reg = registry()
+
+    # Step 1: Model Selection
+    model_arg = getattr(args, "model", None)
+    chosen_variant = None
+
+    if model_arg:
+        matching = [v for v in reg.variants if v.id.lower() == model_arg.strip().lower()]
+        if not matching:
+            matching = [v for v in reg.variants if v.model_id.lower() == model_arg.strip().lower()]
+        if not matching:
+            matching = [v for v in reg.variants if model_arg.strip().lower() in v.id.lower() or model_arg.strip().lower() in v.name.lower()]
+        if not matching:
+            print(f"  Error: Model '{model_arg}' not found in registry.")
+            return 1
+        chosen_variant = matching[0]
+    else:
+        video_variants = reg.by_kind("video")
+        pool = video_variants if video_variants else reg.variants
+        print("\n  Available Video Models:")
+        for idx, var in enumerate(pool, start=1):
+            ws_gb = (var.working_set.value / (1024 ** 3)) if var.working_set else 0.0
+            print(f"    [{idx}] {var.id} ({var.name}) - {var.precision or 'unknown'} (~{ws_gb:.1f}GB)")
+        
+        try:
+            choice = input("\n  Select model [1]: ").strip()
+        except EOFError:
+            choice = ""
+        
+        if not choice:
+            chosen_variant = pool[0]
+        elif choice.isdigit() and 1 <= int(choice) <= len(pool):
+            chosen_variant = pool[int(choice) - 1]
+        else:
+            matching = [v for v in pool if choice.lower() in v.id.lower()]
+            if matching:
+                chosen_variant = matching[0]
+            else:
+                print(f"  Invalid selection: {choice}")
+                return 1
+
+    model_key = chosen_variant.model_id or chosen_variant.id
+    print(f"\n  Selected Model: {chosen_variant.id} ({chosen_variant.name})")
+
+    # Step 2: GPU Recommendation & Selection
+    recs = recommend_gpus(chosen_variant)
+    if not recs:
+        print(f"  Error: No GPU instance found in catalog that can fit {chosen_variant.id} within quota.")
+        return 1
+
+    saved_default_gpu = get_default_gpu(model_key)
+    default_rec = next((r for r in recs if r.instance_spec.instance_type == saved_default_gpu), recs[0])
+
+    gpu_arg = getattr(args, "gpu", None)
+    if gpu_arg:
+        chosen_gpu = gpu_arg.strip()
+    elif getattr(args, "yes", False):
+        chosen_gpu = default_rec.instance_spec.instance_type
+    else:
+        print("\n  Recommended AWS GPU Tiers:")
+        for idx, rec in enumerate(recs[:4], start=1):
+            spec = rec.instance_spec
+            pref_tag = " [Default]" if spec.instance_type == saved_default_gpu else ""
+            print(f"    [{idx}] {spec.instance_type} - {spec.gpu_count}x {spec.gpu_name} (estimated ${spec.spot_hourly_usd:.2f}/hr spot) ~{rec.generation_speed_s_per_step:.2f}s/step - {rec.notes}{pref_tag}")
+        
+        prompt_default = saved_default_gpu or default_rec.instance_spec.instance_type
+        try:
+            gpu_prompt = input(f"\n  Select GPU tier [{prompt_default}]: ").strip()
+        except EOFError:
+            gpu_prompt = ""
+        
+        if not gpu_prompt:
+            chosen_gpu = prompt_default
+        elif gpu_prompt.isdigit() and 1 <= int(gpu_prompt) <= len(recs):
+            chosen_gpu = recs[int(gpu_prompt) - 1].instance_spec.instance_type
+        else:
+            chosen_gpu = gpu_prompt
+
+        try:
+            save_pref = input(f"  Save {chosen_gpu} as default for {model_key}? (y/n) [n]: ").strip().lower()
+        except EOFError:
+            save_pref = "n"
+        if save_pref in ("y", "yes"):
+            set_default_gpu(model_key, chosen_gpu)
+            print(f"  Saved default GPU {chosen_gpu} for {model_key}.")
+
+    if chosen_gpu not in {r.instance_type for r in recs}:
+        print("  GPU must fit the selected variant and the verified 8-vCPU quota.")
+        return 1
+
+    # Step 3: Market Type and Launch Execution
+    market_type = "ondemand" if getattr(args, "on_demand", False) else "spot"
+    dry_run = getattr(args, "dry_run", False)
+    key_name = cfg.get("key_name", "spacepilot-key")
+    key_file = cfg.get("key_file")
+
+    print(f"\n  Validating dry-run plan for {chosen_gpu} ({market_type}) for {chosen_variant.id}...")
+    try:
+        telemetry = request_spot_instance(
+            instance_type=chosen_gpu,
+            key_name=key_name,
+            key_file=key_file,
+            market_type=market_type,
+            dry_run=dry_run,
+            profile=cfg.get("aws_profile", "antigravity-dev-user"),
+            region=cfg.get("aws_region", "us-east-1"),
+        )
+    except Exception as e:
+        print(f"  Error during instance provisioning: {e}")
+        return 1
+
+    print("\n  ================================================================")
+    print(f"  DRY RUN VALIDATED: {telemetry.instance_type}; no instance created")
+    print(f"  Type      : {telemetry.instance_type}")
+    print(f"  Public IP : {telemetry.public_ip or 'pending'}")
+    if telemetry.ssh_command:
+        print(f"  SSH       : {telemetry.ssh_command}")
+    if telemetry.tunnel_command:
+        print(f"  Tunnel    : {telemetry.tunnel_command}")
+    print("  ================================================================\n")
+    return 0
 
 
 def cmd_deploy(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
@@ -432,6 +574,66 @@ def cmd_generate(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 
 def cmd_sync(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return _refuse_legacy_aws("sync")
+
+
+def cmd_download(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Download model weights to disk cache using staged filters."""
+    from spacepilot.services.model_downloader import download_weights
+
+    variant = args.model
+    dest = Path(args.dest) if getattr(args, "dest", None) else None
+    stage = getattr(args, "stage", "all")
+    concurrency = getattr(args, "concurrency", 16)
+
+    print(f"Downloading model '{variant}' (stage: {stage})...")
+    path = download_weights(
+        variant=variant,
+        dest_dir=dest,
+        stage=stage,
+        concurrency=concurrency,
+    )
+    print(f"Weights downloaded to: {path}")
+    return 0
+
+
+def cmd_load(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Load model weights from local disk into active runtime daemon."""
+    from spacepilot.services.runtime_manager import load_model
+
+    model_id = args.model
+    weights_dir = Path(args.weights_dir)
+    backend = getattr(args, "backend", "sglang")
+    port = getattr(args, "port", 30010)
+    tp = getattr(args, "tp", 1)
+    skip_healthcheck = getattr(args, "skip_healthcheck", False)
+
+    print(f"Loading '{model_id}' via {backend} on port {port} (TP={tp})...")
+    res = load_model(
+        model_id=model_id,
+        weights_dir=weights_dir,
+        backend=backend,
+        port=port,
+        tp=tp,
+        skip_healthcheck=skip_healthcheck,
+    )
+    print(f"Model loaded successfully! PID={res.get('pid')}, Port={res.get('port')}")
+    return 0
+
+
+def cmd_unload(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Unload model from active runtime and reclaim memory/VRAM."""
+    from spacepilot.services.runtime_manager import unload_model
+
+    model_id = getattr(args, "model", None)
+    port = getattr(args, "port", None)
+    all_models = getattr(args, "all", False)
+
+    res = unload_model(model_id=model_id, port=port, all_models=all_models)
+    if res.get("status") == "ok":
+        print(f"Unloaded {res.get('unloaded_count')} runtime(s).")
+        return 0
+    print(f"Error unloading runtime: {res.get('errors')}")
+    return 1
 
 
 def studio_python(cfg):
@@ -1291,6 +1493,104 @@ def _cmd_run_text(args, cfg=None) -> int:
     return 0
 
 
+def _cmd_run_video(args, cfg=None) -> int:
+    from spacepilot.services.video_client import VideoClient
+
+    if cfg is None:
+        cfg = load_config()
+
+    prompt = args.prompt
+    model = getattr(args, "model", None)
+    if not model:
+        # Check resident models if available
+        try:
+            from spacepilot.services.runtime_manager import get_resident_models
+            residents = get_resident_models()
+            if residents:
+                model = residents[0].get("model_id") or residents[0].get("model_path")
+        except Exception:
+            pass
+        if not model:
+            model = "minimax-h3"
+
+    # Endpoint discovery
+    box = getattr(args, "box", None)
+    if box:
+        if ":" in box:
+            endpoint = f"http://{box}" if not box.startswith("http") else box
+        else:
+            endpoint = f"http://{box}:30010"
+    else:
+        inst = get_instance_info(cfg)
+        if inst and inst.get("ip") and inst.get("state") == "running":
+            endpoint = f"http://{inst['ip']}:30010"
+        else:
+            endpoint = "http://localhost:30010"
+
+    steps = getattr(args, "steps", 30) or 30
+    seconds = getattr(args, "seconds", 4.0) or 4.0
+
+    res_arg = getattr(args, "resolution", None)
+    if res_arg and len(res_arg) == 2:
+        resolution = (int(res_arg[0]), int(res_arg[1]))
+    else:
+        cfg_res = cfg.get("default_resolution", [1024, 576])
+        resolution = (int(cfg_res[0]), int(cfg_res[1]))
+
+    out_arg = getattr(args, "output", None)
+    if out_arg:
+        output_path = Path(out_arg).expanduser().resolve()
+    else:
+        ts = int(time.time())
+        safe_model = model.replace("/", "-")
+        output_path = OUTPUTS_DIR / f"{safe_model}-{ts}-{uuid.uuid4().hex[:8]}.mp4"
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"  prompt      {prompt}")
+    print(f"  model       {model}")
+    print(f"  endpoint    {endpoint}")
+    print(f"  resolution  {resolution[0]}x{resolution[1]}")
+    print(f"  steps       {steps}")
+    print(f"  seconds     {seconds:.1f}s")
+    print(f"  destination {output_path}")
+
+    client = VideoClient(endpoint_url=endpoint)
+    try:
+        def on_progress(step, total):
+            print(f"\r  progress    [{step}/{total}] steps completed", end="", flush=True)
+
+        result = client.generate_video(
+            prompt=prompt,
+            model_id=model,
+            output_path=output_path,
+            steps=steps,
+            seconds=seconds,
+            resolution=resolution,
+            progress_callback=on_progress,
+        )
+        print()
+    except Exception as exc:
+        print(f"\n  Run failed: {exc}")
+        return 1
+    finally:
+        client.close()
+
+    print(f"\n  completed   {result.model_id}")
+    print(f"  artifact    {result.output_path}")
+    print(f"  wall        {result.wall_seconds:.3f}s")
+    print(f"  steps       {result.steps}")
+    print(f"  step speed  {result.seconds_per_step:.3f}s/step")
+
+    if getattr(args, "open", False):
+        try:
+            subprocess.run(["open", str(result.output_path)], check=False)
+        except Exception as exc:
+            logger.warning("Could not open video file: %s", exc)
+
+    return 0
+
+
 def cmd_run(args, cfg=None) -> int:
     """Plan, confirm and execute one real local workload."""
     from spacepilot.drivers.mflux_driver import MfluxDriver, mflux_bin_dir
@@ -1305,6 +1605,8 @@ def cmd_run(args, cfg=None) -> int:
         return _cmd_run_transcribe(args, cfg)
     if workload == "text":
         return _cmd_run_text(args, cfg)
+    if workload == "video":
+        return _cmd_run_video(args, cfg)
     service = LocalExecutionService(driver=MfluxDriver(bin_dir=mflux_bin_dir(cfg)))
     try:
         plan = service.plan(workload)
@@ -2083,8 +2385,8 @@ def cmd_probe(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None):
-    cfg = load_config()
+def build_parser() -> argparse.ArgumentParser:
+    """Build and return the SpacePilot CLI argument parser."""
     parser = argparse.ArgumentParser(
         prog="spacepilot",
         description="SpacePilot — inference orchestration across the machines you can reach.",
@@ -2094,11 +2396,15 @@ def main(argv: list[str] | None = None):
                               help="Render live terminal updates")
     output_group.add_argument("--plain", dest="output_mode", action="store_const", const="plain",
                               help="Render plain newline-delimited output")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose debug logging and stack traces")
+    parser.add_argument("--version", action="version", version=f"spacepilot {__version__}")
     subparsers = parser.add_subparsers(dest="command")
 
-    # doctor/check
+    # doctor
     subparsers.add_parser("doctor", help="Check local environment and capabilities")
-    subparsers.add_parser("check", help="Alias for doctor")
+
+    subparsers.add_parser("check", help="Compatibility alias for doctor")
 
     # probe
     probe_p = subparsers.add_parser(
@@ -2151,26 +2457,12 @@ def main(argv: list[str] | None = None):
     fleet_list.add_argument("--interval", type=float, default=argparse.SUPPRESS,
                             help="Seconds between daemon snapshot requests (default: 2)")
 
-    # lora
-    lora_p = subparsers.add_parser("lora", help="Manage LoRA models")
-    lora_subparsers = lora_p.add_subparsers(dest="lora_action", required=True)
-    lora_subparsers.add_parser("list", help="List LoRA models")
-    lora_subparsers.add_parser("train", help="Train a new LoRA model")
-
-    # recipes
-    recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
-    recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
-    recipes_list_p = recipes_subparsers.add_parser("list", help="List recipes")
-    recipes_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
-    recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
-    recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
-
     # studio
     studio_p = subparsers.add_parser("studio", help="Launch interactive SpacePilot Studio Web UI")
     studio_p.add_argument("--port", type=int, default=8088, help="Port to bind (default: 8088)")
     studio_p.add_argument("--open", action="store_true", help="Open in default browser")
 
-    # status
+    # runtimes
     rt_p = subparsers.add_parser("runtimes", help="Packages that execute models")
     rt_sub = rt_p.add_subparsers(dest="runtimes_action")
     rt_list_p = rt_sub.add_parser("list", help="What is installed and what is available")
@@ -2188,12 +2480,7 @@ def main(argv: list[str] | None = None):
                           help="`list` for the table (the default), or a variant id for detail")
     models_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
 
-    sil_p = subparsers.add_parser(
-        "silicon", help="Parts that exist, whether or not this project has one")
-    sil_p.add_argument("part_id", nargs="?",
-                       help="`list` for the table (the default), or a part id for detail")
-    sil_p.add_argument("--json", action="store_true",
-                       help="Print the registry as JSON, sources and dates included")
+    # run
     run_p = subparsers.add_parser("run", help="Run a real workload on this machine")
     run_sub = run_p.add_subparsers(dest="run_workload", required=True)
     run_image = run_sub.add_parser("image", help="Generate one image through an exact local route")
@@ -2236,6 +2523,77 @@ def main(argv: list[str] | None = None):
                                "are rendered without it.")
     run_text.add_argument("--yes", action="store_true",
                           help="Execute after printing the plan")
+    run_video = run_sub.add_parser(
+        "video", help="Generate a video through remote or local diffusion model backend"
+    )
+    run_video.add_argument("--prompt", required=True, help="Text scene prompt for video generation")
+    run_video.add_argument("--model", default=None, help="Model ID (e.g. minimax-h3, wan-2.1-t2v-14b)")
+    run_video.add_argument("--box", default=None, help="Target box IP or host:port (defaults to active EC2 box or localhost:30010)")
+    run_video.add_argument("--steps", type=int, default=20, help="Inference diffusion steps (default 20)")
+    run_video.add_argument("--seconds", type=float, default=4.0, help="Video duration in seconds (default 4.0)")
+    run_video.add_argument("--resolution", nargs=2, type=int, default=None, metavar=("WIDTH", "HEIGHT"),
+                           help="Resolution as width height (e.g. 1024 576)")
+    run_video.add_argument("--output", "--out", "-o", dest="output", default=None, help="Output MP4 file path")
+    run_video.add_argument("--open", action="store_true", help="Open generated video in default media player when done")
+
+    # bench (consolidates research tools: measure, sweep, silicon)
+    bench_p = subparsers.add_parser("bench", help="Hardware diagnostics, benchmark sweeps, and measurement tools")
+    bench_sub = bench_p.add_subparsers(dest="bench_action", required=True)
+
+    sil_p = bench_sub.add_parser(
+        "silicon", help="Parts that exist, whether or not this project has one")
+    sil_p.add_argument("part_id", nargs="?",
+                       help="`list` for the table (the default), or a part id for detail")
+    sil_p.add_argument("--json", action="store_true",
+                       help="Print the registry as JSON, sources and dates included")
+
+    meas_p = bench_sub.add_parser("measure", help="Time a real run and record it")
+    meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
+    meas_p.add_argument("--metric", required=True,
+                        help="seconds_per_image, tokens_per_second, realtime_factor, "
+                             "seconds_per_second_of_video")
+    meas_p.add_argument("--runtime", default=None, help="Runtime id, e.g. mflux")
+    meas_p.add_argument("--quantisation", default=None, help="e.g. 4bit, 8bit, bf16")
+    meas_p.add_argument("--units", type=float, default=None,
+                        help="Divide wall time by this many units (images, seconds of "
+                             "video) to get a per-unit rate")
+    meas_p.add_argument("--knob", action="append", metavar="KEY=VALUE",
+                        help="Record a setting that changes the number (repeatable)")
+    meas_p.add_argument("command_argv", nargs=argparse.REMAINDER,
+                        help="The command to run, after --")
+
+    sweep_p = bench_sub.add_parser("sweep", help="Run a declarative measurement sweep, unattended")
+    sweep_sub = sweep_p.add_subparsers(dest="sweep_action")
+    sweep_run = sweep_sub.add_parser("run", help="Run (or dry-run) a sweep spec")
+    sweep_run.add_argument("spec", help="Path to a spec, e.g. spacepilot/registry/sweeps/flux-schnell-4bit.yaml")
+    sweep_run.add_argument("--dry-run", action="store_true",
+                           help="Print the job grid and exit without running anything")
+    sweep_run.add_argument("--max-jobs", type=int, default=None,
+                           help="Override the spec's runner.max_jobs")
+    sweep_run.add_argument("--max-wall-seconds", type=float, default=None,
+                           help="Override the spec's runner.max_wall_seconds")
+    sweep_run.add_argument("--outputs-dir", default=None,
+                           help="Override where generated images land (default: outputs/)")
+    sweep_run.add_argument("--no-caffeinate", action="store_true",
+                           help="Do not keep the Mac awake (for debugging only)")
+
+    subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
+
+    # recipes
+    recipes_p = subparsers.add_parser("recipes", help="Manage recipes")
+    recipes_subparsers = recipes_p.add_subparsers(dest="recipes_action", required=True)
+    recipes_list_p = recipes_subparsers.add_parser("list", help="List recipes")
+    recipes_list_p.add_argument("--json", action="store_true", help="Machine-readable output; stdout carries only JSON")
+    recipe_download_p = recipes_subparsers.add_parser("download", help="Download a recipe")
+    recipe_download_p.add_argument("recipe_name", type=str, help="Name of recipe to download")
+
+
+    sil_p = subparsers.add_parser(
+        "silicon", help="Parts that exist, whether or not this project has one")
+    sil_p.add_argument("part_id", nargs="?",
+                       help="`list` for the table (the default), or a part id for detail")
+    sil_p.add_argument("--json", action="store_true",
+                       help="Print the registry as JSON, sources and dates included")
 
     meas_p = subparsers.add_parser("measure", help="Time a real run and record it")
     meas_p.add_argument("--model", required=True, help="Model id, e.g. flux")
@@ -2268,50 +2626,60 @@ def main(argv: list[str] | None = None):
     sweep_run.add_argument("--no-caffeinate", action="store_true",
                            help="Do not keep the Mac awake (for debugging only)")
 
-    subparsers.add_parser("status", help="Show instance state, VRAM, and worker health")
 
     # launch
-    subparsers.add_parser("launch", help="Launch AWS Spot GPU instance and deploy worker")
+    launch_p = subparsers.add_parser("launch", help="Validate an AWS GPU plan (live launch is gated)")
+    launch_p.add_argument("--model", type=str, default=None, help="Target model variant ID (e.g. minimax-h3-fl2va-fp8)")
+    launch_p.add_argument("--gpu", type=str, default=None, help="Explicit AWS GPU instance type (e.g. g6e.4xlarge)")
+    launch_p.add_argument("--on-demand", action="store_true", help="Launch on-demand instance instead of spot")
+    launch_p.add_argument("--dry-run", action="store_true", help="Simulate provisioning without requesting AWS EC2 resources")
+    launch_p.add_argument("-y", "--yes", action="store_true", help="Accept recommended defaults without interactive prompts")
 
-    # deploy
-    subparsers.add_parser("deploy", help="Deploy latest worker code to running box")
+    # download
+    down_p = subparsers.add_parser("download", help="Download model weights to disk cache using staged filters")
+    down_p.add_argument("--model", required=True, help="Model or variant ID (e.g. minimax-h3-fl2va-fp8)")
+    down_p.add_argument("--stage", choices=["all", "stage1", "stage2"], default="all", help="Staged download filter (default: all)")
+    down_p.add_argument("--dest", default=None, help="Destination directory (defaults to ~/.cache/spacepilot/models/<model>)")
+    down_p.add_argument("--concurrency", type=int, default=16, help="Download thread concurrency (default: 16)")
 
-    # ssh
-    subparsers.add_parser("ssh", help="Open SSH terminal to GPU box")
+    # load
+    load_p = subparsers.add_parser("load", help="Load model weights from local disk into active runtime daemon")
+    load_p.add_argument("--model", required=True, help="Model or variant ID to load")
+    load_p.add_argument("--weights-dir", default=None, help="Path to downloaded weights directory")
+    load_p.add_argument("--backend", default="sglang", choices=["sglang", "vllm"], help="Inference backend (default: sglang)")
+    load_p.add_argument("--port", type=int, default=30010, help="Runtime port (default: 30010)")
+    load_p.add_argument("--tp", type=int, default=1, help="Tensor parallelism degree (default: 1)")
+    load_p.add_argument("--skip-healthcheck", action="store_true", help="Do not poll /health before returning")
 
-    # logs
-    subparsers.add_parser("logs", help="Stream live worker inference logs")
+    # unload
+    unload_p = subparsers.add_parser("unload", help="Unload active model runtime and reclaim GPU memory/VRAM")
+    unload_p.add_argument("--model", default=None, help="Model ID to unload")
+    unload_p.add_argument("--port", type=int, default=None, help="Port of running backend to unload")
+    unload_p.add_argument("--all", action="store_true", help="Unload all resident model runtimes")
 
-    # generate
-    gen_p = subparsers.add_parser("generate", help="Generate a video from prompt")
-    gen_p.add_argument("prompt", type=str, help="Text description of the scene")
-    gen_p.add_argument("--seconds", type=float, default=4.0, help="Duration in seconds (default: 4.0)")
-    gen_p.add_argument("--fps", type=int, default=24, help="Frame rate (default: 24)")
-    gen_p.add_argument("--resolution", type=int, nargs=2, default=[1024, 576], help="Width Height (e.g. 1024 576)")
-    gen_p.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
-    gen_p.add_argument("--steps", type=int, default=30, help="Inference steps (default: 30)")
-    gen_p.add_argument("--image", type=str, default=None, help="Path to local image for image-to-video generation")
-    gen_p.add_argument("--negative-prompt", type=str, default=None, help="Negative prompt")
-    gen_p.add_argument("--stg", type=float, default=0.0, help="Spatio-Temporal Guidance scale (0.0 - 2.0, default: 0.0)")
-    gen_p.add_argument("--modality-scale", type=float, default=1.0, help="Audio-Visual synchronization scale (default: 1.0)")
-    gen_p.add_argument("--guidance-scale", type=float, default=1.0, help="Classifier-Free Guidance scale (default: 1.0)")
-    gen_p.add_argument("--audio-guidance-scale", type=float, default=1.0, help="Audio CFG scale (default: 1.0)")
-    gen_p.add_argument("--guidance-rescale", type=float, default=0.0, help="Guidance rescale factor (default: 0.0)")
-    gen_p.add_argument("--conditioning-scale", type=float, default=1.0, help="I2V anchor scale (default: 1.0)")
-    gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
-    gen_p.add_argument("--output", "-o", type=str, default=None, help="Target path to save downloaded MP4")
-    gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
-
-    # sync
-    subparsers.add_parser("sync", help="Sync all generated videos from box to local outputs/")
-
-    # terminate
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+    return parser
+
+
+def cmd_bench(args, cfg) -> int:
+    action = getattr(args, "bench_action", None)
+    if action == "silicon":
+        return cmd_silicon(args, cfg)
+    if action == "measure":
+        return cmd_measure(args, cfg)
+    if action == "sweep":
+        return cmd_sweep(args, cfg)
+    return 1
+
+
+def main(argv: list[str] | None = None):
+    cfg = load_config()
+    parser = build_parser()
 
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:
-        parse_argv, explicit_mode = _extract_output_mode_flags(raw_argv)
+        parse_argv, explicit_mode, explicit_verbose = _extract_cli_flags(raw_argv)
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -2321,30 +2689,40 @@ def main(argv: list[str] | None = None):
 
     args = parser.parse_args(parse_argv)
     args.output_mode = resolve_output_mode(explicit_mode or args.output_mode, cfg)
+    if explicit_verbose:
+        args.verbose = True
+
+    import logging
+    log_level = logging.DEBUG if getattr(args, "verbose", False) else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
     dispatch = {
         "doctor": cmd_doctor,
         "check": cmd_doctor,
+        "recipes": cmd_recipes,
+        "silicon": cmd_silicon,
+        "measure": cmd_measure,
+        "sweep": cmd_sweep,
         "probe": cmd_probe,
         "serve": cmd_serve,
         "daemon": cmd_daemon,
         "fleet": cmd_fleet,
-        "lora": cmd_lora,
-        "recipes": cmd_recipes,
         "studio": cmd_studio,
         "models": cmd_models,
-        "silicon": cmd_silicon,
         "run": cmd_run,
         "runtimes": cmd_runtimes,
-        "measure": cmd_measure,
-        "sweep": cmd_sweep,
+        "bench": cmd_bench,
         "status": cmd_status,
         "launch": cmd_launch,
-        "deploy": cmd_deploy,
+        "download": cmd_download,
+        "load": cmd_load,
+        "unload": cmd_unload,
         "ssh": cmd_ssh,
         "logs": cmd_logs,
-        "generate": cmd_generate,
-        "sync": cmd_sync,
         "terminate": cmd_terminate,
     }
 
