@@ -18,13 +18,40 @@ name: publish
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:  # manual trigger for emergency republish
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to publish (for example v2.9.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+      - name: Verify release tag and package version
+        run: |
+          python - <<'PYTAG'
+          import ast, os, re, subprocess
+          from pathlib import Path
+          tag = os.environ["RELEASE_TAG"]
+          assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), "A version tag is required"
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          tagged = subprocess.check_output(["git", "rev-parse", f"refs/tags/{tag}^{{commit}}"], text=True).strip()
+          assert head == tagged, "Source must be the existing release tag"
+          source = ast.parse(Path("spacepilot/__init__.py").read_text())
+          version = next(ast.literal_eval(n.value) for n in source.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__version__" for t in n.targets))
+          assert tag == f"v{version}", "Package version does not match tag"
+          PYTAG
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
@@ -83,10 +110,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${RELEASE_TAG}"
           NOTES="RELEASE_NOTES_${TAG}.md"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --clobber
+            test "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true
+            # The recovered build comes from the same tag. Preserve existing
+            # draft assets rather than replacing a release's artifact history.
+            if test "$(gh release view "$TAG" --json assets --jq '.assets | length')" = 0; then
+              gh release upload "$TAG" dist/*
+            fi
             gh release edit "$TAG" --title "SpacePilot $TAG" --notes-file "$NOTES" --draft=false
           else
             gh release create "$TAG" --verify-tag --title "SpacePilot $TAG" --notes-file "$NOTES" dist/*
