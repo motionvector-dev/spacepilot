@@ -1,3 +1,9 @@
+> Artifact audit, 2026-10-08: PyPI v2.9.0 was published on 2026-09-24.
+> Its package code/data match the GitHub draft wheel; only README metadata and
+> RECORD differ. The shipped package tree matches `dea46bd`, while the current
+> v2.9.0 tag resolves to `9bc8a2d` and contains later changes. These notes describe
+> the shipped wheels. CoreAI serving and later main changes belong to v2.10.0.
+
 # SpacePilot v2.9.0 Release Notes
 
 **Local-first inference you can verify, not just believe.**
@@ -17,7 +23,7 @@ SpacePilot runs generative AI on hardware you already own — Mac, engine box, G
 
 #### 2. Runtime installs that don't wreck each other
 
-- Runtimes install into **their own uv-managed venvs** — mlx-lm gets its own, so installing or upgrading it never degrades the core interpreter (the concretely painful case: mlx-lm pins pin opencv down from 5.x to 4.x in a shared env).
+- Runtimes install into **their own uv-managed venvs** — mlx-lm gets its own, so installing or upgrading it never degrades the core interpreter (the concretely painful case: mlx-lm pins opencv down from 5.x to 4.x in a shared env).
 - The **installer describes without performing**: asking what an install would do no longer side-effects your machine.
 - A **failed isolated install never removes a working route**. A broken attempt at a better tool cannot take away the one that already worked.
 
