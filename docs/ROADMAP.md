@@ -38,7 +38,7 @@ Treat the v2.9.0 draft as historical until its tag/artifact discrepancy is expli
 2. Run full pytest, packaging and security checks on the combined train. Main CI [36108122821](https://github.com/motionvector-dev/spacepilot/actions/runs/36108122821) passed at `9bc8a2d`; it does not validate PR #188. Focused regressions first failed against the original PR and passed after repair. Lenovo SSH timed out on 2026-10-08, so full validation moves to hosted CI after push approval.
 3. Verify Vercel previews for the combined commit. Both existing projects now use the landing Vite app. The ignore command is `git diff --quiet HEAD^ HEAD -- ':(top)landing/'`, independent of working directory. These setting repairs have not yet been verified by a successful new preview.
 4. Review package version 2.10.0, CHANGELOG.md and RELEASE_NOTES_v2.10.0.md against the final train. Inspect clean wheel/sdist contents and run the installed-wheel CLI gate.
-5. Verify PyPI publishing access for the exact repo `motionvector-dev/spacepilot`, workflow `publish.yml`, environment `pypi`. Chrome now shows the signed-in `unfoundbox` account and published v2.9.0. Publishing settings require password confirmation; current publisher configuration is not confirmed. Obtain action-time approval before a new publishing grant.
+5. Verify PyPI publishing access for the exact repo `motionvector-dev/spacepilot`, workflow `publish.yml`, environment `pypi`. Chrome shows the signed-in `unfoundbox` account and published v2.9.0. Publishing settings now confirm no trusted publisher exists. The exact publisher form is prepared; approval for the grant remains pending. Obtain action-time approval before a new publishing grant.
 6. After the founder merges the train, obtain package/release publication approval and tag that exact commit as v2.10.0. The workflow validates tag/version equality, publishes through OIDC, and creates or finalizes the matching GitHub release. Verify public installation and artifact hashes.
 
 The instructed `~/code/motionvector/docs/GIT-FLOW.md` is absent. Existing AGENTS.md supplies the train rule; no default-branch merge is delegated. Remote historical trains are `main-2026-09-22` and `main-2026-09-23`; neither has an open PR in the inspected list.
@@ -69,6 +69,6 @@ AWS STS and service-quotas confirmed account `842954813809`, profile `antigravit
 
 ## Later work
 
-1. Reconcile dependency PRs #184–#186, GTM PR #187 and the old September branch separately.
+1. PR #186 is included in the release train: PyJWT 2.15.0, urllib3 2.8.0 and Accelerate 1.15.0 move beyond the affected ranges of the 17 alerts read on 2026-10-08 (including one critical). Reconcile Actions dependency PRs #184–#185, GTM PR #187 and the old September branch separately.
 2. Implement docs generation and LiteRT-LM after their design reviews; do not call design PRs shipped features.
 3. Revalidate BUILD-PLAN against code before implementation. Keep SpaceBar read-only and video claims tied to measured output.

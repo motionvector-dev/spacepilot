@@ -13,6 +13,7 @@ This release aligns the package with changes that followed the published v2.9.0 
 - MCP mutations require explicit confirmation and use canonical cache paths.
 - Video endpoint client rejects cross-origin download URLs and redirects and reports polling timeouts. No GPU deployment or measured H3 performance is claimed.
 - CLI compatibility restored, startup import cycle fixed and loading requires a weights directory.
+- Locked dependency security updates from PR #186: PyJWT 2.15.0, urllib3 2.8.0 and Accelerate 1.15.0.
 - Release workflow verifies the immutable tag and package version before building.
 
 ## Limits

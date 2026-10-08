@@ -30,6 +30,7 @@ published v2.9.0 wheels precede the current v2.9.0 tag. See [ROADMAP.md](docs/RO
 - Generated registry snapshots match the registry.
 - Cockpit configuration, runtime selection, Spotlight indexing and registry test isolation.
 - Hosted CI system dependencies and repository contribution documentation.
+- Locked dependency security updates from PR #186: PyJWT 2.15.0, urllib3 2.8.0 and Accelerate 1.15.0.
 
 ## [2.9.0] - 2026-09-23
 
