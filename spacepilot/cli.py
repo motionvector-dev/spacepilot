@@ -2659,24 +2659,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     term_p = subparsers.add_parser("terminate", help="Terminate EC2 instance to stop billing")
     term_p.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
-    return parser
-
-
-def cmd_bench(args, cfg) -> int:
-    action = getattr(args, "bench_action", None)
-    if action == "silicon":
-        return cmd_silicon(args, cfg)
-    if action == "measure":
-        return cmd_measure(args, cfg)
-    if action == "sweep":
-        return cmd_sweep(args, cfg)
-    return 1
-
-
-def main(argv: list[str] | None = None):
-    cfg = load_config()
-    parser = build_parser()
-
     # generate
     gen_p = subparsers.add_parser("generate", help="Retired AWS generation command (refuses; use run)")
     gen_p.add_argument("prompt", type=str, help="Text description of the scene")
@@ -2696,6 +2678,24 @@ def main(argv: list[str] | None = None):
     gen_p.add_argument("--image-noise-scale", type=float, default=0.0, help="I2V initial frame noise (default: 0.0)")
     gen_p.add_argument("--output", "-o", type=str, default=None, help="Target path to save downloaded MP4")
     gen_p.add_argument("--open", action="store_true", help="Open downloaded MP4 in macOS player")
+
+    return parser
+
+
+def cmd_bench(args, cfg) -> int:
+    action = getattr(args, "bench_action", None)
+    if action == "silicon":
+        return cmd_silicon(args, cfg)
+    if action == "measure":
+        return cmd_measure(args, cfg)
+    if action == "sweep":
+        return cmd_sweep(args, cfg)
+    return 1
+
+
+def main(argv: list[str] | None = None):
+    cfg = load_config()
+    parser = build_parser()
 
     raw_argv = list(sys.argv[1:] if argv is None else argv)
     try:

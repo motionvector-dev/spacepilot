@@ -28,7 +28,7 @@ def test_cli_subparsers_list():
     assert "recipes" in registered
     assert "lora" not in registered
     assert "check" in registered
-    assert "generate" not in registered
+    assert "generate" in registered  # Compatibility parser; handler still refuses retired AWS path.
     assert "sync" not in registered
     assert "deploy" not in registered
 
