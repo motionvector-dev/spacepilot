@@ -16,8 +16,18 @@ published v2.9.0 wheels precede the current v2.9.0 tag. See [ROADMAP.md](docs/RO
 - MiniCPM5-2B BF16 and MLX 4-bit registry measurements.
 - Tag-triggered PyPI trusted publishing and release recovery with explicit tag/version verification.
 
+### Changed
+
+- Text runtime processes bind to loopback and use the current interpreter; MCP mutations require confirmation and canonical cache paths.
+- AWS recommendations respect the verified 8 vCPU Spot quota; live provisioning remains gated pending budget and worker deployment.
+- MiniMax H3 uses its custom license metadata; video support is an endpoint client, with no claimed GPU flight.
+- Model downloads enforce registry revisions, bounded concurrency and variant file filters.
+
 ### Fixed
 
+- CLI circular import and compatibility aliases; explicit weights directory validation.
+- Video polling timeout, response URL origin checks and redirect refusal.
+- Generated registry snapshots match the registry.
 - Cockpit configuration, runtime selection, Spotlight indexing and registry test isolation.
 - Hosted CI system dependencies and repository contribution documentation.
 
