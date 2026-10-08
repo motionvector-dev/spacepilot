@@ -28,8 +28,10 @@ def test_minimax_h3_loads_via_registry():
     assert model.id == "minimax-h3"
     assert model.family == "minimax"
     assert model.kind == "video"
-    assert model.license.open_source is True
-    assert model.license.id == "apache-2.0"
+    assert model.license.open_source is False
+    assert model.license.id == "minimax-h3-community-license-agreement"
+    assert len(model.license.restrictions) == 1
+    assert "commercial-use" in model.license.restrictions[0]
 
 
 def test_minimax_h3_variants_compliance():
