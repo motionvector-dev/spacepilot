@@ -366,9 +366,6 @@ def cmd_status(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     return 0
 
 
-from spacepilot.services.user_preferences import get_default_gpu, set_default_gpu
-
-
 def _refuse_legacy_aws(verb: str) -> int:
     """The retired single-box AWS path refuses instead of half-working.
 
@@ -393,6 +390,7 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     from spacepilot.model_registry import registry
     from spacepilot.services.gpu_recommender import recommend_gpus
     from spacepilot.services.aws_fleet_launcher import request_spot_instance
+    from spacepilot.services.user_preferences import get_default_gpu, set_default_gpu
 
     reg = registry()
 
@@ -508,6 +506,52 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     if telemetry.tunnel_command:
         print(f"  Tunnel    : {telemetry.tunnel_command}")
     print("  ================================================================\n")
+    return 0
+
+
+def cmd_spot(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
+    """Query and display live AWS GPU spot pricing and interruption frequency."""
+    import json
+    from dataclasses import asdict
+    from spacepilot.services.spot_advisor import get_spot_intelligence
+
+    gpu_filter = getattr(args, "gpu", None)
+    min_vram = getattr(args, "min_vram", None)
+    region = getattr(args, "region", "us-east-1")
+    sort_by = getattr(args, "sort", "price")
+    as_json = getattr(args, "json", False)
+
+    try:
+        quotes = get_spot_intelligence(
+            gpu=gpu_filter,
+            min_vram_gb=min_vram,
+            region=region,
+            sort_by=sort_by,
+        )
+    except Exception as exc:
+        print(f"  Error: failed to query spot intelligence: {exc}")
+        return 1
+
+    if as_json:
+        print(json.dumps([asdict(q) for q in quotes], indent=2))
+        return 0
+
+    if not quotes:
+        print(f"  No GPU instances matching filter (gpu={gpu_filter}, min_vram={min_vram}GB) in {region}.")
+        return 0
+
+    header = f"{'Instance':12} | {'vCPU':4} | {'RAM':7} | {'GPU Setup':16} | {'On-Demand':11} | {'Spot (est)':11} | {'Interruption':12}"
+    sep = "-" * len(header)
+    print(sep)
+    print(header)
+    print(sep)
+    for q in quotes:
+        gpu_setup = f"{q.gpu_count}x {q.gpu_name} ({int(q.total_vram_gb)}GB)"
+        od_str = f"${q.ondemand_price_usd:.3f}/hr"
+        spot_str = f"${q.spot_price_est_usd:.3f}/hr" if q.spot_price_est_usd else "variable"
+        mem_str = f"{int(q.ram_gb)} GB"
+        print(f"{q.instance_type:12} | {str(q.vcpu):4} | {mem_str:7} | {gpu_setup:16} | {od_str:11} | {spot_str:11} | {q.interruption_risk:12}")
+    print(sep)
     return 0
 
 
@@ -2567,7 +2611,13 @@ def build_parser() -> argparse.ArgumentParser:
     launch_p.add_argument("--gpu", type=str, default=None, help="Explicit AWS GPU instance type (e.g. g6e.4xlarge)")
     launch_p.add_argument("--on-demand", action="store_true", help="Launch on-demand instance instead of spot")
     launch_p.add_argument("--dry-run", action="store_true", help="Simulate provisioning without requesting AWS EC2 resources")
-    launch_p.add_argument("-y", "--yes", action="store_true", help="Accept recommended defaults without interactive prompts")
+    # spot
+    spot_p = subparsers.add_parser("spot", help="Query live AWS GPU spot pricing and interruption frequency")
+    spot_p.add_argument("--gpu", type=str, default=None, help="Filter by GPU type (e.g. L40S, A10G, L4, A100)")
+    spot_p.add_argument("--min-vram", type=float, default=None, help="Minimum total VRAM in GB (e.g. 24, 48)")
+    spot_p.add_argument("--region", type=str, default="us-east-1", help="AWS region (default: us-east-1)")
+    spot_p.add_argument("--sort", choices=["price", "vram", "interruption", "name"], default="price", help="Sort order (default: price)")
+    spot_p.add_argument("--json", action="store_true", help="Output results as JSON")
 
     # download
     down_p = subparsers.add_parser("download", help="Download model weights to disk cache using staged filters")
@@ -2646,6 +2696,7 @@ def main(argv: list[str] | None = None):
         "runtimes": cmd_runtimes,
         "bench": cmd_bench,
         "status": cmd_status,
+        "spot": cmd_spot,
         "launch": cmd_launch,
         "download": cmd_download,
         "load": cmd_load,

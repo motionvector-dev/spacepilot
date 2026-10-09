@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-25",
+ "generated": "2026-10-09",
  "rules": {
   "memory_reserve_fraction": 0.1,
   "memory_reserve_floor_bytes": 3221225472,
@@ -2794,6 +2794,52 @@
      "caveats": [],
      "compromised": [],
      "notes": "mflux aliases \"ideogram-4-fp8\", \"ideogram4-fp8\", \"ideogram4\", \"ideogram-4\", \"ideogram\".\n"
+    },
+    {
+     "id": "ideogram-4-nf4",
+     "model_id": "ideogram",
+     "name": "Ideogram 4 NF4",
+     "kind": "image",
+     "family": "ideogram",
+     "params": null,
+     "precision": "4bit",
+     "repo": "ideogram-ai/ideogram-4-nf4",
+     "files": null,
+     "revision": "f664347839e0a87bc495f5c9483cc0014b8e344e",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 16117791323.0,
+      "source": "huggingface-api",
+      "checked": "2026-10-06",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 19341349587.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for the text encoder and VAE held resident during generation; runs on 16GB/24GB GPUs and Apple Silicon unified memory.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "Ideogram 4 Non-Commercial",
+      "open_source": false,
+      "spdx": null,
+      "url": "https://huggingface.co/ideogram-ai/ideogram-4-fp8",
+      "restrictions": [
+       "Non-commercial use only",
+       "Gated \u2014 requires a Hugging Face account, accepting the license, and sharing contact information to download"
+      ],
+      "is_permissive": false
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "NF4 quantized local checkpoint from official Ideogram collection.\n"
     }
    ]
   },
@@ -3575,6 +3621,150 @@
    ]
   },
   {
+   "id": "minimax-h3",
+   "name": "MiniMax-H3",
+   "family": "minimax",
+   "kind": "video",
+   "summary": "MiniMax-H3 general video generation model (FL2VA / Ref2VA). SGLang serves FP8, BF16 with host offload, and multi-GPU tensor parallel configurations.\n",
+   "homepage": "https://huggingface.co/MiniMaxAI/MiniMax-H3",
+   "license": {
+    "id": "apache-2.0",
+    "open_source": true,
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "restrictions": [],
+    "is_permissive": true
+   },
+   "variants": [
+    {
+     "id": "minimax-h3-fl2va-fp8",
+     "model_id": "minimax-h3",
+     "name": "MiniMax-H3 FL2VA FP8",
+     "kind": "video",
+     "family": "minimax",
+     "params": null,
+     "precision": "fp8",
+     "repo": "MiniMaxAI/MiniMax-H3",
+     "files": null,
+     "revision": "42ed227ee7df40d41602854ae760620d6eb651fe",
+     "is_pinned": true,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 115964116992.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 34359738368.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "32GB working set in FP8 with 50 resident layers; recommended for AWS g6e.4xlarge or g6e.8xlarge (1x L40S 48GB)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Recommended AWS instance: g6e.4xlarge, g6e.8xlarge. 32GB working set in FP8 precision.\n"
+    },
+    {
+     "id": "minimax-h3-fl2va-bf16-offload",
+     "model_id": "minimax-h3",
+     "name": "MiniMax-H3 FL2VA BF16 Offload",
+     "kind": "video",
+     "family": "minimax",
+     "params": null,
+     "precision": "bf16",
+     "repo": "MiniMaxAI/MiniMax-H3",
+     "files": null,
+     "revision": "42ed227ee7df40d41602854ae760620d6eb651fe",
+     "is_pinned": true,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 115964116992.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 47244640256.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "44GB VRAM working set with 128GB host RAM offloading (24 resident layers); recommended for AWS g6e.8xlarge",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Recommended AWS instance: g6e.8xlarge. 44GB VRAM + 128GB RAM offload.\n"
+    },
+    {
+     "id": "minimax-h3-fl2va-bf16-tp4",
+     "model_id": "minimax-h3",
+     "name": "MiniMax-H3 FL2VA BF16 TP4",
+     "kind": "video",
+     "family": "minimax",
+     "params": null,
+     "precision": "bf16",
+     "repo": "MiniMaxAI/MiniMax-H3",
+     "files": null,
+     "revision": "42ed227ee7df40d41602854ae760620d6eb651fe",
+     "is_pinned": true,
+     "backends": [
+      "cuda"
+     ],
+     "download": {
+      "value": 115964116992.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "Full checkpoint download size for MiniMax-H3 (~108 GB safetensors weights + tokenizer/configs)",
+      "is_measured": false
+     },
+     "working_set": {
+      "value": 68719476736.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "64GB aggregate VRAM working set across 4 GPUs with tensor parallelism (TP=4, zero offload); recommended for AWS g6e.12xlarge (4x L40S 192GB)",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Recommended AWS instance: g6e.12xlarge. 64GB aggregate VRAM across 4 GPUs.\n"
+    }
+   ]
+  },
+  {
    "id": "minimax-music",
    "name": "MiniMax Music 3.0",
    "family": "minimax",
@@ -4006,7 +4196,92 @@
      "speed": [],
      "caveats": [],
      "compromised": [],
-     "notes": "Instruction-based image editing, not text-to-image. mflux aliases \"qwen-image-edit\", \"qwen-edit\", \"qwen-edit-plus\", \"qwen-edit-2509\", \"qwen-edit-2511\", \"qwen-image-edit-2511\".\n"
+     "notes": null
+    },
+    {
+     "id": "qwen-image-2-1",
+     "model_id": "qwen-image",
+     "name": "Qwen-Image 2.1",
+     "kind": "image",
+     "family": "alibaba",
+     "params": "7B",
+     "precision": "bf16",
+     "repo": "Qwen/Qwen-Image-2.1",
+     "files": null,
+     "revision": "d26bb61231c349cf6b7896fa83353113880e1ba3",
+     "is_pinned": true,
+     "backends": [
+      "cuda",
+      "metal"
+     ],
+     "download": {
+      "value": 33134949561.0,
+      "source": "huggingface-api",
+      "checked": "2026-10-06",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 39761939473.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% margin for text encoder and VAE held resident during generation; fits 100% in VRAM on 48GB cards (L40S).\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Unified 7B text-to-image and instruction editing model with native RGBA support, released September 2026.\n"
+    },
+    {
+     "id": "qwen-image-2-1-mlx-4bit",
+     "model_id": "qwen-image",
+     "name": "Qwen-Image 2.1 (MLX 4-bit)",
+     "kind": "image",
+     "family": "alibaba",
+     "params": "7B",
+     "precision": "4bit",
+     "repo": "mlx-community/Qwen-Image-2.1-MLX-4bit",
+     "files": null,
+     "revision": "4db4e8c0c0e7a1debf0320415bec8388e888494c",
+     "is_pinned": true,
+     "backends": [
+      "metal"
+     ],
+     "download": {
+      "value": 10497210127.0,
+      "source": "huggingface-api",
+      "checked": "2026-10-06",
+      "note": null,
+      "is_measured": true
+     },
+     "working_set": {
+      "value": 12596652152.0,
+      "source": "estimated",
+      "checked": null,
+      "note": "download size plus a 20% buffer for KV cache and activations on Apple Silicon unified memory; runs comfortably on 16GB/32GB Mac hardware.\n",
+      "is_measured": false
+     },
+     "license": {
+      "id": "apache-2.0",
+      "open_source": true,
+      "spdx": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "restrictions": [],
+      "is_permissive": true
+     },
+     "speed": [],
+     "caveats": [],
+     "compromised": [],
+     "notes": "Community 4-bit MLX conversion for Apple Silicon Metal acceleration.\n"
     }
    ]
   },
