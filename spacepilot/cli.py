@@ -512,6 +512,9 @@ def cmd_launch(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
 def cmd_spot(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     """Query and display live AWS GPU spot pricing and interruption frequency."""
     import json
+    import sys
+    import threading
+    import time
     from dataclasses import asdict
     from spacepilot.services.spot_advisor import get_spot_intelligence
 
@@ -521,16 +524,48 @@ def cmd_spot(args: argparse.Namespace, cfg: Dict[str, Any]) -> int:
     sort_by = getattr(args, "sort", "price")
     as_json = getattr(args, "json", False)
 
+    # Monochromatic ANSI spinner for interactive CLI sessions
+    stop_spinner = threading.Event()
+    current_status = ["Querying live AWS GPU spot telemetry..."]
+
+    def _spinner():
+        frames = ["-", "\\", "|", "/"]
+        idx = 0
+        while not stop_spinner.is_set():
+            msg = current_status[0]
+            sys.stderr.write(f"\r  [{frames[idx % len(frames)]}] {msg}\033[K")
+            sys.stderr.flush()
+            idx += 1
+            time.sleep(0.1)
+        sys.stderr.write("\r\033[K")
+        sys.stderr.flush()
+
+    spinner_thread = None
+    if not as_json and sys.stderr.isatty():
+        spinner_thread = threading.Thread(target=_spinner, daemon=True)
+        spinner_thread.start()
+
+    def _on_progress(msg: str):
+        current_status[0] = msg
+
     try:
         quotes = get_spot_intelligence(
             gpu=gpu_filter,
             min_vram_gb=min_vram,
             region=region,
             sort_by=sort_by,
+            on_progress=_on_progress,
         )
     except Exception as exc:
+        stop_spinner.set()
+        if spinner_thread:
+            spinner_thread.join()
         print(f"  Error: failed to query spot intelligence: {exc}")
         return 1
+    finally:
+        stop_spinner.set()
+        if spinner_thread:
+            spinner_thread.join()
 
     if as_json:
         print(json.dumps([asdict(q) for q in quotes], indent=2))
