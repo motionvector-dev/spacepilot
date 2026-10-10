@@ -51,7 +51,43 @@ variants:
       note: >
         download size plus a 20% margin for the text encoder and VAE held
         resident during generation; no measured run on any machine.
+  - id: qwen-image-2-1
+    name: Qwen-Image 2.1
+    params: 7B
+    precision: bf16
+    repo: Qwen/Qwen-Image-2.1
+    revision: d26bb61231c349cf6b7896fa83353113880e1ba3
+    backends: [cuda, metal]
+    download:
+      value: 33134949561
+      source: huggingface-api
+      checked: "2026-10-06"
+    working_set:
+      value: 39761939473
+      source: estimated
+      note: >
+        download size plus a 20% margin for text encoder and VAE held resident
+        during generation; fits 100% in VRAM on 48GB cards (L40S).
     notes: >
-      Instruction-based image editing, not text-to-image. mflux aliases
-      "qwen-image-edit", "qwen-edit", "qwen-edit-plus", "qwen-edit-2509",
-      "qwen-edit-2511", "qwen-image-edit-2511".
+      Unified 7B text-to-image and instruction editing model with native RGBA
+      support, released September 2026.
+  - id: qwen-image-2-1-mlx-4bit
+    name: Qwen-Image 2.1 (MLX 4-bit)
+    params: 7B
+    precision: 4bit
+    repo: mlx-community/Qwen-Image-2.1-MLX-4bit
+    revision: 4db4e8c0c0e7a1debf0320415bec8388e888494c
+    backends: [metal]
+    download:
+      value: 10497210127
+      source: huggingface-api
+      checked: "2026-10-06"
+    working_set:
+      value: 12596652152
+      source: estimated
+      note: >
+        download size plus a 20% buffer for KV cache and activations on Apple
+        Silicon unified memory; runs comfortably on 16GB/32GB Mac hardware.
+    notes: >
+      Community 4-bit MLX conversion for Apple Silicon Metal acceleration.
+

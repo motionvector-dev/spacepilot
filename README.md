@@ -51,15 +51,15 @@ a number.
 | **Speech (TTS)** | Any | In-process Kokoro-82M ONNX |
 | **Transcription** | Any | whisper.cpp, measured, working |
 | **Image** | Apple Silicon | mflux, own venv, subprocess-only |
-| **Video** | — | **Not yet** — routes exist, refuse with 501. Mock test-pattern real render is gone. |
+| **Video** | AWS Spot / Local CUDA | `spacepilot launch` (EC2 L40S spot) + `spacepilot run video` (MiniMax-H3 / Wan 2.1) |
 
 The `/v1` surface is specified in [`docs/design/INFERENCE-SURFACE.md`](docs/design/INFERENCE-SURFACE.md).
 
 ### Honest boundary
 
-Video here is real in name and honest in report: the engine routes exist as
-specs, and the CLI tells you that. It is the longer-term aim, not a
-description of this repo today.
+Video generation runs on remote AWS GPU instances (e.g. `g6e.4xlarge` L40S spot)
+managed directly via `spacepilot launch` and `spacepilot run video`, or locally on
+machines with >=24GB VRAM. It is not emulated on undersized local hardware.
 
 ---
 

@@ -39,3 +39,22 @@ variants:
     notes: >
       mflux aliases "ideogram-4-fp8", "ideogram4-fp8", "ideogram4",
       "ideogram-4", "ideogram".
+  - id: ideogram-4-nf4
+    name: Ideogram 4 NF4
+    precision: 4bit
+    repo: ideogram-ai/ideogram-4-nf4
+    revision: f664347839e0a87bc495f5c9483cc0014b8e344e
+    backends: [cuda, metal]
+    download:
+      value: 16117791323
+      source: huggingface-api
+      checked: "2026-10-06"
+    working_set:
+      value: 19341349587
+      source: estimated
+      note: >
+        download size plus a 20% margin for the text encoder and VAE held resident
+        during generation; runs on 16GB/24GB GPUs and Apple Silicon unified memory.
+    notes: >
+      NF4 quantized local checkpoint from official Ideogram collection.
+
